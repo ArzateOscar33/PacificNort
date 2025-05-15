@@ -75,9 +75,12 @@ body {
 
 /* Hero Section */
 .hero-section {
+    min-height: 100vh;
+  padding-top: 80px;
+  padding-bottom: 80px;
   height: 100vh;
   background: linear-gradient(rgba(12, 28, 44, 0.7), rgba(12, 28, 44, 0.7)),
-    url("https://images.unsplash.com/photo-1507537297725-24a1c029d3ca")
+    url("../img/log1.jpg"),
       no-repeat center center;
   background-size: cover;
   display: flex;
@@ -339,7 +342,7 @@ body {
   background-color: var(--white-color);
   padding: 40px;
   border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  box-shadow: 30px 30px 30px 30px rgba(0, 0, 0, 0.1);
   height: 100%;
 }
 
@@ -347,16 +350,18 @@ body {
   background-color: var(--white-color);
   padding: 40px;
   border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  box-shadow: 30px 30px 30px 30px rgba(0, 0, 0, 0.1);
 }
 
 .contact-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
   align-items: center;
   margin-bottom: 30px;
 }
 
 .contact-icon {
+  
   width: 60px;
   height: 60px;
   background-color: rgba(12, 92, 138, 0.1);
@@ -702,15 +707,16 @@ footer {
 }
 .grid-container {
   display: grid;
-  grid-template-columns: auto auto auto auto;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
 }
 .card {
   margin: 10px;
 }
 .card-body {
-  
-  width: 315px;
+  max-width: 315px;
   height: 300px;
+  width: 250px; 
   box-shadow: #0c1c2c 0px 0px 10px;
   display: flex;
   justify-content: center;
@@ -769,7 +775,9 @@ footer {
   overflow: hidden;
   border-radius: 15px;
   transition: all 0.5s ease;
-  padding: 10px;
+  padding: 5px;
+  width: 315px;
+  height: auto;
 }
 
 .holographic-card h2 {
@@ -806,4 +814,22 @@ footer {
   justify-content: center;
   align-items: center;
 
+
+}
+@media (max-width: 575px) {
+  .hero-section h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero-btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+
+  .holographic-card h2 {
+    font-size: 1.3rem;
+  }
+}
+#menu-btn{
+  color: black; 
 }

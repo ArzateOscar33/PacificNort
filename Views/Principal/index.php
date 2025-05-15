@@ -9,7 +9,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/aos.css">
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/navbar.css">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/navbar.css">  
+  <link href="https://fonts.googleapis.com/css2?family=Lora&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 </head>
 
@@ -17,35 +19,32 @@
 
 <nav>
   <div class="wrapper">
-    <div class="logo"><a href="<?php echo BASE_URL; ?>"><img src="<?php echo BASE_URL; ?>assets/img/logo.png" alt="logo"></a></div>
-    <input type="radio" name="slider" id="menu-btn">
+    <div class="logo"><a href="<?php echo BASE_URL; ?>"><img  class="img-fluid" src="<?php echo BASE_URL; ?>assets/img/logo.png" alt="logo"></a></div>
+    <input type="radio" name="slider" id="menu-btn"> 
     <input type="radio" name="slider" id="close-btn">
     <ul class="nav-links">
       <label for="close-btn" class="btn close-btn"><i class="fas fa-times"></i></label>
       <li><a href="#">Inicio</a></li>
       <li><a href="#nosotros">Acerca de Nosotros</a></li>
       <li>
-        <a href="#servicios" class="desktop-item">Servicios</a>
+        <a href="#servicios" class="desktop-item"><i class="fas fa-truck"></i> Servicios</a>
         <input type="checkbox" id="showDrop">
-        <label for="showDrop" class="mobile-item">Dropdown Menu</label>
+        <label for="showDrop" class="mobile-item">Servicios</label>
         <ul class="drop-menu">
-          <li><a href="#">Transporte Internacional</a></li>
+          <!-- <li><a href="#">Transporte Internacional</a></li>
           <li><a href="#">Gestiones Aduanales</a></li>
           <li><a href="#">Consultoría Empresarial</a></li>
           <li><a href="#">Almacenaje y Distribución</a></li>
-          <li><a href="#">Seguros de Carga</a></li>
+          <li><a href="#">Seguros de Carga</a></li> !-->
         </ul>
 
-      <li><a href="#">Feedback</a></li>
+      <li><a href="#">Iniciar Sesión</a></li>
     </ul>
-    <label for="menu-btn" class="btn menu-btn"><i class="fas fa-bars"></i></label>
+    <label for="menu-btn" class="btn menu-btn" id="menu-btn"><i class="fas fa-bars fa-2x"></i></label>
   </div>
 </nav>
 
-<div class="body-text">
-  <div class="title">Responsive Dropdown and Mega Menu</div>
-  <div class="sub-title">using only HTML & CSS</div>
-</div>
+ 
 
 
 <div class="collapse navbar-collapse" id="navbarNav">
@@ -94,7 +93,7 @@
               <div class="holographic-container">
                 <div class="holographic-card">
                   <div class="card-body">
-                    <img src="<?php echo BASE_URL; ?>assets/img/objetivo.png" alt="mision">
+                    <img class="img-fluid" src="<?php echo BASE_URL; ?>assets/img/objetivo.png" alt="mision">
 
                     <h2>Nuestra Misión</h2>
                     <p class="card-text">
@@ -110,7 +109,7 @@
               <div class="holographic-container">
                 <div class="holographic-card">
                   <div class="card-body">
-                    <img src="<?php echo BASE_URL; ?>assets/img/ojo.png" alt="vision">
+                    <img  class="img-fluid" src="<?php echo BASE_URL; ?>assets/img/ojo.png" alt="vision">
 
                     <h2>Nuestra Visión</h2>
                     <p class="card-text">
@@ -124,7 +123,7 @@
               <div class="holographic-container">
                 <div class="holographic-card">
                   <div class="card-body">
-                    <img src="<?php echo BASE_URL; ?>assets/img/diamante.png" alt="valores">
+                    <img  class="img-fluid" src="<?php echo BASE_URL; ?>assets/img/diamante.png" alt="valores">
 
                     <h2>Nuestros Valores</h2>
                     <ul class="card-text">
@@ -139,45 +138,10 @@
               </div>
             </div>
             <div class="about-image" data-aos="fade-left" data-aos-delay="300">
-              <img src="<?php echo BASE_URL; ?>assets/img/equipo01.jpg" alt="Nuestro equipo de trabajo">
+              <img class="img-fluid" src="<?php echo BASE_URL; ?>assets/img/equipo01.jpg" alt="Nuestro equipo de trabajo">
             </div>
 
-            <!-- Servicios -->
-            <section class="section services-section" id="servicios">
-              <div class="container">
-                <div class="section-title" data-aos="fade-up">
-                  <h2>Nuestros Servicios</h2>
-                </div>
-                <div class="row">
-                  <div class="col-lg-8 col-md-10 mx-auto">
-                    <p class="section-subtitle text-center" data-aos="fade-up" data-aos-delay="100">Ofrecemos soluciones logísticas
-                      integrales adaptadas a las necesidades específicas de cada cliente, garantizando eficiencia, seguridad y
-                      cumplimiento normativo.</p>
-                  </div>
-                </div>
 
-              </div>
-            </section>
-
-            <!-- Galería -->
-            <section class="section gallery-section" id="galeria">
-              <div class="container">
-                <div class="section-title" data-aos="fade-up">
-                  <h2>Galería</h2>
-                </div>
-                <div class="row">
-                  <div class="col-lg-8 col-md-10 mx-auto">
-                    <p class="section-subtitle text-center" data-aos="fade-up" data-aos-delay="100">Conoce nuestros proyectos y
-                      operaciones a través de nuestra galería de imágenes.</p>
-                  </div>
-                </div>
-                <div class="row mt-5">
-                  <div class="col-12" data-aos="fade-up" data-aos-delay="200">
-
-                  </div>
-                </div>
-              </div>
-            </section>
 
             <!-- Contacto -->
             <section class="section contact-section" id="contacto">
@@ -192,7 +156,7 @@
                   </div>
                 </div>
                 <div class="row mt-5">
-                  <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                  <div class="col-lg-4 col-md-6 col-12" data-aos="fade-up" data-aos-delay="200">
                     <div class="contact-info">
                       <h4 class="mb-4">Información de Contacto</h4>
                       <div class="contact-item">
@@ -201,7 +165,7 @@
                         </div>
                         <div class="contact-text">
                           <h5>Ubicación</h5>
-                          <p>Blvd. Costero 1234, Zona Centro, Ensenada, B.C., México</p>
+                          <p>Av. Alejandro Von Humboldt, Garita de Otay, 22430 Tijuana, B.C., México</p>
                         </div>
                       </div>
                       <div class="contact-item">
