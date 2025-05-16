@@ -8,8 +8,10 @@ class Home extends Controller
     public function index()
     {
         $data['title'] = 'Pagina Principal';
-        $this->views->getView('Principal', "index", $data);
+        $this->views->getView('home', "index", $data);
     }
+
+ 
 
     
 }

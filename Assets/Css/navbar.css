@@ -94,7 +94,7 @@ nav .wrapper{
   visibility: hidden;
 }
 .mega-box .content{
-  background: #242526;
+  background: #242624;
   padding: 25px 20px;
   display: flex;
   width: 100%;
@@ -155,7 +155,7 @@ nav .wrapper{
     max-width: 350px;
     top: 0;
     left: -100%;
-    background: #242526;
+    background: #b3b6b696;
     display: block;
     padding: 50px 10px;
     line-height: 50px;
@@ -212,7 +212,7 @@ nav .wrapper{
   }
   .nav-links .mobile-item{
     display: block;
-    color: #f2f2f2;
+    color: #080808;
     font-size: 20px;
     font-weight: 500;
     padding-left: 20px;
