@@ -160,22 +160,22 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="form-group">
-                  <input type="text" class="form-control" placeholder="Nombre completo" required>
+                  <input type="text" class="form-control" placeholder="Nombre completo" id="name" name="name" >
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <input type="email" class="form-control" placeholder="Correo electrónico" required>
+                  <input type="email" class="form-control" placeholder="Correo electrónico" id="email" name="email" >
                 </div>
               </div>
             </div>
             <div class="form-group">
-              <input type="text" class="form-control" placeholder="Asunto" required>
+              <input type="text" class="form-control" placeholder="Asunto" id="subject" name="subject" >
             </div>
             <div class="form-group">
-              <textarea class="form-control" placeholder="Mensaje" required></textarea>
+              <textarea class="form-control" placeholder="Mensaje"  id="message" name="message" ></textarea>
             </div>
-            <button type="submit" class="submit-btn">Enviar Mensaje</button>
+            <button type="submit" class="submit-btn" id="btnContactos">Enviar Mensaje</button>
           </form>
         </div>
       </div>
@@ -186,6 +186,7 @@
 
  <!-- Footer -->
 <?//php include_once 'Views/Template/principal_footer.php'; ?>
+
 <script src="<?php echo BASE_URL; ?>assets/js/bootstrap.bundle.min.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/aos.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/index.js"></script>

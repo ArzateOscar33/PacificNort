@@ -47,21 +47,33 @@
                     <div class="p-3">
                         <img src="<?php echo BASE_URL; ?>/assets/images/big/icon.png" alt="wrapkit">
                         <h2 class="mt-3 text-center">Registrate Gratis</h2>
-                        <form class="mt-4">
+                        <form class="mt-4" id="frmRegistro" name="frmRegistro">
                             <div class="row">
+                                
                                 <div class="col-lg-12">
                                     <div class="form-group">
-                                        <input class="form-control" type="text" placeholder="Nombre Completo">
+                                        <input class="form-control" type="text" placeholder="Nombre" id="nombre" name="nombre">
+                                    </div>
+                                </div>
+                                  <div class="col-lg-12">
+                                    <div class="form-group">
+                                        <input class="form-control" type="text" placeholder="Apellido" id="apellido" name="apellido">
+                                    </div>
+                                </div>
+                                 <div class="col-lg-12">
+                                    <div class="form-group">
+                                        <input class="form-control" type="email" placeholder="Correo Electronico" id="correo" name="correo">
+                                    </div>
+                                </div>
+                
+                                <div class="col-lg-12">
+                                    <div class="form-group">
+                                        <input class="form-control" type="password" placeholder="Contraseña" name="clave" id="clave">
                                     </div>
                                 </div>
                                 <div class="col-lg-12">
                                     <div class="form-group">
-                                        <input class="form-control" type="email" placeholder="Correo Electronico">
-                                    </div>
-                                </div>
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <input class="form-control" type="password" placeholder="Contraseña">
+                                        <input class="form-control" type="text" placeholder="664 XXX XXXX" id="phone" name="phone">
                                     </div>
                                 </div>
                                 <div class="col-lg-12 text-center">
@@ -75,14 +87,8 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- ============================================================== -->
-        <!-- Login box.scss -->
-        <!-- ============================================================== -->
-    </div>
-    <!-- ============================================================== -->
-    <!-- All Required js -->
-    <!-- ============================================================== -->
+        </div> 
+    </div> 
     <script src="<?php echo BASE_URL; ?>/assets/libs/jquery/dist/jquery.min.js "></script>
     <!-- Bootstrap tether Core JavaScript -->
     <script src="<?php echo BASE_URL; ?>/assets/libs/popper.js/dist/umd/popper.min.js "></script>
@@ -93,6 +99,11 @@
     <script>
         $(".preloader ").fadeOut();
     </script>
+       <script>
+        const base_url = '<?php echo BASE_URL; ?>';
+    </script>
+    <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
+        <script src="<?php echo BASE_URL; ?>assets/js/registro.js"></script>
 </body>
 
 </html>

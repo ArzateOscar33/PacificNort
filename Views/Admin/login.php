@@ -45,19 +45,19 @@
                         </div>
                         <h2 class="mt-3 text-center">Iniciar Sesion</h2>
                         <p class="text-center">Ingresa tu correo y contraseña para acceder al panel de administracion.</p>
-                        <form class="mt-4">
+                        <form class="mt-4" id="formulario" name="formulario">
                             <div class="row">
                                 <div class="col-lg-12">
                                     <div class="form-group">
                                         <label class="text-dark" for="uname">Correo Electronico</label>
-                                        <input class="form-control" id="uname" type="text"
+                                        <input class="form-control" id="email" name="email" type="text"
                                             placeholder="Correo Electronico">
                                     </div>
                                 </div>
                                 <div class="col-lg-12">
                                     <div class="form-group">
                                         <label class="text-dark" for="pwd">Contraseña</label>
-                                        <input class="form-control" id="pwd" type="password"
+                                        <input class="form-control" id="clave" name="clave" type="password"
                                             placeholder="Contraseña">
                                     </div>
                                 </div>
@@ -91,5 +91,9 @@
         $(".preloader ").fadeOut();
     </script>
 </body>
-
+   <script>
+        const base_url = '<?php echo BASE_URL; ?>';
+    </script>
+    <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
+        <script src="<?php echo BASE_URL; ?>assets/js/login.js"></script>
 </html>
