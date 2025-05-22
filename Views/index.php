@@ -7,7 +7,7 @@
   <ul class="navbar-nav ms-auto">
     <li class="nav-item"><a class="nav-link active" href="#hero">Inicio</a></li>
     <li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li>
-    <li class="nav-item"><a class="nav-link" href="#servicios">Servicios</a></li>
+    <li class="nav-item"><a class="nav-link" href="">Servicios</a></li>
     <li class="nav-item"><a class="nav-link" href="#galeria">Galería</a></li>
     <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
   </ul>
@@ -21,7 +21,8 @@
     <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
       <h1>Expertos en Logística Internacional</h1>
       <p class="lead">Soluciones confiables para tu comercio global</p>
-      <a href="#servicios" class="btn btn-primary hero-btn pulse">Nuestros Servicios</a>
+      <a href="<?php echo BASE_URL . 'principal/servicios' ?>" class="btn btn-primary hero-btn pulse">Nuestros
+        Servicios</a>
     </div>
   </div>
 </section>
@@ -99,74 +100,70 @@
             </div>
 </section>
 <!-- Galería -->
-            <section class="section gallery-section" id="galeria">
-              <div class="container">
-                <div class="section-title" data-aos="fade-up">
-                  <h2>Galería</h2>
-                </div>
-                <div class="row">
-                  <div class="col-lg-8 col-md-10 mx-auto">
-                    <p class="section-subtitle text-center" data-aos="fade-up" data-aos-delay="100">Conoce nuestros proyectos y
-                      operaciones a través de nuestra galería de imágenes.</p>
-                  </div>
-                </div>
-                <div class="row mt-5">
-                  <div class="col-12" data-aos="fade-up" data-aos-delay="200">
-                    <div id="galleryCarousel" class="carousel slide gallery-carousel" data-bs-ride="carousel">
-                      <div class="carousel-indicators">
-                        <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="0" class="active"></button>
-                        <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="1"></button>
-                        <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="2"></button>
-                        <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="3"></button>
-                      </div>
-                      <div class="carousel-inner">
-                        <div class="carousel-item active">
-                          <img src="<?php echo BASE_URL; ?>assets/img/log1.jpg" class="d-block w-100"
-                            alt="Soluciones logísticas">
-                          <div class="carousel-caption">
-                            <h5>Transporte Terrestre</h5>
-                            <p>Soluciones eficientes para el transporte de mercancías por carretera</p>
-                          </div>
-                        </div>
-                        <div class="carousel-item">
-                          <img src="<?php echo BASE_URL; ?>assets/img/log2.jpg" class="d-block w-100"
-                            alt="Transporte marítimo">
-                          <div class="carousel-caption">
-                            <h5>Transporte Marítimo</h5>
-                            <p>Conectamos negocios a través de los océanos</p>
-                          </div>
-                        </div>
-                        <div class="carousel-item">
-                          <img src="<?php echo BASE_URL; ?>assets/img/log3.jpg" class="d-block w-100"
-                            alt="Almacenamiento">
-                          <div class="carousel-caption">
-                            <h5>Almacenamiento y Distribución</h5>
-                            <p>Infraestructura moderna para el manejo de mercancías</p>
-                          </div>
-                        </div>
-                        <div class="carousel-item">
-                          <img src="<?php echo BASE_URL; ?>assets/img/log4.jpg" class="d-block w-100"
-                            alt="Consultoría">
-                          <div class="carousel-caption">
-                            <h5>Consultoría Especializada</h5>
-                            <p>Asesoría experta para optimizar tus operaciones internacionales</p>
-                          </div>
-                        </div>
-                      </div>
-                      <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon"></span>
-                        <span class="visually-hidden">Anterior</span>
-                      </button>
-                      <button class="carousel-control-next" type="button" data-bs-target="#galleryCarousel" data-bs-slide="next">
-                        <span class="carousel-control-next-icon"></span>
-                        <span class="visually-hidden">Siguiente</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+<section class="section gallery-section" id="galeria">
+  <div class="container">
+    <div class="section-title" data-aos="fade-up">
+      <h2>Galería</h2>
+    </div>
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto">
+        <p class="section-subtitle text-center" data-aos="fade-up" data-aos-delay="100">Conoce nuestros proyectos y
+          operaciones a través de nuestra galería de imágenes.</p>
+      </div>
+    </div>
+    <div class="row mt-5">
+      <div class="col-12" data-aos="fade-up" data-aos-delay="200">
+        <div id="galleryCarousel" class="carousel slide gallery-carousel" data-bs-ride="carousel">
+          <div class="carousel-indicators">
+            <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="2"></button>
+            <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="3"></button>
+          </div>
+          <div class="carousel-inner">
+            <div class="carousel-item active">
+              <img src="<?php echo BASE_URL; ?>assets/img/log1.jpg" class="d-block w-100" alt="Soluciones logísticas">
+              <div class="carousel-caption">
+                <h5>Transporte Terrestre</h5>
+                <p>Soluciones eficientes para el transporte de mercancías por carretera</p>
               </div>
-            </section>
- <!-- Contacto -->
+            </div>
+            <div class="carousel-item">
+              <img src="<?php echo BASE_URL; ?>assets/img/log2.jpg" class="d-block w-100" alt="Transporte marítimo">
+              <div class="carousel-caption">
+                <h5>Transporte Marítimo</h5>
+                <p>Conectamos negocios a través de los océanos</p>
+              </div>
+            </div>
+            <div class="carousel-item">
+              <img src="<?php echo BASE_URL; ?>assets/img/log3.jpg" class="d-block w-100" alt="Almacenamiento">
+              <div class="carousel-caption">
+                <h5>Almacenamiento y Distribución</h5>
+                <p>Infraestructura moderna para el manejo de mercancías</p>
+              </div>
+            </div>
+            <div class="carousel-item">
+              <img src="<?php echo BASE_URL; ?>assets/img/log4.jpg" class="d-block w-100" alt="Consultoría">
+              <div class="carousel-caption">
+                <h5>Consultoría Especializada</h5>
+                <p>Asesoría experta para optimizar tus operaciones internacionales</p>
+              </div>
+            </div>
+          </div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+            <span class="visually-hidden">Anterior</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#galleryCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+            <span class="visually-hidden">Siguiente</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- Contacto -->
 <section class="section contact-section" id="contacto">
   <div class="container">
     <div class="section-title" data-aos="fade-up">
@@ -192,9 +189,9 @@
             </div>
           </div>
           <div class="contact-item">
-              <div class="contact-icon">
+            <div class="contact-icon">
               <i class="bi bi-telephone"></i>
-              </div>
+            </div>
             <div class="contact-text">
               <h5>Teléfono</h5>
               <p>+52 (646) 123-4567</p>
@@ -227,20 +224,20 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="form-group">
-                  <input type="text" class="form-control" placeholder="Nombre completo" id="name" name="name" >
+                  <input type="text" class="form-control" placeholder="Nombre completo" id="name" name="name">
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <input type="email" class="form-control" placeholder="Correo electrónico" id="email" name="email" >
+                  <input type="email" class="form-control" placeholder="Correo electrónico" id="email" name="email">
                 </div>
               </div>
             </div>
             <div class="form-group">
-              <input type="text" class="form-control" placeholder="Asunto" id="subject" name="subject" >
+              <input type="text" class="form-control" placeholder="Asunto" id="subject" name="subject">
             </div>
             <div class="form-group">
-              <textarea class="form-control" placeholder="Mensaje"  id="message" name="message" ></textarea>
+              <textarea class="form-control" placeholder="Mensaje" id="message" name="message"></textarea>
             </div>
             <button type="submit" class="submit-btn" id="btnContactos">Enviar Mensaje</button>
           </form>
@@ -250,9 +247,8 @@
   </div>
 </section>
 
-
- <!-- Footer -->
-<?//php include_once 'Views/Template/principal_footer.php'; ?>
+<!-- Footer -->
+<?php include_once 'Views/Template/principal_footer.php'; ?>
 <script>
   const base_url = "<?php echo BASE_URL; ?>";
 </script>
@@ -261,5 +257,6 @@
 <script src="<?php echo BASE_URL; ?>assets/js/index.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/contactos.js"></script>
+
 </html>
 </footer>
