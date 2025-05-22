@@ -28,6 +28,7 @@
       });
     });
     // Back to top button
+     /*
     const backToTopBtn = document.querySelector('.back-to-top');
     window.addEventListener('scroll', function() {
       if (window.scrollY > 300) {
@@ -35,7 +36,7 @@
       } else {
         backToTopBtn.classList.remove('show');
       }
-    });
+    });*/
     backToTopBtn.addEventListener('click', function(e) {
       e.preventDefault();
       window.scrollTo({

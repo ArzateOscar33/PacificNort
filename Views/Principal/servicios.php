@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 
-<?php include_once 'Views/Template/principal_header.php'; ?>
+ 
 
  <!-- Servicios -->
 <section class="section services-section" id="servicios">
@@ -92,16 +92,7 @@
  
  
 
-<!-- Footer -->
-<?php include_once 'Views/Template/principal_footer.php'; ?>
-<script>
-  const base_url = "<?php echo BASE_URL; ?>";
-</script>
-<script src="<?php echo BASE_URL; ?>/assets/js/bootstrap.bundle.min.js"></script>
-<script src="<?php echo BASE_URL; ?>/assets/js/aos.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/servicios.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/contactos.js"></script>
+ 
 
 </html>
 </footer>

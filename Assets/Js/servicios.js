@@ -7,15 +7,7 @@
       easing: 'ease-in-out',
       once: true
     }); 
-    // Navbar scrolled
-    const navbar = document.querySelector('.navbar');
-    window.addEventListener('scroll', function() {
-      if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-      } else {
-        navbar.classList.remove('scrolled');
-      }
-    });
+ 
     // Activar enlaces de navegación según la sección en vista
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-link');
