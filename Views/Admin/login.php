@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html dir="ltr">
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -8,6 +8,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
+    <link href="<?php echo BASE_URL; ?>assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+    <link href="<?php echo BASE_URL; ?>assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+    <!-- loader-->
+    <link href="<?php echo BASE_URL; ?>assets/css/pace.min.css" rel="stylesheet" />
+    <script src="<?php echo BASE_URL; ?>assets/js/pace.min.js"></script>
+    <!-- Bootstrap CSS -->
+    <link href="<?php echo BASE_URL; ?>assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>assets/css/bootstrap-extended.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>assets/css/app.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>assets/css/icons.css" rel="stylesheet">
     <!-- Favicon icon -->
     
     <link rel="apple-touch-icon" sizes="57x57" href="<?php echo BASE_URL; ?>/favicon/apple-icon-57x57.png">
@@ -61,6 +72,15 @@
                             <img src="<?php echo BASE_URL; ?>/assets/images/big/icon.png" alt="wrapkit">
                         </div>
                         <h2 class="mt-3 text-center">Iniciar Sesion</h2>
+                         <div class="text-center">
+                                    <?php if (!empty($_SESSION['msg_error'])): ?>
+                                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                            <?= $_SESSION['msg_error'] ?>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                        <?php unset($_SESSION['msg_error']); ?>
+                                    <?php endif; ?>
+                         </div>
                         <p class="text-center">Ingresa tu correo y contraseña para acceder al panel de administracion.</p>
                         <form class="mt-4" id="formulario" name="formulario">
                             <div class="row">
@@ -98,12 +118,20 @@
     <!-- All Required js -->
  
     <script src="<?php echo BASE_URL; ?>/assets/libs/jquery/dist/jquery.min.js "></script>
+       <!-- Bootstrap JS -->
+    <script src="<?php echo BASE_URL; ?>assets/js/bootstrap.bundle.min.js"></script>
+    <!--plugins-->
+    <script src="<?php echo BASE_URL; ?>assets/js/jquery.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>assets/plugins/simplebar/js/simplebar.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>assets/plugins/metismenu/js/metisMenu.min.js"></script>
     <!-- Bootstrap tether Core JavaScript -->
     <script src="<?php echo BASE_URL; ?>/assets/libs/popper.js/dist/umd/popper.min.js "></script>
     <script src="<?php echo BASE_URL; ?>/assets/libs/bootstrap/dist/js/bootstrap.min.js "></script>
     <!-- ============================================================== -->
     <!-- This page plugin js -->
     <!-- ============================================================== -->
+
+    
     <script>
         $(".preloader ").fadeOut();
     </script>

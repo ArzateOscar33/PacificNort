@@ -6,11 +6,7 @@
           
             <!-- End footer -->
   
-        </div>
  
-        <!-- End Page wrapper  -->
- 
-    </div>
  
     <!-- End Wrapper -->
  
@@ -37,6 +33,5 @@
     <script src="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-2.0.2.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-world-mill-en.js"></script>
     <script src="<?php echo BASE_URL; ?>/dist/js/pages/dashboards/dashboard1.min.js"></script>
-</body>
-
-</html>
+    
+ 
