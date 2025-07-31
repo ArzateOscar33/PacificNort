@@ -1,5 +1,5 @@
 <?php include 'Views/Template/admin_header.php';
 ?>
-<h2>HOla Mundo</h2>
+<h2>Hola mundo desde las ciudades</h2>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
