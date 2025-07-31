@@ -17,5 +17,14 @@ class Operaciones extends Controller
         $this->views->getView('admin/Operaciones', "index", $data);
     }
  
-
+    public function terrestre()
+    {
+        $data['title'] = 'Operaciones';
+        $this->views->getView('admin/operaciones', "terrestre", $data);
+    }
+    public function maritimo()
+    {
+        $data['title'] = 'Operaciones';
+        $this->views->getView('admin/operaciones', "maritimo", $data);
+    }
 }

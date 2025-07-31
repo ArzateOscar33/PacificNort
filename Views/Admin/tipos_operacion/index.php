@@ -31,7 +31,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>Tipo de Operacion 1</td>
+                                    <td>Maritimo </td>
                                     <td>1</td>
                                     <td>
                                         <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
@@ -40,7 +40,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Tipo de Operacion 2</td>
+                                    <td>Aereo</td>
                                     <td>2</td>
                                     <td>
                                         <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
@@ -49,7 +49,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Tipo de Operacion 3</td>
+                                    <td>Terrestre</td>
                                     <td>3</td>
                                     <td>
                                         <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>

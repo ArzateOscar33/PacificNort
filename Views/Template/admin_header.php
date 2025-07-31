@@ -114,8 +114,8 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-toggle="dropdown"
                                 aria-haspopup="true" aria-expanded="false">
-                                <img src="<?php echo BASE_URL; ?>assets/images/users/1.jpg" alt="user" class="rounded-circle"
-                                    width="40">
+                                <img src="<?php echo BASE_URL; ?>assets/images/users/1.jpg" alt="user"
+                                    class="rounded-circle" width="40">
                                 <span class="ml-2 d-none d-lg-inline-block"><span>Hola,</span> <span
                                         class="text-dark"><?php echo $_SESSION['nombre_usuario']; ?></span> <i
                                         data-feather="chevron-down" class="svg-icon"></i></span>
@@ -167,54 +167,68 @@
                                     data-feather="user-check"></i><span class="hide-menu">Puestos</span></a></li>
                         <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'roles'; ?>"><i
                                     data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'tipos_operacion'; ?> "><i data-feather="shuffle"></i><span
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href="<?php echo BASE_URL . 'tipos_operacion'; ?> "><i data-feather="shuffle"></i><span
                                     class="hide-menu">Tipos de Operación</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Estatus'; ?> "><i data-feather="tag"></i><span
-                                    class="hide-menu">Estatus</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Estatus'; ?> "><i
+                                    data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
 
                         <li class="nav-small-cap"><span class="hide-menu">Geografía</span></li>
 
                         <!-- UBICACIÓN -->
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Estados'; ?> "><i data-feather="map"></i><span
-                                    class="hide-menu">Estados</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Ciudades'; ?>"><i data-feather="map-pin"></i><span
-                                    class="hide-menu">Ciudades</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Puertos'; ?> "><i data-feather="anchor"></i><span
-                                    class="hide-menu">Puertos</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Estados'; ?> "><i
+                                    data-feather="map"></i><span class="hide-menu">Estados</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Ciudades'; ?>"><i
+                                    data-feather="map-pin"></i><span class="hide-menu">Ciudades</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Puertos'; ?> "><i
+                                    data-feather="anchor"></i><span class="hide-menu">Puertos</span></a></li>
 
                         <li class="nav-small-cap"><span class="hide-menu">Clientes y Usuarios</span></li>
 
                         <!-- USUARIOS Y CLIENTES -->
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Usuarios'; ?>"><i data-feather="users"></i><span
-                                    class="hide-menu">Usuarios</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Clientes'; ?> "><i data-feather="briefcase"></i><span
-                                    class="hide-menu">Clientes</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Shippers'; ?>"><i data-feather="truck"></i><span
-                                    class="hide-menu">Shippers</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Usuarios'; ?>"><i
+                                    data-feather="users"></i><span class="hide-menu">Usuarios</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Clientes'; ?> "><i
+                                    data-feather="briefcase"></i><span class="hide-menu">Clientes</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Shippers'; ?>"><i
+                                    data-feather="truck"></i><span class="hide-menu">Shippers</span></a></li>
 
                         <li class="nav-small-cap"><span class="hide-menu">Logística</span></li>
 
                         <!-- LOGÍSTICA -->
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Bodegas'; ?>"><i data-feather="home"></i><span
-                                    class="hide-menu">Bodegas</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Brokers'; ?>"><i data-feather="briefcase"></i><span
-                                    class="hide-menu">Brokers</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Transportistas'; ?>"><i data-feather="truck"></i><span
+                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Bodegas'; ?>"><i
+                                    data-feather="home"></i><span class="hide-menu">Bodegas</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Brokers'; ?>"><i
+                                    data-feather="briefcase"></i><span class="hide-menu">Brokers</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href=" <?php echo BASE_URL . 'Transportistas'; ?>"><i data-feather="truck"></i><span
                                     class="hide-menu">Transportistas</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Navieras'; ?> "><i data-feather="anchor"></i><span
-                                    class="hide-menu">Navieras</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Navieras'; ?> "><i
+                                    data-feather="anchor"></i><span class="hide-menu">Navieras</span></a></li>
                         <li class="nav-small-cap"><span class="hide-menu">Contenedores</span></li>
 
                         <!-- CONTENEDORES -->
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'contenedores_fisicos'; ?>"><i data-feather="package"></i><span
-                                    class="hide-menu">Ferros / Físicos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'contenedores_maritimos'; ?>"><i data-feather="box"></i><span
-                                    class="hide-menu">Marítimos</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href=" <?php echo BASE_URL . 'contenedores_fisicos'; ?>"><i
+                                    data-feather="package"></i><span class="hide-menu">Ferros / Físicos</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href=" <?php echo BASE_URL . 'contenedores_maritimos'; ?>"><i
+                                    data-feather="box"></i><span class="hide-menu">Marítimos</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href="#?>"><i data-feather="box"></i><span
+                                    class="hide-menu">En Operacion</span></a></li>
                         <li class="nav-small-cap"><span class="hide-menu">Operaciones</span></li>
 
                         <!-- OPERACIONES -->
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'operaciones'; ?>"><i data-feather="file-text"></i><span
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href=" <?php echo BASE_URL . 'operaciones'; ?>"><i data-feather="file-text"></i><span
                                     class="hide-menu">Crear Operación</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href="<?php echo BASE_URL . 'operaciones/terrestre'; ?>"><i
+                                    data-feather="file-text"></i><span class="hide-menu">Terrestre</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href="<?php echo BASE_URL . 'operaciones/maritimo'; ?>"><i
+                                    data-feather="file-text"></i><span class="hide-menu">Marítimo</span></a></li>
+ 
                         <li class="sidebar-item"><a class="sidebar-link" href="# "><i data-feather="file-plus"></i><span
                                     class="hide-menu">Documentos</span></a></li>
 
@@ -227,23 +241,29 @@
                         <li class="sidebar-item"><a class="sidebar-link" href=" #"><i
                                     data-feather="dollar-sign"></i><span class="hide-menu">Costos por
                                     Contenedor</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'movimientos_financieros'; ?> "><i
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href="<?php echo BASE_URL . 'movimientos_financieros'; ?> "><i
                                     data-feather="bar-chart-2"></i><span class="hide-menu">Movimientos
                                     Financieros</span></a></li>
                         <li class="nav-small-cap"><span class="hide-menu">Rastreo</span></li>
 
                         <!-- MOVIMIENTOS Y TRAZABILIDAD -->
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'movimiento_logistico'; ?>"><i data-feather="repeat"></i><span
-                                    class="hide-menu">Movimientos Logísticos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'eventos_logisticos'; ?>"><i data-feather="activity"></i><span
-                                    class="hide-menu">Eventos Logísticos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'trazabilidad'; ?>"><i data-feather="map"></i><span
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href="<?php echo BASE_URL . 'movimiento_logistico'; ?>"><i
+                                    data-feather="repeat"></i><span class="hide-menu">Movimientos Logísticos</span></a>
+                        </li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href=" <?php echo BASE_URL . 'eventos_logisticos'; ?>"><i
+                                    data-feather="activity"></i><span class="hide-menu">Eventos Logísticos</span></a>
+                        </li>
+                        <li class="sidebar-item"><a class="sidebar-link"
+                                href=" <?php echo BASE_URL . 'trazabilidad'; ?>"><i data-feather="map"></i><span
                                     class="hide-menu">Trazabilidad</span></a></li>
 
                         <li class="nav-small-cap"><span class="hide-menu">Auditoría</span></li>
 
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'bitacora'; ?>"><i data-feather="save"></i><span
-                                    class="hide-menu">Bitácora</span></a></li>
+                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'bitacora'; ?>"><i
+                                    data-feather="save"></i><span class="hide-menu">Bitácora</span></a></li>
 
                     </ul>
                 </nav>
