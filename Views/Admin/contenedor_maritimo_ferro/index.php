@@ -1,5 +1,5 @@
 <?php include 'Views/Template/admin_header.php'; ?>
-<div class="container mt-4">
+<div class="container mt-4 col-md-12">
     <div class="card">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h4 class="card-title mb-0">Relación Marítimo - Ferro</h4>

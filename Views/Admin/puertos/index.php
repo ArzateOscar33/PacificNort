@@ -44,7 +44,7 @@
     </div>
     <!-- /.row -->
 </div> 
-<div class="container mt-4">
+<div class="container mt-4 col-md-12">
   <div class="card shadow">
     <div class="card-header bg-primary text-white">
       <h4 class="mb-0">Registrar Puerto</h4>

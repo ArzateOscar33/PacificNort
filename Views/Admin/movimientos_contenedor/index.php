@@ -1,5 +1,5 @@
 <?php include 'Views/Template/admin_header.php'; ?>
-<div class="container mt-4">
+<div class="container mt-4 col-md-12">
     <div class="card">
         <div class="card-header bg-dark text-white">
             <h4 class="card-title">Movimientos por Contenedor</h4>

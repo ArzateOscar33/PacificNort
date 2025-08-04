@@ -106,7 +106,7 @@
     </div>
 
     <!-- Tabla de operaciones logísticas -->
-    <div class="card mb-5">
+    <div class="card mb-5 col-md-12">
         <div class="card-header bg-primary text-white">
             <h4 class="mb-0">Operaciones logísticas</h4>
         </div>
