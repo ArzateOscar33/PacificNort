@@ -45,4 +45,35 @@
     <!-- /.row -->
 </div>  
 
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Broker</h4>
+    </div>
+    <div class="card-body">
+      <form id="formBroker" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="nombre">Nombre del Broker</label>
+          <input type="text" name="nombre" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="contacto">Contacto</label>
+          <input type="text" name="contacto" class="form-control" required>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="user-check"></i> Registrar Broker
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div> 
+
+
 <?php include 'Views/Template/admin_footer.php'; ?>

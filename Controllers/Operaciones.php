@@ -27,4 +27,6 @@ class Operaciones extends Controller
         $data['title'] = 'Operaciones';
         $this->views->getView('admin/operaciones', "maritimo", $data);
     }
+
+
 }

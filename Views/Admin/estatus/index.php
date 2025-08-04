@@ -72,4 +72,32 @@
     <!-- /.row -->    
 </div>
 
+
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Estatus</h4>
+    </div>
+    <div class="card-body">
+      <form id="formEstatus" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="descripcion" class="form-label">Descripción</label>
+          <input type="text" name="descripcion" class="form-control" required placeholder="Ej. En proceso, Finalizado, En revisión">
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="save"></i> Guardar Estatus
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div> 
+
+
+
 <?php include 'Views/Template/admin_footer.php'; ?>

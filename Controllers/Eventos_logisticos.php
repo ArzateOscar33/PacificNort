@@ -12,10 +12,16 @@ class Eventos_logisticos extends Controller
     }
     public function index()
     {
-        $data['title'] = 'Eventos_logisticos';
+        $data['title'] = 'Eventos logisticos';
 
         $this->views->getView('admin/Evento_logistico', "index", $data);
     }
+    public function tipo_evento()
+    {
+        $data['title'] = 'Tipo_evento';
+        $this->views->getView('admin/Evento_logistico', "tipo_evento_logistico", $data);
+    }
+
  
 
 }

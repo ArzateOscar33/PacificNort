@@ -72,4 +72,30 @@
 
 </div>
 
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Tipo de Operación</h4>
+    </div>
+    <div class="card-body">
+      <form id="formTipoOperacion" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="nombre_operacion" class="form-label">Nombre del Tipo de Operación</label>
+          <input type="text" name="nombre_operacion" class="form-control" placeholder="Ej. Importación, Exportación" required>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="plus-circle"></i> Registrar Tipo
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div> 
+
+
 <?php include 'Views/Template/admin_footer.php'; ?>

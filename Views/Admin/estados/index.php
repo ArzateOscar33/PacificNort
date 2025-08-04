@@ -43,4 +43,29 @@
     </div>
     <!-- /.row -->
 </div>
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Estado</h4>
+    </div>
+    <div class="card-body">
+      <form id="formEstado" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre del Estado</label>
+          <input type="text" name="nombre" class="form-control" placeholder="Ej. Baja California" required>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="map-pin"></i> Registrar Estado
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div> 
+
 <?php include 'Views/Template/admin_footer.php'; ?>

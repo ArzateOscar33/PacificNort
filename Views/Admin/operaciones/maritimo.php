@@ -50,6 +50,75 @@
         <!-- /.col -->
     </div>
     <!-- /.row -->
+</div> 
+
+
+<div class="container col-md-12 mt-3">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary">
+                    <h3 class="card-title text-white">Agregar Operación Marítima</h3>
+                </div>
+                <div class="card-body">
+                    <form id="formOperacionMaritima" method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="numero_operacion">Número de Operación</label>
+                                <input type="text" name="numero_operacion" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="etd">ETD</label>
+                                <input type="date" name="etd" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="eta">ETA</label>
+                                <input type="date" name="eta" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="numero_bl">Número de BL</label>
+                                <input type="text" name="numero_bl" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="isf">ISF</label>
+                                <input type="text" name="isf" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="shipper_id">Shipper</label>
+                                <select name="shipper_id" class="form-control" required>
+                                    <option value="">Seleccione un Shipper</option>
+                                    <!-- Opciones de shipper -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="estado_operacion">Estado de la Operación</label>
+                                <input type="text" name="estado_operacion" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="puerto_arribo_id">Puerto de Arribo</label>
+                                <select name="puerto_arribo_id" class="form-control" required>
+                                    <option value="">Seleccione un Puerto</option>
+                                    <!-- Opciones de puerto -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success">Guardar Operación</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+ 
+
 
 <?php include 'Views/Template/admin_footer.php'; ?>

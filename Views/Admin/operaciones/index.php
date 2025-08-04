@@ -1,107 +1,141 @@
-<?php include 'Views/Template/admin_header.php';
-?>
+<?php include 'Views/Template/admin_header.php'; ?>
+
 <div class="container col-md-12 mt-3">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary ">
-                    <h3 class="card-title mt-3 mb-3 text-white">Operaciones</h3>
-                </div>
 
-                <!-- /.card-header -->
-                <div class="card-body">
-                    
-                    <div class="d-flex justify-content-between mb-3">  
-                        <div class="col-md-10">
-                        <input type="text" class="form-control " placeholder="Buscar Operacion">
-                        </div>
-                        <div class="  d-flex justify-content-end  col-md-2">
-                        <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Operacion</button>
-                            </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    
-                                <th>Numero de Operacion</th>
-                                <th>Contenedor</th>
-                                <th>Etd</th>
-                                <th>Eta</th>
-                                <th>Numero de BL</th>
-                                <th>Cliente</th>
-                                <th>Isfi</th>
-                                <th>Shipper</th>
-                                <th>Estado de Operacion</th>
-                                <th>Puerto de Arribo</th>
-                                <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                 
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- /.table-responsive -->
-                </div>
-                <!-- /.card-body -->
-            </div>
-            <!-- /.card -->
+    <!-- Formulario para registrar nueva operación -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Registrar nueva operación</h4>
         </div>
-        <!-- /.col -->
-    </div>
-    <!-- /.row -->
+        <div class="card-body">
+            <form id="formOperacion" method="POST" class="row g-3">
 
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary ">
-                    <h3 class="card-title mt-3 mb-3 text-white">Operaciones</h3>
+                <div class="col-md-4">
+                    <label for="numero_operacion" class="form-label">Número de operación</label>
+                    <input type="text" name="numero_operacion" id="numero_operacion" class="form-control" required>
                 </div>
 
-                <!-- /.card-header -->
-                <div class="card-body">
-                    
-                    <div class="d-flex justify-content-between mb-3">  
-                        <div class="col-md-10">
-                        <input type="text" class="form-control " placeholder="Buscar Operacion">
-                        </div>
-                        <div class="  d-flex justify-content-end  col-md-2">
-                        <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Operacion</button>
-                            </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    
-                                <th>Numero de Operacion</th>
-                                <th>Contenedor Marino</th>
-                                <th>Bultos</th>
-                                <th>Division de Bultos</th>
-                                <th>Contenedor Terrestre</th>
-                                <th>Documentos</th>
-                                <th>Acciones</th>
- 
-                                </tr>
-                            </thead>
-                            <tbody>
-                                 
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- /.table-responsive -->
+                <div class="col-md-4">
+                    <label for="etd" class="form-label">ETD</label>
+                    <input type="date" name="etd" id="etd" class="form-control" required>
                 </div>
-                <!-- /.card-body -->
-            </div>
-            <!-- /.card -->
+
+                <div class="col-md-4">
+                    <label for="eta" class="form-label">ETA</label>
+                    <input type="date" name="eta" id="eta" class="form-control" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="numero_bl" class="form-label">Número de BL</label>
+                    <input type="text" name="numero_bl" id="numero_bl" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="isf" class="form-label">ISF</label>
+                    <input type="text" name="isf" id="isf" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="shipper_id" class="form-label">Shipper</label>
+                    <select name="shipper_id" id="shipper_id" class="form-control" required>
+                        <option value="">Seleccione</option>
+                        <!-- Opciones dinámicas desde BD -->
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="estado_operacion" class="form-label">Estado de operación</label>
+                    <select name="estado_operacion" id="estado_operacion" class="form-control" required>
+                        <option value="">Seleccione</option>
+                        <!-- Opciones dinámicas desde BD -->
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="puerto_arribo_id" class="form-label">Puerto de arribo</label>
+                    <select name="puerto_arribo_id" id="puerto_arribo_id" class="form-control" required>
+                        <option value="">Seleccione</option>
+                        <!-- Opciones dinámicas desde BD -->
+                    </select>
+                </div>
+
+                <div class="col-12 text-end mt-3">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Guardar operación
+                    </button>
+                </div>
+
+            </form>
         </div>
-        <!-- /.col -->  
     </div>
 
-    
+    <!-- Tabla de operaciones generales -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Lista de operaciones</h4>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Buscar operación...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Número de Operación</th>
+                            <th>Contenedor</th>
+                            <th>ETD</th>
+                            <th>ETA</th>
+                            <th>Número BL</th>
+                            <th>Cliente</th>
+                            <th>ISF</th>
+                            <th>Shipper</th>
+                            <th>Estado</th>
+                            <th>Puerto de arribo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de operaciones logísticas -->
+    <div class="card mb-5">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Operaciones logísticas</h4>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Buscar operación logística...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Contenedor Marino</th>
+                            <th>Bultos</th>
+                            <th>División Bultos</th>
+                            <th>Contenedor Terrestre</th>
+                            <th>Documentos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>

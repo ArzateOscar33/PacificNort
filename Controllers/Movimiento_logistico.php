@@ -17,5 +17,11 @@ class Movimiento_logistico extends Controller
         $this->views->getView('admin/movimiento_logistico', "index", $data);
     }
  
+    public function tipo_movimiento()
+    {
+        $data['title'] = 'Tipo_movimiento';
+
+        $this->views->getView('admin/movimiento_logistico', "tipo_movimiento", $data);
+    }
 
 }

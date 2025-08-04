@@ -32,6 +32,7 @@
     <link href="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
     <!-- Custom CSS -->
+
     <link href="<?php echo BASE_URL; ?>/dist/css/style.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -147,128 +148,197 @@
         <!-- Left Sidebar - style you can find in sidebar.scss  -->
         <!-- ============================================================== -->
         <aside class="left-sidebar" data-sidebarbg="skin6">
-            <!-- Sidebar scroll-->
             <div class="scroll-sidebar" data-sidebarbg="skin6">
-                <!-- Sidebar navigation-->
                 <nav class="sidebar-nav">
                     <ul id="sidebarnav">
-                        <li class="sidebar-item"> <a class="sidebar-link sidebar-link"
-                                href="<?php echo BASE_URL . 'admin/home'; ?>" aria-expanded="false"><i
-                                    data-feather="home" class="feather-icon"></i><span
-                                    class="hide-menu">Dashboard</span></a></li>
-                        <li class="list-divider"></li>
-                        <li class="nav-small-cap"><span class="hide-menu">Catalogos</span></li>
+
+                        <!-- Dashboard -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link" href="<?= BASE_URL ?>admin/home">
+                                <i data-feather="home" class="feather-icon"></i>
+                                <span class="hide-menu">Dashboard</span>
+                            </a>
+                        </li>
 
                         <!-- CATÁLOGOS -->
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href="<?php echo BASE_URL . 'departamentos'; ?>"><i data-feather="layers"></i><span
-                                    class="hide-menu">Departamentos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'puestos'; ?>"><i
-                                    data-feather="user-check"></i><span class="hide-menu">Puestos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'roles'; ?>"><i
-                                    data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href="<?php echo BASE_URL . 'tipos_operacion'; ?> "><i data-feather="shuffle"></i><span
-                                    class="hide-menu">Tipos de Operación</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Estatus'; ?> "><i
-                                    data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
+                        <li class="list-divider"></li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="folder"></i>
+                                <span class="hide-menu">Catálogos</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>departamentos" class="sidebar-link"><i
+                                            data-feather="grid"></i><span class="hide-menu">Departamentos</span></a>
+                                </li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>puestos" class="sidebar-link"><i
+                                            data-feather="briefcase"></i><span class="hide-menu">Puestos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>roles" class="sidebar-link"><i
+                                            data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
+                                        class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
+                                            de Operación</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico/tipo_movimiento"
+                                        class="sidebar-link"><i data-feather="repeat"></i><span class="hide-menu">Tipos
+                                            de Movimiento</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Eventos_logisticos/tipo_evento"
+                                        class="sidebar-link"><i data-feather="activity"></i><span
+                                            class="hide-menu">Tipos de Evento Logístico</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
+                                            data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>permisos" class="sidebar-link"><i
+                                            data-feather="key"></i><span class="hide-menu">Permisos de
+                                            Operación</span></a></li>
+                            </ul>
+                        </li>
 
-                        <li class="nav-small-cap"><span class="hide-menu">Geografía</span></li>
+                        <!-- GEOGRAFÍA -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="globe"></i>
+                                <span class="hide-menu">Geografía</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>estados" class="sidebar-link"><i
+                                            data-feather="map"></i><span class="hide-menu">Estados</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>ciudades" class="sidebar-link"><i
+                                            data-feather="map-pin"></i><span class="hide-menu">Ciudades</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>puertos" class="sidebar-link"><i
+                                            data-feather="anchor"></i><span class="hide-menu">Puertos</span></a></li>
+                            </ul>
+                        </li>
 
-                        <!-- UBICACIÓN -->
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Estados'; ?> "><i
-                                    data-feather="map"></i><span class="hide-menu">Estados</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Ciudades'; ?>"><i
-                                    data-feather="map-pin"></i><span class="hide-menu">Ciudades</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Puertos'; ?> "><i
-                                    data-feather="anchor"></i><span class="hide-menu">Puertos</span></a></li>
-
-                        <li class="nav-small-cap"><span class="hide-menu">Clientes y Usuarios</span></li>
-
-                        <!-- USUARIOS Y CLIENTES -->
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Usuarios'; ?>"><i
-                                    data-feather="users"></i><span class="hide-menu">Usuarios</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Clientes'; ?> "><i
-                                    data-feather="briefcase"></i><span class="hide-menu">Clientes</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Shippers'; ?>"><i
-                                    data-feather="truck"></i><span class="hide-menu">Shippers</span></a></li>
-
-                        <li class="nav-small-cap"><span class="hide-menu">Logística</span></li>
+                        <!-- CLIENTES Y USUARIOS -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="users"></i>
+                                <span class="hide-menu">Clientes y Usuarios</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>usuarios" class="sidebar-link"><i
+                                            data-feather="user"></i><span class="hide-menu">Usuarios</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>clientes" class="sidebar-link"><i
+                                            data-feather="users"></i><span class="hide-menu">Clientes</span></a></li>
+                            </ul>
+                        </li>
 
                         <!-- LOGÍSTICA -->
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Bodegas'; ?>"><i
-                                    data-feather="home"></i><span class="hide-menu">Bodegas</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'Brokers'; ?>"><i
-                                    data-feather="briefcase"></i><span class="hide-menu">Brokers</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href=" <?php echo BASE_URL . 'Transportistas'; ?>"><i data-feather="truck"></i><span
-                                    class="hide-menu">Transportistas</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'Navieras'; ?> "><i
-                                    data-feather="anchor"></i><span class="hide-menu">Navieras</span></a></li>
-                        <li class="nav-small-cap"><span class="hide-menu">Contenedores</span></li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="truck"></i>
+                                <span class="hide-menu">Logística</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>bodegas" class="sidebar-link"><i
+                                            data-feather="package"></i><span class="hide-menu">Bodegas</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>brokers" class="sidebar-link"><i
+                                            data-feather="user-check"></i><span class="hide-menu">Brokers</span></a>
+                                </li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>transportistas" class="sidebar-link"><i
+                                            data-feather="truck"></i><span class="hide-menu">Transportistas</span></a>
+                                </li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>navieras" class="sidebar-link"><i
+                                            data-feather="navigation"></i><span class="hide-menu">Navieras</span></a>
+                                </li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>shippers" class="sidebar-link"><i
+                                            data-feather="send"></i><span class="hide-menu">Shippers</span></a></li>
+                            </ul>
+                        </li>
 
                         <!-- CONTENEDORES -->
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href=" <?php echo BASE_URL . 'contenedores_fisicos'; ?>"><i
-                                    data-feather="package"></i><span class="hide-menu">Ferros / Físicos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href=" <?php echo BASE_URL . 'contenedores_maritimos'; ?>"><i
-                                    data-feather="box"></i><span class="hide-menu">Marítimos</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link" href="#?>"><i data-feather="box"></i><span
-                                    class="hide-menu">En Operacion</span></a></li>
-                        <li class="nav-small-cap"><span class="hide-menu">Operaciones</span></li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="box"></i>
+                                <span class="hide-menu">Contenedores</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_fisicos"
+                                        class="sidebar-link"><i data-feather="box"></i><span
+                                            class="hide-menu">Contenedores Físicos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_maritimos"
+                                        class="sidebar-link"><i data-feather="package"></i><span
+                                            class="hide-menu">Contenedores Marítimos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
+                                        class="sidebar-link"><i data-feather="layers"></i><span
+                                            class="hide-menu">Contenedores en Operación</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedor_maritimo_ferro"
+                                        class="sidebar-link"><i data-feather="layers"></i><span
+                                            class="hide-menu">Contenedores en Maritimo - Ferro</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>trazabilidad" class="sidebar-link"><i
+                                            data-feather="trending-up"></i><span
+                                            class="hide-menu">Trazabilidad</span></a></li>
+                            </ul>
+                        </li>
 
                         <!-- OPERACIONES -->
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href=" <?php echo BASE_URL . 'operaciones'; ?>"><i data-feather="file-text"></i><span
-                                    class="hide-menu">Crear Operación</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href="<?php echo BASE_URL . 'operaciones/terrestre'; ?>"><i
-                                    data-feather="file-text"></i><span class="hide-menu">Terrestre</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href="<?php echo BASE_URL . 'operaciones/maritimo'; ?>"><i
-                                    data-feather="file-text"></i><span class="hide-menu">Marítimo</span></a></li>
- 
-                        <li class="sidebar-item"><a class="sidebar-link" href="# "><i data-feather="file-plus"></i><span
-                                    class="hide-menu">Documentos</span></a></li>
-
-                        <li class="nav-small-cap"><span class="hide-menu">Finanzas y Seguimiento</span></li>
-
-                        <!-- FINANZAS -->
-                        <li class="sidebar-item"><a class="sidebar-link" href="<?php echo BASE_URL . 'finanzas'; ?> "><i
-                                    data-feather="dollar-sign"></i><span class="hide-menu">Costos Operación</span></a>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="settings"></i>
+                                <span class="hide-menu">Operaciones</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones" class="sidebar-link"><i
+                                            data-feather="plus-square"></i><span class="hide-menu">Crear
+                                            Operación</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/terrestre"
+                                        class="sidebar-link"><i data-feather="truck"></i><span
+                                            class="hide-menu">Operaciones Terrestres</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/maritimo"
+                                        class="sidebar-link"><i data-feather="navigation"></i><span
+                                            class="hide-menu">Operaciones Marítimas</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>documentos_operacion"
+                                        class="sidebar-link"><i data-feather="file-text"></i><span
+                                            class="hide-menu">Documentos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_log"
+                                        class="sidebar-link"><i data-feather="file"></i><span class="hide-menu">Log de
+                                            Operaciones</span></a></li>
+                            </ul>
                         </li>
-                        <li class="sidebar-item"><a class="sidebar-link" href=" #"><i
-                                    data-feather="dollar-sign"></i><span class="hide-menu">Costos por
-                                    Contenedor</span></a></li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href="<?php echo BASE_URL . 'movimientos_financieros'; ?> "><i
-                                    data-feather="bar-chart-2"></i><span class="hide-menu">Movimientos
-                                    Financieros</span></a></li>
-                        <li class="nav-small-cap"><span class="hide-menu">Rastreo</span></li>
 
-                        <!-- MOVIMIENTOS Y TRAZABILIDAD -->
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href="<?php echo BASE_URL . 'movimiento_logistico'; ?>"><i
-                                    data-feather="repeat"></i><span class="hide-menu">Movimientos Logísticos</span></a>
+                        <!-- FINANZAS Y SEGUIMIENTO -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="dollar-sign"></i>
+                                <span class="hide-menu">Finanzas y Seguimiento</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>costos_operacion"
+                                        class="sidebar-link"><i data-feather="dollar-sign"></i><span
+                                            class="hide-menu">Costos Operación</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>finanzas/costos_contenedor_operacion"
+                                        class="sidebar-link"><i data-feather="credit-card"></i><span
+                                            class="hide-menu">Costos por Contenedor</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>finanzas/costos_logisticos"
+                                        class="sidebar-link"><i data-feather="trending-down"></i><span
+                                            class="hide-menu">Costos Logísticos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>eventos_logisticos"
+                                        class="sidebar-link"><i data-feather="calendar"></i><span
+                                            class="hide-menu">Eventos Logísticos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
+                                        class="sidebar-link"><i data-feather="repeat"></i><span
+                                            class="hide-menu">Movimientos Logísticos</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimientos_contenedor"
+                                        class="sidebar-link"><i data-feather="move"></i><span
+                                            class="hide-menu">Movimientos Contenedor</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>detalles_logisticos"
+                                        class="sidebar-link"><i data-feather="file-plus"></i><span
+                                            class="hide-menu">Detalles Logísticos</span></a></li>
+                            </ul>
                         </li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href=" <?php echo BASE_URL . 'eventos_logisticos'; ?>"><i
-                                    data-feather="activity"></i><span class="hide-menu">Eventos Logísticos</span></a>
+
+                        <!-- AUDITORÍA -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link" href="<?= BASE_URL ?>bitacora">
+                                <i data-feather="clipboard" class="feather-icon"></i>
+                                <span class="hide-menu">Bitácora</span>
+                            </a>
                         </li>
-                        <li class="sidebar-item"><a class="sidebar-link"
-                                href=" <?php echo BASE_URL . 'trazabilidad'; ?>"><i data-feather="map"></i><span
-                                    class="hide-menu">Trazabilidad</span></a></li>
-
-                        <li class="nav-small-cap"><span class="hide-menu">Auditoría</span></li>
-
-                        <li class="sidebar-item"><a class="sidebar-link" href=" <?php echo BASE_URL . 'bitacora'; ?>"><i
-                                    data-feather="save"></i><span class="hide-menu">Bitácora</span></a></li>
 
                     </ul>
                 </nav>
             </div>
         </aside>
+
         <!-- ============================================================== -->
         <!-- End Left Sidebar - style you can find in sidebar.scss  -->
         <!-- ============================================================== -->
@@ -307,3 +377,95 @@
             </div>-->
 
             <!-- End Bread crumb and right sidebar toggle -->
+
+            <!-- Script para animaciones -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Inicializar iconos de Feather
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
+                    // Animación de entrada escalonada
+                    const sidebarItems = document.querySelectorAll('.sidebar-item');
+                    sidebarItems.forEach((item, index) => {
+                        item.style.opacity = '0';
+                        item.style.transform = 'translateX(-20px)';
+                        item.style.transition = 'all 0.3s ease';
+                        setTimeout(() => {
+                            item.style.opacity = '1';
+                            item.style.transform = 'translateX(0)';
+                        }, index * 50);
+                    });
+                    // Animación hover para grupos
+                    const groups = {
+                        'group-catalogos': '#ffd700',
+                        'group-geografia': '#32cd32',
+                        'group-usuarios': '#ff6b6b',
+                        'group-logistica': '#4ecdc4',
+                        'group-contenedores': '#45b7d1',
+                        'group-operaciones': '#f9ca24',
+                        'group-finanzas': '#6c5ce7',
+                        'group-auditoria': '#fd79a8'
+                    };
+                    Object.keys(groups).forEach(groupClass => {
+                        const items = document.querySelectorAll('.' + groupClass);
+                        items.forEach(item => {
+                            const link = item.querySelector('.sidebar-link');
+                            const icon = item.querySelector('.feather-icon');
+                            if (link && icon) {
+                                link.addEventListener('mouseenter', function() {
+                                    icon.style.color = groups[groupClass];
+                                    icon.style.transform = 'scale(1.1)';
+                                    icon.style.transition = 'all 0.3s ease';
+                                });
+                                link.addEventListener('mouseleave', function() {
+                                    icon.style.color = '';
+                                    icon.style.transform = 'scale(1)';
+                                });
+                            }
+                        });
+                    });
+                    // Efecto de ondas en los enlaces
+                    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+                    sidebarLinks.forEach(link => {
+                        link.addEventListener('mouseenter', function() {
+                            this.style.transform = 'translateX(5px)';
+                            this.style.transition = 'all 0.3s ease';
+                        });
+                        link.addEventListener('mouseleave', function() {
+                            this.style.transform = 'translateX(0)';
+                        });
+                    });
+                });
+            </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const currentPath = window.location.pathname;
+        const links = document.querySelectorAll(".sidebar-link");
+
+        links.forEach(link => {
+            const href = link.getAttribute("href");
+
+            if (href && currentPath.includes(href)) {
+                // Activar hijo
+                link.classList.add("active-link"); // color especial para link actual
+                const li = link.closest("li");
+                if (li) li.classList.add("active-item");
+
+                // Si es parte de submenú, activa el padre también
+                const submenu = link.closest("ul.collapse");
+                if (submenu) {
+                    submenu.classList.add("in");
+                    const parentLi = submenu.closest("li.sidebar-item");
+                    if (parentLi) {
+                        parentLi.classList.add("active-parent"); // padre resaltado diferente
+                        const parentLink = parentLi.querySelector(".has-arrow");
+                        if (parentLink) parentLink.setAttribute("aria-expanded", "true");
+                    }
+                }
+            }
+        });
+    });
+</script>
+

@@ -46,4 +46,46 @@
     <!-- /.row -->
 </div>
 
+
+
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Bodega</h4>
+    </div>
+    <div class="card-body">
+      <form id="formBodega" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="nombre">Nombre de la Bodega</label>
+          <input type="text" name="nombre" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="direccion">Dirección</label>
+          <input type="text" name="direccion" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="ciudad_id">Ciudad</label>
+          <select name="ciudad_id" class="form-control" required>
+            <option value="">Selecciona una ciudad</option>
+             <option value="1">1</option>
+             <option value="2">2</option>
+          </select>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="home"></i> Registrar Bodega
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+ 
+
 <?php include 'Views/Template/admin_footer.php'; ?>

@@ -70,5 +70,35 @@
     </div>
     <!-- /.row -->
 </div>
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Rol</h4>
+    </div>
+    <div class="card-body">
+      <form id="formRol" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre del Rol</label>
+          <input type="text" name="nombre" class="form-control" required placeholder="Ej. admin, operador, cliente">
+        </div>
+
+        <div class="mb-3">
+          <label for="descripcion" class="form-label">Descripción</label>
+          <textarea name="descripcion" class="form-control" rows="3" required placeholder="Describe el propósito del rol"></textarea>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="save"></i> Guardar Rol
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div> 
+
 
 <?php include 'Views/Template/admin_footer.php'; ?>

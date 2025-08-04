@@ -12,7 +12,7 @@ class Home extends Controller
             exit;
         }
         $data['title'] = 'Acceso al sistema';
-        $this->views->getView('admin', "login", $data);
+        $this->views->getView('principal', "index", $data);
     }
 
  

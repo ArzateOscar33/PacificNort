@@ -45,4 +45,39 @@
     <!-- /.row -->
 </div>
 
+ 
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Registrar Ciudad</h4>
+    </div>
+    <div class="card-body">
+      <form id="formCiudad" method="POST" action="#">
+
+        <div class="mb-3">
+          <label for="nombre_ciudad" class="form-label">Nombre de la Ciudad</label>
+          <input type="text" name="nombre_ciudad" class="form-control" placeholder="Ej. Guadalajara" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="estado_id" class="form-label">Estado</label>
+          <select name="estado_id" class="form-control" required>
+            <option value="">Seleccione un estado</option>
+            <?php foreach ($data['estados'] as $estado): ?>
+              <option value="<?= $estado['id_estado'] ?>"><?= $estado['nombre'] ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="map"></i> Registrar Ciudad
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div> 
+
 <?php include 'Views/Template/admin_footer.php'; ?>
