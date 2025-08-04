@@ -38,8 +38,8 @@
         <input type="radio" name="slider" id="close-btn">
         <ul class="nav-links">
             <label for="close-btn" class="btn close-btn"><i class="fas fa-times"></i></label>
-            <li><a href="#">Inicio</a></li>
-            <li><a href="#nosotros">Acerca de Nosotros</a></li>
+            <li><a href="<?php echo BASE_URL; ?>">Inicio</a></li>
+            <li><a href="<?php echo BASE_URL; ?>#nosotros">Nosotros</a></li>
             <li><a href="#servicios">Servicios</a></li>
             <li><a href="#galeria">Galería</a></li>
             <li><a href="#contacto">Contacto</a></li>
