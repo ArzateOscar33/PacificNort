@@ -244,8 +244,8 @@
 <script>
     //PASAR ESTE CODIGO A UN CODIGO DE JAVASCRIPT APARTE 
     // Este valor debería venir de PHP dinámicamente
-    /*
-    const estadoActual = 'transito'; // otros valores: 'origen', 'entregado'
+    
+    const estadoActual = 'entregado'; // otros valores: 'origen', 'entregado'
 
     // Estilos aplicados con base al estado actual
     if (estadoActual === 'origen') {
@@ -268,7 +268,7 @@
         document.getElementById('circulo-destino').classList.replace('bg-secondary', 'bg-success');
         alert('El estado actual es Entregado');
     }
-    */
+    
 </script>
 
 <?php include 'Views/Template/admin_footer.php'; ?>

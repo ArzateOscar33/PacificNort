@@ -16,13 +16,13 @@
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
                             <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Broker</button>
+                                data-bs-target="#modalRegistrarBroker"><i class="fas fa-plus"></i> Agregar Broker</button>
                         </div>
                     </div>
                     <!-- /.d-flex -->
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                          <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Contacto</th>
@@ -46,34 +46,51 @@
 </div>  
 
  
-<div class="container mt-4 col-md-12">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">Registrar Broker</h4>
+<div class="modal fade" id="modalRegistrarBroker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarBrokerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Encabezado -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalRegistrarBrokerLabel">
+                    <i data-feather="user-check" class="me-2"></i> Registrar Broker
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <form id="formBroker" method="POST" action="#">
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Broker</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contacto" class="form-label">Contacto</label>
+                        <input type="text" name="contacto" class="form-control" required>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i data-feather="x-circle" class="me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="check-circle" class="me-1"></i> Agregar
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
     </div>
-    <div class="card-body">
-      <form id="formBroker" method="POST" action="#">
+</div>
 
-        <div class="mb-3">
-          <label for="nombre">Nombre del Broker</label>
-          <input type="text" name="nombre" class="form-control" required>
-        </div>
-
-        <div class="mb-3">
-          <label for="contacto">Contacto</label>
-          <input type="text" name="contacto" class="form-control" required>
-        </div>
-
-        <div class="text-end">
-          <button type="submit" class="btn btn-success">
-            <i data-feather="user-check"></i> Registrar Broker
-          </button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-</div> 
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>

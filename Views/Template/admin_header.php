@@ -258,15 +258,15 @@
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_maritimos"
                                         class="sidebar-link"><i data-feather="package"></i><span
                                             class="hide-menu">Contenedores Marítimos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
+                          <!--      <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
                                         class="sidebar-link"><i data-feather="layers"></i><span
-                                            class="hide-menu">Contenedores en Operación</span></a></li>
+                                            class="hide-menu">Contenedores en Operación</span></a></li> -->
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedor_maritimo_ferro"
                                         class="sidebar-link"><i data-feather="layers"></i><span
                                             class="hide-menu">Contenedores en Maritimo - Ferro</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>trazabilidad" class="sidebar-link"><i
+                               <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>trazabilidad" class="sidebar-link"><i
                                             data-feather="trending-up"></i><span
-                                            class="hide-menu">Trazabilidad</span></a></li>
+                                            class="hide-menu">Trazabilidad</span></a></li> -->
                             </ul>
                         </li>
 
@@ -277,10 +277,10 @@
                                 <span class="hide-menu">Operaciones</span>
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones" class="sidebar-link"><i
+                                <li class="sidebar-item"><a href="<?= BASE_URL .'operaciones/ver' ?>" class="sidebar-link"><i
                                             data-feather="plus-square"></i><span class="hide-menu">Crear
                                             Operación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/terrestre"
+                               <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/terrestre"
                                         class="sidebar-link"><i data-feather="truck"></i><span
                                             class="hide-menu">Operaciones Terrestres</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/maritimo"
@@ -291,11 +291,11 @@
                                             class="hide-menu">Documentos</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_log"
                                         class="sidebar-link"><i data-feather="file"></i><span class="hide-menu">Log de
-                                            Operaciones</span></a></li>
+                                            Operaciones</span></a></li> -->
                             </ul>
                         </li>
 
-                        <!-- FINANZAS Y SEGUIMIENTO -->
+                        <!-- FINANZAS Y SEGUIMIENTO 
                         <li class="sidebar-item">
                             <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
                                 <i data-feather="dollar-sign"></i>
@@ -324,7 +324,7 @@
                                         class="sidebar-link"><i data-feather="file-plus"></i><span
                                             class="hide-menu">Detalles Logísticos</span></a></li>
                             </ul>
-                        </li>
+                        </li>-->
 
                         <!-- AUDITORÍA -->
                         <li class="sidebar-item">

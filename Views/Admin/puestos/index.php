@@ -17,12 +17,12 @@
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
                         <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Puesto</button>
+                            data-bs-target="#modalRegistrarPuesto"><i class="fas fa-plus"></i> Agregar Puesto</button>
                             </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Código</th>
@@ -71,29 +71,47 @@
     <!-- /.row -->
 </div>
  
-<div class="container mt-4 col-md-12">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">Registrar Puesto</h4>
-    </div>
-    <div class="card-body">
-      <form id="formPuesto" method="POST" action="#">
 
-        <div class="mb-3">
-          <label for="nombre" class="form-label">Nombre del Puesto</label>
-          <input type="text" name="nombre" class="form-control" required placeholder="Ej. Supervisor, Cliente, etc.">
+
+
+ <div class="modal fade" id="modalRegistrarPuesto" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarPuestoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Encabezado -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalRegistrarPuestoLabel">
+                    <i data-feather="briefcase" class="me-2"></i> Registrar Puesto
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <form id="formPuesto" method="POST" action="#">
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Puesto</label>
+                        <input type="text" name="nombre" class="form-control" required placeholder="Ej. Supervisor, Cliente, etc.">
+                    </div>
+
+           
+
+                </form>
+            </div>
+<!-- Pie del modal -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x-circle" class="me-1"></i> Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i data-feather="check-circle" class="me-1"></i> Agregar
+                </button>
+            </div>
         </div>
-
-        <div class="text-end">
-          <button type="submit" class="btn btn-success">
-            <i data-feather="save"></i> Guardar Puesto
-          </button>
-        </div>
-
-      </form>
     </div>
-  </div>
-</div> 
+</div>
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>

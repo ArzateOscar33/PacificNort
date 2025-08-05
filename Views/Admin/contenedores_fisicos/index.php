@@ -16,13 +16,13 @@
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
                             <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Contenedor Fisico</button>
+                                data-bs-target="#modalRegistrarContenedorFisico"><i class="fas fa-plus"></i> Agregar Contenedor Fisico</button>
                         </div>
                     </div>
                     <!-- /.d-flex -->
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-primary text-center">
                                 <tr>
                                     <th>Numero de Ferro/Nombre de Físico</th>
                                     <th>Acciones</th>
@@ -45,31 +45,46 @@
 </div>
 
 <!-- Views/contenedores_fisicos/crear.php -->  
-<div class="container mt-4 col-md-12">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Registrar Contenedor Físico</h4>
-        </div>
-        <div class="card-body">
-            <form action="#" method="POST" id="formContenedorFisico">
+<div class="modal fade" id="modalRegistrarContenedorFisico" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarContenedorFisicoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-                <div class="mb-3">
-                    <label for="numero_serie">Numero de Ferro/Nombre de Físico</label>
-                    <input type="text" class="form-control" name="numero_ferro_fisico" required>
-                </div>
+            <!-- Encabezado -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalRegistrarContenedorFisicoLabel">
+                    <i data-feather="package" class="me-2"></i> Registrar Contenedor Físico
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Cerrar"></button>
+            </div>
 
- 
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <form action="#" method="POST" id="formContenedorFisico">
 
-                <div class="text-end">
-                    <button type="submit" class="btn btn-success">
-                        <i data-feather="package"></i> Registrar Contenedor
-                    </button>
-                </div>
+                    <div class="mb-3">
+                        <label for="numero_ferro_fisico" class="form-label">Número de Ferro / Nombre de Físico</label>
+                        <input type="text" class="form-control" name="numero_ferro_fisico" required>
+                    </div>
 
-            </form>
+                    <!-- Footer -->
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i data-feather="x-circle" class="me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="check-circle" class="me-1"></i> Agregar
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
         </div>
     </div>
-</div> 
+</div>
+
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>

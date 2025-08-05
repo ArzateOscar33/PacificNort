@@ -16,13 +16,13 @@
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
                             <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Transportista</button>
+                                data-bs-target="#modalRegistrarTransportista"><i class="fas fa-plus"></i> Agregar Transportista</button>
                         </div>
                     </div>
                     <!-- /.d-flex -->
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Tipo</th>
@@ -46,37 +46,54 @@
 </div>
 
  
-<div class="container mt-4 col-md-12">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">Registrar Transportista</h4>
+<div class="modal fade" id="modalRegistrarTransportista" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarTransportistaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Encabezado -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalRegistrarTransportistaLabel">
+                    <i data-feather="truck" class="me-2"></i> Registrar Transportista
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <form id="formTransportista" method="POST" action="#">
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Transportista</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tipo" class="form-label">Tipo de Transportista</label>
+                        <select name="tipo" class="form-control" required>
+                            <option value="" disabled selected>Seleccione tipo</option>
+                            <option value="2">Terrestre</option>
+                            <option value="3">Marítimo</option>
+                        </select>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i data-feather="x-circle" class="me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="check-circle" class="me-1"></i> Agregar
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
     </div>
-    <div class="card-body">
-      <form id="formTransportista" method="POST" action="#">
-
-        <div class="mb-3">
-          <label for="nombre">Nombre del Transportista</label>
-          <input type="text" name="nombre" class="form-control" required>
-        </div>
-
-        <div class="mb-3">
-          <select name="tipo" class="form-control">
-            <option value="1" selected>Tipo de Transportista</option>
-            <option value="2">Terrestre</option>
-            <option value="3">Maritimo</option>
-          </select>
-        </div>
-
-        <div class="text-end">
-          <button type="submit" class="btn btn-success">
-            <i data-feather="truck"></i> Registrar Transportista
-          </button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-</div> 
+</div>
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>

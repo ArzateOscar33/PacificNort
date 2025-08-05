@@ -18,12 +18,12 @@
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
                         <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Estatus</button>
+                            data-bs-target="#modalRegistrarEstatus"><i class="fas fa-plus"></i> Agregar Estatus</button>
                             </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Código</th>
@@ -74,29 +74,44 @@
 
 
  
-<div class="container mt-4 col-md-12">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">Registrar Estatus</h4>
-    </div>
-    <div class="card-body">
-      <form id="formEstatus" method="POST" action="#">
+<div class="modal fade" id="modalRegistrarEstatus" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarEstatusLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-        <div class="mb-3">
-          <label for="descripcion" class="form-label">Descripción</label>
-          <input type="text" name="descripcion" class="form-control" required placeholder="Ej. En proceso, Finalizado, En revisión">
+            <!-- Encabezado -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalRegistrarEstatusLabel">
+                    <i data-feather="activity" class="me-2"></i> Registrar Estatus
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <form id="formEstatus" method="POST" action="#">
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <input type="text" name="descripcion" class="form-control" required placeholder="Ej. En proceso, Finalizado, En revisión">
+                    </div>
+
+                    <!-- Pie del modal -->
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i data-feather="x-circle" class="me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="check-circle" class="me-1"></i> Agregar
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
         </div>
-
-        <div class="text-end">
-          <button type="submit" class="btn btn-success">
-            <i data-feather="save"></i> Guardar Estatus
-          </button>
-        </div>
-
-      </form>
     </div>
-  </div>
-</div> 
+</div>
 
 
 

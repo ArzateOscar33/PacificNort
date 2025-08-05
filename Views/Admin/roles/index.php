@@ -13,16 +13,16 @@
                     
                     <div class="d-flex justify-content-between mb-3">  
                         <div class="col-md-10">
-                        <input type="text" class="form-control " placeholder="Buscar Role">
+                        <input type="text" class="form-control " placeholder="Buscar Rol">
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
                         <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#staticBackdrop"><i class="fas fa-plus"></i> Agregar Role</button>
+                            data-bs-target="#modalRegistrarRol"><i class="fas fa-plus"></i> Agregar Role</button>
                             </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Código</th>
@@ -71,34 +71,50 @@
     <!-- /.row -->
 </div>
  
-<div class="container mt-4 col-md-12">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">Registrar Rol</h4>
+<div class="modal fade" id="modalRegistrarRol" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarRolLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Encabezado -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalRegistrarRolLabel">
+                    <i data-feather="shield" class="me-2"></i> Registrar Rol
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <form id="formRol" method="POST" action="#">
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Rol</label>
+                        <input type="text" name="nombre" class="form-control" required placeholder="Ej. admin, operador, cliente">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3" required placeholder="Describe el propósito del rol"></textarea>
+                    </div>
+
+                    <!-- Pie del modal -->
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i data-feather="x-circle" class="me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="check-circle" class="me-1"></i> Agregar
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
     </div>
-    <div class="card-body">
-      <form id="formRol" method="POST" action="#">
+</div>
 
-        <div class="mb-3">
-          <label for="nombre" class="form-label">Nombre del Rol</label>
-          <input type="text" name="nombre" class="form-control" required placeholder="Ej. admin, operador, cliente">
-        </div>
-
-        <div class="mb-3">
-          <label for="descripcion" class="form-label">Descripción</label>
-          <textarea name="descripcion" class="form-control" rows="3" required placeholder="Describe el propósito del rol"></textarea>
-        </div>
-
-        <div class="text-end">
-          <button type="submit" class="btn btn-success">
-            <i data-feather="save"></i> Guardar Rol
-          </button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-</div> 
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
