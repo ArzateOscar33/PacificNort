@@ -1,7 +1,7 @@
 
 <?php include 'Views/Template/admin_header.php'; ?>
 
-<div class="container py-5">
+<div class="container py-5 col-md-12">
     <h2 class="mb-4"><i data-feather="activity" class="text-primary"></i> Registro de Operaciones (LOG)</h2>
 
     <div class="row g-3 mb-4">

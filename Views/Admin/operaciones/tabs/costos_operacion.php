@@ -4,7 +4,7 @@
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0">Costos por Operación</h4>
-        <select class="form-select w-auto">
+        <select class=" form-control w-30">
           <option selected>JL-46</option>
           <!-- Puedes cargar más operaciones aquí -->
         </select>

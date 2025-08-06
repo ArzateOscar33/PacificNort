@@ -12,51 +12,25 @@
                 <div class="card-body">
                     
                     <div class="d-flex justify-content-between mb-3">  
-                        <div class="col-md-10">
-                        <input type="text" class="form-control " placeholder="Buscar Puesto">
-                        </div>
+                <div class="position-relative col-md-10">
+                    <input type="text" class="form-control" placeholder="Buscar Puesto" id="buscarPuesto" autocomplete="off">
+                    <div id="sugerenciasPuestos" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+                </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                        <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                        <button href="#" id="btnAgregarPuesto" class="btn btn-primary" data-bs-toggle="modal"
                             data-bs-target="#modalRegistrarPuesto"><i class="fas fa-plus"></i> Agregar Puesto</button>
                             </div>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="tablaPuestos">
                             <thead class="table-primary text-center">
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>Código</th>
+                                    <th>Nombre</th> 
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>Puesto 1</td>
-                                    <td>1</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Puesto 2</td>
-                                    <td>2</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Puesto 3</td>
-                                    <td>3</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
+                                 
                             </tbody>
                         </table>
                     </div>
@@ -75,43 +49,48 @@
 
 
  <div class="modal fade" id="modalRegistrarPuesto" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-    aria-labelledby="modalRegistrarPuestoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+     aria-labelledby="modalRegistrarPuestoLabel" aria-hidden="true">
+     <div class="modal-dialog modal-dialog-centered">
+         <div class="modal-content">
 
-            <!-- Encabezado -->
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalRegistrarPuestoLabel">
-                    <i data-feather="briefcase" class="me-2"></i> Registrar Puesto
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
+             <!-- Encabezado -->
+             <div class="modal-header bg-primary text-white">
+                 <h5 class="modal-title" id="modalRegistrarPuestoLabel">
+                     <i data-feather="briefcase" class="me-2"></i> Registrar Puesto
+                 </h5>
+              
+             </div>
 
-            <!-- Cuerpo -->
-            <div class="modal-body">
-                <form id="formPuesto" method="POST" action="#">
+             <!-- Cuerpo -->
+             <div class="modal-body">
+                 <form id="formPuesto" method="POST" action="#">
 
-                    <div class="mb-3">
-                        <label for="nombre" class="form-label">Nombre del Puesto</label>
-                        <input type="text" name="nombre" class="form-control" required placeholder="Ej. Supervisor, Cliente, etc.">
-                    </div>
+                     <div class="mb-3">
+                        <input type="hidden" name="idPuesto" id="idPuesto" value="" >
+                         <label for="nombre" class="form-label">Nombre del Puesto</label>
+                         <input type="text"   id="nombrePuesto" name="nombrePuesto" class="form-control" required placeholder="Ej. Supervisor, Cliente, etc.">
+                            
+                     </div>
 
-           
+                     <!-- Pie del modal -->
+                     <div class="modal-footer">
+                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                             <i data-feather="x-circle" class="me-1"></i> Cancelar
+                         </button>
+                         <button type="submit" id="btnSubmit" class="btn btn-primary">
+                             <i data-feather="check-circle" class="me-1"></i> Agregar
+                         </button>
+                     </div>
 
-                </form>
-            </div>
-<!-- Pie del modal -->
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i data-feather="x-circle" class="me-1"></i> Cancelar
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    <i data-feather="check-circle" class="me-1"></i> Agregar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+                 </form>
+             </div>
 
+         </div>
+     </div>
+ </div>
+
+
+ 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/puestos.js'></script>

@@ -13,7 +13,7 @@
     <!-- End Wrapper -->
  
     <!-- All Jquery -->
- 
+ <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/libs/jquery/dist/jquery.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/libs/popper.js/dist/umd/popper.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/libs/bootstrap/dist/js/bootstrap.min.js"></script>
@@ -35,4 +35,6 @@
     <script src="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-world-mill-en.js"></script>
     <script src="<?php echo BASE_URL; ?>/dist/js/pages/dashboards/dashboard1.min.js"></script>
     
- 
+ <script>
+     const base_url = '<?php echo BASE_URL; ?>';
+ </script>
