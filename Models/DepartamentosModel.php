@@ -8,13 +8,13 @@ class DepartamentosModel extends Query
 
     public function getDepartamentos()
     {
-        $sql = "SELECT * FROM departamentos ORDER BY id_departamento DESC;";
+        $sql = "SELECT * FROM departamentos where Estatus = 1 ORDER BY id_departamento DESC ";
         return $this->selectAll($sql);
     }
 
     public function registrarDepartamento($nombre)
     {
-        $sql = "INSERT INTO departamentos (nombre) VALUES (?)";
+        $sql = "INSERT INTO departamentos (nombre, estatus) VALUES (?, 1)";
         return $this->insertar($sql, [$nombre]);
     }
     public function existeDepartamento($nombre)
@@ -25,7 +25,7 @@ class DepartamentosModel extends Query
 
     public function eliminarDepartamento($id)
     {
-        $sql = "DELETE FROM departamentos WHERE id_departamento = ?";
+        $sql = "UPDATE departamentos SET estatus = 0 WHERE id_departamento = ?";
         $datos = [$id];
         return $this->save($sql, $datos);
     }
@@ -44,7 +44,7 @@ class DepartamentosModel extends Query
     }
     public function buscarDepartamento($termino)
 {
-    $sql = "SELECT * FROM departamentos WHERE nombre LIKE ?";
+    $sql = "SELECT * FROM departamentos WHERE estatus = 1 AND nombre LIKE ?";
     $param = ["%$termino%"];
     return $this->selectAll($sql, $param);
 }

@@ -215,3 +215,6 @@
             <!-- ============================================================== -->
             <!-- End Container fluid  -->
 <?php include_once 'Views/Template/admin_footer.php'; ?>
+
+
+    <script src="<?php echo BASE_URL; ?>/dist/js/pages/dashboards/dashboard1.min.js"></script>

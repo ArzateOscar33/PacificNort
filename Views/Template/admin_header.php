@@ -166,7 +166,7 @@
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
                                         class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
                                             de Operación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico/tipo_movimiento"
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
                                         class="sidebar-link"><i data-feather="repeat"></i><span class="hide-menu">Tipos
                                             de Movimiento</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>Eventos_logisticos/tipo_evento"
@@ -457,3 +457,12 @@
     });
 </script>
 
+<!-- Chartist CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css">
+
+<!-- Chartist JS -->
+<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script>
+
+<!-- Luego tu dashboard -->
+<script src="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.js"></script>
+ 

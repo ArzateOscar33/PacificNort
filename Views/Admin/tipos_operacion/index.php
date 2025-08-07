@@ -12,11 +12,13 @@
                 <div class="card-body">
                     
                     <div class="d-flex justify-content-between mb-3">  
-                        <div class="col-md-10">
-                        <input type="text" class="form-control " placeholder="Buscar Tipo de Operacion">
-                        </div>
+                    <div class="position-relative col-md-10">
+                    <input type="text" class="form-control" id="buscarTipoOperacion" placeholder="Buscar Tipo de Operación">
+                    <div id="sugerenciasTipoOperacion" class="list-group position-absolute w-100" style="z-index: 999; display: none;"></div>
+                    </div>
+
                         <div class="  d-flex justify-content-end  col-md-2">
-                        <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                        <button href="#" id="btnAgregarTipoOperacion" class="btn btn-primary" data-bs-toggle="modal"
                             data-bs-target="#modalRegistrarTipoOperacion"><i class="fas fa-plus"></i> Agregar Tipo de Operacion</button>
                             </div>
                     </div>
@@ -24,39 +26,11 @@
                         <table class="table table-hover">
                             <thead class="table-primary text-center">
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>Código</th>
+                                    <th>Nombre</th> 
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Maritimo </td>
-                                    <td>1</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Aereo</td>
-                                    <td>2</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Terrestre</td>
-                                    <td>3</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
+                            <tbody id="tablaTiposOperacion"> 
                             </tbody>
                         </table>
                     </div>
@@ -89,10 +63,10 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formTipoOperacion" method="POST" action="#">
-
+                    <input type="hidden" id="id" name="id">
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Nombre del Tipo de Operación</label>
-                        <input type="text" name="nombre_operacion" class="form-control" placeholder="Ej. Importación, Exportación" required>
+                        <input type="text" name="nombreTipoOperacion"  id="nombreTipoOperacion" class="form-control" placeholder="Ej. Importación, Exportación" required>
                     </div>
 
                     <!-- Pie del modal -->
@@ -100,7 +74,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit" class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -115,3 +89,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/tipos_operacion.js"></script>

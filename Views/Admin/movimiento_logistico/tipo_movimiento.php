@@ -47,7 +47,7 @@
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="tablaTiposMovimiento">
 
             </tbody>
           </table>
@@ -78,7 +78,7 @@
       <!-- Cuerpo -->
       <div class="modal-body">
         <form id="formTipoMovimiento" method="POST" action="#">
-
+          <input type="hidden" name="id_movimiento" id="id_movimiento">
           <div class="mb-3">
             <label for="nombre_movimiento" class="form-label">Nombre del Tipo de Movimiento</label>
             <input type="text" name="nombre_movimiento" class="form-control" placeholder="Ej. Carga, Descarga, Traslado"
@@ -86,7 +86,7 @@
           </div>
           <div class="mb-3">
             <label for="nombre_movimiento" class="form-label">Moneda</label>
-            <select name="moneda" class="form-control" required>
+            <select name="moneda" id="moneda" class="form-control" required>
               <option value="">Seleccione</option>
               <option value="PESOS">Pesos</option>
               <option value="DLLS">Dólares</option>
@@ -111,3 +111,4 @@
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/tipos_movimiento.js'></script>

@@ -12,51 +12,26 @@
                 <div class="card-body">
                     
                     <div class="d-flex justify-content-between mb-3">  
-                        <div class="col-md-10">
-                        <input type="text" class="form-control " placeholder="Buscar Rol">
-                        </div>
+                    <div class="col-md-10 position-relative">
+                        <input type="text" class="form-control" id="buscarRol" name="buscarRol" placeholder="Buscar Rol">
+                        <div id="sugerenciasRoles" class="list-group position-absolute w-100" style="z-index: 1050;"></div>
+                    </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                        <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#modalRegistrarRol"><i class="fas fa-plus"></i> Agregar Role</button>
+                        <button href="#" id="btnAgregarRol" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#modalRegistrarRol"><i class="fas fa-plus"></i> Agregar Rol</button>
                             </div>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="" >
                             <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
-                                    <th>Código</th>
+                                    <th>Descripcion</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Role 1</td>
-                                    <td>1</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Role 2</td>
-                                    <td>2</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Role 3</td>
-                                    <td>3</td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i>
-                                            Eliminar</a>
-                                    </td>
-                                </tr>
+                            <tbody id="tablaRoles" class="text-center">
+                                <!-- Aquí se llenarán los roles -->
                             </tbody>
                         </table>
                     </div>
@@ -87,15 +62,15 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formRol" method="POST" action="#">
-
+                    <input type="hidden" name="id" id="id" value="">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del Rol</label>
-                        <input type="text" name="nombre" class="form-control" required placeholder="Ej. admin, operador, cliente">
+                        <input type="text" name="nombre" id="nombre" class="form-control" required placeholder="Ej. Administrador, Cliente, etc.">
                     </div>
 
                     <div class="mb-3">
                         <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea name="descripcion" class="form-control" rows="3" required placeholder="Describe el propósito del rol"></textarea>
+                        <textarea name="descripcion"  id="descripcion" class="form-control" required placeholder="Ej. Administrador de Clientes, etc."></textarea>
                     </div>
 
                     <!-- Pie del modal -->
@@ -103,7 +78,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -118,3 +93,5 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/roles.js'></script>

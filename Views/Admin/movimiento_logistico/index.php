@@ -1,84 +1,125 @@
-<!-- movimiento_logistico.php -->
-<?php include 'Views/Template/admin_header.php'; ?>
-<div class="container mt-4 col-md-12">
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Registrar Movimiento Logístico</h4>
+<?php include 'Views/Template/admin_header.php';
+?>
+<div class="container col-md-12">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-primary ">
+          <h3 class="card-title mt-3 mb-3 text-white">Tipo De Movimiento</h3>
         </div>
+        <!-- /.card-header -->
         <div class="card-body">
-            <form method="post" action="#">
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Contenedor Físico (Ferrocarril)</label>
-                        <select name="contenedor_fisico_id" class="form-control" required>
-                            <option value="">Seleccione contenedor</option>
-                            <!-- Opciones dinámicas -->
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label>Tipo de operación</label>
-                        <select name="tipo_operacion_id" class="form-control">
-                            <option value="">Tipo</option>
-                            <!-- Dinámico -->
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label>Estatus</label>
-                        <select name="estatus_id" class="form-control">
-                            <option value="">Estatus</option>
-                            <!-- Dinámico -->
-                        </select>
-                    </div>
-                </div>
+          <div class="d-flex justify-content-between mb-3">
+            <div class="col-md-3 position-relative">
+              <input type="text" class="form-control " id="buscarMovimiento"  name="buscarMovimiento" placeholder="Buscar Tipo_movimiento">
+              <!-- Sugerencias dinámicas -->
+            <div id="sugerenciasMovimiento" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
+            </div>
+            
+            <div class="col-md-3">
+              <select class="form-control">
+                <option>Tipo de Movimiento</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select class="form-control">
+                <option>Divisa</option>
+                <option>DLLS</option>
+                <option>MXN</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button href="#" id="btnAgregarTipoMovimiento" class="btn btn-primary" data-bs-toggle="modal"
+                data-bs-target="#modalRegistrarTipoMovimiento"><i class="fas fa-plus"></i> Agregar Tipo de
+                Movimiento</button>
+            </div>
+          </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label>Ciudad de origen</label>
-                        <select name="origen_id" class="form-control">
-                            <option value="">Seleccione</option>
-                            <!-- Dinámico -->
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Ciudad destino</label>
-                        <select name="destino_id" class="form-control">
-                            <option value="">Seleccione</option>
-                            <!-- Dinámico -->
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Puerto</label>
-                        <select name="puerto_id" class="form-control">
-                            <option value="">Seleccione</option>
-                            <!-- Dinámico -->
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Transportista</label>
-                        <select name="transportista_id" class="form-control">
-                            <option value="">Seleccione</option>
-                            <!-- Dinámico -->
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label>Comentario de la etapa</label>
-                        <textarea name="comentario_etapa" class="form-control" rows="2"></textarea>
-                    </div>
-                </div>
-
-                <div class="text-end">
-                    <button type="submit" class="btn btn-success">
-                        <i data-feather="truck"></i> Registrar Movimiento
-                    </button>
-                </div>
-
-            </form>
         </div>
+        <!-- /.d-flex -->
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-primary text-center">
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo de movimiento</th>
+                <th>Moneda</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaTiposMovimiento">
+
+            </tbody>
+          </table>
+        </div>
+        <!-- /.table-responsive -->
+      </div>
+      <!-- /.card-body -->
     </div>
+    <!-- /.card -->
+  </div>
+  <!-- /.col -->
+</div>
+</div>
+
+<div class="modal fade" id="modalRegistrarTipoMovimiento" data-bs-backdrop="static" data-bs-keyboard="false"
+  tabindex="-1" aria-labelledby="modalRegistrarTipoMovimientoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- Encabezado -->
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalRegistrarTipoMovimientoLabel">
+          <i data-feather="truck" class="me-2"></i> Registrar Tipo de Movimiento
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <!-- Cuerpo -->
+      <div class="modal-body">
+        <form id="formTipoMovimiento" method="POST" action="#">
+          <input type="hidden" name="id_movimiento" id="id_movimiento">
+          <div class="mb-3">
+            <label for="nombre_movimiento" class="form-label">Nombre del Tipo de Movimiento</label>
+            <input type="text" name="nombre_movimiento" class="form-control" placeholder="Ej. Carga, Descarga, Traslado"
+              required>
+          </div>
+          <div class="mb-3">
+            <label for="tipo" class="form-label">Tipo</label>
+            <select name="tipo" id="tipo" class="form-control" required>
+                <option value="">Seleccione</option>
+                <option value="gasto">Gasto</option>
+                <option value="abono">Abono</option>
+            </select>
+            </div>
+          <div class="mb-3">
+            <label for="nombre_movimiento" class="form-label">Moneda</label>
+            <select name="moneda" id="moneda" class="form-control" required>
+              <option value="">Seleccione</option>
+              <option value="PESOS">Pesos</option>
+              <option value="DLLS">Dólares</option>
+            </select>
+          </div>
+
+          <!-- Pie del modal -->
+          <div class="modal-footer px-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i data-feather="x-circle" class="me-1"></i> Cancelar
+            </button>
+            <button type="submit" id="btnSubmit" class="btn btn-primary">
+              <i data-feather="check-circle" class="me-1"></i> Agregar
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/tipos_movimiento.js'></script>

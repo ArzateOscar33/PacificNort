@@ -12,8 +12,10 @@ class Puestos extends Controller
     }
     public function index()
     {
-        $data['title'] = 'Puestos';
-
+        $data['title'] = 'Puestos';    
+       
+        $data['departamentos'] = $this->model->getDepartamentos();
+          
         $this->views->getView('admin/puestos', "index", $data);
     }
  
@@ -26,11 +28,12 @@ class Puestos extends Controller
     public function registrar()
     {
         $nombre = trim($_POST['nombrePuesto']);
+        $departamento_id = intval($_POST['nombreDepartamento']);
 
-        if (empty($nombre)) {
-            $res = ['status' => false, 'msg' => 'El nombre es obligatorio'];
+        if (empty($nombre) || $departamento_id <= 0) {
+            $res = ['status' => false, 'msg' => 'Todos los campos son obligatorios'];
         } else {
-            $insertado = $this->model->registrarPuesto($nombre);
+            $insertado = $this->model->registrarPuesto($nombre, $departamento_id);
             if ($insertado > 0) {
                 $res = ['status' => true, 'msg' => 'Puesto registrado'];
             } else {
@@ -39,6 +42,7 @@ class Puestos extends Controller
         }
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
         die();
+
     }
 
     public function eliminar($id)
@@ -52,13 +56,14 @@ class Puestos extends Controller
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
         die();
     }
-
+ 
     public function editar($id)
     {
-        $data = $this->model->getPuesto($id);
+        $data = $this->model->getPuesto($id);  
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
+
 
     public function actualizar()
     {

@@ -56,7 +56,12 @@ formDepartamento.addEventListener('submit', function (e) {
 
                 // Restaurar etiquetas del modal
                 document.getElementById('staticBackdropLabel').textContent = 'Agregar Departamento';
-                document.getElementById('btnSubmit').textContent = 'Agregar';
+                const btnSubmit = document.getElementById("btnSubmit");
+
+                // Establecer el HTML del botón con ícono y texto
+                btnSubmit.innerHTML =
+                    '<i data-feather="check-circle" class="me-1"></i> Agregar';
+                feather.replace();
             }
 
         } catch (error) {
@@ -105,7 +110,12 @@ function editarDepartamento(id) {
 
             // Cambiar título del modal y botón
             document.getElementById('staticBackdropLabel').textContent = 'Editar Departamento';
-            document.getElementById('btnSubmit').textContent = 'Actualizar';
+           const btnSubmit = document.getElementById("btnSubmit");
+
+            // Establecer el HTML del botón con ícono y texto
+            btnSubmit.innerHTML =
+                '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+            feather.replace();
 
             // Mostrar 
             document.activeElement.blur();
