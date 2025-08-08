@@ -5,12 +5,26 @@ const formDepartamento = document.querySelector('#formDepartamento');
 const nombreDepartamento = document.querySelector('#nombreDepartamento');
 const tabla = document.querySelector('#tablaDepartamentos tbody');
 let idEditar = null;
+document.getElementById('btnAgregarDepartamento').addEventListener('click', () => {
+    // Resetear valores del formulario
+    formDepartamento.reset();
+    document.getElementById('idDepartamento').value = '';
+    
+    // Restaurar el título y botón del modal
+    document.getElementById('staticBackdropLabel').textContent = 'Agregar Departamento';
+
+    const btnSubmit = document.getElementById("btnSubmit");
+    btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+
+    // Actualizar los íconos
+    feather.replace();
+});
 
  
 // Cargar lista al cargar
 window.addEventListener('DOMContentLoaded', listarDepartamentos);
 
-
+ 
 
 formDepartamento.addEventListener('submit', function (e) {
     e.preventDefault();

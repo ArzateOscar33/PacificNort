@@ -3,14 +3,18 @@ const formTipoOperacion = document.getElementById("formTipoOperacion");
 const nombreTipoOperacion = document.getElementById("nombreTipoOperacion");
 const modalTipoOperacion = new bootstrap.Modal(document.getElementById("modalRegistrarTipoOperacion"));
 
-//
 document.getElementById("btnAgregarTipoOperacion").addEventListener("click", () => {
-  formRol.reset();
+  formTipoOperacion.reset();
+  idEditar = null;
+
   document.getElementById("id").value = "";
-  document.getElementById("modalRegistrarTipoOperacionLabel").textContent = "Registrar Rol";
+
+  document.getElementById("modalRegistrarTipoOperacionLabel").textContent = "Registrar Tipo de Operación";
+
   const btnSubmit = document.getElementById("btnSubmit");
   btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-  feather.replace();
+
+  feather.replace(); // Refresca íconos
 });
 
 

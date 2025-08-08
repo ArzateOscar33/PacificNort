@@ -74,15 +74,35 @@ class Movimiento_logistico extends Controller
         ]);
     }
 
-// Movimiento_logistico.php
-public function buscar()
-{
-    $termino = $_GET['term'] ?? '';
-    $data = $this->model->buscar($termino);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    die();
-}
+    // Movimiento_logistico.php
+    public function buscar()
+    {
+        $termino = $_GET['term'] ?? '';
+        $data = $this->model->buscar($termino);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
+    public function buscarFiltroTipo($tipo)
+    {
+        $data = $this->model->buscarFiltroTipo($tipo);
+        if (empty($data)) {
+            echo json_encode(['status' => 'error', 'msg' => 'No se encontraron resultados']);
+            return;
+        }
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
 
-    
+ 
+    public function buscarFiltroMoneda($moneda)
+    {
+        $data = $this->model->buscarFiltroMoneda($moneda);
+        if (empty($data)) {
+            echo json_encode(['status' => 'error', 'msg' => 'No se encontraron resultados']);
+            return;
+        }
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
 
 }

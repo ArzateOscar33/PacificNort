@@ -38,13 +38,26 @@ public function existeMovimiento($nombre)
         $sql = "UPDATE tipos_movimiento SET estatus = 0 WHERE id_tipo_movimiento = ?";
         return $this->save($sql, [$id]);
     }
-public function buscar($termino)
-{
-    $sql = "SELECT id_tipo_movimiento, nombre, tipo, moneda FROM tipos_movimiento WHERE LOWER(nombre) LIKE ?";
-    $param = ["%$termino%"];
-    return $this->selectAll($sql, $param);
-}
+    public function buscar($termino)
+    {
+        $sql = "SELECT id_tipo_movimiento, nombre, tipo, moneda FROM tipos_movimiento WHERE LOWER(nombre) LIKE ? AND estatus = 1";
+        $param = ["%$termino%"];
+        return $this->selectAll($sql, $param);
+    }
 
+
+
+    public function buscarFiltroTipo($tipo)
+    {
+        $sql = "SELECT id_tipo_movimiento, nombre, tipo, moneda FROM tipos_movimiento WHERE tipo = ? AND estatus = 1 ";
+        return $this->selectAll($sql, [$tipo]);
+    }
+
+    public function buscarFiltroMoneda($moneda)
+    {
+        $sql = "SELECT id_tipo_movimiento, nombre, tipo, moneda FROM tipos_movimiento WHERE    moneda = ? AND estatus = 1";
+        return $this->selectAll($sql, [$moneda]);
+    }
 
 
 }

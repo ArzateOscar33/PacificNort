@@ -11,24 +11,25 @@
         <div class="card-body">
           <div class="d-flex justify-content-between mb-3">
             <div class="col-md-3 position-relative">
-              <input type="text" class="form-control " id="buscarMovimiento"  name="buscarMovimiento" placeholder="Buscar Tipo_movimiento">
+              <input type="text" class="form-control " id="buscarMovimiento"  name="buscarMovimiento" placeholder="Buscar Tipo de Movimiento">
               <!-- Sugerencias dinámicas -->
             <div id="sugerenciasMovimiento" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
             </div>
             
             <div class="col-md-3">
-              <select class="form-control">
+              <select id="tipoMovimiento" class="form-control" name="tipoMovimiento">
                 <option>Tipo de Movimiento</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
+                <option value="gasto">Gasto</option>
+                <option value="abono">Abono</option>
+
+ 
               </select>
             </div>
             <div class="col-md-3">
-              <select class="form-control">
-                <option>Divisa</option>
-                <option>DLLS</option>
-                <option>MXN</option>
+              <select class="form-control" id="monedaMovimiento" name="monedaMovimiento">
+              <option value="">Seleccione</option>
+              <option value="PESOS">Pesos</option>
+              <option value="DLLS">Dólares</option>
               </select>
             </div>
             <div class="col-md-3">
