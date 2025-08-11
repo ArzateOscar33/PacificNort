@@ -13,6 +13,7 @@
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
                             <input type="text" class="form-control" placeholder="Buscar permiso por usuario, tipo de operación...">
+                            <div id="sugerenciasEstatus" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="d-flex justify-content-end col-md-2">
                             <button id="btnAgregarPermiso" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarPermiso">
@@ -34,26 +35,7 @@
                             </thead>
                             <tbody>
                                 <!-- Datos de ejemplo (reemplazar con PHP dinámico) -->
-                                <tr>
-                                    <td>1</td>
-                                    <td>Juan Pérez</td>
-                                    <td>Importación</td>
-                                    <td class="text-center">
-                                        <a href="#" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash-alt"></i> Revocar
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>Laura Gómez</td>
-                                    <td>Exportación</td>
-                                    <td class="text-center">
-                                        <a href="#" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash-alt"></i> Revocar
-                                        </a>
-                                    </td>
-                                </tr>
+                                
                             </tbody>
                         </table>
                     </div>

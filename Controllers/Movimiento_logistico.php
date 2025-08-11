@@ -10,20 +10,21 @@ class Movimiento_logistico extends Controller
             exit;
         }
     }
+
     public function index()
     {
         $data['title'] = 'Tipo de Movimiento Logístico';
-
         $this->views->getView('admin/movimiento_logistico', "index", $data);
     }
 
-    //METODOS TIPOS DE MOVIMIENTO
+    // METODOS TIPOS DE MOVIMIENTO
     public function listar()
     {
         $data = $this->model->listar();
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
+
     public function editar($id)
     {
         $data = $this->model->obtener($id);
@@ -34,9 +35,9 @@ class Movimiento_logistico extends Controller
     public function registrar()
     {
         $id = $_POST['id_movimiento'] ?? '';
-        $nombre = trim($_POST['nombre_movimiento']);
-        $tipo = $_POST['tipo'];
-        $moneda = $_POST['moneda'];
+        $nombre = trim($_POST['nombre_movimiento'] ?? '');
+        $tipo = $_POST['tipo'] ?? '';
+        $moneda = $_POST['moneda'] ?? '';
 
         if ($nombre === '' || $tipo === '' || $moneda === '') {
             echo json_encode(['status' => 'warning', 'msg' => 'Todos los campos son obligatorios']);
@@ -65,6 +66,7 @@ class Movimiento_logistico extends Controller
             ]);
         }
     }
+
     public function eliminar($id)
     {
         $res = $this->model->eliminar($id);
@@ -74,7 +76,7 @@ class Movimiento_logistico extends Controller
         ]);
     }
 
-    // Movimiento_logistico.php
+    // Búsqueda por nombre (autocomplete / sugerencias)
     public function buscar()
     {
         $termino = $_GET['term'] ?? '';
@@ -82,6 +84,21 @@ class Movimiento_logistico extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
+
+    // ✅ NUEVO: filtro combinado
+    // GET /Movimiento_logistico/filtrar?term=...&tipo=...&moneda=...
+    public function filtrar()
+    {
+        $term   = isset($_GET['term']) ? trim($_GET['term']) : '';
+        $tipo   = isset($_GET['tipo']) ? trim($_GET['tipo']) : '';
+        $moneda = isset($_GET['moneda']) ? trim($_GET['moneda']) : '';
+
+        $data = $this->model->filtrar($term, $tipo, $moneda);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    // (Opcional) Endpoints antiguos: los dejo por compatibilidad
     public function buscarFiltroTipo($tipo)
     {
         $data = $this->model->buscarFiltroTipo($tipo);
@@ -93,7 +110,6 @@ class Movimiento_logistico extends Controller
         die();
     }
 
- 
     public function buscarFiltroMoneda($moneda)
     {
         $data = $this->model->buscarFiltroMoneda($moneda);
@@ -104,5 +120,4 @@ class Movimiento_logistico extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-
 }

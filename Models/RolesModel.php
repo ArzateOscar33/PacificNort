@@ -3,7 +3,7 @@ class RolesModel extends Query
 {
     public function listar()
     {
-        $sql = "SELECT * FROM roles";
+        $sql = "SELECT * FROM roles WHERE estatus = 1 ORDER BY id_rol DESC";
         return $this->selectAll($sql);
     }
 
@@ -21,7 +21,7 @@ class RolesModel extends Query
 
      function obtener($id)
     {
-        $sql = "SELECT * FROM roles WHERE id_rol = ?";
+        $sql = "SELECT * FROM roles WHERE id_rol = ? WHERE estatus = 1";
         return $this->select($sql, [$id]);
     }
 
@@ -34,7 +34,7 @@ class RolesModel extends Query
  
     public function eliminar($id)
     {
-        $sql = "DELETE FROM roles WHERE id_rol = ?";
+        $sql = "UPDATE roles SET estatus = 0 WHERE id_rol = ?";
         return $this->save($sql, [$id]);
     }
 
@@ -45,7 +45,7 @@ class RolesModel extends Query
     }
     public function buscarRol($termino)
     {
-        $sql = "SELECT * FROM roles WHERE nombre LIKE ?";
+        $sql = "SELECT * FROM roles WHERE nombre LIKE ?  AND estatus = 1 ORDER BY id_rol DESC";
         $param = ["%$termino%"];
         return $this->selectAll($sql, $param);
     }

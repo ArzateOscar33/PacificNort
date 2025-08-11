@@ -2,65 +2,136 @@ const tabla = document.getElementById("tablaTiposMovimiento");
 const form = document.getElementById("formTipoMovimiento");
 const modal = new bootstrap.Modal(document.getElementById("modalRegistrarTipoMovimiento"));
 
+const inputBuscar = document.getElementById("buscarMovimiento");
+const sugerenciasMovimiento = document.getElementById("sugerenciasMovimiento");
+const selectTipo = document.getElementById("tipoMovimiento");
+const selectMoneda = document.getElementById("monedaMovimiento");
+
+// Estado de filtros
+let filtroTerm = "";
+let filtroTipo = "";     // 'gasto' | 'abono' | ''
+let filtroMoneda = "";   // 'PESOS' | 'DLLS' | ''
 
 document.getElementById("btnAgregarTipoMovimiento").addEventListener("click", () => {
   form.reset();
-  idEditar = null;
-
   document.getElementById("id_movimiento").value = "";
-
   document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Registrar Tipo de Operación";
-
-  const btnSubmit = document.getElementById("btnSubmit");
-  btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-
-  feather.replace(); // Refresca íconos
+  document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+  feather.replace();
 });
 
+// ---------- Utilidades ----------
+function renderizarTabla(data) {
+  tabla.innerHTML = "";
+  if (!Array.isArray(data) || data.length === 0) {
+    tabla.innerHTML = `<tr><td colspan="4" class="text-center">No hay registros</td></tr>`;
+    return;
+  }
+  data.forEach((mov) => {
+    const tr = document.createElement("tr");
+    tr.classList.add("text-center");
+    tr.innerHTML = `
+      <td>${mov.nombre}</td>
+      <td>${mov.tipo || "-"}</td>
+      <td>${mov.moneda || "-"}</td>
+      <td>
+        <button class="btn btn-sm btn-info" onclick="editarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-edit"></i> Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-trash-alt"></i> Eliminar</button>
+      </td>
+    `;
+    tabla.appendChild(tr);
+  });
+}
 
-
-
-function listarTiposMovimiento() {
-  const tabla = document.getElementById("tablaTiposMovimiento");
-  const url = base_url + "Movimiento_logistico/listar";
+function xhrGET(url, onOK) {
   const http = new XMLHttpRequest();
-
   http.open("GET", url, true);
   http.send();
-
   http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      //console.log("Respuesta del servidor:", this.responseText); // 👈 Aquí lo ves en consola
-      const data = JSON.parse(this.responseText);
-
-      tabla.innerHTML = "";
-
-      if (data.length === 0) {
-        tabla.innerHTML = `<tr><td colspan="4" class="text-center">No hay registros</td></tr>`;
-        return;
+    if (http.readyState === 4 && http.status === 200) {
+      try {
+        const data = JSON.parse(http.responseText);
+        onOK(data);
+      } catch (e) {
+        console.error("JSON inválido:", http.responseText);
       }
-      data.forEach((mov) => {
-        const tr = document.createElement("tr");
-        tr.classList.add("text-center");
-        tr.innerHTML = `
-          <td>${mov.nombre}</td>
-          <td>${mov.tipo || "-"}</td>
-          <td>${mov.moneda || "-"}</td>
-          <td>
-            <button class="btn btn-sm btn-info" onclick="editarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-edit"></i> Editar</button>
-            <button class="btn btn-sm btn-danger" onclick="eliminarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-trash-alt"></i> Eliminar</button>
-          </td>
-        `;
-        tabla.appendChild(tr);
-      });
     }
   };
 }
 
+// ---------- Listado base ----------
+function listarTiposMovimiento() {
+  xhrGET(base_url + "Movimiento_logistico/listar", renderizarTabla);
+}
 
+// ---------- Filtro combinado ----------
+function aplicarFiltros() {
+  const params = new URLSearchParams();
+  if (filtroTerm) params.append("term", filtroTerm);
+  if (filtroTipo) params.append("tipo", filtroTipo);
+  if (filtroMoneda) params.append("moneda", filtroMoneda);
 
+  const url = base_url + "Movimiento_logistico/filtrar" + (params.toString() ? "?" + params.toString() : "");
+  xhrGET(url, (data) => {
+    renderizarTabla(data);
 
- 
+    // Actualizar sugerencias (solo si hay término)
+    sugerenciasMovimiento.innerHTML = "";
+    if (filtroTerm && Array.isArray(data) && data.length > 0) {
+      data.slice(0, 8).forEach((mov) => {
+        const item = document.createElement("button");
+        item.classList.add("list-group-item", "list-group-item-action");
+        item.textContent = mov.nombre;
+        item.type = "button";
+        item.onclick = () => {
+          inputBuscar.value = mov.nombre;
+          filtroTerm = mov.nombre;
+          sugerenciasMovimiento.innerHTML = "";
+          sugerenciasMovimiento.style.display = "none";
+          aplicarFiltros();
+        };
+        sugerenciasMovimiento.appendChild(item);
+      });
+      sugerenciasMovimiento.style.display = "block";
+    } else {
+      sugerenciasMovimiento.style.display = "none";
+    }
+  });
+}
+
+// ---------- Eventos de filtros ----------
+inputBuscar.addEventListener("keyup", function () {
+  const termino = this.value.trim();
+  filtroTerm = termino;
+  if (termino === "") {
+    sugerenciasMovimiento.innerHTML = "";
+    sugerenciasMovimiento.style.display = "none";
+  }
+  // Usamos el endpoint combinado para que se respete tipo/moneda junto con el término
+  aplicarFiltros();
+});
+
+selectTipo.addEventListener("change", function () {
+  // NOTA: en tu vista los values ya son 'gasto'/'abono' o texto "Tipo de Movimiento"
+  // Normalizamos a '' cuando es placeholder
+  filtroTipo = (this.value === "Tipo de Movimiento" || this.value === "") ? "" : this.value;
+  aplicarFiltros();
+});
+
+selectMoneda.addEventListener("change", function () {
+  filtroMoneda = (this.value === "" || this.value === "Seleccione") ? "" : this.value;
+  aplicarFiltros();
+});
+
+// Cerrar sugerencias si se hace clic fuera
+document.addEventListener("click", function (e) {
+  if (!inputBuscar.contains(e.target) && !sugerenciasMovimiento.contains(e.target)) {
+    sugerenciasMovimiento.innerHTML = "";
+    sugerenciasMovimiento.style.display = "none";
+  }
+});
+
+// ---------- CRUD (igual que lo tienes) ----------
 form.addEventListener("submit", function (e) {
   e.preventDefault();
 
@@ -72,16 +143,13 @@ form.addEventListener("submit", function (e) {
 
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-         //console.log("Respuesta del servidor:", this.responseText);
       const res = JSON.parse(this.responseText);
-    
-
       if (res.status === "success") {
         modal.hide();
         form.reset();
-        listarTiposMovimiento();
+        // Luego de registrar/actualizar, refrescamos respetando filtros actuales
+        aplicarFiltros();
       }
-
       Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
     }
   };
@@ -94,14 +162,12 @@ function editarTipoMovimiento(id) {
 
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-     // console.log("Datos para editar:", this.responseText);
       const data = JSON.parse(this.responseText);
-
       document.getElementById("id_movimiento").value = data.id_tipo_movimiento;
       form.nombre_movimiento.value = data.nombre;
       form.tipo.value = data.tipo;
       form.moneda.value = data.moneda;
-
+      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       modal.show();
     }
   };
@@ -123,13 +189,11 @@ function eliminarTipoMovimiento(id) {
 
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-         // console.log("Respuesta al eliminar:", this.responseText);
           const res = JSON.parse(this.responseText);
-
           if (res.status === "success") {
-            listarTiposMovimiento();
+            // Respetamos filtros activos
+            aplicarFiltros();
           }
-
           Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
         }
       };
@@ -137,196 +201,8 @@ function eliminarTipoMovimiento(id) {
   });
 }
 
-
-//Funciones de busqueda 
-const inputBuscar = document.getElementById("buscarMovimiento");
-const sugerenciasMovimiento = document.getElementById("sugerenciasMovimiento");
-
-inputBuscar.addEventListener("keyup", function () {
-  const termino = this.value.trim();
-
-  if (termino === "") {
-    sugerenciasMovimiento.innerHTML = "";
-    sugerenciasMovimiento.style.display = "none";
-    listarTiposMovimiento(); // Restaurar todos
-    return;
-  }
-
-  const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Movimiento_logistico/buscar?term=" + encodeURIComponent(termino), true);
-  http.send();
-
-  http.onreadystatechange = function () {
-    if (http.readyState === 4 && http.status === 200) {
-      const data = JSON.parse(http.responseText);
-      sugerenciasMovimiento.innerHTML = "";
-      tabla.innerHTML = "";
-
-      if (!Array.isArray(data) || data.length === 0) {
-        sugerenciasMovimiento.style.display = "none";
-        return;
-      }
-
-      // 👉 Actualizar tabla automáticamente mientras se escribe
-      renderizarTablaFiltrada(data);
-
-      // 👉 Mostrar sugerencias
-      data.forEach((mov) => {
-        const item = document.createElement("button");
-        item.classList.add("list-group-item", "list-group-item-action");
-        item.textContent = mov.nombre;
-        item.type = "button";
-        item.onclick = () => {
-          inputBuscar.value = mov.nombre;
-          sugerenciasMovimiento.innerHTML = "";
-          sugerenciasMovimiento.style.display = "none";
-          listarTiposMovimientoFiltrados(mov.nombre); // Refresca con nombre exacto
-        };
-        sugerenciasMovimiento.appendChild(item);
-      });
-
-      sugerenciasMovimiento.style.display = "block";
-    }
-  };
-});
-
-function renderizarTablaFiltrada(data) {
-  tabla.innerHTML = "";
-  data.forEach((mov) => {
-    const tr = document.createElement("tr");
-    tr.classList.add("text-center");
-    tr.innerHTML = `
-      <td>${mov.nombre}</td>
-      <td>${mov.tipo || "-"}</td>
-      <td>${mov.moneda || "-"}</td>
-      <td>
-        <button class="btn btn-sm btn-info" onclick="editarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-edit"></i> Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="eliminarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-trash-alt"></i> Eliminar</button>
-      </td>
-    `;
-    tabla.appendChild(tr);
-  });
-}
-
-// Cerrar sugerencias si se hace clic fuera
-document.addEventListener("click", function (e) {
-  if (!inputBuscar.contains(e.target) && !sugerenciasMovimiento.contains(e.target)) {
-    sugerenciasMovimiento.innerHTML = "";
-    sugerenciasMovimiento.style.display = "none";
-  }
-});
-
-//llenar select de tipo de movimiento
-function llenarSelectTipoMovimiento() {
-  const selectTipoMovimiento = document.getElementById("tipoMovimiento");
-  const url = base_url + "Movimiento_logistico/listarTipos";
-  const http = new XMLHttpRequest();
-
-  http.open("GET", url, true);
-  http.send();
-
-  http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      //console.log("Respuesta del servidor:", this.responseText);
-      const data = JSON.parse(this.responseText);
-
-      selectTipoMovimiento.innerHTML = '<option value="">Seleccione un tipo de movimiento</option>';
-      data.forEach((tipo) => {
-        const option = document.createElement("option");
-        option.value = tipo.id_tipo_movimiento;
-        console.log(tipo.id_tipo_movimiento);
-        option.textContent = tipo.tipo;
-        selectTipoMovimiento.appendChild(option);
-      });
-    }
-  };
-}
-
-
-
-//Funciones de busqueda por tipo de movimiento
-function buscarFiltroTipo(tipo) {
-  const url = base_url + "Movimiento_logistico/buscarFiltroTipo/"+ tipo;
-  const http = new XMLHttpRequest(); 
-  http.open("GET", url, true);
-  http.send();
-  http.onreadystatechange = function () {
-    if (http.readyState === 4 && http.status === 200) {
-      console.log("Datos filtrados por tipo:", this.responseText);
-      console.log(url);
-      const data = JSON.parse(this.responseText);
-      renderizarTablaFiltrada(data);
-
-   
-    }
-  };
-}
-
+// ---------- Inicialización ----------
 document.addEventListener("DOMContentLoaded", function () {
+  // Carga inicial sin filtros
   listarTiposMovimiento();
-  llenarSelectTipoMovimiento();
-  llenarSelectMonedaMovimiento();
-
-  document.getElementById("tipoMovimiento").addEventListener("change", function () {
-    const tipoSeleccionado = this.value;
-    if (tipoSeleccionado) {
-      console.log("Tipo seleccionado:", tipoSeleccionado);
-      buscarFiltroTipo(tipoSeleccionado); 
-      //console.log("Tipo seleccionaddsao:", tipoSeleccionado);
-    } else {
-      listarTiposMovimiento(); // Restaurar todos
-    }
-  });
-  document.getElementById("monedaMovimiento").addEventListener("change", function () {
-    const monedaSeleccionada = this.value;
-    if (monedaSeleccionada) {
-      console.log("Moneda seleccionada:", monedaSeleccionada);
-      buscarFiltroMoneda(monedaSeleccionada);
-    } else {
-      listarTiposMovimiento(); // Restaurar todos
-    }
-  });
 });
-//funciones de busqueda por moneda
-
-function llenarSelectMonedaMovimiento() { 
-  const selectMonedaMovimiento = document.getElementById("monedaMovimiento");
-  const url = base_url + "Movimiento_logistico/listarMonedas";
-  const http = new XMLHttpRequest();
-
-  http.open("GET", url, true);
-  http.send();
-
-  http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      console.log("Respuesta del servidor moneda:", this.responseText);
-       
-      const data = JSON.parse(this.responseText);
-
-      selectMonedaMovimiento.innerHTML = '<option value="">Seleccione una moneda</option>';
-      data.forEach((moneda) => {
-        const option = document.createElement("option");
-        option.value = moneda.id_tipo_movimiento;
-        option.textContent = moneda.moneda;
-        selectMonedaMovimiento.appendChild(option);
-      });
-    }
-  };
-}
-
-function buscarFiltroMoneda(moneda) {
-  const url = base_url + "Movimiento_logistico/buscarFiltroMoneda/"+ moneda;
-  const http = new XMLHttpRequest(); 
-  http.open("GET", url, true);
-  http.send();
-  http.onreadystatechange = function () {
-    if (http.readyState === 4 && http.status === 200) {
-      console.log("Datos filtrados por moneda:", this.responseText);
-      console.log(url);
-      const data = JSON.parse(this.responseText);
-      renderizarTablaFiltrada(data);
-
-   
-    }
-  };
-}

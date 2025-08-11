@@ -169,7 +169,7 @@
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
                                         class="sidebar-link"><i data-feather="repeat"></i><span class="hide-menu">Tipos
                                             de Movimiento</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Eventos_logisticos/tipo_evento"
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_eventos_logisticos"
                                         class="sidebar-link"><i data-feather="activity"></i><span
                                             class="hide-menu">Tipos de Evento Logístico</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i

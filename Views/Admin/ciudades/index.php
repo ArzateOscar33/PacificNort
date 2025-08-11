@@ -11,11 +11,22 @@
                 <!-- /.card-header -->
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
-                        <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Ciudad">
+                        <div class="col-md-6">
+                            <input type="text" id="buscarCiudad" class="form-control " placeholder="Buscar Ciudad">
+                            <div id="sugerenciasCiudad" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="select" id="estados">
+                                <select name="estado_id_filtro" id="estado_id_filtro" class="form-control" required>
+                                    <option value="">Seleccione un estado</option>
+                                    <?php foreach ($data['estados'] as $estado): ?>
+                                        <option value="<?= $estado['id_estado'] ?>"><?= $estado['nombre_estado'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarCiudad" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarCiudad"><i class="fas fa-plus"></i> Agregar Ciudad</button>
                         </div>
                     </div>
@@ -24,12 +35,12 @@
                         <table class="table table-hover">
                             <thead class="table-primary text-center">
                                 <tr>
-                                    <th>Nombre</th>
+                                    <th>Ciudad</th>
                                     <th>Estado al que Pertenece</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaCiudades">
                                 
                             </tbody>
                         </table>
@@ -62,18 +73,18 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formCiudad" method="POST" action="#">
-
+                    <input type="hidden" name="id_ciudad" id="id_ciudad" value="">
                     <div class="mb-3">
                         <label for="nombre_ciudad" class="form-label">Nombre de la Ciudad</label>
-                        <input type="text" name="nombre_ciudad" class="form-control" placeholder="Ej. Guadalajara" required>
+                        <input type="text" name="nombre_ciudad" id="nombre_ciudad" class="form-control" placeholder="Ej. Guadalajara" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="estado_id" class="form-label">Estado</label>
-                        <select name="estado_id" class="form-control" required>
+                        <select name="estado_id" id="estado_id" class="form-control" required>
                             <option value="">Seleccione un estado</option>
                             <?php foreach ($data['estados'] as $estado): ?>
-                                <option value="<?= $estado['id_estado'] ?>"><?= $estado['nombre'] ?></option>
+                                <option value="<?= $estado['id_estado'] ?>"><?= $estado['nombre_estado'] ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -83,7 +94,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit" class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -97,3 +108,5 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/ciudades.js'></script>

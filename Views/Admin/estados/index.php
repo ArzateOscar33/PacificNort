@@ -12,10 +12,12 @@
           <!-- Buscador y botón -->
           <div class="d-flex justify-content-between mb-3">
             <div class="col-md-10">
-              <input type="text" class="form-control" placeholder="Buscar estado...">
+              <input type="text" class="form-control" id="buscarEstado" name="buscarEstado" placeholder="Buscar estado...">
+              <!-- Sugerencias dinámicas -->
+              <div id="sugerenciasEstado" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
             </div>
             <div class="d-flex justify-content-end col-md-2">
-              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalRegistrarEstado">
+              <button class="btn btn-primary" id="btnAgregarEstado" data-bs-toggle="modal" data-bs-target="#modalRegistrarEstado">
                 <i class="fas fa-plus"></i> Agregar Estado
               </button>
             </div>
@@ -25,30 +27,14 @@
           <div class="table-responsive">
             <table class="table table-hover">
               <thead class="table-primary text-center">
-                <tr>
-                  <th>#</th>
+                <tr> 
                   <th>Nombre</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="tablaEstados">
                 <!-- Datos de ejemplo (reemplazar con foreach PHP) -->
-                <tr>
-                  <td>1</td>
-                  <td>Baja California</td>
-                  <td class="text-center">
-                    <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                    <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Eliminar</a>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2</td>
-                  <td>Jalisco</td>
-                  <td class="text-center">
-                    <a href="#" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</a>
-                    <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Eliminar</a>
-                  </td>
-                </tr>
+ 
               </tbody>
             </table>
           </div>
@@ -74,17 +60,17 @@
 
       <div class="modal-body">
         <form id="formEstado" method="POST" action="#">
-
+          <input type="hidden" name="id_estado" id="id_estado" value="" >
           <div class="mb-3">
             <label for="nombre" class="form-label">Nombre del Estado</label>
-            <input type="text" name="nombre" class="form-control" placeholder="Ej. Baja California" required>
+            <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Ej. Baja California" required>
           </div>
 
           <div class="modal-footer px-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
               <i data-feather="x-circle" class="me-1"></i> Cancelar
             </button>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" id="btnSubmit" class="btn btn-primary">
               <i data-feather="check-circle" class="me-1"></i> Agregar
             </button>
           </div>
@@ -97,3 +83,4 @@
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/estados.js"></script>

@@ -1,5 +1,5 @@
 <?php
-class Estatus extends Controller
+class Tipos_eventos_logisticos extends Controller
 {
     public function __construct()
     {
@@ -12,24 +12,35 @@ class Estatus extends Controller
     }
     public function index()
     {
-        $data['title'] = 'Estatus';
+        $data['title'] = 'Tipos de Eventos Logísticos';
 
-        $this->views->getView('admin/Estatus', "index", $data);
+        $this->views->getView('admin/tipos_eventos_logisticos', "index", $data);
     }
- 
+
     public function listar(){
         $data = $this->model->listar();
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
+        // OBTENER (para editar)
+    public function editar($id)
+    {
+        $data = $this->model->obtener($id);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    // REGISTRAR / ACTUALIZAR
     public function registrar()
     {
-        $id   = $_POST['id_estatus'] ?? '';
+        $id   = $_POST['id_tipo_evento'] ?? '';
         $nombre = trim($_POST['nombre'] ?? ''); 
+
         if ($nombre === '') {
             echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio']);
             return;
         }
+
         if ($id === '') {
             // validar duplicado
             $existe = $this->model->existe($nombre);
@@ -40,31 +51,28 @@ class Estatus extends Controller
             $res = $this->model->registrar($nombre);
             echo json_encode([
                 'status' => $res ? 'success' : 'error',
-                'msg'    => $res ? 'Estatus registrado' : 'Error al registrar'
+                'msg'    => $res ? 'Tipo de evento registrado' : 'Error al registrar'
             ]);
         } else {
             $res = $this->model->actualizar($id, $nombre);
             echo json_encode([
                 'status' => $res ? 'success' : 'error',
-                'msg'    => $res ? 'Estatus actualizado' : 'Error al actualizar'
+                'msg'    => $res ? 'Tipo de evento actualizado' : 'Error al actualizar'
             ]);
         }
     }
-    public function editar(int $id)
-    {
-        $data = $this->model->obtener($id);
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        die();
-    }
-     public function eliminar($id)
+
+    // ELIMINAR (soft delete)
+    public function eliminar($id)
     {
         $res = $this->model->eliminar($id);
         echo json_encode([
             'status' => $res ? 'success' : 'error',
-            'msg'    => $res ? 'Estatus eliminado' : 'Error al eliminar'
+            'msg'    => $res ? 'Tipo de evento eliminado' : 'Error al eliminar'
         ]);
     }
- 
+
+    // (Opcional) BUSCAR por nombre (para sugerencias)
     public function buscar()
     {
         $term = $_GET['term'] ?? '';
@@ -72,5 +80,10 @@ class Estatus extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
+
     
+
+
+ 
+
 }

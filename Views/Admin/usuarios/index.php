@@ -12,10 +12,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Usuario">
+                            <input type="text" id="buscarUsuario" class="form-control " placeholder="Buscar Usuario">
+                            <div id="sugerenciasUsuario" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarUsuario" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarUsuario"><i class="fas fa-plus"></i> Agregar Usuario</button>
                         </div>
                     </div>
@@ -26,8 +27,7 @@
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Apellido</th>
-                                    <th>Correo</th>
-                                    <th>Clave</th>
+                                    <th>Correo</th> 
                                     <th>Telefono</th>
                                     <th>Departamento</th>
                                     <th>Puesto</th>
@@ -35,7 +35,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaUsuarios">
                                 
                             </tbody>
                         </table>
@@ -68,7 +68,7 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formUsuario" method="POST" action="#">
-
+                    <input type="hidden" name="id_usuario" id="id_usuario" value="">
                     <div class="row">
                         <div class="mb-3 col-md-6">
                             <label for="nombre" class="form-label">Nombre</label>
@@ -98,35 +98,43 @@
                             <label for="telefono" class="form-label">Teléfono</label>
                             <input type="tel" name="telefono" class="form-control">
                         </div>
-
                         <div class="mb-3 col-md-3">
-                            <label for="puesto_id" class="form-label">Puesto</label>
-                            <select name="puesto_id" class="form-control" required>
-                                <option value="">Seleccione</option>
-                                <?php foreach ($data['puestos'] as $puesto): ?>
-                                    <option value="<?= $puesto['id_puesto'] ?>"><?= $puesto['nombre'] ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="mb-3 col-md-3">
-                            <label for="departamento_id" class="form-label">Departamento</label>
-                            <select name="departamento_id" class="form-control" required>
+                            <label  class="form-label">Departamento</label>
+                            <select name="departamento_id" id="departamento_id"class="form-control" required>
                                 <option value="">Seleccione</option>
                                 <?php foreach ($data['departamentos'] as $dep): ?>
                                     <option value="<?= $dep['id_departamento'] ?>"><?= $dep['nombre'] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                    </div>
+                        <div id="wrap_puesto" class="mb-3 col-md-3">
+                            <label for="puesto_id" class="form-label">Puesto</label>
+                            <select name="puesto_id" id="puesto_id" class="form-control" required>
+                                <option value="">Seleccione</option>
+ 
+                            </select>
+                        </div>
 
-                    <div class="mb-3">
+
+                        <div class="mb-3 col-md-6">
+                            <label for="rol" class="form-label">Rol</label>
+                            <select name="rol_id" id="rol_id" class="form-control" required>
+                                <option value="">Seleccione</option>
+                                <?php foreach ($data['roles'] as $dep): ?>
+                                    <option value="<?= $dep['id_rol'] ?>"><?= $dep['nombre'] ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-6">
                         <label for="active" class="form-label">Estado</label>
                         <select name="active" class="form-control" required>
                             <option value="1">Activo</option>
                             <option value="0">Inactivo</option>
                         </select>
                     </div>
+                    </div>
+
+
 
                     <!-- Footer -->
                     <div class="modal-footer px-0">
@@ -147,3 +155,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/usuarios.js'></script>   
