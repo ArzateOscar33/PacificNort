@@ -12,8 +12,8 @@
                     <!-- Buscador y botón -->
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control" placeholder="Buscar permiso por usuario, tipo de operación...">
-                            <div id="sugerenciasEstatus" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
+                            <input type="text" class="form-control" id="buscarPermiso" placeholder="Buscar permiso por usuario, tipo de operación...">
+                            <div id="sugerenciasPermisos" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="d-flex justify-content-end col-md-2">
                             <button id="btnAgregarPermiso" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarPermiso">
@@ -33,7 +33,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaPermisos">
                                 <!-- Datos de ejemplo (reemplazar con PHP dinámico) -->
                                 
                             </tbody>
@@ -62,6 +62,7 @@
             <div class="modal-body">
                 <form id="formPermisoOperacion" method="POST" action="#">
                     <div class="mb-3">
+                        <input type="hidden" name="id" id="id" value="">
                         <label for="usuario_id" class="form-label">Usuario</label>
                         <select name="usuario_id" class="form-control" required>
                             <option value="">Seleccione usuario</option>
@@ -93,3 +94,4 @@
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/permisos.js'></script>

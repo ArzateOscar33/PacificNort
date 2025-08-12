@@ -21,7 +21,7 @@ class RolesModel extends Query
 
      function obtener($id)
     {
-        $sql = "SELECT * FROM roles WHERE id_rol = ? WHERE estatus = 1";
+        $sql = "SELECT * FROM roles WHERE id_rol = ? AND estatus = 1";
         return $this->select($sql, [$id]);
     }
 

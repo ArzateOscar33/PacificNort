@@ -12,7 +12,7 @@ class Tipos_operacion extends Controller
     }
     public function index()
     {
-        $data['title'] = 'Tipos_operacion';
+        $data['title'] = 'Tipos De Operacion';
 
         $this->views->getView('admin/Tipos_operacion', "index", $data);
     }

@@ -1,9 +1,6 @@
-//const form  = document.getElementById("");
-//const modal = new bootstrap.Modal(document.getElementById("modalRegistrarEstatus"));
+
 const tabla = document.getElementById("tablaUsuarios");
 
-//const inputBuscar   = document.getElementById("buscarEstatus");
-//const sugerenciasEl = document.getElementById("sugerenciasEstatus");
 listar();
 
 // Listar

@@ -12,10 +12,12 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Bodega">
+                            <input type="text" id="buscarBodega" name="bucarBodega" class="form-control " placeholder="Buscar Bodega">
+                            <div id="sugerenciasBodega" class="list-group position-absolute w-100" style="z-index:999; display:none;"></div>
+
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarBodega" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarBodega"><i class="fas fa-plus"></i> Agregar Bodega</button>
                         </div>
                     </div>
@@ -30,7 +32,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaBodegas">
                                 
                             </tbody>
                         </table>
@@ -66,23 +68,23 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formBodega" method="POST" action="#">
-
+                    <input type="hidden" name="id" id="id" value= "">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre de la Bodega</label>
-                        <input type="text" name="nombre" class="form-control" required>
+                        <input type="text" name="nombre" id="nombre"class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="direccion" class="form-label">Dirección</label>
-                        <input type="text" name="direccion" class="form-control" required>
+                        <input type="text" name="direccion" id="direccion"class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="ciudad_id" class="form-label">Ciudad</label>
-                        <select name="ciudad_id" class="form-control" required>
+                        <select name="ciudad_id" id="ciudad_id"class="form-control" required>
                             <option value="">Selecciona una ciudad</option>
                             <?php foreach ($data['ciudades'] as $ciudad): ?>
-                                <option value="<?= $ciudad['id_ciudad'] ?>"><?= $ciudad['nombre'] ?></option>
+                                <option value="<?= $ciudad['id_ciudad'] ?>"><?= $ciudad['nombre_ciudad'] ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -92,7 +94,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit" class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -107,3 +109,4 @@
  
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/bodegas.js"></script>

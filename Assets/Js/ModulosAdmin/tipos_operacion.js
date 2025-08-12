@@ -2,28 +2,30 @@ const tabla = document.querySelector("#tablaTiposOperacion");
 const formTipoOperacion = document.getElementById("formTipoOperacion");
 const nombreTipoOperacion = document.getElementById("nombreTipoOperacion");
 const modalTipoOperacion = new bootstrap.Modal(document.getElementById("modalRegistrarTipoOperacion"));
+let idEditar = null;
 
+// Abrir modal en modo Agregar
 document.getElementById("btnAgregarTipoOperacion").addEventListener("click", () => {
   formTipoOperacion.reset();
   idEditar = null;
-
   document.getElementById("id").value = "";
-
   document.getElementById("modalRegistrarTipoOperacionLabel").textContent = "Registrar Tipo de Operación";
-
   const btnSubmit = document.getElementById("btnSubmit");
   btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-
-  feather.replace(); // Refresca íconos
+  feather.replace();
 });
 
-
+// Cargar lista al iniciar
 window.addEventListener("DOMContentLoaded", listarTipoOperaciones);
-//listarTipoOperaciones();
+
 function listarTipoOperaciones() {
-  fetch(base_url + "Tipos_Operacion/listar")
-    .then(res => res.json())
-    .then(data => {
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "Tipos_Operacion/listar", true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let data;
+      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
       tabla.innerHTML = "";
       data.forEach((tipo) => {
         const tr = document.createElement("tr");
@@ -41,17 +43,15 @@ function listarTipoOperaciones() {
         `;
         tabla.appendChild(tr);
       });
-    })
-    .catch(error => console.error("Error al listar tipos de operación:", error));
+    }
+  };
 }
 
-
-
+// Registrar / Actualizar
 formTipoOperacion.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const nombre = nombreTipoOperacion.value.trim();
-
   if (nombre === "") {
     Swal.fire("Campo requerido", "El nombre es obligatorio", "warning");
     return;
@@ -68,12 +68,14 @@ formTipoOperacion.addEventListener("submit", function (e) {
     url = base_url + "Tipos_operacion/actualizar";
   }
 
-  fetch(url, {
-    method: "POST",
-    body: formData,
-  })
-    .then(res => res.json())
-    .then(data => {
+  const http = new XMLHttpRequest();
+  http.open("POST", url, true);
+  http.send(formData);
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let data;
+      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
+
       if (data.status) {
         Swal.fire("Éxito", data.msg, "success");
         formTipoOperacion.reset();
@@ -83,37 +85,35 @@ formTipoOperacion.addEventListener("submit", function (e) {
       } else {
         Swal.fire("Atención", data.msg, "warning");
       }
-    })
-    .catch(err => {
-      console.error("Error en la petición:", err);
-      Swal.fire("Error", "Ocurrió un error inesperado", "error");
-    });
+    }
+  };
 });
-let idEditar = null;
 
+// Editar
 function editarTipoOperacion(id) {
-  fetch(base_url + "Tipos_operacion/editar/" + id)
-    .then(res => res.json())
-    .then(data => {
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "Tipos_operacion/editar/" + id, true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let data;
+      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
       if (data) {
         idEditar = data.id_tipo_operacion;
         nombreTipoOperacion.value = data.nombre_operacion;
-        // Cambiar texto del botón submit
+
+        document.getElementById("modalRegistrarTipoOperacionLabel").textContent = "Editar Tipo de Operación";
         const btnSubmit = document.getElementById("btnSubmit");
         btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
-
-        // Actualizar íconos feather (por si se renderiza nuevo contenido)
         feather.replace();
+
         modalTipoOperacion.show();
       }
-    })
-    .catch(err => {
-      console.error("Error al obtener tipo de operación:", err);
-      Swal.fire("Error", "No se pudo cargar el registro", "error");
-    });
+    }
+  };
 }
 
-//eliminar
+// Eliminar (desactivar)
 function eliminarTipoOperacion(id) {
   Swal.fire({
     title: "¿Estás seguro?",
@@ -124,25 +124,26 @@ function eliminarTipoOperacion(id) {
     cancelButtonText: "Cancelar",
   }).then((result) => {
     if (result.isConfirmed) {
-      fetch(base_url + "Tipos_operacion/eliminar/" + id)
-        .then((res) => res.json())
-        .then((data) => {
+      const http = new XMLHttpRequest();
+      http.open("GET", base_url + "Tipos_operacion/eliminar/" + id, true);
+      http.send();
+      http.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+          let data;
+          try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
           if (data.status) {
             Swal.fire("Eliminado", data.msg, "success");
             listarTipoOperaciones();
           } else {
             Swal.fire("Error", data.msg, "error");
           }
-        })
-        .catch((error) => {
-          console.error("Error al eliminar:", error);
-          Swal.fire("Error", "No se pudo eliminar el registro", "error");
-        });
+        }
+      };
     }
   });
 }
 
-
+// Buscar + sugerencias
 const inputBuscarTipo = document.getElementById("buscarTipoOperacion");
 const sugerenciasTipo = document.getElementById("sugerenciasTipoOperacion");
 
@@ -152,18 +153,23 @@ inputBuscarTipo.addEventListener("keyup", function () {
   if (termino === "") {
     sugerenciasTipo.innerHTML = "";
     sugerenciasTipo.style.display = "none";
-    listarTipoOperaciones(); // Recarga toda la tabla si está vacío
+    listarTipoOperaciones();
     return;
   }
 
-  fetch(base_url + "Tipos_operacion/buscar?term=" + encodeURIComponent(termino))
-    .then((res) => res.json())
-    .then((data) => {
-      sugerenciasTipo.innerHTML = "";
-      const tabla = document.getElementById("tablaTiposOperacion");
-      tabla.innerHTML = ""; // Limpia la tabla
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "Tipos_operacion/buscar?term=" + encodeURIComponent(termino), true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let data;
+      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
 
-      if (data.length === 0) {
+      sugerenciasTipo.innerHTML = "";
+      const tablaEl = document.getElementById("tablaTiposOperacion");
+      tablaEl.innerHTML = ""; // limpiar
+
+      if (!Array.isArray(data) || data.length === 0) {
         sugerenciasTipo.style.display = "none";
         return;
       }
@@ -192,17 +198,15 @@ inputBuscarTipo.addEventListener("keyup", function () {
             <button class="btn btn-sm btn-danger" onclick="eliminarTipoOperacion(${tipo.id_tipo_operacion})"><i class="fas fa-trash-alt"></i> Eliminar</button>
           </td>
         `;
-        tabla.appendChild(tr);
+        tablaEl.appendChild(tr);
       });
 
       sugerenciasTipo.style.display = "block";
-    })
-    .catch((err) => {
-      console.error("Error al buscar tipo de operación:", err);
-    });
+    }
+  };
 });
 
-// Ocultar sugerencias si se hace clic fuera
+// Cerrar sugerencias al hacer clic fuera
 document.addEventListener("click", function (e) {
   if (!inputBuscarTipo.contains(e.target) && !sugerenciasTipo.contains(e.target)) {
     sugerenciasTipo.innerHTML = "";
@@ -210,5 +214,29 @@ document.addEventListener("click", function (e) {
   }
 });
 
-
-
+// Helper opcional para filtrar tabla por término
+function listarTipoOperacionesFiltrados(termino) {
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "Tipos_operacion/buscar?term=" + encodeURIComponent(termino), true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let data;
+      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
+      const tablaEl = document.getElementById("tablaTiposOperacion");
+      tablaEl.innerHTML = "";
+      data.forEach((tipo) => {
+        const tr = document.createElement("tr");
+        tr.classList.add("text-center");
+        tr.innerHTML = `
+          <td>${tipo.nombre_operacion}</td> 
+          <td>
+            <button class="btn btn-sm btn-info" onclick="editarTipoOperacion(${tipo.id_tipo_operacion})"><i class="fas fa-edit"></i> Editar</button>
+            <button class="btn btn-sm btn-danger" onclick="eliminarTipoOperacion(${tipo.id_tipo_operacion})"><i class="fas fa-trash-alt"></i> Eliminar</button>
+          </td>
+        `;
+        tablaEl.appendChild(tr);
+      });
+    }
+  };
+}

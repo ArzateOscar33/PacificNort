@@ -17,5 +17,75 @@ class Clientes extends Controller
         $this->views->getView('admin/Clientes', "index", $data);
     }
  
+    public function listar(){
+        $data = $this->model->listar();
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
+    public function registrar()
+    {
+        $id         = $_POST['id_cliente'] ?? '';
+        $nombre     = trim($_POST['nombre'] ?? '');
+        $rfc        = trim($_POST['rfc'] ?? '');
+        $correo     = trim($_POST['correo'] ?? '');
+        $telefono   = trim($_POST['telefono'] ?? '');
+        $direccion  = trim($_POST['direccion'] ?? '');
+
+        if ($nombre === '' || $rfc === '' || $correo === '' || $telefono === '' || $direccion === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
+        }
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Correo no válido']); die();
+        }
+
+        if ($id === '') {
+            // ALTA
+            if ($this->model->existeCorreo($correo)) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un cliente con ese correo']); die();
+            }
+            $nuevoId = $this->model->registrarCliente($nombre, $rfc, $telefono, $correo, $direccion);
+            if (!$nuevoId) { echo json_encode(['status' => 'error', 'msg' => 'Error al registrar cliente']); die(); }
+            echo json_encode(['status' => 'success', 'msg' => 'Cliente registrado correctamente']); die();
+        } else {
+            // EDICIÓN
+            if ($this->model->existeCorreoOtro($correo, $id)) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Otro cliente ya usa ese correo']); die();
+            }
+            $ok = $this->model->actualizarCliente($nombre, $rfc, $telefono, $correo, $direccion, $id);
+            if (!$ok) { echo json_encode(['status' => 'error', 'msg' => 'Error al actualizar cliente']); die(); }
+            echo json_encode(['status' => 'success', 'msg' => 'Cliente actualizado correctamente']); die();
+        }
+    }
+
+        public function editar($id)
+    {
+        $data = $this->model->obtenerCliente($id);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    public function eliminar($id){
+        $res =$this->model->eliminar($id);       
+        
+        echo json_encode([
+            'status' => $res ? 'success' : 'error',
+            'msg'    => $res ? 'Cliente eliminado' : 'Error al eliminar'
+        ]);
+        die();
+    }
+
+    public function buscar()
+{
+    $term = isset($_GET['term']) ? trim($_GET['term']) : '';
+    if ($term === '') { 
+        echo json_encode([]); 
+        die(); 
+    }
+    $data = $this->model->buscar($term);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    die();
+}
+
+     
 
 }

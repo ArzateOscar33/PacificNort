@@ -12,10 +12,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Broker">
+                            <input type="text" class="form-control " id="buscarBroker" name="buscarBroker" placeholder="Buscar Broker">
+                            <div id="sugerenciasBroker" class="list-group position-absolute w-100" style="z-index:999; display:none;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarBroker" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarBroker"><i class="fas fa-plus"></i> Agregar Broker</button>
                         </div>
                     </div>
@@ -29,7 +30,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaBrokers">
                                 
                             </tbody>
                         </table>
@@ -63,15 +64,15 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formBroker" method="POST" action="#">
-
+                    <input type="hidden" name="id" id="id" value="">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del Broker</label>
-                        <input type="text" name="nombre" class="form-control" required>
+                        <input type="text" name="nombre" id="nombre" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="contacto" class="form-label">Contacto</label>
-                        <input type="text" name="contacto" class="form-control" required>
+                        <input type="text" name="contacto" id="contacto"class="form-control" required>
                     </div>
 
                     <!-- Footer -->
@@ -79,7 +80,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit"class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -94,3 +95,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/brokers.js'></script>

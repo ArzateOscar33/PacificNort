@@ -22,7 +22,7 @@
                     <!-- /.d-flex -->
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Contacto</th>

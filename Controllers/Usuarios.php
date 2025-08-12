@@ -115,7 +115,7 @@ class Usuarios extends Controller
 
     public function eliminar($id)
     {
-        // (opcional) impedir desactivarse a sí mismo
+        // impedir desactivarse a sí mismo
         if (isset($_SESSION['id_usuario']) && (int)$_SESSION['id_usuario'] === (int)$id) {
             echo json_encode(['status' => 'warning', 'msg' => 'No puedes desactivar tu propio usuario']); die();
         }

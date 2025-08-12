@@ -45,7 +45,7 @@ class PuestosModel extends Query
 
     public function getPuesto($id)
     {
-        $sql = "SELECT id_puesto, nombre, departamento_id FROM puestos WHERE id_puesto = ?";
+        $sql = "SELECT id_puesto, nombre, departamento_id FROM puestos WHERE id_puesto = ? AND estatus=1";
         return $this->select($sql, [$id]);
     }
 
@@ -60,7 +60,7 @@ class PuestosModel extends Query
         $sql = "SELECT p.id_puesto, p.nombre AS nombre_puesto, d.nombre AS nombre_departamento
                 FROM puestos p
                 INNER JOIN departamentos d ON p.departamento_id = d.id_departamento
-                WHERE p.nombre LIKE ?";
+                WHERE p.nombre LIKE ? AND p.estatus=1";
         $param = ["%$termino%"];
         return $this->selectAll($sql, $param);
     }
