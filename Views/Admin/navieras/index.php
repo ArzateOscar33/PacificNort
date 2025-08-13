@@ -12,10 +12,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Naviera">
+                            <input type="text" class="form-control " id="buscarNaviera" name="buscarNaviera" placeholder="Buscar Naviera">
+                              <div id="sugerenciasNavieras" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarNaviera" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarNaviera"><i class="fas fa-plus"></i> Agregar Naviera</button>
                         </div>
                     </div>
@@ -29,7 +30,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaNavieras">
                                 
                             </tbody>
                         </table>
@@ -62,15 +63,15 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formNaviera" method="POST" action="#">
-
+                    <input type="hidden" name="id_naviera" id="id_naviera" value="">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre de la naviera</label>
-                        <input type="text" name="nombre" class="form-control" required>
+                        <input type="text" name="nombre" id="nombre" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="contacto" class="form-label">Contacto</label>
-                        <input type="text" name="contacto" class="form-control" required>
+                        <input type="text" name="contacto" id="contacto" class="form-control" required>
                     </div>
 
                     <!-- Footer -->
@@ -78,7 +79,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit"class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -92,3 +93,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/navieras.js'></script>

@@ -12,10 +12,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Transportista">
+                            <input type="text" class="form-control " id="buscarTransportista" name="buscarTransportista" placeholder="Buscar Transportista">
+                              <div id="sugerenciasTransportistas" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarTransportista" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarTransportista"><i class="fas fa-plus"></i> Agregar Transportista</button>
                         </div>
                     </div>
@@ -29,7 +30,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaTransportistas">
                                 
                             </tbody>
                         </table>
@@ -63,18 +64,18 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formTransportista" method="POST" action="#">
-
+                <input type="hidden" name="id_transportista" id="id_transportista">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del Transportista</label>
-                        <input type="text" name="nombre" class="form-control" required>
+                        <input type="text" name="nombre" id="nombre" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="tipo" class="form-label">Tipo de Transportista</label>
-                        <select name="tipo" class="form-control" required>
+                        <select name="tipo" id="tipo" class="form-control" required>
                             <option value="" disabled selected>Seleccione tipo</option>
-                            <option value="2">Terrestre</option>
-                            <option value="3">Marítimo</option>
+                            <option value="Terrestre">Terrestre</option>
+                            <option value="Maritimo">Marítimo</option>
                         </select>
                     </div>
 
@@ -83,7 +84,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit" class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -97,3 +98,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/transportistas.js'></script>

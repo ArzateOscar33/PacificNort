@@ -12,10 +12,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Shipper">
+                            <input type="text" class="form-control " id="buscarShipper" name="buscarShipper" placeholder="Buscar Shipper">
+                              <div id="sugerenciasShippers" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarShipper" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarShipper"><i class="fas fa-plus"></i> Agregar Shipper</button>
                         </div>
                     </div>
@@ -30,7 +31,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaShippers">
                                 
                             </tbody>
                         </table>
@@ -63,20 +64,20 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formShipper" method="POST" action="#">
-
+                    <input type="hidden" name="id_shipper" id="id_shipper">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del Shipper</label>
-                        <input type="text" name="nombre" class="form-control" required>
+                        <input type="text" id="nombre" name="nombre" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="contacto" class="form-label">Nombre del Contacto</label>
-                        <input type="text" name="contacto" class="form-control" required>
+                        <input type="text" id="contacto" name="contacto" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="direccion" class="form-label">Dirección</label>
-                        <textarea name="direccion" class="form-control" rows="2" required></textarea>
+                        <textarea name="direccion" id="direccion" class="form-control" rows="2" required></textarea>
                     </div>
 
                     <!-- Footer -->
@@ -84,7 +85,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit" class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -99,3 +100,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/shippers.js'></script>
