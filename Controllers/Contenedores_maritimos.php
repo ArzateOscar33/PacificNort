@@ -11,104 +11,122 @@ class Contenedores_maritimos extends Controller
         }
     }
 
-    // Carga vista + catálogo de navieras para el <select>
     public function index()
     {
-        $data['title']    = 'Contenedores marítimos';
+        $data['title'] = 'Contenedores_maritimos';
         $this->views->getView('admin/Contenedores_maritimos', "index", $data);
     }
 
-    /* ===== LISTAR ===== */
+    /**
+     * Lista con paginación y filtro rápido (?q=)
+     * Devuelve: { status, data:[], pagination:{page,per_page,total,total_pages} }
+     */
     public function listar()
     {
-        $data = $this->model->listar();
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        $page    = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 25;
+        if (!in_array($perPage, [25, 50], true)) $perPage = 25;
+
+        $q      = trim($_GET['q'] ?? '');
+        $offset = ($page - 1) * $perPage;
+
+        // El modelo debe implementar listarPaginado($offset, $limit, ?$q)
+        $result = $this->model->listarPaginado($offset, $perPage, $q === '' ? null : $q);
+
+        $total      = (int)($result['total'] ?? 0);
+        $totalPages = $total > 0 ? (int)ceil($total / $perPage) : 1;
+
+        echo json_encode([
+            'status' => 'success',
+            'data'   => $result['rows'] ?? [],
+            'pagination' => [
+                'page'        => $page,
+                'per_page'    => $perPage,
+                'total'       => $total,
+                'total_pages' => $totalPages
+            ]
+        ], JSON_UNESCAPED_UNICODE);
         die();
     }
 
-    /* ===== REGISTRAR ===== */
-    public function registrar()
-    {
-        $numero = strtoupper(trim($_POST['numero_contenedor'] ?? ''));  // estándar en mayúsculas
-        $tipo   = trim($_POST['tipo'] ?? '');
-        $observaciones = trim($_POST['observaciones'] ?? '');
-
-        if ($numero === '' || $tipo === '' ) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
-        }
-
-        // Duplicado por número
-        $existe = $this->model->existeNumero($numero);
-        if ($existe) {
-            if ((int)$existe['estatus'] === 1) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un contenedor con ese número']); die();
-            }
-            // Existe inactivo: reactivar con datos actuales
-            $ok = $this->model->reactivar($existe['id_contenedor'], $numero, $tipo, $observaciones);
-            if ($ok) { echo json_encode(['status' => 'success', 'msg' => 'Contenedor reactivado correctamente']); die(); }
-            echo json_encode(['status' => 'error', 'msg' => 'No se pudo reactivar el contenedor']); die();
-        }
-
-        // Alta normal
-        $nuevoId = $this->model->registrar($numero, $tipo, $observaciones);
-        if (!$nuevoId) {
-            echo json_encode(['status' => 'error', 'msg' => 'No se pudo registrar el contenedor']); die();
-        }
-
-        echo json_encode(['status' => 'success', 'msg' => 'Contenedor registrado correctamente']); die();
-    }
-
-    /* ===== OBTENER UNO (para editar) ===== */
-    public function editar($id)
-    {
-        // $id es id_contenedor_maritimo en DB; el modelo devuelve alias id_contenedor
-        $data = $this->model->obtener($id);
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        die();
-    }
-
-    /* ===== ACTUALIZAR ===== */
-    public function actualizar()
-    {
-        // En el form el hidden debe llamarse id_contenedor
-        $id_contenedor = (int)($_POST['id_contenedor'] ?? 0);
-        $numero        = strtoupper(trim($_POST['numero_contenedor'] ?? ''));
-        $tipo          = trim($_POST['tipo'] ?? '');
-        $observaciones = trim($_POST['observaciones'] ?? '');
-
-        if ($id_contenedor <= 0 || $numero === '' || $tipo === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
-        }
-
-        // Evitar colisión de número con OTRO registro activo
-        $dup = $this->model->existeNumeroOtro($numero, $id_contenedor);
-        if ($dup && (int)$dup['estatus'] === 1) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe otro contenedor con ese número']); die();
-        }
-
-        $ok = $this->model->actualizar($id_contenedor, $numero, $tipo, $observaciones);
-        if (!$ok) {
-            echo json_encode(['status' => 'error', 'msg' => 'No se pudo actualizar el contenedor']); die();
-        }
-
-        echo json_encode(['status' => 'success', 'msg' => 'Contenedor actualizado correctamente']); die();
-    }
-
-    /* ===== ELIMINAR (lógico) ===== */
-    public function eliminar($id)
-    {
-        $ok = $this->model->eliminar($id);
-        if ($ok) { echo json_encode(['status' => 'success', 'msg' => 'Contenedor desactivado correctamente']); die(); }
-        echo json_encode(['status' => 'error', 'msg' => 'No se pudo desactivar el contenedor']); die();
-    }
-
-    /* ===== BÚSQUEDA ===== */
+    /**
+     * Sugerencias rápidas para el input (sin paginar)
+     * GET ?term=texto
+     */
     public function buscar()
     {
-        $term = $_GET['term'] ?? '';
+        $term = trim($_GET['term'] ?? '');
         if ($term === '') { echo json_encode([]); die(); }
-        $data = $this->model->buscar($term);
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+
+        // El modelo debe implementar buscar($term)
+        $rows = $this->model->buscar($term);
+        echo json_encode($rows, JSON_UNESCAPED_UNICODE); die();
+    }
+
+    public function registrar()
+    {
+        $numero = strtoupper(trim($_POST['numero_contenedor'] ?? ''));
+        $tipo   = trim($_POST['tipo'] ?? '');
+        $obs    = trim($_POST['observaciones'] ?? '');
+
+        if ($numero === '' || $tipo === '') {
+            echo json_encode(['status'=>'warning','msg'=>'Número de contenedor y tipo son obligatorios']); die();
+        }
+
+        // El modelo debe implementar existeNumero($numero)
+        if ($this->model->existeNumero($numero)) {
+            echo json_encode(['status'=>'warning','msg'=>'Ya existe un contenedor con ese número']); die();
+        }
+
+        // El modelo debe implementar registrar($numero,$tipo,$obs)
+        $nuevoId = $this->model->registrar($numero, $tipo, $obs);
+        if (!$nuevoId) {
+            echo json_encode(['status'=>'error','msg'=>'No se pudo registrar el contenedor']); die();
+        }
+
+        echo json_encode(['status'=>'success','msg'=>'Contenedor registrado correctamente']); die();
+    }
+
+    public function editar($id)
+    {
+        // El modelo debe implementar obtenerContenedorMaritimo($id)
+        $data = $this->model->obtenerContenedorMaritimo($id);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE); die();
+    }
+
+    public function actualizar()
+    {
+        $id     = (int)($_POST['id_contenedor'] ?? 0);
+        $numero = strtoupper(trim($_POST['numero_contenedor'] ?? ''));
+        $tipo   = trim($_POST['tipo'] ?? '');
+        $obs    = trim($_POST['observaciones'] ?? '');
+
+        if ($id <= 0 || $numero === '' || $tipo === '') {
+            echo json_encode(['status'=>'warning','msg'=>'Datos incompletos']); die();
+        }
+
+        // El modelo debe implementar existeNumeroEnOtro($numero,$id)
+        if ($this->model->existeNumeroEnOtro($numero, $id)) {
+            echo json_encode(['status'=>'warning','msg'=>'Ya existe otro contenedor con ese número']); die();
+        }
+
+        // El modelo debe implementar actualizar($id,$numero,$tipo,$obs)
+        $ok = $this->model->actualizar($id, $numero, $tipo, $obs);
+        if (!$ok) {
+            echo json_encode(['status'=>'error','msg'=>'No se pudo actualizar el contenedor']); die();
+        }
+
+        echo json_encode(['status'=>'success','msg'=>'Contenedor actualizado correctamente']); die();
+    }
+
+    public function eliminar($id)
+    {
+        // El modelo debe implementar eliminar($id) => estatus=0
+        $res = $this->model->eliminar($id);
+        echo json_encode([
+            'status' => $res ? 'success' : 'error',
+            'msg'    => $res ? 'Contenedor eliminado' : 'Error al eliminar'
+        ], JSON_UNESCAPED_UNICODE);
         die();
     }
 }

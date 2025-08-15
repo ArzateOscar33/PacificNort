@@ -10,14 +10,25 @@
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
-                    <div class="d-flex justify-content-between mb-3">
-                        <div class="col-md-10">
-                            <input type="text" class="form-control " id="buscarContenedorFisico" name="buscarContenedorFisico" placeholder="Buscar Contenedor Fisico">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="col-md-8 position-relative">
+                            <input type="text" class="form-control" id="buscarContenedorFisico" name="buscarContenedorFisico" placeholder="Buscar Contenedor Físico">
                             <div id="sugerenciasContenedorFisico" class="list-group position-absolute w-100" style="z-index:999; display:none;"></div>
                         </div>
-                        <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarContenedorFisico" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#modalRegistrarContenedorFisico"><i class="fas fa-plus"></i> Agregar Contenedor Fisico</button>
+                        <div class="col-md-12">
+                        <div class="d-flex gap-2 align-items-center">
+                            <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
+                            <select id="perPageSelect" class="form-control " style="width:auto">
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            </select>
+                            <span class="small text-muted">por página</span>
+
+                            <button id="btnAgregarContenedorFisico" class="btn btn-primary ms-2 ml-2" data-bs-toggle="modal" data-bs-target="#modalRegistrarContenedorFisico">
+                            <i class="fas fa-plus"></i> Agregar Contenedor Físico
+                            </button>
+                        </div>
+                        </div>
                         </div>
                     </div>
                     <!-- /.d-flex -->
@@ -33,6 +44,10 @@
                                 
                             </tbody>
                         </table>
+                        <nav aria-label="Paginación de contenedores" class="mt-3">
+                        <ul class="pagination justify-content-end" id="paginacion"></ul>
+                        </nav>
+
                     </div>
                     <!-- /.table-responsive -->
                 </div>

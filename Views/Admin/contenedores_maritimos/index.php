@@ -1,107 +1,125 @@
-<?php include 'Views/Template/admin_header.php';
-?>
+<?php include 'Views/Template/admin_header.php'; ?>
 <div class="container col-md-12">
- 
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary ">
-                    <h3 class="card-title   mt-3 mb-3 text-white">Contenedores maritimos</h3>
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-3">
-                        <div class="col-md-10">
-                            <input type="text" class="form-control" id="buscarContenedorMaritimo" name="buscarContenedorMaritimo" placeholder="Buscar Contenedor Marino">
-                            <div id="sugerenciasContenedores" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
-
-                        </div>
-                        <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarContenedorMaritimo" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#modalRegistrarContenedorMaritimo"><i class="fas fa-plus"></i> Agregar Contenedor Marino</button>
-                        </div>
-                    </div>
-                    <!-- /.d-flex -->
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-primary text-center">
-                                <tr>
-                                    <th>Numero de Contenedor</th>
-                                    <th>Tipo</th>
-                                    <th>Naviera</th>
-                                    <th>Observaciones</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaContenedoresMaritimos">
-                                
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- /.table-responsive -->
-                </div>
-                <!-- /.card-body -->
-            </div>
-            <!-- /.card -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-primary">
+          <h3 class="card-title mt-3 mb-3 text-white">Contenedores Marítimos</h3>
         </div>
-        <!-- /.col -->
+
+        <div class="card-body">
+          <!-- Barra superior: búsqueda + selector 25/50 + botón agregar -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <!-- Buscador con contenedor relativo para las sugerencias -->
+            <div class="col-md-8 position-relative">
+              <input
+                type="text"
+                class="form-control"
+                id="buscarContenedorMaritimo"
+                name="buscarContenedorMaritimo"
+                placeholder="Buscar Contenedor Marítimo">
+              <div
+                id="sugerenciasContenedores"
+                class="list-group position-absolute top-100 start-0 w-100"
+                style="display:none; z-index:999;">
+              </div>
+            </div>
+
+            <!-- Selector 25/50 y botón Agregar -->
+            <div class="d-flex align-items-center gap-2">
+              <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
+              <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+              </select>
+              <span class="small text-muted">por página</span>
+
+              <button
+                id="btnAgregarContenedorMaritimo"
+                class="btn btn-primary ms-2 ml-2"
+                data-bs-toggle="modal"
+                data-bs-target="#modalRegistrarContenedorMaritimo">
+                <i class="fas fa-plus"></i> Agregar Contenedor Marítimo
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabla -->
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-primary text-center">
+                <tr>
+                  <th>Número de Contenedor</th>
+                  <th>Tipo</th>
+                  <th>Observaciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaContenedoresMaritimos"></tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <nav aria-label="Paginación de contenedores" class="mt-3">
+            <ul class="pagination justify-content-end" id="paginacion"></ul>
+          </nav>
+        </div>
+      </div>
     </div>
-    <!-- /.row -->
+  </div>
 </div>
 
-  
-<div class="modal fade" id="modalRegistrarContenedorMaritimo" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-    aria-labelledby="modalRegistrarContenedorMaritimoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+<!-- Modal: Crear / Editar -->
+<div
+  class="modal fade"
+  id="modalRegistrarContenedorMaritimo"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+  tabindex="-1"
+  aria-labelledby="modalRegistrarContenedorMaritimoLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalRegistrarContenedorMaritimoLabel">
+          <i data-feather="plus-circle" class="me-2"></i> Registrar Contenedor Marítimo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
 
-            <!-- Encabezado -->
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalRegistrarContenedorMaritimoLabel">
-                    <i data-feather="plus-circle" class="me-2"></i> Registrar Contenedor Marítimo
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Cerrar"></button>
-            </div>
+      <div class="modal-body">
+        <form id="formContenedorMaritimo" method="POST" action="#">
+          <input type="hidden" name="id_contenedor" id="id_contenedor" value="">
 
-            <!-- Cuerpo -->
-            <div class="modal-body">
-                <form id="formContenedorMaritimo" method="POST" action="#">
-                    <input type="hidden" name="id_contenedor" id="id_contenedor" value="">
-                    <div class="mb-3">
-                        <label for="numero_contenedor" class="form-label">Número de Contenedor</label>
-                        <input type="text" class="form-control" name="numero_contenedor" id="numero_contenedor"required>
-                    </div>
+          <div class="mb-3">
+            <label for="numero_contenedor" class="form-label">Número de Contenedor</label>
+            <input type="text" class="form-control" name="numero_contenedor" id="numero_contenedor" required>
+          </div>
 
-                    <div class="mb-3">
-                        <label for="tipo" class="form-label">Tipo</label>
-                        <input type="text" class="form-control" name="tipo" id="tipo" placeholder="Ej: 40HQ, 20STD" required>
-                    </div>
+          <div class="mb-3">
+            <label for="tipo" class="form-label">Tipo</label>
+            <input type="text" class="form-control" name="tipo" id="tipo" placeholder="Ej: 40HQ, 20STD" required>
+          </div>
 
-         
+          <div class="mb-3">
+            <label for="observaciones" class="form-label">Observaciones</label>
+            <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+          </div>
 
-                    <div class="mb-3">
-                        <label for="observaciones" class="form-label">Observaciones</label>
-                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
-                    </div>
+          <div class="modal-footer px-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i data-feather="x-circle" class="me-1"></i> Cancelar
+            </button>
+            <button type="submit" id="btnSubmit" class="btn btn-primary">
+              <i data-feather="check-circle" class="me-1"></i> Agregar
+            </button>
+          </div>
+        </form>
+      </div>
 
-                    <!-- Footer -->
-                    <div class="modal-footer px-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i data-feather="x-circle" class="me-1"></i> Cancelar
-                        </button>
-                        <button type="submit" id="btnSubmit" class="btn btn-primary">
-                            <i data-feather="check-circle" class="me-1"></i> Agregar
-                        </button>
-                    </div>
-
-                </form>
-            </div>
-
-        </div>
     </div>
+  </div>
 </div>
-
 
 <?php include 'Views/Template/admin_footer.php'; ?>
 <script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/contenedores_maritimos.js"></script>

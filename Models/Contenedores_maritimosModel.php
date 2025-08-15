@@ -1,115 +1,149 @@
 <?php
 class Contenedores_maritimosModel extends Query
 {
-    /* ===== LISTAR ===== */
-    public function listar()
+    /**
+     * Lista con paginación y búsqueda opcional (por numero_contenedor, tipo u observaciones)
+     * @return array ['rows' => [...], 'total' => int]
+     */
+    public function listarPaginado(int $offset, int $limit, ?string $q = null): array
     {
+        $offset = max(0, (int)$offset);
+        $limit  = in_array((int)$limit, [25, 50], true) ? (int)$limit : 25;
+
+        $where  = "estatus = 1";
+        $params = [];
+
+        if ($q !== null && $q !== '') {
+            $needle = "%" . mb_strtolower($q, 'UTF-8') . "%";
+            $where .= " AND (LOWER(numero_contenedor) LIKE ?
+                           OR LOWER(tipo)              LIKE ?
+                           OR LOWER(observaciones)     LIKE ?)";
+            $params = [$needle, $needle, $needle];
+        }
+
         $sql = "SELECT 
-                    c.id_contenedor_maritimo AS id_contenedor,
-                    c.numero_contenedor,
-                    c.tipo, 
-                    c.observaciones,
-                    c.estatus
-                FROM contenedores_maritimos c
-                WHERE c.estatus = 1
-                ORDER BY c.id_contenedor_maritimo DESC";
-        return $this->selectAll($sql);
+                    id_contenedor_maritimo AS id_contenedor,
+                    numero_contenedor,
+                    tipo,
+                    observaciones,
+                    estatus
+                FROM contenedores_maritimos
+                WHERE $where
+                ORDER BY id_contenedor_maritimo DESC
+                LIMIT $limit OFFSET $offset";
+        $rows = $this->selectAll($sql, $params);
+
+        $sqlCount = "SELECT COUNT(*) AS total
+                     FROM contenedores_maritimos
+                     WHERE $where";
+        $count = $this->select($sqlCount, $params);
+
+        return [
+            'rows'  => $rows ?: [],
+            'total' => (int)($count['total'] ?? 0),
+        ];
     }
 
  
-
-    /* ===== OBTENER UNO ===== */
-    public function obtener($id_contenedor_maritimo)
+    public function buscar(string $termino)
     {
-        $sql = "SELECT 
-                    c.id_contenedor_maritimo AS id_contenedor,
-                    c.numero_contenedor,
-                    c.tipo,
-                    c.observaciones,
-                    c.estatus
-                FROM contenedores_maritimos c 
-                WHERE c.id_contenedor_maritimo = ?
-                LIMIT 1";
-        return $this->select($sql, [$id_contenedor_maritimo]);
+        $needle = "%" . mb_strtolower($termino, 'UTF-8') . "%";
+        $sql = "SELECT
+                    id_contenedor_maritimo AS id_contenedor,
+                    numero_contenedor,
+                    tipo,
+                    observaciones,
+                    estatus
+                FROM contenedores_maritimos
+                WHERE estatus = 1
+                  AND (LOWER(numero_contenedor) LIKE ?
+                       OR LOWER(tipo)          LIKE ?
+                       OR LOWER(observaciones) LIKE ?)
+                ORDER BY id_contenedor_maritimo DESC
+                LIMIT 100";
+        return $this->selectAll($sql, [$needle, $needle, $needle]);
     }
 
-    /* ===== DUPLICADOS POR NÚMERO ===== */
-    public function existeNumero($numero_contenedor)
+
+    public function obtenerContenedorMaritimo($id)
     {
-        $sql = "SELECT id_contenedor_maritimo AS id_contenedor, estatus
+        $sql = "SELECT
+                    id_contenedor_maritimo AS id_contenedor,
+                    numero_contenedor,
+                    tipo,
+                    observaciones,
+                    estatus
+                FROM contenedores_maritimos
+                WHERE id_contenedor_maritimo = ? AND estatus = 1
+                LIMIT 1";
+        return $this->select($sql, [$id]);
+    }
+
+
+    public function existeNumero(string $numero)
+    {
+        $sql = "SELECT id_contenedor_maritimo
                 FROM contenedores_maritimos
                 WHERE LOWER(numero_contenedor) = LOWER(?)
+                  AND estatus = 1
                 LIMIT 1";
-        return $this->select($sql, [$numero_contenedor]);
+        return $this->select($sql, [$numero]);
     }
 
-    public function existeNumeroOtro($numero_contenedor, $id_contenedor)
+    public function existeNumeroEnOtro(string $numero, int $id)
     {
-        $sql = "SELECT id_contenedor_maritimo AS id_contenedor, estatus
+        $sql = "SELECT id_contenedor_maritimo
                 FROM contenedores_maritimos
                 WHERE LOWER(numero_contenedor) = LOWER(?)
                   AND id_contenedor_maritimo <> ?
+                  AND estatus = 1
                 LIMIT 1";
-        return $this->select($sql, [$numero_contenedor, $id_contenedor]);
+        return $this->select($sql, [$numero, $id]);
     }
 
-    /* ===== CRUD ===== */
-    public function registrar($numero_contenedor, $tipo, $observaciones)
+    /**
+     * Crear / Update / Delete (lógico)
+     */
+    public function registrar(string $numero, ?string $tipo, ?string $obs)
     {
-        // permite NULL mientras migras; si ya es NOT NULL en DB, asegúrate que venga un id válido
+        $tipo = ($tipo === '' ? null : $tipo);
+        $obs  = ($obs  === '' ? null : $obs);
+
         $sql = "INSERT INTO contenedores_maritimos
-                    (numero_contenedor, tipo, naviera_id, observaciones, estatus)
-                VALUES (?,?,?,1)";
-        return $this->insertar($sql, [$numero_contenedor, $tipo, $observaciones]);
+                    (numero_contenedor, tipo, observaciones, estatus)
+                VALUES (?, ?, ?, 1)";
+        return $this->insertar($sql, [$numero, $tipo, $obs]);
     }
 
-    public function reactivar($id_contenedor, $numero_contenedor, $tipo, $observaciones)
+    public function actualizar(int $id, string $numero, ?string $tipo, ?string $obs)
+    {
+        $tipo = ($tipo === '' ? null : $tipo);
+        $obs  = ($obs  === '' ? null : $obs);
+
+        $sql = "UPDATE contenedores_maritimos
+                   SET numero_contenedor = ?,
+                       tipo              = ?,
+                       observaciones     = ?
+                 WHERE id_contenedor_maritimo = ?";
+        return $this->save($sql, [$numero, $tipo, $obs, $id]);
+    }
+
+    public function eliminar(int $id)
     {
         $sql = "UPDATE contenedores_maritimos
-                SET numero_contenedor = ?, 
-                    tipo = ?, 
-                    observaciones = ?, 
-                    estatus = 1
-                WHERE id_contenedor_maritimo = ?";
-        return $this->save($sql, [$numero_contenedor, $tipo, $observaciones, $id_contenedor]);
+                   SET estatus = 0
+                 WHERE id_contenedor_maritimo = ?";
+        return $this->save($sql, [$id]);
     }
 
-    public function actualizar($id_contenedor, $numero_contenedor, $tipo, $observaciones)
+    public function listar()
     {
-        $sql = "UPDATE contenedores_maritimos
-                SET numero_contenedor = ?, 
-                    tipo = ?,  
-                    observaciones = ?
-                WHERE id_contenedor_maritimo = ?";
-        return $this->save($sql, [$numero_contenedor, $tipo, $observaciones, $id_contenedor]);
+        $sql = "SELECT 
+                    id_contenedor_maritimo AS id_contenedor,
+                    numero_contenedor, tipo, observaciones, estatus
+                FROM contenedores_maritimos
+                WHERE estatus = 1
+                ORDER BY id_contenedor_maritimo DESC";
+        return $this->selectAll($sql);
     }
-
-    public function eliminar($id_contenedor)
-    {
-        $sql = "UPDATE contenedores_maritimos
-                SET estatus = 0
-                WHERE id_contenedor_maritimo = ?";
-        return $this->save($sql, [$id_contenedor]);
-    }
-
-public function buscar($termino)
-{
-    $needle = "%".mb_strtolower($termino, 'UTF-8')."%";
-    $sql = "SELECT
-                c.id_contenedor_maritimo AS id_contenedor,
-                c.numero_contenedor,
-                c.tipo, 
-                c.observaciones
-            FROM contenedores_maritimos c 
-            WHERE c.estatus = 1
-              AND (
-                    LOWER(c.numero_contenedor) LIKE ?
-                 OR LOWER(c.tipo)              LIKE ?
-                 OR LOWER(IFNULL(c.observaciones,'')) LIKE ?
-              )
-            ORDER BY c.id_contenedor_maritimo DESC
-            LIMIT 100";
-    return $this->selectAll($sql, [$needle, $needle, $needle]);  
-}
-
 }
