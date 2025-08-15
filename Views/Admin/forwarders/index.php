@@ -6,19 +6,18 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header bg-primary ">
-                    <h3 class="card-title   mt-3 mb-3 text-white">Contenedores maritimos</h3>
+                    <h3 class="card-title mt-3 mb-3 text-white">Forwarders</h3>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control" id="buscarContenedorMaritimo" name="buscarContenedorMaritimo" placeholder="Buscar Contenedor Marino">
-                            <div id="sugerenciasContenedores" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
-
+                            <input type="text" class="form-control " id="buscarForwarder" name="buscarForwarder" placeholder="Buscar Forwarder">
+                              <div id="sugerenciasForwarders" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarContenedorMaritimo" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#modalRegistrarContenedorMaritimo"><i class="fas fa-plus"></i> Agregar Contenedor Marino</button>
+                            <button href="#" id="btnAgregarForwarder" class="btn btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modalRegistrarForwarder"><i class="fas fa-plus"></i> Agregar Forwarder</button>
                         </div>
                     </div>
                     <!-- /.d-flex -->
@@ -26,14 +25,12 @@
                         <table class="table table-hover">
                             <thead class="table-primary text-center">
                                 <tr>
-                                    <th>Numero de Contenedor</th>
-                                    <th>Tipo</th>
-                                    <th>Naviera</th>
-                                    <th>Observaciones</th>
+                                    <th>Nombre</th>
+                                    <th>Contacto</th> 
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="tablaContenedoresMaritimos">
+                            <tbody id="tablaForwarders" class="text-center">
                                 
                             </tbody>
                         </table>
@@ -48,17 +45,16 @@
     </div>
     <!-- /.row -->
 </div>
-
-  
-<div class="modal fade" id="modalRegistrarContenedorMaritimo" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-    aria-labelledby="modalRegistrarContenedorMaritimoLabel" aria-hidden="true">
+ 
+<div class="modal fade" id="modalRegistrarForwarder" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalRegistrarForwarderLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
             <!-- Encabezado -->
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalRegistrarContenedorMaritimoLabel">
-                    <i data-feather="plus-circle" class="me-2"></i> Registrar Contenedor Marítimo
+                <h5 class="modal-title" id="modalRegistrarForwarderLabel">
+                    <i data-feather="user-plus" class="me-2"></i> Registrar Forwarder
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Cerrar"></button>
@@ -66,24 +62,19 @@
 
             <!-- Cuerpo -->
             <div class="modal-body">
-                <form id="formContenedorMaritimo" method="POST" action="#">
-                    <input type="hidden" name="id_contenedor" id="id_contenedor" value="">
+                <form id="formForwarder" method="POST" action="#">
+                    <input type="hidden" name="id_Forwarder" id="id_Forwarder">
                     <div class="mb-3">
-                        <label for="numero_contenedor" class="form-label">Número de Contenedor</label>
-                        <input type="text" class="form-control" name="numero_contenedor" id="numero_contenedor"required>
+                        <label for="nombre" class="form-label">Nombre del Forwarder</label>
+                        <input type="text" id="nombre" name="nombre" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="tipo" class="form-label">Tipo</label>
-                        <input type="text" class="form-control" name="tipo" id="tipo" placeholder="Ej: 40HQ, 20STD" required>
+                        <label for="contacto" class="form-label">Nombre del Contacto</label>
+                        <input type="text" id="contacto" name="contacto" class="form-control" required>
                     </div>
 
-         
-
-                    <div class="mb-3">
-                        <label for="observaciones" class="form-label">Observaciones</label>
-                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
-                    </div>
+                
 
                     <!-- Footer -->
                     <div class="modal-footer px-0">
@@ -104,4 +95,5 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/contenedores_maritimos.js"></script>
+<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/forwarders.js'></script>
+

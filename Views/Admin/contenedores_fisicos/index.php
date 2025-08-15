@@ -12,10 +12,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
-                            <input type="text" class="form-control " placeholder="Buscar Contenedor Fisico">
+                            <input type="text" class="form-control " id="buscarContenedorFisico" name="buscarContenedorFisico" placeholder="Buscar Contenedor Fisico">
+                            <div id="sugerenciasContenedorFisico" class="list-group position-absolute w-100" style="z-index:999; display:none;"></div>
                         </div>
                         <div class="  d-flex justify-content-end  col-md-2">
-                            <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
+                            <button href="#" id="btnAgregarContenedorFisico" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarContenedorFisico"><i class="fas fa-plus"></i> Agregar Contenedor Fisico</button>
                         </div>
                     </div>
@@ -28,7 +29,7 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tablaContenedoresFisicos">
                                 
                             </tbody>
                         </table>
@@ -64,8 +65,9 @@
                 <form action="#" method="POST" id="formContenedorFisico">
 
                     <div class="mb-3">
-                        <label for="numero_ferro_fisico" class="form-label">Número de Ferro / Nombre de Físico</label>
-                        <input type="text" class="form-control" name="numero_ferro_fisico" required>
+                        <input type="hidden" name="id" id="id" value="">
+                        <label for="numero_ferro_fisico"  class="form-label">Número de Ferro / Nombre de Físico</label>
+                        <input type="text" class="form-control" id="numero_ferro_fisico" name="numero_ferro_fisico" required>
                     </div>
 
                     <!-- Footer -->
@@ -73,7 +75,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i data-feather="x-circle" class="me-1"></i> Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="btnSubmit"class="btn btn-primary">
                             <i data-feather="check-circle" class="me-1"></i> Agregar
                         </button>
                     </div>
@@ -88,3 +90,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/contenedores_fisicos.js"></script>

@@ -230,6 +230,9 @@
                                 </li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>shippers" class="sidebar-link"><i
                                             data-feather="send"></i><span class="hide-menu">Shippers</span></a></li>
+                                            
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>forwarders" class="sidebar-link"><i
+                                            data-feather="send"></i><span class="hide-menu">Forwarders</span></a></li>
                             </ul>
                         </li>
 
