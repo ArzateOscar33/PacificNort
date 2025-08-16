@@ -7,7 +7,7 @@
         <li class="nav-item">
             <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true">Resumen</a>
         </li>
-        <li class="nav-item">
+         <li class="nav-item">
             <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false">Crear Operación</a>
         </li>
         <li class="nav-item">
@@ -16,20 +16,20 @@
         <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false">Costos Contenedor</a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos" aria-selected="false">Costos por Operacion</a>
-        </li>
  
+        <li class="nav-item">
+            <a class="nav-link" id="trazabilidad-tab" data-bs-toggle="tab" href="#trazabilidad" role="tab" aria-controls="trazabilidad" aria-selected="false">Trazabilidad</a>
+        </li>
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false">Documentos</a>
         </li>
  
  
-        <li class="nav-item">
+        <!--<li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#detalles-logisticos">
             <i data-feather="file-text"></i> Detalles Logísticos
         </a>
-        </li>
+        </li> -->
     </ul>
 
     <div class="tab-content mt-3">

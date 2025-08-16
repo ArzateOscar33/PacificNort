@@ -269,12 +269,12 @@
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
                                 <li class="sidebar-item"><a href="<?= BASE_URL .'operaciones/ver' ?>" class="sidebar-link"><i
-                                            data-feather="plus-square"></i><span class="hide-menu">Crear
-                                            Operación</span></a></li>
-                               <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/terrestre"
+                                            data-feather="anchor"></i><span class="hide-menu">
+                                            Operaciones Maritimas</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_terrestres/ver"
                                         class="sidebar-link"><i data-feather="truck"></i><span
                                             class="hide-menu">Operaciones Terrestres</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/maritimo"
+                               <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/maritimo"
                                         class="sidebar-link"><i data-feather="navigation"></i><span
                                             class="hide-menu">Operaciones Marítimas</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>documentos_operacion"

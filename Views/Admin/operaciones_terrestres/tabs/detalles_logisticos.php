@@ -39,7 +39,14 @@
             <label for="bultos" class="form-label">Bultos</label>
             <input type="number" class="form-control" name="bultos">
           </div>
- 
+          <div class="col-md-3">
+            <label for="peso" class="form-label">Peso (kg)</label>
+            <input type="number" class="form-control" step="0.01" name="peso">
+          </div>
+          <div class="col-md-3">
+            <label for="vgm" class="form-label">VGM</label>
+            <input type="number" class="form-control" step="0.01" name="vgm">
+          </div>
           <div class="col-md-3">
             <label for="brecha" class="form-label">Brecha</label>
             <input type="number" class="form-control" step="0.01" name="brecha">
@@ -83,7 +90,9 @@
           <th>Cargado</th>
           <th>Cruce</th>
           <th>Entrega</th>
-          <th>Bultos</th> 
+          <th>Bultos</th>
+          <th>Peso</th>
+          <th>VGM</th>
           <th>Brecha</th>
           <th>Bodega</th>
           <th>Broker</th>
@@ -99,7 +108,9 @@
           <td>2025-08-06</td>
           <td>2025-08-07</td>
           <td>2025-08-08</td>
-          <td>22</td> 
+          <td>22</td>
+          <td>5200</td>
+          <td>5250</td>
           <td>50</td>
           <td>PT-02</td>
           <td>BKR-09</td>
