@@ -156,26 +156,7 @@ function setPuertoDefaultFromSubtipo(){
   if (has) selPuertoArribo.value = String(puertoDefault);
 }
 
-// 🔹 Nuevo: aplicar regla de Naviera
-function applyNavieraRuleFromSubtipo(){
-  if (!selSubtipoModal) return;
-  const opt = selSubtipoModal.options[selSubtipoModal.selectedIndex];
-  if (!opt) return;
-  const reqNaviera = parseInt(opt.getAttribute('data-req-naviera') || '0', 10);
-
-  if (reqNaviera === 1){
-    show(groupNaviera);
-    enable(selNaviera);
-    // Opcional: si quieres forzar selección, NO autoselecciones aquí.
-    // Si deseas auto-seleccionar si sólo hay una opción real:
-    // const opts = Array.from(selNaviera.options).filter(o => o.value !== '');
-    // if (opts.length === 1) selNaviera.value = opts[0].value;
-  } else {
-    hide(groupNaviera);
-    clearSelect(selNaviera); // limpiar si antes se había seleccionado
-    disable(selNaviera);     // opcional
-  }
-}
+ 
 
 // Valida requisitos mínimos antes de guardar
 function validarCamposObligatorios(){
@@ -192,7 +173,7 @@ function validarCamposObligatorios(){
 // Enlazar a cambios del Subtipo
 selSubtipoModal?.addEventListener('change', () => {
   setPuertoDefaultFromSubtipo(); // si ya lo usas
-  applyNavieraRuleFromSubtipo();
+   
 
   // Habilitar/Deshabilitar Guardar según validación
   if (validarCamposObligatorios()) btnGuardarOp?.removeAttribute('disabled');
@@ -207,7 +188,7 @@ selNaviera?.addEventListener('change', () => {
 
 // Al abrir el modal: aplicar reglas si viene en edición
 document.getElementById('modalOperacionMaritima')?.addEventListener('shown.bs.modal', () => {
-  applyNavieraRuleFromSubtipo();
+ 
   if (!selPuertoArribo.value) setPuertoDefaultFromSubtipo();
   if (validarCamposObligatorios()) btnGuardarOp?.removeAttribute('disabled');
 });
@@ -223,26 +204,7 @@ function clearSelect(sel){ if(!sel) return; sel.value = ''; }
 function enable(el){ el?.removeAttribute('disabled'); }
 function disable(el){ el?.setAttribute('disabled','disabled'); }
 
-// 🔹 Regla para Forwarder en base al Subtipo
-function applyForwarderRuleFromSubtipo(){
-  if (!selSubtipoModal) return;
-  const opt = selSubtipoModal.options[selSubtipoModal.selectedIndex];
-  if (!opt) return;
-
-  const reqForwarder = parseInt(opt.getAttribute('data-req-forwarder') || '0', 10);
-
-  if (reqForwarder === 1){
-    show(groupForwarder);
-    enable(selForwarder);
-    // (Opcional) autoseleccionar si solo hay 1 opción real
-    // const opts = Array.from(selForwarder.options).filter(o => o.value !== '');
-    // if (opts.length === 1) selForwarder.value = opts[0].value;
-  } else {
-    hide(groupForwarder);
-    clearSelect(selForwarder);
-    disable(selForwarder); // opcional
-  }
-}
+ 
 
 // ✅ Validación mínima antes de guardar (Naviera + Forwarder)
 function validarCamposObligatorios(){
@@ -261,8 +223,7 @@ function validarCamposObligatorios(){
 
 // Eventos
 selSubtipoModal?.addEventListener('change', () => {
-  // ya tienes: setPuertoDefaultFromSubtipo(); applyNavieraRuleFromSubtipo();
-  applyForwarderRuleFromSubtipo();
+ 
 
   if (validarCamposObligatorios()) btnGuardarOp?.removeAttribute('disabled');
   else btnGuardarOp?.setAttribute('disabled','disabled');
@@ -275,7 +236,7 @@ selForwarder?.addEventListener('change', () => {
 
 // Al abrir el modal (edición/alta)
 document.getElementById('modalOperacionMaritima')?.addEventListener('shown.bs.modal', () => {
-  applyForwarderRuleFromSubtipo();
+  
   if (validarCamposObligatorios()) btnGuardarOp?.removeAttribute('disabled');
 });
 

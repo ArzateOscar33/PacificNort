@@ -183,7 +183,7 @@
                         </div>
  
                             <!-- Condicional: Naviera -->
-                            <div class="col-md-3 d-none" id="campoNaviera">
+                            <div class="col-md-3 " id="campoNaviera">
                             <label class="form-label">Naviera</label>
                             <select id="navieraId" name="naviera_id" class="form-control">
                                 <option value="">Seleccione...</option>
@@ -206,7 +206,7 @@
                             </div>
 
                                 <!-- Condicional: Forwarder -->
-                                <div class="col-md-3 d-none" id="campoForwarder">
+                                <div class="col-md-3 " id="campoForwarder">
                                 <label class="form-label">Forwarder</label>
                                 <select id="forwarderId" name="forwarder_id" class="form-control">
                                     <option value="">Seleccione...</option>

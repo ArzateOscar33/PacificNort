@@ -1,9 +1,9 @@
 <div class="container py-4 col-md-12">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4>Contenedores en Operación</h4>
-<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarContenedor">
-    <i data-feather="plus"></i> Añadir Contenedor
-</button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarContenedor">
+            <i data-feather="plus"></i> Añadir Contenedor
+        </button>
     </div>
 
     <div class="row mb-4">
@@ -22,14 +22,15 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-bordered align-middle">
+        <table class="table table-bordered align-middle" id="tablaContenedores">
             <thead class="table-light">
                 <tr>
+                    
                     <th>Tipo</th>
+                    <th>Operacion</th>
                     <th>Contenedor</th>
                     <th>Cliente</th>
-                    <th>Bultos</th>
-                    <th>Peso</th>
+                    <th>Bultos</th> 
                     <th>ETA</th>
                     <th>ETD</th>
                     <th>Arribo SD</th>
@@ -37,100 +38,109 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td><i data-feather="truck" class="text-warning"></i> Terrestre</td>
-                    <td>WHUS6796036</td>
-                    <td>CP Danny</td>
-                    <td>22</td>
-                    <td>5.6 t</td>
-                    <td>11/08/2025</td>
-                    <td>12/08/2025</td>
-                    <td>13/08/2025</td>
-                    <td>TRUCKER MEX</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary"><i data-feather="edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i data-feather="x"></i></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><i data-feather="anchor" class="text-primary"></i> Marítimo</td>
-                    <td>CMAU9196054</td>
-                    <td>CP Danny</td>
-                    <td>18</td>
-                    <td>8.2 t</td>
-                    <td>06/08/2025</td>
-                    <td>07/08/2025</td>
-                    <td>08/08/2025</td>
-                    <td>CMA CGM</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary"><i data-feather="edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i data-feather="x"></i></button>
-                    </td>
-                </tr>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 </div>
 
 <!-- Modal: Agregar Contenedor a la Operación -->
-<!-- Modal: Agregar Contenedor a la Operación -->
-<div class="modal fade" id="modalAgregarContenedor" tabindex="-1" aria-labelledby="modalAgregarContenedorLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalAgregarContenedorLabel">
-                    <i data-feather="plus-circle" class="me-1"></i> Añadir Contenedor a la Operación
-                </h5>
+<div class="modal fade" id="modalAgregarContenedor" tabindex="-1" aria-labelledby="modalAgregarContenedorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalAgregarContenedorLabel">
+          <i data-feather="plus-circle" class="me-1"></i> Añadir Contenedor a la Operación
+        </h5>
+      </div>
+      <div class="modal-body">
+        <form id="formAgregarContenedor" autocomplete="off">
+          <div class="row mb-3">
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Operación</label>
+              <input type="hidden" id="operacion_id" name="operacion_id">
+              <input type="text" id="operacionNombre" class="form-control" placeholder="Escribe para buscar operación...">
+              <div id="sugOperaciones" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+              <small class="text-muted">Sugerencia: escribe número de operación, BL o cliente.</small>
             </div>
-            <div class="modal-body">
-                <form id="formAgregarContenedor">
-                    <div class="row mb-3">
-                        
-                        <div class="col-md-6">
-                            <label for="contenedor_id" class="form-label">Contenedor Físico</label>
-                            <select id="contenedor_id" name="contenedor_id" class="form-control" required>
-                                <option value="">Selecciona un contenedor</option>
-                                <!-- Opciones dinámicas desde DB -->
-                            </select>
-                        </div>
-                    </div>
-
-  
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="bultos" class="form-label">Bultos</label>
-                            <input type="number" id="bultos" name="bultos" class="form-control">
-                        </div>
- 
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="comentarios" class="form-label">Comentarios</label>
-                        <textarea id="comentarios" name="comentarios" class="form-control" rows="3"></textarea>
-                    </div>
-                </form>
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Cliente</label>
+              <input type="hidden" id="cliente_id" name="cliente_id" >
+              <input type="text" id="clienteNombre" class="form-control" placeholder=""  >
+              <div id="sugClientes" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+      
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i data-feather="x"></i> Cancelar
-                </button>
-                <button type="submit" form="formAgregarContenedor" class="btn btn-primary">
-                    <i data-feather="save"></i> Guardar
-                </button>
+
+          </div>
+        <div class="row mb-3">
+            
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Contenedor Físico</label>
+              <input type="hidden" id="contenedor_id" name="contenedor_id">
+              <input type="text" id="contenedorNombre" class="form-control" placeholder="Escribe para buscar contenedor...">
+              <div id="sugContenedores" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+              <small class="text-muted">Sugerencia: escribe parte del número (ej. WHUS...).</small>
             </div>
+            <div class="col-md-6">
+              <label for="bultos" class="form-label">Bultos</label>
+              <input type="number" id="bultos" name="bultos" class="form-control">
+            </div>
+
         </div>
+          <div class="row mb-3">
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Shipper</label>
+              <input type="hidden" id="shipper_id" name="shipper_id">
+              <input type="text" id="shipperNombre" class="form-control" placeholder="Escribe para buscar shipper...">
+              <div id="sugShippers" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+            </div>
+          <div class="mb-3 col-md-6">
+            <div class="col-md-12">
+            <label for="comentarios" class="form-label">Comentarios</label>
+            <textarea id="comentarios" name="comentarios" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          </div>
+
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i data-feather="x"></i> Cancelar
+        </button>
+        <button type="submit" form="formAgregarContenedor" class="btn btn-primary">
+          <i data-feather="save"></i> Guardar
+        </button>
+      </div>
     </div>
+  </div>
 </div>
 
 <script>
-    feather.replace();
+  feather.replace();
 </script>
 
+<!-- Inyectamos los catálogos como arrays JS, generados por PHP -->
+<script> 
+  window.CAT_OPERACIONES = <?= json_encode(array_map(function($r){
+      return [
+        'id'          => (int)$r['id_operacion'],
+        'label'       => trim(($r['numero_operacion'] ?? '')),
+        'cliente_id'  => isset($r['cliente_id']) ? (int)$r['cliente_id'] : 0,
+        'cliente'     => trim(($r['cliente'] ?? '')),
+      ];
+  }, $data['ops'] ?? []), JSON_UNESCAPED_UNICODE); ?>;
 
-<script>
-    feather.replace();
+ 
+
+
+  window.CAT_FISICOS = <?= json_encode(array_map(function($r){
+      return ['id' => (int)$r['id_fisico'], 'label' => $r['numero_ferro'] ?? ''];
+  }, $data['fisicos'] ?? []), JSON_UNESCAPED_UNICODE); ?>;
+
+  window.CAT_SHIPPERS = <?= json_encode(array_map(function($r){
+      return ['id' => (int)$r['id_shipper'], 'label' => $r['nombre'] ?? ''];
+  }, $data['shippers'] ?? []), JSON_UNESCAPED_UNICODE); ?>;
 </script>
+
  

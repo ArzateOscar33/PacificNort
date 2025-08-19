@@ -1,6 +1,8 @@
 <?php
+require_once "Models/Operaciones_maritimas_contenedoresModel.php";
 class Operaciones_maritimas extends Controller
 {
+    private $contenedoresModel; 
     public function __construct()
     {
         parent::__construct();
@@ -9,32 +11,30 @@ class Operaciones_maritimas extends Controller
             header("Location: " . BASE_URL);
             exit;
         }
+        // Modelo especializado para el tab de contenedores
+           $this->contenedoresModel = new Operaciones_maritimas_contenedoresModel();
     }
 
+    
     // =================== VISTAS ===================
     public function ver()
     {
         $data['title']      = 'Operaciones Marítimas';
         $data['subtipos']   = $this->model->subtiposMaritimos();
         $data['estatus']    = $this->model->catalogoEstatus();
-        $data['puertos']    = $this->model->catalogoPuertos();     // se usa para el select (solo UI)
+        $data['puertos']    = $this->model->catalogoPuertos();   
         $data['navieras']   = $this->model->catalogoNavieras();
         $data['forwarders'] = $this->model->catalogoForwarders();
+
+
+        // Catálogos del tab “Contenedores en Operación”
+        $data['ops']       = $this->contenedoresModel->catalogoOperaciones();
+        $data['fisicos']   = $this->contenedoresModel->catalogoContenedoresFisicos();
+        $data['shippers']  = $this->contenedoresModel->catalogoShippers();
         $this->views->getView('admin/operaciones_maritimas/', "ver", $data);
     }
 
-    // ===== Tabs opcionales =====
-    public function crear_operacion($id){ $this->views->getView('admin/operaciones_maritimas/tabs/operaciones', "crear_operacion", ['title'=>'Crear Operación']); }
-    public function detalles($id){        $this->views->getView('admin/operaciones_maritimas/tabs/detalles_generales', "detalles", ['title'=>'Detalles Operación']); }
-    public function contenedores($id){    $this->views->getView('admin/operaciones_maritimas/tabs/contenedores', "contenedores", ['title'=>'Contenedores']); }
-    public function costos($id){          $this->views->getView('admin/operaciones_maritimas/tabs/costos', "costos", ['title'=>'Costos por Contenedor']); }
-    public function costos_operacion($id){$this->views->getView('admin/operaciones_maritimas/tabs/costos_operacion', "costos_operacion", ['title'=>'Costos por Operación']); }
-    public function trazabilidad($id){    $this->views->getView('admin/operaciones_maritimas/tabs/trazabilidad', "trazabilidad", ['title'=>'Trazabilidad']); }
-    public function documentos($id){      $this->views->getView('admin/operaciones_maritimas/tabs/documentos', "documentos", ['title'=>'Documentos']); }
-    public function log($id){             $this->views->getView('admin/operaciones_maritimas/tabs/log', "log", ['title'=>'Bitácora']); }
-    public function detalles_logisticos($id){
-        $this->views->getView('admin/operaciones_maritimas/tabs/detalles_logisticos', "detalles_logisticos", ['title'=>'Detalles Logísticos']);
-    }
+ 
 
     // =================== API ===================
 

@@ -83,5 +83,7 @@
 </script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/operaciones_maritimas_registrar_operaciones.js">
 </script>
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/contenedores_operacion.js">
+</script>
  
 
