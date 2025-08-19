@@ -19,7 +19,7 @@
     <link href="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
     <!-- Custom CSS -->
-
+    <script src="https://unpkg.com/feather-icons"></script> 
     <link href="<?php echo BASE_URL; ?>/dist/css/style.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -268,7 +268,7 @@
                                 <span class="hide-menu">Operaciones</span>
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
-                                <li class="sidebar-item"><a href="<?= BASE_URL .'operaciones/ver' ?>" class="sidebar-link"><i
+                                <li class="sidebar-item"><a href="<?= BASE_URL .'operaciones_maritimas/ver' ?>" class="sidebar-link"><i
                                             data-feather="anchor"></i><span class="hide-menu">
                                             Operaciones Maritimas</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_terrestres/ver"

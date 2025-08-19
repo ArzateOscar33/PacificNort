@@ -1,0 +1,136 @@
+<div class="container py-4 col-md-12">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Contenedores en Operación</h4>
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarContenedor">
+    <i data-feather="plus"></i> Añadir Contenedor
+</button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label for="filtro_tipo" class="form-label">Tipo de Contenedor</label>
+            <select id="filtro_tipo" class="form-control">
+                <option value="">Todos</option>
+                <option value="maritimo">Marítimo</option>
+                <option value="terrestre">Terrestre</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="buscar" class="form-label">Buscar Cliente o Contenedor</label>
+            <input type="text" id="buscar" class="form-control" placeholder="Buscar...">
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Tipo</th>
+                    <th>Contenedor</th>
+                    <th>Cliente</th>
+                    <th>Bultos</th>
+                    <th>Peso</th>
+                    <th>ETA</th>
+                    <th>ETD</th>
+                    <th>Arribo SD</th>
+                    <th>Shipper</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><i data-feather="truck" class="text-warning"></i> Terrestre</td>
+                    <td>WHUS6796036</td>
+                    <td>CP Danny</td>
+                    <td>22</td>
+                    <td>5.6 t</td>
+                    <td>11/08/2025</td>
+                    <td>12/08/2025</td>
+                    <td>13/08/2025</td>
+                    <td>TRUCKER MEX</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary"><i data-feather="edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i data-feather="x"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td><i data-feather="anchor" class="text-primary"></i> Marítimo</td>
+                    <td>CMAU9196054</td>
+                    <td>CP Danny</td>
+                    <td>18</td>
+                    <td>8.2 t</td>
+                    <td>06/08/2025</td>
+                    <td>07/08/2025</td>
+                    <td>08/08/2025</td>
+                    <td>CMA CGM</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary"><i data-feather="edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i data-feather="x"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Agregar Contenedor a la Operación -->
+<!-- Modal: Agregar Contenedor a la Operación -->
+<div class="modal fade" id="modalAgregarContenedor" tabindex="-1" aria-labelledby="modalAgregarContenedorLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAgregarContenedorLabel">
+                    <i data-feather="plus-circle" class="me-1"></i> Añadir Contenedor a la Operación
+                </h5>
+            </div>
+            <div class="modal-body">
+                <form id="formAgregarContenedor">
+                    <div class="row mb-3">
+                        
+                        <div class="col-md-6">
+                            <label for="contenedor_id" class="form-label">Contenedor Físico</label>
+                            <select id="contenedor_id" name="contenedor_id" class="form-control" required>
+                                <option value="">Selecciona un contenedor</option>
+                                <!-- Opciones dinámicas desde DB -->
+                            </select>
+                        </div>
+                    </div>
+
+  
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="bultos" class="form-label">Bultos</label>
+                            <input type="number" id="bultos" name="bultos" class="form-control">
+                        </div>
+ 
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="comentarios" class="form-label">Comentarios</label>
+                        <textarea id="comentarios" name="comentarios" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x"></i> Cancelar
+                </button>
+                <button type="submit" form="formAgregarContenedor" class="btn btn-primary">
+                    <i data-feather="save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    feather.replace();
+</script>
+
+
+<script>
+    feather.replace();
+</script>
+ 
