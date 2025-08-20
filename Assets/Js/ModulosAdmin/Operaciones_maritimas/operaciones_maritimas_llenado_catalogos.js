@@ -2,9 +2,77 @@
 const tabla         = document.getElementById("tablaOperacionesMaritimas");
 const inputBuscar   = document.getElementById("buscarOperacion");
 const selectSubtipo = document.getElementById("filtroSubtipo");
+const selectPerPage = document.getElementById("perPage");
+const ulPaginacion  = document.getElementById("paginacion");
+const metaResumen   = document.getElementById("metaResumen");
 
+ 
+let currentPage = 1;
+let perPage     = parseInt(selectPerPage?.value || "10", 10);
 let currentListXHR = null;   // para abortar solicitudes previas
 let debounceId     = null;
+
+
+
+// ====== Refs del modal (ya tienes varias) ======
+const modalEl         = document.getElementById('modalOperacionMaritima');
+const tituloModal     = document.getElementById('tituloModalOperacion');
+const inpIdOperacion  = document.getElementById('id_operacion');
+const selSubtipoEd    = document.getElementById('subtipoOperacion');
+const inpNumeroOp     = document.getElementById('numeroOperacion');
+const selEstatus      = document.getElementById('estatusId');
+const inpETD          = document.getElementById('etd');
+const inpETA          = document.getElementById('eta');
+const inpBL           = document.getElementById('numeroBL');
+const selPuerto       = document.getElementById('puertoArribo');     // readonly/disabled
+const selNavieraEd    = document.getElementById('navieraId');
+const selForwarderEd  = document.getElementById('forwarderId');
+const inpClienteNom   = document.getElementById('clienteNombre');
+const hidCliente      = document.getElementById('clienteId');
+const selShipper      = document.getElementById('shipperId');
+
+// Bootstrap modal instance (si usas Bootstrap 5)
+let modalInstance = null;
+if (modalEl && window.bootstrap) {
+  modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+}
+
+// Set select by value (si existe opción)
+function setSelectValue(sel, val){
+  if (!sel) return;
+  const s = String(val ?? '');
+  const has = Array.from(sel.options).some(o => String(o.value) === s);
+  if (has) sel.value = s;
+}
+
+// Limpia modal a estado base (1 fila en repeater, etc.)
+function resetModalEdicion(){
+  if (tituloModal) tituloModal.textContent = 'Editar Operación Marítima';
+  if (inpIdOperacion) inpIdOperacion.value = '';
+  if (inpNumeroOp)    inpNumeroOp.value = '';
+  setSelectValue(selSubtipoEd, '');
+  setSelectValue(selEstatus,   '');
+  if (inpETD) inpETD.value = '';
+  if (inpETA) inpETA.value = '';
+  if (inpBL)  inpBL.value  = '';
+  if (hidCliente)    hidCliente.value = '';
+  if (inpClienteNom) inpClienteNom.value = '';
+  setSelectValue(selNavieraEd,   '');
+  setSelectValue(selForwarderEd, '');
+  setSelectValue(selShipper,     '');
+  // Puerto: solo mostrar (disabled/readonly)
+  setSelectValue(selPuerto, '');
+  // Repeater: deja 1 fila vacía
+  if (repeater) {
+    repeater.innerHTML = '';
+    const first = addRow(); // usa tu helper existente
+    // limpia valores
+    first.querySelector('.contenedor-id').value = '';
+    first.querySelector('.contenedor-input').value = '';
+  }
+}
+
+
 
 // Helpers
 function safe(v){ return (v===undefined || v===null) ? "" : v; }
@@ -39,25 +107,94 @@ function renderTabla(data){
       <td>${safe(item.forwarder)}</td>
       
       <td>${safe(item.estatus)}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-info"   title="Ver"    ><i class="fas fa-eye"></i></button>
-        <button class="btn btn-sm btn-outline-primary" title="Editar" ><i class="fas fa-edit"></i></button>
-      </td>
+      <td> 
+        <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${safe(item.id_operacion)}" title="Editar"><i class="fas fa-edit"></i></button>
+      </td> 
     `;
     tabla.appendChild(tr);
   });
 }
+ 
+function renderResumen(meta){
+  if (!metaResumen || !meta) return;
+  const { total=0, page=1, per_page=perPage, total_pages=1 } = meta;
+  if (total === 0){
+    metaResumen.textContent = "Mostrando 0–0 de 0";
+    return;
+  }
+  const start = (page - 1) * per_page + 1;
+  const end   = Math.min(total, page * per_page);
+  metaResumen.textContent = `Mostrando ${start}–${end} de ${total} | pág ${page} de ${total_pages}`;
+}
 
-// Listar con filtros (server-side)
+// NUEVO: paginación Bootstrap (ventana de 5)
+function renderPaginacion(meta){
+  if (!ulPaginacion || !meta) return;
+
+  const { page=1, total_pages=1 } = meta;
+  ulPaginacion.innerHTML = "";
+
+  // Prev
+  const liPrev = document.createElement("li");
+  liPrev.className = "page-item" + (page <= 1 ? " disabled" : "");
+  liPrev.innerHTML = `<a class="page-link" href="#" aria-label="Anterior">&laquo;</a>`;
+  liPrev.onclick = (e) => {
+    e.preventDefault();
+    if (page > 1) {
+      currentPage = page - 1;
+      listar(); // MOD: recarga con página anterior
+    }
+  };
+  ulPaginacion.appendChild(liPrev);
+
+  // Números (máx 5)
+  const windowSize = 5;
+  let start = Math.max(1, page - Math.floor(windowSize/2));
+  let end   = Math.min(total_pages, start + windowSize - 1);
+  if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
+
+  for (let p = start; p <= end; p++){
+    const li = document.createElement("li");
+    li.className = "page-item" + (p === page ? " active" : "");
+    li.innerHTML = `<a class="page-link" href="#">${p}</a>`;
+    li.onclick = (e) => {
+      e.preventDefault();
+      if (p !== page){
+        currentPage = p;
+        listar(); // MOD: recarga con página elegida
+      }
+    };
+    ulPaginacion.appendChild(li);
+  }
+
+  // Next
+  const liNext = document.createElement("li");
+  liNext.className = "page-item" + (page >= total_pages ? " disabled" : "");
+  liNext.innerHTML = `<a class="page-link" href="#" aria-label="Siguiente">&raquo;</a>`;
+  liNext.onclick = (e) => {
+    e.preventDefault();
+    if (page < total_pages) {
+      currentPage = page + 1;
+      listar(); // MOD: recarga con página siguiente
+    }
+  };
+  ulPaginacion.appendChild(liNext);
+}
+ 
+// Listar con filtros (server-side) + paginación
 function listar() {
   const params = new URLSearchParams();
   const subtipo = (selectSubtipo?.value || "").trim();
   const term    = (inputBuscar?.value || "").trim();
 
-  if (subtipo !== "") params.append("subtipo_id", subtipo); 
+  if (subtipo !== "") params.append("subtipo_id", subtipo);
   if (term !== "")    params.append("term", term);
 
-  const url = base_url + "Operaciones_maritimas/listar" + (params.toString() ? ("?" + params.toString()) : "");
+  // NUEVO: paginación
+  params.append("page", String(currentPage));
+  params.append("per_page", String(perPage));
+
+  const url = base_url + "Operaciones_maritimas/listar" + "?" + params.toString();
 
   // Abortamos petición en curso (si la hay)
   if (currentListXHR && currentListXHR.readyState !== 4){
@@ -71,34 +208,58 @@ function listar() {
   x.send();
   x.onreadystatechange = function(){
     if (x.readyState === 4){
-      // Si esta respuesta no es la más reciente, ignorar
       if (currentListXHR !== x) return;
 
       if (x.status !== 200){
         console.error("Error listar:", x.responseText);
         renderTabla([]);
+        renderPaginacion({ page:1, total_pages:1 });
+        renderResumen({ total:0, page:1, per_page:perPage, total_pages:1 });
         return;
       }
-      let data;
-      try { data = JSON.parse(x.responseText); } catch(e){ data = []; }
-      renderTabla(data);
+
+      let payload;
+      try { payload = JSON.parse(x.responseText); } catch(e){ payload = {}; }
+
+      if (payload.status !== "success"){
+        renderTabla([]);
+        renderPaginacion({ page:1, total_pages:1 });
+        renderResumen({ total:0, page:1, per_page:perPage, total_pages:1 });
+        return;
+      }
+
+      renderTabla(payload.data || []);
+      renderPaginacion(payload.meta || { page:1, total_pages:1 });
+      renderResumen(payload.meta || { total:0, page:1, per_page:perPage, total_pages:1 });
     }
   };
 }
 
+
 // Eventos reactivos
-selectSubtipo?.addEventListener("change", listar);
+selectSubtipo?.addEventListener("change", () => {
+  currentPage = 1;
+  listar();
+});
 
 inputBuscar?.addEventListener("keyup", () => {
   clearTimeout(debounceId);
-  debounceId = setTimeout(listar, 250);
+  debounceId = setTimeout(() => {
+    currentPage = 1;
+    listar();
+  }, 250);
 });
-
+selectPerPage?.addEventListener("change", () => {
+  perPage = parseInt(selectPerPage.value, 10) || 10;
+  currentPage = 1;
+  listar();
+});
 // Primer load
 window.addEventListener("DOMContentLoaded", () => {
+  perPage = parseInt(selectPerPage?.value || "10", 10);
   listar();
   if (window.feather) feather.replace();
-}); 
+});
 
 
 const selSubtipoModal = document.getElementById('subtipoOperacion');
@@ -492,3 +653,178 @@ function getContenedoresSeleccionados(){
   });
   return res;
 }
+
+// Delegación: click en botón Editar
+tabla?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-edit');
+  if (!btn) return;
+  const id = parseInt(btn.getAttribute('data-id') || '0', 10);
+  if (!id) return;
+  cargarOperacionParaEditar(id);
+});
+
+function cargarOperacionParaEditar(id){
+  resetModalEdicion();
+  const txtNotas = document.getElementById('notas');
+
+  const x = new XMLHttpRequest();
+  x.open('GET', base_url + 'Operaciones_maritimas/obtener?id=' + encodeURIComponent(id), true);
+  x.send();
+
+  x.onreadystatechange = function(){
+    if (x.readyState === 4){
+      if (x.status !== 200){
+        console.error('obtener error:', x.responseText);
+        if (window.Swal) Swal.fire('Error', 'No se pudo obtener la operación', 'error');
+        return;
+      }
+
+      let payload = {};
+      try { payload = JSON.parse(x.responseText); } catch(e){ payload = {}; }
+
+      if (payload.status !== 'success' || !payload.operacion){
+        if (window.Swal) Swal.fire('Aviso', payload.msg || 'Operación no encontrada', 'warning');
+        return;
+      }
+
+      // PRIMERO declara op
+      const op = payload.operacion;
+
+      // shipper (select)
+      if (typeof setSelectValue === 'function' && typeof selShipper !== 'undefined'){
+        setSelectValue(selShipper, op.shipper_id);
+      }
+
+      // resto de campos
+      if (inpIdOperacion) inpIdOperacion.value = op.id_operacion || '';
+      if (inpNumeroOp)    inpNumeroOp.value    = op.numero_operacion || '';
+      setSelectValue(selSubtipoEd,  op.subtipo_operacion_id);
+      setSelectValue(selEstatus,    op.estatus_id);
+      if (inpETD) inpETD.value = op.etd || '';
+      if (inpETA) inpETA.value = op.eta || '';
+      if (inpBL)  inpBL.value  = op.numero_bl || '';
+      if (hidCliente)    hidCliente.value = op.cliente_id || '';
+      if (inpClienteNom) inpClienteNom.value = op.cliente_nombre || '';
+      if (txtNotas) txtNotas.value = op.notas || '';
+      setSelectValue(selNavieraEd,   op.naviera_id);
+      setSelectValue(selForwarderEd, op.forwarder_id);
+      if (selPuerto) setSelectValue(selPuerto, op.puerto_arribo_id_prefill);
+
+      // OJO: aquí había un typo (contenores). Debe ser contenedores.
+      if (Array.isArray(payload.contenedores) && payload.contenedores.length){
+        repeater.innerHTML = '';
+        payload.contenedores.forEach(c => {
+          const row = addRow();
+          row.querySelector('.contenedor-id').value    = c.id_contenedor_maritimo || '';
+          row.querySelector('.contenedor-input').value = c.numero_contenedor || '';
+        });
+      }
+
+      if (modalInstance) modalInstance.show();
+      if (window.feather) feather.replace();
+    }
+  };
+}
+
+
+function actualizarOperacion(){
+   
+  // Validaciones básicas
+  if (!inpIdOperacion?.value){
+    if (window.Swal) Swal.fire('Aviso', 'Falta el ID de la operación', 'warning');
+    return;
+  }
+  if (!selSubtipoEd?.value){
+    if (window.Swal) Swal.fire('Aviso', 'Selecciona el subtipo', 'warning');
+    return;
+  }
+  if (!selEstatus?.value){
+    if (window.Swal) Swal.fire('Aviso', 'Selecciona el estatus', 'warning');
+    return;
+  }
+  if (!inpNumeroOp?.value.trim()){
+    if (window.Swal) Swal.fire('Aviso', 'Ingresa el número de operación', 'warning');
+    return;
+  }
+  const txtNotas = document.getElementById('notas');
+  const fd = new FormData();
+  fd.append('id_operacion',         inpIdOperacion.value);
+  fd.append('subtipo_operacion_id', selSubtipoEd.value);
+  fd.append('numero_operacion',     inpNumeroOp.value.trim());
+  fd.append('estatus_id',           selEstatus.value);
+  fd.append('etd',                  inpETD?.value || '');
+  fd.append('eta',                  inpETA?.value || '');
+  fd.append('numero_bl',            inpBL?.value || '');
+  fd.append('cliente_id',           hidCliente?.value || '');
+  fd.append('naviera_id',           selNavieraEd?.value || '');
+  fd.append('forwarder_id',         selForwarderEd?.value || '');
+  fd.append('shipper_id', selShipper?.value || '');
+  fd.append('notas', (txtNotas?.value || '').trim());
+
+  // (Por ahora NO enviamos contenedores porque tu modelo actualizarOperacion() actual no los procesa)
+  // Si luego agregas ese manejo, aquí puedes serializarlos:
+  // fd.append('contenedores_json', JSON.stringify(getContenedoresSeleccionados()));
+
+  const x = new XMLHttpRequest();
+  x.open('POST', base_url + 'Operaciones_maritimas/actualizar', true);
+  x.send(fd);
+  x.onreadystatechange = function(){
+    if (x.readyState === 4){
+      if (x.status !== 200){
+        console.error('actualizar error:', x.responseText);
+        if (window.Swal) Swal.fire('Error', 'No se pudo actualizar la operación', 'error');
+        return;
+      }
+      let payload = {};
+      try { payload = JSON.parse(x.responseText); } catch(e){ payload = {}; }
+
+      if (payload.status !== 'success'){
+        if (window.Swal) Swal.fire('Error', payload.msg || 'Error al actualizar', 'error');
+        return;
+      }
+
+      // OK: alerta, cerrar modal, recargar la tabla (manteniendo página/filtros)
+      if (window.Swal) Swal.fire('Operación actualizada', '', 'success');
+      if (modalInstance) modalInstance.hide();
+
+      // repintar la tabla con la misma página/estado actual
+      listar();
+    }
+  };
+} 
+
+
+const inpShipperNom = document.getElementById('shipperNombre');
+const hidShipperId  = document.getElementById('shipper_id');
+const boxSugShip    = document.getElementById('sugShippers');
+
+let xhrShipper = null;
+let debounceShipper = null;
+
+function hideSugShip(){ if (boxSugShip){ boxSugShip.style.display='none'; boxSugShip.innerHTML=''; } }
+function showSugShip(){ if (boxSugShip){ boxSugShip.style.display='block'; } }
+function setShipper(id, nombre){
+  if (hidShipperId)   hidShipperId.value = String(id || '');
+  if (inpShipperNom)  inpShipperNom.value = nombre || '';
+  hideSugShip();
+}
+function renderSugShippers(list){
+  boxSugShip.innerHTML = '';
+  if (!Array.isArray(list) || list.length === 0){ hideSugShip(); return; }
+  list.forEach(s => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'list-group-item list-group-item-action';
+    btn.textContent = s.nombre;
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      setShipper(s.id_shipper, s.nombre);
+    });
+    boxSugShip.appendChild(btn);
+  });
+  showSugShip();
+}
+ 
+ 
+
+ 

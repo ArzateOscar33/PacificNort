@@ -49,9 +49,14 @@ function renderTablaCont(data){
       <td>${safeCont(item.arribo_sd)}</td>
       <td>${safeCont(item.shipper)}</td>
       <td>
-        <button class="btn btn-sm btn-outline-secondary" title="Editar">
+        <button 
+          class="btn btn-sm btn-outline-secondary btn-edit-contenedor" 
+          title="Editar"
+          data-row-id="${safeCont(item.row_id)}"
+          data-tipo="${safeCont(item.tipo)}"
+          data-operacion-id="${safeCont(item.id_operacion)}">
           <i data-feather="edit"></i>
-        </button>
+       </button>
         <button class="btn btn-sm btn-outline-danger" title="Eliminar">
           <i data-feather="x"></i>
         </button>
@@ -125,7 +130,7 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
   const boxOp   = modalEl?.querySelector('#sugOperaciones');
 
   const hidCli  = modalEl?.querySelector('#cliente_id');
-  const inpCli  = modalEl?.querySelector('#clienteNombre'); // readonly
+  const inpCli  = modalEl?.querySelector('#clienteNombreContenedores'); // readonly
 
   const hidCf   = modalEl?.querySelector('#contenedor_id');
   const inpCf   = modalEl?.querySelector('#contenedorNombre');
@@ -192,7 +197,7 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
         inpCli.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      console.log('OP seleccionada:', it, '-> cliente_id:', hidCli?.value, 'clienteNombre:', inpCli?.value);
+      console.log('OP seleccionada:', it, '-> cliente_id:', hidCli?.value, 'clienteNombreContenedores:', inpCli?.value);
     });
   });
 
@@ -232,11 +237,13 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
 
   form?.addEventListener('submit', function (e) {
     e.preventDefault(); // evita refresh
-
+    const modo          = form.dataset.mode || 'create';
+    const row_id        = document.getElementById('row_id')?.value?.trim() || '';
     const operacion_id   = document.getElementById('operacion_id')?.value?.trim() || '';
     const numero_ferro   = document.getElementById('contenedorNombre')?.value?.trim() || ''; // número visible
     const bultos         = document.getElementById('bultos')?.value?.trim() || '';
     const cliente_id     = document.getElementById('cliente_id')?.value?.trim() || '';
+    const comentarios   = document.getElementById('comentarios')?.value?.trim() || '';
 
     // Validaciones mínimas
     if (!operacion_id) {
@@ -254,6 +261,24 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
     fd.append('numero_ferro', numero_ferro);
     fd.append('bultos', bultos);
     fd.append('cliente_id', cliente_id); // 👉 se envía, aunque el backend lo vuelve a forzar
+    let url = '';
+   // Si estamos editando (hay row_id) → actualizar
+  if ((modo === 'edit' || row_id) && row_id) {
+  url = base_url + 'Operaciones_maritimas_contenedores/actualizarFisico';
+  fd.append('row_id', row_id);
+  fd.append('operacion_id', operacion_id);
+  fd.append('numero_ferro', numero_ferro);
+  fd.append('bultos', bultos);
+  fd.append('comentarios', comentarios);
+  } else {
+  // Alta normal
+  url = base_url + 'Operaciones_maritimas_contenedores/registrarFisico';
+  fd.append('operacion_id', operacion_id);
+  fd.append('numero_ferro', numero_ferro);
+  fd.append('bultos', bultos);
+  fd.append('cliente_id', cliente_id); // el backend fuerza el de la operación
+    fd.append('comentarios', comentarios); // por si luego decides guardarlo
+    }
 
     const http = new XMLHttpRequest();
     http.open('POST', base_url + 'Operaciones_maritimas_contenedores/registrarFisico', true);
@@ -279,7 +304,7 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
             if (el) el.value = '';
           });
           // limpiar visibles
-          ['operacionNombre','clienteNombre','contenedorNombre','shipperNombre','bultos','comentarios'].forEach(id=>{
+          ['operacionNombre','clienteNombreContenedores','contenedorNombre','shipperNombre','bultos','comentarios'].forEach(id=>{
             const el = document.getElementById(id);
             if (el) el.value = '';
           });
@@ -291,3 +316,95 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
     };
   });
 })();
+// ===============================
+//  Editar: delegación de clic en la tabla
+// ===============================
+tablaContenedores.addEventListener('click', function (e) {
+  const btn = e.target.closest('.btn-edit-contenedor');
+  if (!btn) return;
+
+  const tipo = (btn.dataset.tipo || '').toLowerCase();
+  const rowId = parseInt(btn.dataset.rowId || '0', 10);
+
+  if (!rowId || !tipo) {
+    Swal.fire('Aviso', 'No se pudo identificar el contenedor a editar', 'warning');
+    return;
+  }
+
+  // 1) Si es marítimo → alerta y fuera
+  if (tipo === 'maritimo') {
+    Swal.fire('Aviso', 'Contenedor Marítimo se edita en Módulo de Operaciones', 'warning');
+    return;
+  }
+
+  // 2) Si es terrestre → pedir detalle y prellenar modal
+  const url = base_url + 'Operaciones_maritimas_contenedores/detalle?tipo=' 
+            + encodeURIComponent(tipo) + '&row_id=' + encodeURIComponent(rowId);
+
+  const x = new XMLHttpRequest();
+  x.open('GET', url, true);
+  x.send();
+  x.onreadystatechange = function () {
+    if (x.readyState !== 4) return;
+    if (x.status !== 200) {
+      Swal.fire('Error', 'Error HTTP ' + x.status, 'error');
+      return;
+    }
+    let res;
+    try { res = JSON.parse(x.responseText); } catch (e) {
+      Swal.fire('Error', 'Respuesta inválida del servidor', 'error');
+      return;
+    }
+
+    if (res.status === 'warning' && res.data?.editable === false) {
+      Swal.fire('Aviso', (res.msg || 'Este contenedor se edita en el módulo de Operaciones'), 'warning');
+      return;
+    }
+    if (res.status !== 'success' || !res.data) {
+      Swal.fire('Aviso', res.msg || 'No se pudo obtener el detalle', 'warning');
+      return;
+    }
+
+    // Prefill modal (modo edición)
+    const d = res.data;
+    const modalEl = document.getElementById('modalAgregarContenedor');
+    const modal   = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+    const form    = document.getElementById('formAgregarContenedor');
+
+    // Asegúrate de tener este hidden en el HTML del form:
+    // <input type="hidden" id="row_id" name="row_id">
+    document.getElementById('row_id')?.setAttribute('value', d.row_id);
+    document.getElementById('row_id').value = d.row_id;
+
+    // Seteamos modo edición en el form
+    form.dataset.mode = 'edit';
+
+    // Operación y cliente (vienen de la operación)
+    document.getElementById('operacion_id').value    = d.id_operacion || '';
+    document.getElementById('operacionNombre').value = d.numero_operacion || '';
+    document.getElementById('cliente_id').value    = d.cliente_id || '';
+
+    const cliInp = document.getElementById('clienteNombreContenedores');
+    cliInp.value = d.cliente || '';
+
+    // refuerzos para que “pinte” sí o sí
+    cliInp.setAttribute('value', cliInp.value);
+    cliInp.dispatchEvent(new Event('input',  { bubbles: true }));
+    cliInp.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // Contenedor físico y demás campos editables
+    document.getElementById('contenedor_id').value   = d.id_fisico || ''; // (opcional)
+    document.getElementById('contenedorNombre').value= d.numero_ferro || '';
+    document.getElementById('bultos').value          = (d.bultos ?? '');
+    document.getElementById('comentarios').value     = (d.comentarios ?? '');
+
+    // Título del modal y botón
+    const title = document.getElementById('modalAgregarContenedorLabel');
+    if (title) title.innerHTML = '<i data-feather="edit" class="me-1"></i> Editar Contenedor (Terrestre)';
+    const btnGuardar = document.querySelector('button[form="formAgregarContenedor"]');
+    if (btnGuardar) btnGuardar.innerHTML = '<i data-feather="save"></i> Actualizar';
+
+    feather.replace();
+    modal?.show();
+  };
+});

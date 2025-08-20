@@ -13,7 +13,7 @@
         <div class="card-body">
 
             <!-- Filtros (sin botón) -->
-            <div class="d-flex flex-wrap gap-2 mb-3">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <select id="filtroSubtipo" name="filtroSubtipo" class="form-control" style="max-width:240px;">
                     <option value="">Subtipo (Todos)</option>
                     <?php if (!empty($data['subtipos'])): ?>
@@ -27,6 +27,18 @@
 
                 <input id="buscarOperacion" class="form-control" style="max-width:260px;"
                     placeholder="Buscar por código, BL o contenedor">
+
+                <!-- NUEVO: “por página” alineado a la derecha -->
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <label for="perPage" class="mb-0 small text-muted">Mostrar</label>
+                    <select id="perPage" class="form-control" style="width: 90px;">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="small text-muted">por página</span>
+                </div>
             </div>
 
             <!-- Tabla -->
@@ -50,6 +62,20 @@
                     </thead>
                     <tbody id="tablaOperacionesMaritimas"></tbody>
                 </table>
+                <!-- Barra de paginación y totales (abajo) -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
+                    <!-- Resumen opcional -->
+                    <div class="small text-muted">
+                        <span id="metaResumen">Mostrando 0–0 de 0</span>
+                    </div>
+
+                    <nav aria-label="Paginación de operaciones">
+                        <ul id="paginacion" class="pagination pagination-sm mb-0">
+                            <!-- Se llena desde JS -->
+                        </ul>
+                    </nav>
+                </div>
+
             </div>
 
         </div>
@@ -147,11 +173,11 @@
                             <input type="text" id="numeroBL" name="numero_bl" class="form-control"
                                 placeholder="Ej. ABCD123456">
                         </div>
- 
-                            <!-- Puerto de Arribo -->
-                            <div class="col-md-3">
+
+                        <!-- Puerto de Arribo -->
+                        <div class="col-md-3">
                             <label class="form-label">Puerto de Arribo</label>
-                            <select id="puertoArribo" name="puerto_arribo_id" class="form-control">
+                            <select id="puertoArribo" name="puerto_arribo_id" class="form-control" readonly disabled>
                                 <option value="">Seleccione...</option>
                                 <?php
                                 $puertoActual = isset($data['operacion']['puerto_arribo_id'])
@@ -163,14 +189,13 @@
                                     $txt = htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8');
                                     $sel = ($puertoActual === $id) ? ' selected' : '';
                                 ?>
-                                <option value="<?= $id; ?>"<?= $sel; ?>><?= $txt; ?></option>
+                                <option value="<?= $id; ?>" <?= $sel; ?>><?= $txt; ?></option>
                                 <?php
                                     endforeach;
                                 endif;
                                 ?>
                             </select>
-                            </div>
-
+                        </div>
 
                         <!-- Cliente -->
                         <div class="col-md-6">
@@ -181,9 +206,9 @@
                             <div id="sugerenciasCliente" class="list-group"
                                 style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                         </div>
- 
-                            <!-- Condicional: Naviera -->
-                            <div class="col-md-3 " id="campoNaviera">
+
+                        <!-- Condicional: Naviera -->
+                        <div class="col-md-3 " id="campoNaviera">
                             <label class="form-label">Naviera</label>
                             <select id="navieraId" name="naviera_id" class="form-control">
                                 <option value="">Seleccione...</option>
@@ -197,20 +222,20 @@
                                     $txt = htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8');
                                     $sel = ($navieraActual === $id) ? ' selected' : '';
                                 ?>
-                                <option value="<?= $id; ?>"<?= $sel; ?>><?= $txt; ?></option>
+                                <option value="<?= $id; ?>" <?= $sel; ?>><?= $txt; ?></option>
                                 <?php
                                     endforeach;
                                 endif;
                                 ?>
                             </select>
-                            </div>
+                        </div>
 
-                                <!-- Condicional: Forwarder -->
-                                <div class="col-md-3 " id="campoForwarder">
-                                <label class="form-label">Forwarder</label>
-                                <select id="forwarderId" name="forwarder_id" class="form-control">
-                                    <option value="">Seleccione...</option>
-                                    <?php
+                        <!-- Condicional: Forwarder -->
+                        <div class="col-md-3 " id="campoForwarder">
+                            <label class="form-label">Forwarder</label>
+                            <select id="forwarderId" name="forwarder_id" class="form-control">
+                                <option value="">Seleccione...</option>
+                                <?php
                                     $forwarderActual = isset($data['operacion']['forwarder_id'])
                                                         ? (int)$data['operacion']['forwarder_id']
                                                         : 0;
@@ -220,17 +245,16 @@
                                         $txt = htmlspecialchars($fw['nombre'], ENT_QUOTES, 'UTF-8');
                                         $sel = ($forwarderActual === $id) ? ' selected' : '';
                                     ?>
-                                    <option value="<?= $id; ?>"<?= $sel; ?>><?= $txt; ?></option>
-                                    <?php
+                                <option value="<?= $id; ?>" <?= $sel; ?>><?= $txt; ?></option>
+                                <?php
                                         endforeach;
                                     endif;
                                     ?>
-                                </select>
-                                </div>
-
+                            </select>
+                        </div>
 
                         <!-- ====== Repetidor de Contenedores Marítimos (INPUT + Sugerencias) ====== -->
-                        <div class="col-12">
+                        <div class="col-6">
                             <label class="form-label d-flex align-items-center justify-content-between">
                                 <span>Contenedores Marítimos</span>
 
@@ -239,7 +263,8 @@
                             <div id="contenedoresRepeater" class="vstack gap-2">
                                 <!-- Item inicial -->
                                 <div class="contenedor-item position-relative">
-                                    <input type="hidden" name="contenedores_maritimos_ids[]" name="contenedores_maritimos_ids[]" class="contenedor-id">
+                                    <input type="hidden" name="contenedores_maritimos_ids[]"
+                                        name="contenedores_maritimos_ids[]" class="contenedor-id">
                                     <input type="text" class="form-control contenedor-input"
                                         placeholder="Ej. MSKU1234567">
                                     <div class="list-group sugerencias-contenedor"
@@ -257,10 +282,7 @@
                                     <div class="list-group sugerencias-contenedor"
                                         style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                                     <div class="mt-1 d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-success btn-sm btnContAddOne"><i
-                                                data-feather="plus"></i></button>
-                                        <button type="button" class="btn btn-outline-danger btn-sm btnContRemoveOne"><i
-                                                data-feather="minus"></i></button>
+
                                         <small class="text-muted flex-grow-1">Escribe para buscar. Si no existe, podrás
                                             registrarlo.</small>
                                     </div>
@@ -268,14 +290,51 @@
                             </template>
 
                         </div>
+                        <div class="col-6">
 
-                        <!-- Notas -->
-                        <div class="col-md-12">
-                            <label class="form-label">Notas</label>
-                            <textarea id="notas" name="notas" class="form-control" rows="2"
-                                placeholder="Observaciones generales"></textarea>
+                            <div id="" class="vstack gap-2">
+                                <!-- Item inicial -->
+                                <div class="col-md-6 ">
+
+                                    <label class="form-label">Shipper</label>
+                                    <select id="shipperId" name="shipper_id" class="form-control">
+                                        <option value="">Seleccione...</option>
+                                        <?php if (!empty($data['shippers'])): ?>
+                                        <?php foreach ($data['shippers'] as $s): ?>
+                                        <option value="<?= (int)$s['id_shipper']; ?>">
+                                            <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+
+                                <!-- Plantilla oculta -->
+                                <template id="contenedorTemplate">
+                                    <div class="contenedor-item position-relative">
+                                        <input type="hidden" name="contenedores_maritimos_ids[]" class="contenedor-id">
+                                        <input type="text" class="form-control contenedor-input"
+                                            placeholder="Ej. MSKU1234567">
+                                        <div class="list-group sugerencias-contenedor"
+                                            style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                                        <div class="mt-1 d-flex gap-2">
+
+                                            <small class="text-muted flex-grow-1">Escribe para buscar. Si no existe,
+                                                podrás
+                                                registrarlo.</small>
+                                        </div>
+                                    </div>
+                                </template>
+
+                            </div>
                         </div>
-                    </div>
+                            <!-- Notas -->
+                            <div class="col-md-12">
+                                <label class="form-label">Notas</label>
+                                <textarea id="notas" name="notas" class="form-control" rows="2"
+                                    placeholder="Observaciones generales"></textarea>
+                            </div>
+                        </div>
                 </form>
             </div>
 
@@ -294,4 +353,3 @@
         </div>
     </div>
 </div>
-

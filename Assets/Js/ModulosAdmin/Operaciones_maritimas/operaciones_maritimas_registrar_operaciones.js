@@ -1,7 +1,7 @@
 // Refs del modal (no re-declaramos si ya existen; sólo las usamos)
 const formOp   = document.getElementById('formOperacionMaritima');
 const btnSave  = document.getElementById('btnGuardarOperacion');
-const modalEl  = document.getElementById('modalOperacionMaritima');
+//const modalEl  = document.getElementById('modalOperacionMaritima');
 const modal    = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
 
 // ---- Helpers locales (sin duplicar los tuyos) ----
@@ -36,6 +36,7 @@ function validarRequisitosSubtipo(){
 
   return true;
 }
+ 
 
 // Recolecta contenedores del repeater (id/numero)
 function collectContenedores(){
@@ -64,7 +65,7 @@ function guardarOperacion(){
   if (!formOp || !btnSave) return;
 
   // 1) Validaciones mínimas
-  if (!validarClienteSeleccionado()) return;
+  if (!validarClienteSeleccionado()) return; 
   if (!validarRequisitosSubtipo()){
     if (window.Swal) Swal.fire('Faltan campos','Completa los campos requeridos del subtipo.','warning');
     else alert('Completa los campos requeridos del subtipo.');
@@ -121,11 +122,16 @@ function guardarOperacion(){
 }
 
 // ---- Wire-up ----
-btnSave?.addEventListener('click', (e) => {
-  e.preventDefault();
-  guardarOperacion();
-});
 
+btnGuardarOp?.addEventListener('click', (e) => {
+  e.preventDefault();
+  const id = (document.getElementById('id_operacion')?.value || '').trim();
+  if (id) {
+    actualizarOperacion();           // edición
+  } else if (typeof guardarOperacion === 'function') {
+    guardarOperacion();              // alta (definida en el otro archivo)
+  }
+});
 modalEl?.addEventListener('shown.bs.modal', () => {
   if (typeof validarCamposObligatorios === 'function') {
     if (validarCamposObligatorios()) btnSave?.removeAttribute('disabled');

@@ -54,6 +54,7 @@
       </div>
       <div class="modal-body">
         <form id="formAgregarContenedor" autocomplete="off">
+          <input type="hidden" id="row_id" name="row_id">
           <div class="row mb-3">
             <div class="col-md-6 position-relative">
               <label class="form-label">Operación</label>
@@ -65,7 +66,7 @@
             <div class="col-md-6 position-relative">
               <label class="form-label">Cliente</label>
               <input type="hidden" id="cliente_id" name="cliente_id" >
-              <input type="text" id="clienteNombre" class="form-control" placeholder=""  >
+              <input type="text" id="clienteNombreContenedores"  name="clienteNombreContenedores" class="form-control" placeholder=""  readonly>
               <div id="sugClientes" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
       
             </div>
@@ -87,12 +88,7 @@
 
         </div>
           <div class="row mb-3">
-            <div class="col-md-6 position-relative">
-              <label class="form-label">Shipper</label>
-              <input type="hidden" id="shipper_id" name="shipper_id">
-              <input type="text" id="shipperNombre" class="form-control" placeholder="Escribe para buscar shipper...">
-              <div id="sugShippers" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
-            </div>
+ 
           <div class="mb-3 col-md-6">
             <div class="col-md-12">
             <label for="comentarios" class="form-label">Comentarios</label>

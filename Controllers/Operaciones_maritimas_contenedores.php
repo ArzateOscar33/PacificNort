@@ -146,4 +146,92 @@ public function registrarFisico()
         $data = $this->model->listar($filters);
         echo json_encode($data);
     }
+
+
+    /* ===========================================================
+ *  DETALLE PARA EDITAR
+ *  GET: tipo, row_id
+ *  - Si tipo = maritimo → editable=false y msg para alerta
+ *  - Si tipo = terrestre → retorna payload completo para el modal
+ * =========================================================== */
+public function detalle()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+    try {
+        $tipo   = isset($_GET['tipo']) ? trim(strtolower($_GET['tipo'])) : '';
+        $row_id = (int)($_GET['row_id'] ?? 0);
+
+        if ($tipo === '' || $row_id <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Parámetros incompletos']); return;
+        }
+
+        $row = $this->model->getDetalleParaEditar($tipo, $row_id);
+        if (!$row) {
+            echo json_encode(['status' => 'error', 'msg' => 'Registro no encontrado']); return;
+        }
+
+        // Si es marítimo, avisar que no se edita aquí
+        if (isset($row['editable']) && $row['editable'] === false) {
+            echo json_encode([
+                'status' => 'warning',
+                'msg'    => $row['motivo_no_editable'] ?? 'Este contenedor se edita en el módulo de Operaciones',
+                'data'   => $row
+            ]);
+            return;
+        }
+
+        // Terrestre OK
+        echo json_encode([
+            'status' => 'success',
+            'msg'    => 'Detalle listo',
+            'data'   => $row
+        ]);
+    } catch (\Throwable $e) {
+        echo json_encode(['status' => 'error', 'msg' => 'Excepción: ' . $e->getMessage()]);
+    }
+}
+
+/* ===========================================================
+ *  ACTUALIZAR CONTENEDOR FÍSICO (TERRESTRE)
+ *  POST: row_id, operacion_id, numero_ferro, [bultos], [comentarios]
+ *  - Cambia el contenedor físico (crea si no existe/activo)
+ *  - Valida duplicado en la misma operación
+ *  - Actualiza bultos/comentarios
+ * =========================================================== */
+public function actualizarFisico()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+    try {
+        $row_id       = (int)($_POST['row_id'] ?? 0);           // id de contenedores_operacion
+        $operacion_id = (int)($_POST['operacion_id'] ?? 0);     // para validar duplicados
+        $numero_ferro = isset($_POST['numero_ferro']) ? trim($_POST['numero_ferro']) : '';
+        $bultos       = (isset($_POST['bultos']) && $_POST['bultos'] !== '') ? (int)$_POST['bultos'] : null;
+        $comentarios  = isset($_POST['comentarios']) ? trim($_POST['comentarios']) : null;
+
+        if ($row_id <= 0 || $operacion_id <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Faltan identificadores']); return;
+        }
+        if ($numero_ferro === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Captura el número de contenedor físico']); return;
+        }
+        if ($bultos !== null && $bultos < 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Bultos inválidos']); return;
+        }
+
+        // Reutilizamos el helper de modelo que valida/asegura físico y evita duplicados
+        $res = $this->model->actualizarTerrestreByNumero(
+            $row_id,
+            $operacion_id,
+            $numero_ferro,
+            $bultos,
+            $comentarios
+        );
+
+        // respuesta directa del modelo
+        echo json_encode($res);
+    } catch (\Throwable $e) {
+        echo json_encode(['status' => 'error', 'msg' => 'Excepción: ' . $e->getMessage()]);
+    }
+}
+
 }

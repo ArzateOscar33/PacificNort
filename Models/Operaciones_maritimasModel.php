@@ -48,22 +48,85 @@ class Operaciones_maritimasModel extends Query
     /* =========================
        ===        LISTAR      ===
        ========================= */
-
-    public function listar(array $filters = []): array
+    public function listarPaginado(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        $sql = "
+        // 1) Sanitiza paginación
+        $page    = max(1, (int)$page);
+        $perPage = max(1, (int)$perPage);
+        $offset  = ($page - 1) * $perPage;
+
+        // 2) WHERE + ARGS (misma lógica que tu listar)
+        $where = "WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%'";
+          //SI QUEREMOS QUE NO SALGAN LAS OPERACIONES CANCELADAS QUITAMOS EL COMENTARIO DE ABAJO
+        /*$where = "WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%' 
+          AND (o.estatus_id IS NULL OR o.estatus_id <> 6)";*/
+
+        $args  = [];
+
+        $subtipoId = isset($filters['filtroSubtipo']) ? (int)$filters['filtroSubtipo']
+                : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
+        if ($subtipoId > 0) {
+            $where .= " AND o.subtipo_operacion_id = ? ";
+            $args[] = $subtipoId;
+        }
+
+        if (!empty($filters['term'])) {
+            $needle = '%'.mb_strtolower($filters['term'],'UTF-8').'%';
+            $where .= " AND (
+                LOWER(o.numero_operacion) LIKE ?
+                OR LOWER(o.numero_bl)     LIKE ?
+                OR LOWER(p.nombre)        LIKE ?
+                OR LOWER(e.nombre)        LIKE ?
+                OR LOWER(c.nombre)        LIKE ?
+                OR LOWER(s.nombre)        LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedores_maritimos_operacion cmo2
+                    JOIN contenedores_maritimos cm2
+                    ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                    WHERE cmo2.operacion_id = o.id_operacion
+                    AND LOWER(cm2.numero_contenedor) LIKE ?
+                )
+            )";
+            // OJO: ahora son 7 needles
+            array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
+        }
+
+
+
+        // 3) TOTAL
+        $sqlCount = "
+            SELECT COUNT(DISTINCT o.id_operacion) AS total
+            FROM operaciones o
+            JOIN tipos_operacion tt       ON tt.id_tipo_operacion = o.tipo_operacion_id
+            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+            $where
+        ";
+        $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
+        $total    = (int)$rowCount['total'];
+
+        // 4) DATA (interpolando LIMIT/OFFSET como enteros)
+        $limit  = (int)$perPage;
+        $off    = (int)$offset;
+
+        $sqlData = "
             SELECT
                 o.id_operacion,
                 o.numero_operacion,
                 st.nombre  AS subtipo,
                 o.numero_bl,
-                p.nombre   AS puerto_arribo,        -- viene del subtipo (default) SOLO PARA MOSTRAR
+                p.nombre   AS puerto_arribo,
                 n.nombre   AS naviera,
                 f.nombre   AS forwarder,
                 c.nombre   AS cliente,
                 o.etd, o.eta,
                 e.nombre   AS estatus,
-                GROUP_CONCAT(DISTINCT cm.numero_contenedor ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
+                GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                            ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
             FROM operaciones o
             JOIN tipos_operacion tt       ON tt.id_tipo_operacion = o.tipo_operacion_id
             LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
@@ -74,45 +137,28 @@ class Operaciones_maritimasModel extends Query
             LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
             LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
             LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-            WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%'
-        ";
-        $args = [];
-
-        $subtipoId = isset($filters['filtroSubtipo']) ? (int)$filters['filtroSubtipo']
-                   : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
-        if ($subtipoId > 0) {
-            $sql .= " AND o.subtipo_operacion_id = ? ";
-            $args[] = $subtipoId;
-        }
-
-        if (!empty($filters['term'])) {
-            $needle = '%'.mb_strtolower($filters['term'],'UTF-8').'%';
-            $sql .= " AND (
-                        LOWER(o.numero_operacion) LIKE ?
-                    OR  LOWER(o.numero_bl)        LIKE ?
-                    OR  LOWER(p.nombre)           LIKE ?
-                    OR  LOWER(e.nombre)           LIKE ?
-                    OR  LOWER(c.nombre)           LIKE ?
-                    OR  EXISTS (
-                            SELECT 1
-                            FROM contenedores_maritimos_operacion cmo2
-                            JOIN contenedores_maritimos cm2
-                              ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                            WHERE cmo2.operacion_id = o.id_operacion
-                              AND LOWER(cm2.numero_contenedor) LIKE ?
-                    )
-            )";
-            array_push($args, $needle,$needle,$needle,$needle,$needle,$needle);
-        }
-
-        $sql .= "
+            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+            $where
             GROUP BY o.id_operacion, o.numero_operacion, st.nombre, o.numero_bl,
-                     p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre
+                    p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre
             ORDER BY o.id_operacion DESC
+            LIMIT $limit OFFSET $off
         ";
 
-        return $this->selectAll($sql, $args) ?: [];
+        // Importante: aquí SOLO van los args de filtros (sin limit/offset)
+        $rows = $this->selectAll($sqlData, $args) ?: [];
+
+        // 5) Retorno para el controlador
+        return [
+            'rows'        => $rows,
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $perPage,
+            'total_pages' => max(1, (int)ceil($total / $perPage)),
+        ];
     }
+
+
 
     /* =========================
        ===  INSERT PRINCIPAL  ===
@@ -148,20 +194,22 @@ class Operaciones_maritimasModel extends Query
 
             // 2) Insert en operaciones
             $sqlOp = "INSERT INTO operaciones
-                        (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
-                         cliente_id, estatus_id, naviera_id, forwarder_id)
-                      VALUES (?,?,?,?,?,?,?,?,?,?)";
+            (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
+            cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
             $paramsOp = [
-                $op['numero_operacion'] ?? null,
-                (int)$op['tipo_operacion_id'],      // 1 = Marítimo
-                (int)$op['subtipo_operacion_id'],
-                $op['etd'] ?? null,
-                $op['eta'] ?? null,
-                $op['numero_bl'] ?? null,
-                (int)$op['cliente_id'],
-                (int)($op['estatus_id'] ?? 9),
-                !empty($op['naviera_id']) ? (int)$op['naviera_id'] : null,
-                !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
+            $op['numero_operacion'] ?? null,
+            (int)$op['tipo_operacion_id'],
+            (int)$op['subtipo_operacion_id'],
+            $op['etd'] ?? null,
+            $op['eta'] ?? null,
+            $op['numero_bl'] ?? null,
+            (int)$op['cliente_id'],
+            (int)($op['estatus_id'] ?? 9),
+            !empty($op['naviera_id'])   ? (int)$op['naviera_id']   : null,
+            !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
+            !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null,
+            $op['notas'] ?? null,
             ];
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
             if ($opId <= 0) {
@@ -347,4 +395,106 @@ class Operaciones_maritimasModel extends Query
                 LIMIT 10";
         return $this->selectAll($sql, [$like]) ?: [];
     }
+
+ 
+
+public function obtenerOperacion(int $id): ?array
+{
+    $sql = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            o.subtipo_operacion_id,
+            st.nombre AS subtipo_nombre,
+            st.requiere_naviera,
+            st.requiere_forwarder,
+            s.nombre AS shipper_nombre,
+            o.shipper_id,
+            -- Puerto por defecto del SUBTIPO (no existe campo en 'operaciones')
+            st.puerto_arribo_default_id        AS puerto_arribo_id_prefill,
+            p.nombre                           AS puerto_arribo_nombre,
+
+            o.numero_bl,
+            o.naviera_id,
+            o.forwarder_id,
+            o.cliente_id,
+            c.nombre AS cliente_nombre,
+            o.etd, o.eta,
+            o.estatus_id,
+            e.nombre AS estatus_nombre,
+            o.notas   
+        FROM operaciones o
+        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
+        WHERE o.id_operacion = ?
+        LIMIT 1
+    ";
+    return $this->select($sql, [$id]) ?: null;
+}
+public function actualizarOperacion(array $d): bool
+{
+    $sql = "UPDATE operaciones
+            SET
+              numero_operacion     = ?,
+              subtipo_operacion_id = ?,
+              etd                  = ?,
+              eta                  = ?,
+              numero_bl            = ?,
+              cliente_id           = ?,
+              estatus_id           = ?,
+              naviera_id           = ?,
+              forwarder_id         = ?,
+              shipper_id           = ?,  -- aquí no hay problema
+              notas                = ?
+            WHERE id_operacion = ?
+            LIMIT 1";
+    $args = [
+      trim($d['numero_operacion'] ?? ''),
+      (int)($d['subtipo_operacion_id'] ?? 0),
+      !empty($d['etd']) ? $d['etd'] : null,
+      !empty($d['eta']) ? $d['eta'] : null,
+      trim($d['numero_bl'] ?? ''),
+      !empty($d['cliente_id'])  ? (int)$d['cliente_id']  : null,
+      !empty($d['estatus_id'])  ? (int)$d['estatus_id']  : null,
+      ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
+      ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
+      ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
+      ($d['notas'] ?? null),
+      (int)$d['id_operacion'],
+    ];
+
+    $res = $this->save($sql, $args);
+    // ✅ Éxito si NO es false (0 filas afectadas cuenta como éxito)
+    return $res !== false;
+}
+
+
+public function obtenerContenedoresOperacion(int $operacionId): array
+{
+    $sql = "
+        SELECT 
+            cm.id_contenedor_maritimo,
+            cm.numero_contenedor
+        FROM contenedores_maritimos_operacion cmo
+        JOIN contenedores_maritimos cm
+          ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        WHERE cmo.operacion_id = ?
+        ORDER BY cm.numero_contenedor
+    ";
+    return $this->selectAll($sql, [$operacionId]) ?: [];
+}
+
+public function buscarShippers(string $term): array {
+  $like = '%'.mb_strtolower($term, 'UTF-8').'%';
+  $sql = "SELECT id_shipper, nombre
+          FROM shippers
+          WHERE estatus = 1 AND LOWER(nombre) LIKE ?
+          ORDER BY nombre
+          LIMIT 10";
+  return $this->selectAll($sql, [$like]) ?: [];
+}
+
 }

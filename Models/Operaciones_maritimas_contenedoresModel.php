@@ -76,8 +76,9 @@ public function listar(array $filters = []): array
     $sql = "
     SELECT * FROM (
         /* ===== MARÍTIMO ===== */
-        SELECT
-            'maritimo'                            AS tipo,
+        SELECT   
+            'maritimo'                            AS tipo, 
+            cmo.id                                 AS row_id, 
             cm.numero_contenedor                  AS contenedor,
             COALESCE(cli.nombre,'')               AS cliente,
             NULL                                  AS bultos,
@@ -106,7 +107,9 @@ public function listar(array $filters = []): array
 
         /* ===== TERRESTRE (FÍSICO) ===== */
         SELECT
+        
             'terrestre'                           AS tipo,
+            co.id_contenedor                      AS row_id,
             cf.numero_ferro                       AS contenedor,
             COALESCE(cli2.nombre, cli.nombre, '') AS cliente,
             co.bultos                             AS bultos,
@@ -252,4 +255,128 @@ public function listar(array $filters = []): array
         $datos = [$operacion_id, $contenedor_maritimo_id];
         return $this->insertar($sql, $datos);
     }
+
+
+        /** Detalle para Editar por tipo + row_id (vínculo) */
+    public function getDetalleParaEditar(string $tipo, int $row_id): ?array
+    {
+        $tipo = strtolower(trim($tipo));
+        if ($tipo === 'maritimo') {
+            $sql = "SELECT 
+                        'maritimo' AS tipo,
+                        cmo.id     AS row_id,
+                        o.id_operacion,
+                        o.numero_operacion,
+                        cm.id_contenedor_maritimo,
+                        cm.numero_contenedor,
+                        o.cliente_id,
+                        cli.nombre AS cliente,
+                        o.shipper_id,
+                        sp.nombre  AS shipper
+                    FROM contenedores_maritimos_operacion cmo
+                    INNER JOIN contenedores_maritimos cm
+                        ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+                    INNER JOIN operaciones o
+                        ON o.id_operacion = cmo.operacion_id
+                    LEFT JOIN clientes cli ON cli.id_cliente = o.cliente_id
+                    LEFT JOIN shippers sp  ON sp.id_shipper  = o.shipper_id
+                    WHERE cmo.id = ?
+                    LIMIT 1";
+            $row = $this->select($sql, [$row_id]);
+            if (!$row) return null;
+            // bandera de no editable en este módulo
+            $row['editable'] = false;
+            $row['motivo_no_editable'] = 'Contenedor Marítimo se edita en Módulo de Operaciones';
+            return $row;
+        }
+
+        // TERRESTRE
+        $sql = "SELECT 
+                    'terrestre' AS tipo,
+                    co.id_contenedor           AS row_id,
+                    o.id_operacion,
+                    o.numero_operacion,
+                    /* cliente: preferimos el de la operación como fuente de la verdad */
+                    o.cliente_id               AS cliente_id,
+                    COALESCE(cli.nombre,'')    AS cliente,
+                    cf.id_fisico,
+                    cf.numero_ferro,
+                    co.bultos,
+                    co.peso,
+                    co.comentarios,
+                    o.shipper_id,
+                    sp.nombre                  AS shipper
+                FROM contenedores_operacion co
+                INNER JOIN contenedores_fisicos cf
+                    ON cf.id_fisico = co.id_fisico
+                INNER JOIN operaciones o
+                    ON o.id_operacion = co.operacion_id
+                LEFT JOIN clientes cli
+                    ON cli.id_cliente = o.cliente_id
+                LEFT JOIN shippers sp
+                    ON sp.id_shipper = o.shipper_id
+                WHERE co.id_contenedor = ?
+                LIMIT 1";
+        $row = $this->select($sql, [$row_id]);
+        if (!$row) return null;
+        $row['editable'] = true;
+        return $row;
+    }
+        /** ¿Ya existe el mismo id_fisico en esta operación, excluyendo este row_id? */
+        public function existsContenedorFisicoOperacionExcept(int $operacion_id, int $id_fisico, int $row_id)
+        {
+            $sql = "SELECT id_contenedor
+                    FROM contenedores_operacion
+                    WHERE operacion_id = ? AND id_fisico = ? AND id_contenedor <> ?
+                    LIMIT 1";
+            return $this->select($sql, [$operacion_id, $id_fisico, $row_id]);
+        }
+
+        /** Actualiza el vínculo terrestre (cambia físico, bultos, comentarios) */
+        public function updateContenedorFisicoOperacion(int $row_id, int $id_fisico, ?int $bultos, ?string $comentarios): bool
+        {
+            $sql = "UPDATE contenedores_operacion
+                    SET id_fisico = ?, bultos = ?, comentarios = ?
+                    WHERE id_contenedor = ?";
+            $ok = $this->save($sql, [$id_fisico, $bultos, $comentarios, $row_id]);
+            return $ok > 0;
+        }
+        public function actualizarTerrestreByNumero(
+            int $row_id,
+            int $operacion_id,
+            string $numero_ferro,
+            ?int $bultos,
+            ?string $comentarios
+        ): array {
+            // Asegurar contenedor físico activo
+            $rowFis = $this->findContenedorFisicoByNumero($numero_ferro);
+            if (!empty($rowFis) && isset($rowFis['estatus']) && (int)$rowFis['estatus'] === 0) {
+                return ['status'=>'warning','msg'=>'El contenedor existe pero está INACTIVO. Reactívalo primero.'];
+            }
+            $id_fisico = !empty($rowFis) ? (int)$rowFis['id_fisico'] : (int)$this->insertContenedorFisico($numero_ferro);
+            if ($id_fisico <= 0) {
+                return ['status'=>'error','msg'=>'No se pudo crear/obtener el contenedor físico'];
+            }
+
+            // Duplicado (otra fila en la misma operación con el mismo físico)
+            $dupe = $this->existsContenedorFisicoOperacionExcept($operacion_id, $id_fisico, $row_id);
+            if (!empty($dupe)) {
+                return ['status'=>'warning','msg'=>'Ya existe este contenedor físico en la operación'];
+            }
+
+            $ok = $this->updateContenedorFisicoOperacion($row_id, $id_fisico, $bultos, $comentarios);
+            if (!$ok) return ['status'=>'error','msg'=>'No se pudo actualizar el contenedor'];
+
+            return [
+                'status'=>'success',
+                'msg'=>'Contenedor actualizado',
+                'data'=>[
+                    'row_id'      => $row_id,
+                    'id_fisico'   => $id_fisico,
+                    'numero_ferro'=> $numero_ferro,
+                    'bultos'      => $bultos,
+                    'comentarios' => $comentarios
+                ]
+            ];
+        }
 }
