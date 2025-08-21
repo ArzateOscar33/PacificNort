@@ -92,7 +92,9 @@ function listarContenedores() {
   x.onreadystatechange = function(){
     if (x.readyState === 4){
       if (currentListXHRContenedores !== x) return;
-      if (x.status !== 200){
+           // Si fue abortado, status será 0: salimos sin ruido
+     if (x.status === 0) return;
+     if (x.status !== 200){
         console.error("Error listar contenedores:", x.responseText);
         renderTablaCont([]);
         return;
@@ -106,11 +108,19 @@ function listarContenedores() {
 
 // Eventos de filtros
 selectTipoContenedores.addEventListener("change", listarContenedores);
-inputBuscarContenedores.addEventListener("keyup", function(e){
-  if (e.key === "Enter" || this.value.length >= 3 || this.value.length === 0){
-    listarContenedores();
-  }
-});
+ let debounceCont = null;
+ inputBuscarContenedores.addEventListener("keyup", function(e){
+   // Enter: ejecuta inmediato
+   if (e.key === "Enter") {
+     clearTimeout(debounceCont);
+     return listarContenedores();
+   }
+   // Solo consultar si hay >=3 caracteres o está vacío (limpia filtro)
+   if (this.value.length >= 3 || this.value.length === 0){
+     clearTimeout(debounceCont);
+     debounceCont = setTimeout(() => listarContenedores(), 250);
+   }
+ });
 
 // Cargar al inicio
 window.addEventListener("DOMContentLoaded", listarContenedores);
@@ -281,7 +291,7 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
     }
 
     const http = new XMLHttpRequest();
-    http.open('POST', base_url + 'Operaciones_maritimas_contenedores/registrarFisico', true);
+    http.open('POST', url, true);
     http.send(fd);
 
     http.onreadystatechange = function () {
@@ -310,6 +320,7 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
           });
 
           modal?.hide?.();
+          resetModalContenedor('create');
           listarContenedores();
         }
       }
@@ -378,6 +389,7 @@ tablaContenedores.addEventListener('click', function (e) {
 
     // Seteamos modo edición en el form
     form.dataset.mode = 'edit';
+    
 
     // Operación y cliente (vienen de la operación)
     document.getElementById('operacion_id').value    = d.id_operacion || '';
@@ -408,3 +420,39 @@ tablaContenedores.addEventListener('click', function (e) {
     modal?.show();
   };
 });
+// Reset fuerte del modal (deja listo para crear)
+function resetModalContenedor(mode = 'create'){
+  const form = document.getElementById('formAgregarContenedor');
+  if (!form) return;
+
+  form.reset();
+  form.dataset.mode = mode;
+
+  // limpiar hiddens
+  ['row_id','operacion_id','cliente_id','contenedor_id','shipper_id'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // limpiar visibles
+  ['operacionNombre','clienteNombreContenedores','contenedorNombre','shipperNombre','bultos','comentarios'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // Título y texto botón por defecto (crear)
+  const title = document.getElementById('modalAgregarContenedorLabel');
+  if (title) title.innerHTML = '<i data-feather="plus-circle" class="me-1"></i> Añadir Contenedor a la Operación';
+  const btnGuardar = document.querySelector('button[form="formAgregarContenedor"]');
+  if (btnGuardar) btnGuardar.innerHTML = '<i data-feather="save"></i> Guardar';
+
+  if (window.feather) feather.replace();
+}
+
+// Al abrir desde “Añadir Contenedor”: dejar modo crear
+document.querySelector('[data-bs-target="#modalAgregarContenedor"]')
+  ?.addEventListener('click', () => resetModalContenedor('create'));
+
+// Al cerrar el modal: dejarlo limpio para la próxima vez
+document.getElementById('modalAgregarContenedor')
+  ?.addEventListener('hidden.bs.modal', () => resetModalContenedor('create'));

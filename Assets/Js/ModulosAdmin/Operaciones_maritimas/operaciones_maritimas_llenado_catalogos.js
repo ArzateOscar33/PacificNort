@@ -46,6 +46,7 @@ function setSelectValue(sel, val){
 }
 
 // Limpia modal a estado base (1 fila en repeater, etc.)
+/*
 function resetModalEdicion(){
   if (tituloModal) tituloModal.textContent = 'Editar Operación Marítima';
   if (inpIdOperacion) inpIdOperacion.value = '';
@@ -70,8 +71,77 @@ function resetModalEdicion(){
     first.querySelector('.contenedor-id').value = '';
     first.querySelector('.contenedor-input').value = '';
   }
+}*/
+
+// ========== 1) Reset duro del modal a modo "crear" ==========
+function resetModalOperacion(mode = 'create'){
+  // Título
+  if (tituloModal) {
+    tituloModal.textContent = (mode === 'edit')
+      ? 'Editar Operación Marítima'
+      : 'Nueva Operación Marítima';
+  }
+
+  // Modo en el form (opcional pero útil)
+  if (formOp) formOp.dataset.mode = mode;
+
+  // Limpiar IDs y campos base
+  if (inpIdOperacion) inpIdOperacion.value = '';
+  if (inpNumeroOp)    inpNumeroOp.value = '';
+  setSelectValue(selSubtipoEd,   '');
+  setSelectValue(selEstatus,     '');
+  if (inpETD)         inpETD.value = '';
+  if (inpETA)         inpETA.value = '';
+  if (inpBL)          inpBL.value  = '';
+  if (hidCliente)     hidCliente.value = '';
+  if (inpClienteNom)  inpClienteNom.value = '';
+  if (typeof hideSugCliente === 'function') hideSugCliente(); // cierra sugerencias cliente
+
+  // Selects dependientes
+  setSelectValue(selNavieraEd,   '');
+  setSelectValue(selForwarderEd, '');
+  setSelectValue(selShipper,     '');
+
+  // Puerto (solo display)
+  setSelectValue(selPuerto, '');
+
+  // Notas
+  const txtNotas = document.getElementById('notas');
+  if (txtNotas) txtNotas.value = '';
+
+  // Repeater: queda 1 fila vacía
+  if (typeof resetRepeater === 'function') {
+    resetRepeater();
+  } else if (repeater) {
+    repeater.innerHTML = '';
+    // fallback mínimo si no tienes resetRepeater:
+    const node = tplContenedor?.content?.cloneNode(true);
+    const item = node ? node.querySelector('.contenedor-item') : null;
+    if (item) repeater.appendChild(item);
+  }
+
+  // Botón guardar deshabilitado hasta que cumpla validaciones
+  if (btnGuardarOp) btnGuardarOp.setAttribute('disabled','disabled');
+
+  // Si usas validación por subtipo, recalcula para estado limpio
+  if (typeof validarCamposObligatorios === 'function') {
+    if (validarCamposObligatorios()) btnGuardarOp?.removeAttribute('disabled');
+    else btnGuardarOp?.setAttribute('disabled','disabled');
+  }
 }
 
+// ========== 2) Al pulsar “Nueva Operación”: limpiar SIEMPRE antes de mostrar ==========
+document.getElementById('btnNuevaOperacion')?.addEventListener('click', (e) => {
+  // Fuerza modo creación y limpia todo
+  resetModalOperacion('create');
+  // Si quieres aplicar el puerto default del subtipo cuando el usuario elija,
+  // no selecciones nada aquí; se aplicará con tu lógica existente onchange.
+});
+
+// ========== 3) Al cerrar el modal: deja listo para la próxima “Nueva Operación” ==========
+modalEl?.addEventListener('hidden.bs.modal', () => {
+  resetModalOperacion('create');
+});
 
 
 // Helpers
@@ -664,7 +734,7 @@ tabla?.addEventListener('click', (e) => {
 });
 
 function cargarOperacionParaEditar(id){
-  resetModalEdicion();
+  resetModalOperacion('edit');
   const txtNotas = document.getElementById('notas');
 
   const x = new XMLHttpRequest();
