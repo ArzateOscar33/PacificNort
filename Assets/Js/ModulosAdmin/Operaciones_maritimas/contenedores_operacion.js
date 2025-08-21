@@ -76,6 +76,8 @@ function listarContenedores() {
 
   if (tipo !== "") params.append("tipo", tipo); 
   if (term !== "") params.append("term", term);
+  params.append("page", String(currentPageCont));
+  params.append("per_page", String(perPageCont));
 
   const url = base_url + "Operaciones_maritimas_contenedores/listar" + 
               (params.toString() ? ("?" + params.toString()) : "");
@@ -97,11 +99,25 @@ function listarContenedores() {
      if (x.status !== 200){
         console.error("Error listar contenedores:", x.responseText);
         renderTablaCont([]);
+        renderPaginacionCont({ page:1, total_pages:1 });
+        renderResumenCont({ total:0, page:1, per_page:perPageCont, total_pages:1 });
+
         return;
       }
-      let data;
-      try { data = JSON.parse(x.responseText); } catch(e){ data = []; }
-      renderTablaCont(data);
+      let payload;
+     try { payload = JSON.parse(x.responseText); } catch(e){ payload = {}; }
+
+     if (payload.status !== 'success'){
+       renderTablaCont([]);
+       renderPaginacionCont({ page:1, total_pages:1 });
+       renderResumenCont({ total:0, page:1, per_page:perPageCont, total_pages:1 });
+       return;
+     }
+
+     renderTablaCont(payload.data || []);
+     renderPaginacionCont(payload.meta || { page:1, total_pages:1 });
+     renderResumenCont(payload.meta || { total:0, page:1, per_page:perPageCont, total_pages:1 });
+
     }
   };
 }
@@ -456,3 +472,88 @@ document.querySelector('[data-bs-target="#modalAgregarContenedor"]')
 // Al cerrar el modal: dejarlo limpio para la próxima vez
 document.getElementById('modalAgregarContenedor')
   ?.addEventListener('hidden.bs.modal', () => resetModalContenedor('create'));
+let currentPageCont = 1;
+let perPageCont = parseInt(document.getElementById('perPageCont')?.value || '10', 10);
+
+const ulPaginacionCont = document.getElementById('paginacionCont');
+const metaResumenCont  = document.getElementById('metaResumenCont');
+const selectPerPageCont = document.getElementById('perPageCont');
+
+function renderResumenCont(meta){
+  if (!metaResumenCont || !meta) return;
+  const { total=0, page=1, per_page=perPageCont, total_pages=1 } = meta;
+  if (total === 0){
+    metaResumenCont.textContent = "Mostrando 0–0 de 0";
+    return;
+  }
+  const start = (page - 1) * per_page + 1;
+  const end   = Math.min(total, page * per_page);
+  metaResumenCont.textContent = `Mostrando ${start}–${end} de ${total} | pág ${page} de ${total_pages}`;
+}
+
+function renderPaginacionCont(meta){
+  if (!ulPaginacionCont || !meta) return;
+
+  const { page=1, total_pages=1 } = meta;
+  ulPaginacionCont.innerHTML = "";
+
+  const addBtn = (label, disabled, onClick, aria='') => {
+    const li = document.createElement('li');
+    li.className = "page-item" + (disabled ? " disabled" : "");
+    li.innerHTML = `<a class="page-link" href="#" ${aria}>${label}</a>`;
+    li.onclick = (e) => { e.preventDefault(); if (!disabled) onClick(); };
+    ulPaginacionCont.appendChild(li);
+  };
+
+  addBtn('«', page <= 1, () => { currentPageCont = page - 1; listarContenedores(); }, 'aria-label="Anterior"');
+
+  const windowSize = 5;
+  let start = Math.max(1, page - Math.floor(windowSize/2));
+  let end   = Math.min(total_pages, start + windowSize - 1);
+  if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
+
+  for (let p = start; p <= end; p++){
+    const li = document.createElement("li");
+    li.className = "page-item" + (p === page ? " active" : "");
+    li.innerHTML = `<a class="page-link" href="#">${p}</a>`;
+    li.onclick = (e) => { e.preventDefault(); if (p !== page){ currentPageCont = p; listarContenedores(); } };
+    ulPaginacionCont.appendChild(li);
+  }
+
+  addBtn('»', page >= total_pages, () => { currentPageCont = page + 1; listarContenedores(); }, 'aria-label="Siguiente"');
+}
+// Filtro tipo: vuelve a página 1
+selectTipoContenedores.addEventListener("change", () => {
+  currentPageCont = 1;
+  listarContenedores();
+});
+
+// Buscar con debounce (como ya lo dejaste), resetea página
+ debounceCont = null;
+inputBuscarContenedores.addEventListener("keyup", function(e){
+  if (e.key === "Enter") {
+    clearTimeout(debounceCont);
+    currentPageCont = 1;
+    return listarContenedores();
+  }
+  if (this.value.length >= 3 || this.value.length === 0){
+    clearTimeout(debounceCont);
+    debounceCont = setTimeout(() => { currentPageCont = 1; listarContenedores(); }, 250);
+  }
+});
+
+// Per-page
+selectPerPageCont?.addEventListener('change', () => {
+  perPageCont = parseInt(selectPerPageCont.value, 10) || 10;
+  currentPageCont = 1;
+  listarContenedores();
+});
+
+// Primer load
+window.addEventListener("DOMContentLoaded", () => {
+  perPageCont = parseInt(selectPerPageCont?.value || "10", 10);
+  listarContenedores();
+});
+if (payload.meta && typeof payload.meta.page === 'number') {
+  currentPageCont = payload.meta.page; // mantener la UI en sincronía
+}

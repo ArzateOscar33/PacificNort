@@ -155,6 +155,116 @@ public function listar(array $filters = []): array
 
     return $this->selectAll($sql, $args) ?: [];
 }
+
+public function listarPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
+{
+    $args = [];
+    $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'],'UTF-8')) : '';
+    $buscar = ($term !== '');
+    $needle = $buscar ? "%{$term}%" : null;
+
+    $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
+
+    // --- WHERE de búsqueda para cada tramo ---
+    $whereBusqMar = $buscar ? " AND (LOWER(cm.numero_contenedor) LIKE ? OR LOWER(cli.nombre) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
+    $whereBusqTer = $buscar ? " AND (LOWER(cf.numero_ferro) LIKE ? OR LOWER(COALESCE(cli2.nombre, cli.nombre, '')) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
+
+    // --- Subquery base (sin orden ni limit) ---
+    $sub = "
+      SELECT * FROM (
+        /* ===== MARÍTIMO ===== */
+        SELECT   
+            'maritimo'                            AS tipo, 
+            cmo.id                                 AS row_id, 
+            cm.numero_contenedor                  AS contenedor,
+            COALESCE(cli.nombre,'')               AS cliente,
+            NULL                                  AS bultos,
+            NULL                                  AS peso,
+            o.eta,
+            o.etd,
+            dl.arribo_sd,
+            sp.nombre                             AS shipper,
+            o.id_operacion,
+            o.numero_operacion                    AS operacion,
+            o.numero_bl                           AS bl,
+            cm.id_contenedor_maritimo             AS contenedor_id
+        FROM contenedores_maritimos_operacion cmo
+        INNER JOIN contenedores_maritimos cm  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        INNER JOIN operaciones o               ON o.id_operacion          = cmo.operacion_id
+        LEFT JOIN clientes cli                 ON cli.id_cliente          = o.cliente_id
+        LEFT JOIN detalles_logisticos dl       ON dl.operacion_id         = o.id_operacion
+        LEFT JOIN shippers sp                  ON sp.id_shipper           = o.shipper_id
+        WHERE 1=1 {$whereBusqMar}
+
+        UNION ALL
+
+        /* ===== TERRESTRE ===== */
+        SELECT
+            'terrestre'                           AS tipo,
+            co.id_contenedor                      AS row_id,
+            cf.numero_ferro                       AS contenedor,
+            COALESCE(cli2.nombre, cli.nombre, '') AS cliente,
+            co.bultos                             AS bultos,
+            co.peso                               AS peso,
+            o.eta,
+            o.etd,
+            dl.arribo_sd,
+            sp2.nombre                            AS shipper,
+            o.id_operacion,
+            o.numero_operacion                    AS operacion,
+            o.numero_bl                           AS bl,
+            cf.id_fisico                          AS contenedor_id
+        FROM contenedores_operacion co
+        INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
+        INNER JOIN operaciones o           ON o.id_operacion = co.operacion_id
+        LEFT  JOIN clientes cli            ON cli.id_cliente = o.cliente_id
+        LEFT  JOIN clientes cli2           ON cli2.id_cliente = co.cliente_id
+        LEFT  JOIN detalles_logisticos dl  ON dl.operacion_id = o.id_operacion
+        LEFT  JOIN shippers sp2            ON sp2.id_shipper = o.shipper_id
+        WHERE 1=1 {$whereBusqTer}
+      ) AS x
+      WHERE 1=1
+      " . ($filtroTipo === 'maritimo' ? " AND x.tipo = 'maritimo' " : "") . "
+      " . ($filtroTipo === 'terrestre' ? " AND x.tipo = 'terrestre' " : "");
+
+    // --- Args búsqueda (se duplican para ambos tramos si corresponde) ---
+    $argsBuscar = [];
+    if ($buscar) {
+        // marítimo
+        array_push($argsBuscar, $needle, $needle, $needle);
+        // terrestre
+        array_push($argsBuscar, $needle, $needle, $needle);
+    }
+
+    // --- TOTAL ---
+    $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
+    $row = $this->select($sqlCount, $argsBuscar);
+    $total = (int)($row['total'] ?? 0);
+
+    // --- Paginación ---
+    $per_page = max(1, min($per_page, 200));
+    $total_pages = max(1, (int)ceil($total / $per_page));
+    $page   = max(1, min($page, $total_pages));
+    $offset = ($page - 1) * $per_page;
+
+    // --- DATA ---
+        $sqlData = "{$sub} ORDER BY x.eta DESC, x.contenedor ASC
+                LIMIT {$per_page} OFFSET {$offset}";
+    $argsData = $argsBuscar;
+
+    $data = $this->selectAll($sqlData, $argsData) ?: [];
+
+    return [
+        'data' => $data,
+        'meta' => [
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $per_page,
+            'total_pages' => $total_pages,
+        ]
+    ];
+}
+
 /** Busca un contenedor físico por su número (case-insensitive). */
     public function findContenedorFisicoByNumero(string $numero_ferro)
     {

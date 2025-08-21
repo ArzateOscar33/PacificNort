@@ -137,7 +137,7 @@ public function registrarFisico()
      *  (Opcional) Listar para refrescar la tabla después del registro
      *  GET: [tipo], [term]
      * =========================================================== */
-    public function listar()
+   /* public function listar()
     {
         $filters = [
             'tipo' => isset($_GET['tipo']) ? trim(strtolower($_GET['tipo'])) : '',
@@ -145,7 +145,35 @@ public function registrarFisico()
         ];
         $data = $this->model->listar($filters);
         echo json_encode($data);
+    }*/
+
+        public function listar()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $filters = [
+        'tipo' => isset($_GET['tipo']) ? trim(strtolower($_GET['tipo'])) : '',
+        'term' => isset($_GET['term']) ? trim($_GET['term']) : ''
+    ];
+
+    $page     = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $per_page = isset($_GET['per_page']) ? max(1, (int)$_GET['per_page']) : 10;
+
+    try {
+        $res = $this->model->listarPaginado($filters, $page, $per_page);
+        echo json_encode([
+            'status' => 'success',
+            'data'   => $res['data'],
+            'meta'   => $res['meta'],
+        ]);
+    } catch (\Throwable $e) {
+        echo json_encode([
+            'status' => 'error',
+            'msg'    => 'Excepción: ' . $e->getMessage()
+        ]);
     }
+}
+
 
 
     /* ===========================================================

@@ -79,11 +79,15 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/operaciones_maritimas_llenado_catalogos.js">
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/operaciones_maritimas_llenado_catalogos.js">
 </script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/operaciones_maritimas_registrar_operaciones.js">
 </script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/contenedores_operacion.js">
 </script>
- 
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/costos_contenedor.js">
+</script>
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_contenedor_catalogos.js">
+</script>
+
 

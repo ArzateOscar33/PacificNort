@@ -1,50 +1,74 @@
 <div class="container py-4 col-md-12">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Contenedores en Operación</h4>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarContenedor">
-            <i data-feather="plus"></i> Añadir Contenedor
-        </button>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Contenedores en Operación</h4>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarContenedor">
+      <i data-feather="plus"></i> Añadir Contenedor
+    </button>
+  </div>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <label for="filtro_tipo" class="form-label">Tipo de Contenedor</label>
-            <select id="filtro_tipo" class="form-control">
-                <option value="">Todos</option>
-                <option value="maritimo">Marítimo</option>
-                <option value="terrestre">Terrestre</option>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="buscar" class="form-label">Buscar Cliente o Contenedor</label>
-            <input type="text" id="buscar" class="form-control" placeholder="Buscar...">
-        </div>
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <label for="filtro_tipo" class="form-label">Tipo de Contenedor</label>
+      <select id="filtro_tipo" class="form-control">
+        <option value="">Todos</option>
+        <option value="maritimo">Marítimo</option>
+        <option value="terrestre">Terrestre</option>
+      </select>
     </div>
+    <div class="col-md-4">
+      <label for="buscar" class="form-label">Buscar Cliente o Contenedor</label>
+      <input type="text" id="buscar" class="form-control" placeholder="Buscar...">
+    </div>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <label for="perPageCont" class="mb-0 small text-muted">Mostrar</label>
+      <select id="perPageCont" class="form-control" style="width: 90px;">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+      <span class="small text-muted">por página</span>
+    </div>
+  </div>
 
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle" id="tablaContenedores">
-            <thead class="table-light">
-                <tr>
-                    
-                    <th>Tipo</th>
-                    <th>Operacion</th>
-                    <th>Contenedor</th>
-                    <th>Cliente</th>
-                    <th>Bultos</th> 
-                    <th>ETA</th>
-                    <th>ETD</th>
-                    <th>Arribo SD</th>
-                    <th>Shipper</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle" id="tablaContenedores">
+      <thead class="table-light">
+        <tr>
+
+          <th>Tipo</th>
+          <th>Operacion</th>
+          <th>Contenedor</th>
+          <th>Cliente</th>
+          <th>Bultos</th>
+          <th>ETA</th>
+          <th>ETD</th>
+          <th>Arribo SD</th>
+          <th>Shipper</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
+      <!-- Resumen -->
+      <div class="small text-muted">
+        <span id="metaResumenCont">Mostrando 0-0 de 0</span>
+      </div>
+
+      <!-- Paginación -->
+      <nav aria-label="Paginación de contenedores">
+        <ul id="paginacionCont" class="pagination pagination-sm mb-0">
+          <!-- Se llena desde JS -->
+        </ul>
+      </nav>
     </div>
-</div>
+  </div>
+  </div>
 
 <!-- Modal: Agregar Contenedor a la Operación -->
-<div class="modal fade" id="modalAgregarContenedor" tabindex="-1" aria-labelledby="modalAgregarContenedorLabel" aria-hidden="true">
+<div class="modal fade" id="modalAgregarContenedor" tabindex="-1" aria-labelledby="modalAgregarContenedorLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -59,26 +83,32 @@
             <div class="col-md-6 position-relative">
               <label class="form-label">Operación</label>
               <input type="hidden" id="operacion_id" name="operacion_id">
-              <input type="text" id="operacionNombre" class="form-control" placeholder="Escribe para buscar operación...">
-              <div id="sugOperaciones" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+              <input type="text" id="operacionNombre" class="form-control"
+                placeholder="Escribe para buscar operación...">
+              <div id="sugOperaciones" class="list-group"
+                style="position:absolute; z-index:1055; width:100%; display:none;"></div>
               <small class="text-muted">Sugerencia: escribe número de operación, BL o cliente.</small>
             </div>
             <div class="col-md-6 position-relative">
               <label class="form-label">Cliente</label>
-              <input type="hidden" id="cliente_id" name="cliente_id" >
-              <input type="text" id="clienteNombreContenedores"  name="clienteNombreContenedores" class="form-control" placeholder=""  readonly>
-              <div id="sugClientes" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
-      
+              <input type="hidden" id="cliente_id" name="cliente_id">
+              <input type="text" id="clienteNombreContenedores" name="clienteNombreContenedores" class="form-control"
+                placeholder="" readonly>
+              <div id="sugClientes" class="list-group"
+                style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+
             </div>
 
           </div>
-        <div class="row mb-3">
-            
+          <div class="row mb-3">
+
             <div class="col-md-6 position-relative">
               <label class="form-label">Contenedor Físico</label>
               <input type="hidden" id="contenedor_id" name="contenedor_id">
-              <input type="text" id="contenedorNombre" class="form-control" placeholder="Escribe para buscar contenedor...">
-              <div id="sugContenedores" class="list-group" style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+              <input type="text" id="contenedorNombre" class="form-control"
+                placeholder="Escribe para buscar contenedor...">
+              <div id="sugContenedores" class="list-group"
+                style="position:absolute; z-index:1055; width:100%; display:none;"></div>
               <small class="text-muted">Sugerencia: escribe parte del número (ej. WHUS...).</small>
             </div>
             <div class="col-md-6">
@@ -86,17 +116,16 @@
               <input type="number" id="bultos" name="bultos" class="form-control">
             </div>
 
-        </div>
+          </div>
           <div class="row mb-3">
- 
-          <div class="mb-3 col-md-6">
-            <div class="col-md-12">
-            <label for="comentarios" class="form-label">Comentarios</label>
-            <textarea id="comentarios" name="comentarios" class="form-control" rows="3"></textarea>
+
+            <div class="mb-3 col-md-6">
+              <div class="col-md-12">
+                <label for="comentarios" class="form-label">Comentarios</label>
+                <textarea id="comentarios" name="comentarios" class="form-control" rows="3"></textarea>
+              </div>
             </div>
           </div>
-          </div>
-
 
         </form>
       </div>
@@ -111,7 +140,6 @@
     </div>
   </div>
 </div>
-
 <script>
   feather.replace();
 </script>
