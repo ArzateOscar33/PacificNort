@@ -6,16 +6,18 @@ const inputBuscar = document.getElementById("buscarMovimiento");
 const sugerenciasMovimiento = document.getElementById("sugerenciasMovimiento");
 const selectTipo = document.getElementById("tipoMovimiento");
 const selectMoneda = document.getElementById("monedaMovimiento");
+const selectCategoria = document.getElementById("categoriaMovimiento");
 
 // Estado de filtros
 let filtroTerm = "";
-let filtroTipo = "";     // 'gasto' | 'abono' | ''
-let filtroMoneda = "";   // 'PESOS' | 'DLLS' | ''
+let filtroTipo = "";       // 'gasto' | 'abono' | ''
+let filtroMoneda = "";     // 'PESOS' | 'DLLS' | ''
+let filtroCategoria = "";  // id_tipo_operacion o ''
 
 document.getElementById("btnAgregarTipoMovimiento").addEventListener("click", () => {
   form.reset();
   document.getElementById("id_movimiento").value = "";
-  document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Registrar Tipo de Operación";
+  document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Registrar Tipo de Movimiento";
   document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
 });
@@ -24,7 +26,8 @@ document.getElementById("btnAgregarTipoMovimiento").addEventListener("click", ()
 function renderizarTabla(data) {
   tabla.innerHTML = "";
   if (!Array.isArray(data) || data.length === 0) {
-    tabla.innerHTML = `<tr><td colspan="4" class="text-center">No hay registros</td></tr>`;
+    // AHORA SON 5 COLUMNAS
+    tabla.innerHTML = `<tr><td colspan="5" class="text-center">No hay registros</td></tr>`;
     return;
   }
   data.forEach((mov) => {
@@ -33,6 +36,7 @@ function renderizarTabla(data) {
     tr.innerHTML = `
       <td>${mov.nombre}</td>
       <td>${mov.tipo || "-"}</td>
+      <td>${mov.categoria || "-"}</td>
       <td>${mov.moneda || "-"}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="editarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-edit"></i> Editar</button>
@@ -61,7 +65,12 @@ function xhrGET(url, onOK) {
 
 // ---------- Listado base ----------
 function listarTiposMovimiento() {
-  xhrGET(base_url + "Movimiento_logistico/listar", renderizarTabla);
+  xhrGET(base_url + "Movimiento_logistico/listar", (data) => {
+    renderizarTabla(data);
+    // limpiar sugerencias al cargar
+    sugerenciasMovimiento.innerHTML = "";
+    sugerenciasMovimiento.style.display = "none";
+  });
 }
 
 // ---------- Filtro combinado ----------
@@ -70,12 +79,13 @@ function aplicarFiltros() {
   if (filtroTerm) params.append("term", filtroTerm);
   if (filtroTipo) params.append("tipo", filtroTipo);
   if (filtroMoneda) params.append("moneda", filtroMoneda);
+  if (filtroCategoria) params.append("categoria", filtroCategoria);
 
   const url = base_url + "Movimiento_logistico/filtrar" + (params.toString() ? "?" + params.toString() : "");
   xhrGET(url, (data) => {
     renderizarTabla(data);
 
-    // Actualizar sugerencias (solo si hay término)
+    // Sugerencias (opcional)
     sugerenciasMovimiento.innerHTML = "";
     if (filtroTerm && Array.isArray(data) && data.length > 0) {
       data.slice(0, 8).forEach((mov) => {
@@ -99,6 +109,11 @@ function aplicarFiltros() {
   });
 }
 
+selectCategoria.addEventListener("change", function(){
+  filtroCategoria = (this.value === "") ? "" : this.value;
+  aplicarFiltros();
+});
+
 // ---------- Eventos de filtros ----------
 inputBuscar.addEventListener("keyup", function () {
   const termino = this.value.trim();
@@ -107,19 +122,18 @@ inputBuscar.addEventListener("keyup", function () {
     sugerenciasMovimiento.innerHTML = "";
     sugerenciasMovimiento.style.display = "none";
   }
-  // Usamos el endpoint combinado para que se respete tipo/moneda junto con el término
   aplicarFiltros();
 });
 
 selectTipo.addEventListener("change", function () {
-  // NOTA: en tu vista los values ya son 'gasto'/'abono' o texto "Tipo de Movimiento"
-  // Normalizamos a '' cuando es placeholder
+  // En tu vista el placeholder es "Tipo de Movimiento"
   filtroTipo = (this.value === "Tipo de Movimiento" || this.value === "") ? "" : this.value;
   aplicarFiltros();
 });
 
 selectMoneda.addEventListener("change", function () {
-  filtroMoneda = (this.value === "" || this.value === "Seleccione") ? "" : this.value;
+  // En tu vista el placeholder es "Moneda" (no "Seleccione")
+  filtroMoneda = (this.value === "" || this.value === "Moneda") ? "" : this.value;
   aplicarFiltros();
 });
 
@@ -131,11 +145,10 @@ document.addEventListener("click", function (e) {
   }
 });
 
-// ---------- CRUD (igual que lo tienes) ----------
+// ---------- CRUD ----------
 form.addEventListener("submit", function (e) {
   e.preventDefault();
-
-  let data = new FormData(this);
+  const data = new FormData(this);
   const url = base_url + "Movimiento_logistico/registrar";
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
@@ -147,8 +160,7 @@ form.addEventListener("submit", function (e) {
       if (res.status === "success") {
         modal.hide();
         form.reset();
-        // Luego de registrar/actualizar, refrescamos respetando filtros actuales
-        aplicarFiltros();
+        aplicarFiltros(); // respeta filtros activos tras guardar
       }
       Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
     }
@@ -167,7 +179,8 @@ function editarTipoMovimiento(id) {
       form.nombre_movimiento.value = data.nombre;
       form.tipo.value = data.tipo;
       form.moneda.value = data.moneda;
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      form.tipo_operacion_id.value = data.tipo_operacion_id || "";
+      document.getElementById("btnSubmit").innerHTML = '<i class="fas fa-save me-1"></i> Actualizar';
       modal.show();
     }
   };
@@ -191,7 +204,6 @@ function eliminarTipoMovimiento(id) {
         if (this.readyState === 4 && this.status === 200) {
           const res = JSON.parse(this.responseText);
           if (res.status === "success") {
-            // Respetamos filtros activos
             aplicarFiltros();
           }
           Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
@@ -203,6 +215,5 @@ function eliminarTipoMovimiento(id) {
 
 // ---------- Inicialización ----------
 document.addEventListener("DOMContentLoaded", function () {
-  // Carga inicial sin filtros
   listarTiposMovimiento();
 });

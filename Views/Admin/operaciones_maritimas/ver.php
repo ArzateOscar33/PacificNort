@@ -14,10 +14,20 @@
             <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false">Contenedores En Operacion</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false">Costos Contenedor</a>
+            <a class="nav-link" id="costos-tab"
+            data-bs-toggle="tab"
+            href="#costos"
+            role="tab"
+            aria-controls="costos"
+            aria-selected="false">Costos Contenedor</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos" aria-selected="false">Costos por Operacion</a>
+            <a class="nav-link" id="costos_operacion-tab"
+            data-bs-toggle="tab"
+            href="#costos_operacion"
+            role="tab"
+            aria-controls="costos_operacion"
+            aria-selected="false">Costos por Operación</a>
         </li>
  
         <li class="nav-item">

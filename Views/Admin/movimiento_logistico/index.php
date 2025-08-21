@@ -9,37 +9,59 @@
         </div>
         <!-- /.card-header -->
         <div class="card-body">
-          <div class="d-flex justify-content-between mb-3">
+          <div class="row g-3 mb-3 align-items-end">
+            <!-- Buscar -->
             <div class="col-md-3 position-relative">
-              <input type="text" class="form-control " id="buscarMovimiento"  name="buscarMovimiento" placeholder="Buscar Tipo de Movimiento">
+              <label for="buscarMovimiento" class="form-label">Buscar</label>
+              <input type="text" class="form-control" id="buscarMovimiento" name="buscarMovimiento"
+                placeholder="Buscar Tipo de Movimiento">
               <!-- Sugerencias dinámicas -->
-            <div id="sugerenciasMovimiento" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
+              <div id="sugerenciasMovimiento" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
             </div>
-            
-            <div class="col-md-3">
+
+            <!-- Tipo -->
+            <div class="col-md-2">
+              <label for="tipoMovimiento" class="form-label">Tipo</label>
               <select id="tipoMovimiento" class="form-control" name="tipoMovimiento">
-                <option>Tipo de Movimiento</option>
+                <option value="">Tipo de Movimiento</option>
                 <option value="gasto">Gasto</option>
                 <option value="abono">Abono</option>
+              </select>
+            </div>
 
- 
-              </select>
-            </div>
-            <div class="col-md-3">
+            <!-- Moneda -->
+            <div class="col-md-2">
+              <label for="monedaMovimiento" class="form-label">Moneda</label>
               <select class="form-control" id="monedaMovimiento" name="monedaMovimiento">
-              <option value="">Seleccione</option>
-              <option value="PESOS">Pesos</option>
-              <option value="DLLS">Dólares</option>
+                <option value="">Moneda</option>
+                <option value="PESOS">Pesos</option>
+                <option value="DLLS">Dólares</option>
               </select>
             </div>
+
+            <!-- Categoría -->
             <div class="col-md-3">
-              <button href="#" id="btnAgregarTipoMovimiento" class="btn btn-primary" data-bs-toggle="modal"
-                data-bs-target="#modalRegistrarTipoMovimiento"><i class="fas fa-plus"></i> Agregar Tipo de
-                Movimiento</button>
+              <label for="categoriaMovimiento" class="form-label">Categoría</label>
+              <select id="categoriaMovimiento" class="form-control" name="categoriaMovimiento">
+                <option value="">Categoría</option>
+                <?php foreach (($data['tipos_operacion'] ?? []) as $op): ?>
+                  <option value="<?= $op['id_tipo_operacion'] ?>">
+                    <?= htmlspecialchars($op['nombre_operacion']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <!-- Botón -->
+            <div class="col-md-2 text-end">
+              <button id="btnAgregarTipoMovimiento" class="btn btn-primary w-100" data-bs-toggle="modal"
+                data-bs-target="#modalRegistrarTipoMovimiento">
+                <i class="fas fa-plus"></i> Agregar
+              </button>
             </div>
           </div>
-
         </div>
+
         <!-- /.d-flex -->
         <div class="table-responsive">
           <table class="table table-hover">
@@ -47,6 +69,7 @@
               <tr>
                 <th>Nombre</th>
                 <th>Tipo de movimiento</th>
+                <th>Categoría</th>
                 <th>Moneda</th>
                 <th>Acciones</th>
               </tr>
@@ -91,17 +114,28 @@
           <div class="mb-3">
             <label for="tipo" class="form-label">Tipo</label>
             <select name="tipo" id="tipo" class="form-control" required>
-                <option value="">Seleccione</option>
-                <option value="gasto">Gasto</option>
-                <option value="abono">Abono</option>
+              <option value="">Seleccione</option>
+              <option value="gasto">Gasto</option>
+              <option value="abono">Abono</option>
             </select>
-            </div>
+          </div>
           <div class="mb-3">
             <label for="nombre_movimiento" class="form-label">Moneda</label>
             <select name="moneda" id="moneda" class="form-control" required>
-              <option value="">Seleccione</option>
+              <option value="">Moneda</option>
               <option value="PESOS">Pesos</option>
               <option value="DLLS">Dólares</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="tipo_operacion_id" class="form-label">Categoría (Tipo de operación)</label>
+            <select name="tipo_operacion_id" id="tipo_operacion_id" class="form-control">
+              <option value="">(Opcional) Seleccione</option>
+              <?php foreach (($data['tipos_operacion'] ?? []) as $op): ?>
+                <option value="<?= $op['id_tipo_operacion'] ?>">
+                  <?= htmlspecialchars($op['nombre_operacion']) ?>
+                </option>
+              <?php endforeach; ?>
             </select>
           </div>
 
