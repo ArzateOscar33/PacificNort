@@ -313,5 +313,90 @@ public function obtenerTiposMovimientoActivos(): array
     }
 }
 
+// === CRUD básico para costos a NIVEL OPERACIÓN ===
+
+/**
+ * Inserta un costo de operación.
+ * Tabla esperada: costos_operacion(id_costo_operacion PK AI, operacion_id, tipo_movimiento_id, monto, comentario, estatus, fecha_creacion)
+ * Nota: la MONEDA se deriva de tipos_movimiento.moneda; no se guarda aquí.
+ * @return int ID insertado (0 si falla)
+ */
+public function insertarCostoOperacion(array $d): int
+{
+    $sql = "INSERT INTO costos_operacion
+            (operacion_id, tipo_movimiento_id, monto, comentario, estatus, fecha_creacion)
+            VALUES (?, ?, ?, ?, 1, NOW())";
+
+    return (int)$this->insertar($sql, [
+        (int)($d['operacion_id'] ?? 0),
+        (int)($d['tipo_movimiento_id'] ?? 0),
+        (float)($d['monto'] ?? 0),
+        (string)($d['comentario'] ?? '')
+    ]);
+}
+
+/**
+ * Actualiza campos de un costo de operación.
+ * @return bool true si actualizó, false si no
+ */
+public function actualizarCostoOperacion(int $id, array $d): bool
+{
+    // Construcción dinámica SOLO de los campos permitidos
+    $sets   = [];
+    $params = [];
+
+    if (array_key_exists('tipo_movimiento_id', $d)) { $sets[] = "tipo_movimiento_id = ?"; $params[] = (int)$d['tipo_movimiento_id']; }
+    if (array_key_exists('monto', $d))              { $sets[] = "monto = ?";              $params[] = (float)$d['monto']; }
+    if (array_key_exists('comentario', $d))         { $sets[] = "comentario = ?";         $params[] = (string)$d['comentario']; }
+
+    if (empty($sets)) return false;
+
+    $sql = "UPDATE costos_operacion
+            SET " . implode(', ', $sets) . "
+            WHERE id_costo_operacion = ?
+            LIMIT 1";
+    $params[] = $id;
+
+    return $this->save($sql, $params) === 1;
+}
+
+/**
+ * Obtiene un costo de operación (join para traer número de operación y la moneda del tipo).
+ * @return array|null
+ */
+public function obtenerCostoOperacion(int $id): ?array
+{
+    $sql = "SELECT 
+                co.id_costo_operacion   AS row_id,
+                co.operacion_id,
+                o.numero_operacion,
+                co.tipo_movimiento_id,
+                tm.nombre               AS concepto,
+                UPPER(tm.moneda)        AS moneda,
+                co.monto,
+                co.comentario,
+                co.estatus,
+                co.fecha_creacion       AS fecha
+            FROM costos_operacion co
+            LEFT JOIN operaciones o       ON o.id_operacion = co.operacion_id
+            LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+            WHERE co.id_costo_operacion = ?
+            LIMIT 1";
+
+    $row = $this->select($sql, [$id]);
+    return $row ?: null;
+}
+public function desactivarCostoOperacion(int $id): bool
+{
+    $sql = "UPDATE costos_operacion SET estatus = 0 WHERE id_costo_operacion = ? LIMIT 1";
+    return $this->save($sql, [$id]) === 1;
+}
+
+public function reactivarCostoOperacion(int $id): bool
+{
+    $sql = "UPDATE costos_operacion SET estatus = 1 WHERE id_costo_operacion = ? LIMIT 1";
+    return $this->save($sql, [$id]) === 1;
+}
+
 
 }

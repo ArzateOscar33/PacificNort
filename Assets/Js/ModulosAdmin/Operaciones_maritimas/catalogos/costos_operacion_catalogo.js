@@ -47,7 +47,7 @@
   function moneyCostosOperacion(n){
     const num = Number(n);
     if (!Number.isFinite(num)) return "$ 0.00";
-    return "$ " + num.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+    return "$ " + num.toLocaleString("es-MX", { minimumFractionDigits:2, maximumFractionDigits:2 });
   }
   function prettyMonedaCostosOperacion(m){
     const t = String(m||"").toUpperCase();
@@ -57,7 +57,7 @@
 
   function formatMoneyGenericCostosOperacion(n, symbol) {
     const num = Number(n) || 0;
-    return (symbol || "$") + " " + num.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+    return (symbol || "$") + " " + num.toLocaleString("es-MX",{minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
   // ---------- Render: estados ----------
@@ -84,12 +84,25 @@
     if (!Array.isArray(rows) || rows.length===0){ renderVacioCostosOperacion(); return; }
 
     rows.forEach(r=>{
-      const tr = document.createElement("tr");
-      const origen = String(r.origen||"").toUpperCase();
-      const badge  = (origen==="CONTENEDOR")
+    const tr = document.createElement("tr");
+    const origen = String(r.origen||"").toUpperCase();
+    const badge  = (origen==="CONTENEDOR")
         ? `<span class="badge bg-info-subtle text-info">CONTENEDOR</span>`
         : `<span class="badge bg-primary-subtle text-primary">OPERACIÓN</span>`;
-      tr.innerHTML = `
+
+    // data-* para usar al editar
+    tr.dataset.origen = origen;
+    tr.dataset.rowId  = r.row_id || "";
+    tr.dataset.opId   = r.operacion_id || "";
+    tr.dataset.opNom  = r.numero_operacion || "";
+    tr.dataset.tipoId = r.tipo_movimiento_id || "";
+    tr.dataset.moneda = r.moneda || "";
+    tr.dataset.monto  = r.monto || "";
+    tr.dataset.coment = r.comentario || "";
+
+    // botones: solo habilitamos Editar para origen OPERACION (contenedor queda deshabilitado por ahora)
+    const canEdit = origen === "OPERACION";
+    tr.innerHTML = `
         <td>${fmtFechaCostosOperacion(r.fecha)}</td>
         <td>${badge}</td>
         <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : ""}</td>
@@ -98,14 +111,19 @@
         <td class="text-end">${moneyCostosOperacion(r.monto||0)}</td>
         <td>${safeCostosOperacion(r.comentario||"")}</td>
         <td class="text-center">
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary" title="Editar" disabled><i data-feather="edit-2"></i></button>
-            <button class="btn btn-outline-danger" title="Eliminar" disabled><i data-feather="trash-2"></i></button>
-          </div>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Editar" ${canEdit?"":"disabled"}>
+            <i data-feather="edit-2"></i>
+            </button>
+            <button class="btn btn-outline-danger" title="Eliminar" disabled>
+            <i data-feather="trash-2"></i>
+            </button>
+        </div>
         </td>`;
-      tbodyCostosOperacionCombined.appendChild(tr);
+    tbodyCostosOperacionCombined.appendChild(tr);
     });
     window.feather?.replace?.();
+
   }
 
   // ---------- Render: totales con conversión ----------
@@ -359,13 +377,14 @@
     if (opIdInp) opIdInp.value = String(operacionIdCostosOperacion);
     if (operacionIdCostosOperacion>0) listarCostosOperacion(1);
   };
-
+// Al final del primer IIFE:
+window.listarCostosOperacion = listarCostosOperacion;
 })();
  
 // ---------- Modal: Autocomplete + Tipo->Moneda + Sync operación seleccionada ----------
 (function(){
   "use strict";
-
+  let isEditModeCostosOperacion = false;
   const modalElCostosOperacion       = document.getElementById("modalCostoOperacion");
   const opIdModalInpCostosOperacion  = document.getElementById("costosOperacionOpId");
   const opNomModalInpCostosOperacion = document.getElementById("costosOperacionOpNombre");
@@ -458,16 +477,19 @@ opSugModalBoxCostosOperacion.querySelectorAll("button.list-group-item").forEach(
   }
 
   // Auto-moneda según tipo seleccionado
-  function syncMonedaPorTipoCostosOperacion(){
-    if (!tipoSelCostosOperacion || !monedaSelCostosOperacion) return;
-    const opt = tipoSelCostosOperacion.selectedOptions?.[0];
-    const m   = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
-    if (m === "PESOS" || m === "DLLS"){
-      monedaSelCostosOperacion.value = m;
-    } else {
-      monedaSelCostosOperacion.value = "";
-    }
-  }
+function syncMonedaPorTipoCostosOperacion(m){
+  const val = (m||"").toUpperCase();
+  if (monedaSelCostosOperacion) monedaSelCostosOperacion.value = val;
+  const hid = document.getElementById("costosOperacionMonedaHidden");
+  if (hid) hid.value = val;
+}
+function syncMonedaPorTipoCostosOperacion(){
+  if (!tipoSelCostosOperacion) return;
+  const opt = tipoSelCostosOperacion.selectedOptions?.[0];
+  const m   = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
+  setMonedaCostosOperacion((m==="PESOS"||m==="DLLS")? m : "");
+}
+
 
   // Eventos
   opNomModalInpCostosOperacion?.addEventListener("input", ()=>{
@@ -489,7 +511,7 @@ opSugModalBoxCostosOperacion.querySelectorAll("button.list-group-item").forEach(
   // Al abrir el modal: limpia, copia operación (si existe), y sincroniza moneda por tipo
   modalElCostosOperacion?.addEventListener("show.bs.modal", ()=>{
   resetFormCostosOperacion();
-
+  seedOperacionDesdeFiltroCostosOperacion();
 
   });
 
@@ -499,22 +521,138 @@ opSugModalBoxCostosOperacion.querySelectorAll("button.list-group-item").forEach(
   });
 
   // (Aún no guardamos: solo llenado) – evita submit accidental
-  formCostoOperacion?.addEventListener("submit", (e)=>{
-    e.preventDefault();
-    // Aquí luego haremos el POST al endpoint de guardado.
-    // Por ahora solo validamos que haya operacion_id
-    const opId = parseInt(opIdModalInpCostosOperacion?.value || "0", 10) || 0;
-    if (!opId){
-      alert("Selecciona una operación para registrar el costo.");
+formCostoOperacion?.addEventListener("submit", (e)=>{
+  e.preventDefault();
+
+  // Validación mínima
+  const opId = parseInt(opIdModalInpCostosOperacion?.value || "0", 10) || 0;
+  if (!opId){ alert("Selecciona una operación."); return; }
+
+  // Asegura la moneda en el hidden
+  syncMonedaPorTipoCostosOperacion();
+
+  const formData = new FormData(formCostoOperacion);
+  // Sello de acción (opcional, el backend infiere por row_id)
+  formData.append("accion", isEditModeCostosOperacion ? "actualizar" : "crear");
+
+  const url = `${base_url}Operaciones_maritimas_costos_operacion/guardar`;
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+    if (this.status !== 200){
+      console.error(this.responseText);
+      alert("No se pudo guardar el costo.");
       return;
     }
-    console.log("[DEBUG] listo para guardar:", {
-      operacion_id: opIdModalInpCostosOperacion.value,
-      tipo_movimiento_id: tipoSelCostosOperacion?.value || "",
-      moneda: monedaSelCostosOperacion?.value || "",
-      monto: montoInpCostosOperacion?.value || "",
-      comentario: comentTAreaCostosOperacion?.value || ""
-    });
+    let resp = {};
+    try { resp = JSON.parse(this.responseText) || {}; } catch { resp = {}; }
+
+if (resp.status === "success"){
+  // mensaje según si fue nuevo o edición
+  if (isEditModeCostosOperacion){
+    Swal.fire('Éxito', '✅ Costo actualizado correctamente.', 'success');
+  } else {
+    Swal.fire('Éxito', '✅ Costo registrado correctamente.', 'success');
+  }
+
+  // cerrar modal y refrescar lista
+  const bsModal = modalElCostosOperacion ? bootstrap.Modal.getInstance(modalElCostosOperacion) : null;
+  bsModal?.hide();
+  if (typeof listarCostosOperacion === "function") listarCostosOperacion(1);
+
+} else {
+  Swal.fire('Error', resp.message || 'No se pudo guardar el costo.', 'error');
+}
+
+  };
+  xhr.send(formData);
+});
+
+ 
+
+ 
+
+// Sincroniza moneda visual (select) + hidden (para submit)
+function setMonedaCostosOperacion(m){
+  const val = (m||"").toUpperCase();
+  if (monedaSelCostosOperacion) monedaSelCostosOperacion.value = val;
+  const hid = document.getElementById("costosOperacionMonedaHidden");
+  if (hid) hid.value = val;
+}
+/*
+function syncMonedaPorTipoCostosOperacion(){
+  if (!tipoSelCostosOperacion) return;
+  const opt = tipoSelCostosOperacion.selectedOptions?.[0];
+  const m   = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
+  setMonedaCostosOperacion((m==="PESOS"||m==="DLLS")? m : "");
+}*/
+
+// Rellena el formulario con datos (para editar o para “sembrar” op desde el filtro)
+function fillFormCostosOperacion({rowId="", opId="", opNom="", tipoId="", moneda="", monto="", comentario=""}={}){
+  const hidRow = document.getElementById("costosOperacionRowId");
+  if (hidRow){ hidRow.value = rowId; hidRow.setAttribute("value", rowId); }
+
+  if (opIdModalInpCostosOperacion)  opIdModalInpCostosOperacion.value  = opId;
+  if (opNomModalInpCostosOperacion) opNomModalInpCostosOperacion.value = opNom;
+
+  if (tipoSelCostosOperacion){
+    tipoSelCostosOperacion.value = String(tipoId||"");
+    syncMonedaPorTipoCostosOperacion();
+  }
+  if (moneda) setMonedaCostosOperacion(moneda);
+
+  if (montoInpCostosOperacion)    montoInpCostosOperacion.value = (monto??"");
+  if (comentTAreaCostosOperacion) comentTAreaCostosOperacion.value = comentario||"";
+}
+
+
+// Abrir modal en modo NUEVO
+function openModalNuevoCostosOperacion(){
+  isEditModeCostosOperacion = false;
+  resetFormCostosOperacion();
+  seedOperacionDesdeFiltroCostosOperacion();
+  syncMonedaPorTipoCostosOperacion();
+  const title = document.getElementById("modalCostoOperacionLabel");
+  if (title) title.innerHTML = `<i data-feather="plus-circle" class="me-1"></i> Añadir Costo a Operación`;
+  window.feather?.replace?.();
+}
+
+// Abrir modal en modo EDITAR (usamos data-* de la fila o pedimos al backend)
+function openModalEditarCostosOperacion(rowEl){
+  isEditModeCostosOperacion = true;
+  resetFormCostosOperacion();
+
+  // Puedes cargar directo del dataset (rápido) o, si prefieres, pedir con AJAX usando el row_id:
+  fillFormCostosOperacion({
+    rowId:    rowEl.dataset.rowId,
+    opId:     rowEl.dataset.opId,
+    opNom:    rowEl.dataset.opNom,
+    tipoId:   rowEl.dataset.tipoId,
+    moneda:   rowEl.dataset.moneda,
+    monto:    rowEl.dataset.monto,
+    comentario: rowEl.dataset.coment
   });
+
+  const title = document.getElementById("modalCostoOperacionLabel");
+  if (title) title.innerHTML = `<i data-feather="edit-2" class="me-1"></i> Editar Costo de Operación`;
+  window.feather?.replace?.();
+
+  // Mostrar modal programáticamente si lo necesitas:
+  const modal = modalElCostosOperacion ? bootstrap.Modal.getOrCreateInstance(modalElCostosOperacion) : null;
+  modal?.show();
+}
+
+// Click en “Nuevo”
+document.getElementById("costosOperacionBtnNuevo")?.addEventListener("click", openModalNuevoCostosOperacion);
+
+// Delegación de eventos para click en Editar (tbody)
+document.getElementById("tbodyCostosOperacionCombined")?.addEventListener("click", (e)=>{
+  const btn = e.target.closest(".btnEditarCostoOperacion");
+  if (!btn) return;
+  const tr = btn.closest("tr");
+  if (!tr || tr.dataset.origen!=="OPERACION") return; // por ahora solo editamos operación
+  openModalEditarCostosOperacion(tr);
+});
 
 })(); 

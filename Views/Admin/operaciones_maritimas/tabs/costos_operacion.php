@@ -167,6 +167,7 @@
         <div class="modal-body">
           <input type="hidden" id="costosOperacionRowId" name="row_id">
           <input type="hidden" id="costosOperacionOpId" name="operacion_id">
+          <input type="hidden" id="costosOperacionMonedaHidden" name="moneda">
 
           <div class="mb-3 position-relative">
             <label class="form-label">Operación</label>

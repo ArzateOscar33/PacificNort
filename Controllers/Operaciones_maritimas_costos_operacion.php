@@ -120,6 +120,96 @@ class Operaciones_maritimas_costos_operacion extends Controller
             ], JSON_UNESCAPED_UNICODE);
         }
     }
+    public function guardar()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+
+        try {
+            $rowId        = (int)($_POST['row_id'] ?? 0);                // si >0 => actualizar
+            $operacionId  = (int)($_POST['operacion_id'] ?? 0);
+            $tipoId       = (int)($_POST['tipo_movimiento_id'] ?? 0);
+            $monto        = (float)($_POST['monto'] ?? 0);
+            $moneda       = strtoupper(trim((string)($_POST['moneda'] ?? '')));
+            $comentario   = trim((string)($_POST['comentario'] ?? ''));
+
+            if ($operacionId <= 0) { echo json_encode(['status'=>'warning','message'=>'Falta operación']); return; }
+            if ($tipoId      <= 0) { echo json_encode(['status'=>'warning','message'=>'Selecciona un tipo de costo']); return; }
+            if ($monto       <= 0) { echo json_encode(['status'=>'warning','message'=>'Monto inválido']); return; }
+            if ($moneda !== 'PESOS' && $moneda !== 'DLLS'){
+                echo json_encode(['status'=>'warning','message'=>'Moneda inválida']); return;
+            }
+
+            if ($rowId > 0){
+                // actualizar
+                $ok = $this->model->actualizarCostoOperacion($rowId, [
+                    'tipo_movimiento_id' => $tipoId,
+                    'monto'              => $monto,
+                    'moneda'             => $moneda,     // opcional si la derives del tipo en BD
+                    'comentario'         => $comentario,
+                ]);
+                if (!$ok){ echo json_encode(['status'=>'error','message'=>'No se actualizó el registro']); return; }
+                echo json_encode(['status'=>'success','message'=>'Actualizado']); return;
+            } else {
+                // crear
+                $newId = $this->model->insertarCostoOperacion([
+                    'operacion_id'       => $operacionId,
+                    'tipo_movimiento_id' => $tipoId,
+                    'monto'              => $monto,
+                    'moneda'             => $moneda,
+                    'comentario'         => $comentario,
+                ]);
+                if ($newId <= 0){ echo json_encode(['status'=>'error','message'=>'No se creó el registro']); return; }
+                echo json_encode(['status'=>'success','message'=>'Creado','id'=>$newId]); return;
+            }
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['status'=>'error','message'=>'Error al guardar: '.$e->getMessage()]);
+        }
+    }
+
+    // (Opcional) para prefilling exacto desde BD si no quieres usar dataset del <tr>
+    public function obtenerUno()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0){ echo json_encode(['status'=>'warning','message'=>'ID inválido']); return; }
+        try {
+            $row = $this->model->obtenerCostoOperacion($id);
+            if (!$row){ echo json_encode(['status'=>'warning','message'=>'No encontrado']); return; }
+            echo json_encode(['status'=>'success','data'=>$row], JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['status'=>'error','message'=>'Error: '.$e->getMessage()]);
+        }
+    }
+    public function desactivarCostoOperacion()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0){ echo json_encode(['status'=>'warning','message'=>'ID inválido']); return; }
+        try {
+            $ok = $this->model->desactivarCostoOperacion($id);
+            echo json_encode($ok ? ['status'=>'success'] : ['status'=>'error','message'=>'No se desactivó']);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['status'=>'error','message'=>$e->getMessage()]);
+        }
+    }
+
+    public function reactivarCostoOperacion()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0){ echo json_encode(['status'=>'warning','message'=>'ID inválido']); return; }
+        try {
+            $ok = $this->model->reactivarCostoOperacion($id);
+            echo json_encode($ok ? ['status'=>'success'] : ['status'=>'error','message'=>'No se reactivó']);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['status'=>'error','message'=>$e->getMessage()]);
+        }
+    }
+
 
     
 }
