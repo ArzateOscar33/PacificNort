@@ -115,7 +115,7 @@
             <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Editar" ${canEdit?"":"disabled"}>
             <i data-feather="edit-2"></i>
             </button>
-            <button class="btn btn-outline-danger" title="Eliminar" disabled>
+            <button class="btn btn-outline-danger btnEliminarCostoOperacion" title="Eliminar" ${canEdit?"":"disabled"}>
             <i data-feather="trash-2"></i>
             </button>
         </div>
@@ -408,6 +408,12 @@ window.listarCostosOperacion = listarCostosOperacion;
     if (opSugModalBoxCostosOperacion){ opSugModalBoxCostosOperacion.innerHTML = ""; opSugModalBoxCostosOperacion.style.display = "none"; }
     // deja "Moneda" deshabilitado, pero reseteado
     if (monedaSelCostosOperacion) monedaSelCostosOperacion.value = "";
+     // limpiar row_id (valor actual y valor por defecto)
+ const hidRow = document.getElementById("costosOperacionRowId");
+ if (hidRow){
+   hidRow.value = "";
+   hidRow.removeAttribute("value"); // por si algún flujo lo dejó fijado
+ }
   }
 
   // Copia operación del filtro superior si existe
@@ -477,12 +483,13 @@ opSugModalBoxCostosOperacion.querySelectorAll("button.list-group-item").forEach(
   }
 
   // Auto-moneda según tipo seleccionado
+  /*
 function syncMonedaPorTipoCostosOperacion(m){
   const val = (m||"").toUpperCase();
   if (monedaSelCostosOperacion) monedaSelCostosOperacion.value = val;
   const hid = document.getElementById("costosOperacionMonedaHidden");
   if (hid) hid.value = val;
-}
+}*/
 function syncMonedaPorTipoCostosOperacion(){
   if (!tipoSelCostosOperacion) return;
   const opt = tipoSelCostosOperacion.selectedOptions?.[0];
@@ -510,8 +517,11 @@ function syncMonedaPorTipoCostosOperacion(){
 
   // Al abrir el modal: limpia, copia operación (si existe), y sincroniza moneda por tipo
   modalElCostosOperacion?.addEventListener("show.bs.modal", ()=>{
-  resetFormCostosOperacion();
-  seedOperacionDesdeFiltroCostosOperacion();
+  // Solo resetea si es NUEVO. En edición no limpies para no borrar row_id.
+  if (!isEditModeCostosOperacion) {
+    resetFormCostosOperacion();
+    seedOperacionDesdeFiltroCostosOperacion();
+  }
 
   });
 
@@ -524,16 +534,26 @@ function syncMonedaPorTipoCostosOperacion(){
 formCostoOperacion?.addEventListener("submit", (e)=>{
   e.preventDefault();
 
-  // Validación mínima
+  // Validación
   const opId = parseInt(opIdModalInpCostosOperacion?.value || "0", 10) || 0;
   if (!opId){ alert("Selecciona una operación."); return; }
 
-  // Asegura la moneda en el hidden
+  // Asegura moneda en hidden
   syncMonedaPorTipoCostosOperacion();
 
+  // Si es ALTA, limpia el hidden row_id ANTES de crear el FormData
+  const hidRow = document.getElementById("costosOperacionRowId");
+  if (!isEditModeCostosOperacion && hidRow) {
+    hidRow.value = "";
+    // (opcional) hidRow.removeAttribute("value");
+  }
+
+  // AHORA sí crea el FormData y úsalo
   const formData = new FormData(formCostoOperacion);
-  // Sello de acción (opcional, el backend infiere por row_id)
   formData.append("accion", isEditModeCostosOperacion ? "actualizar" : "crear");
+
+  // (opcional) debug:
+  // console.log('row_id ->', formData.get('row_id'), 'edit?', isEditModeCostosOperacion);
 
   const url = `${base_url}Operaciones_maritimas_costos_operacion/guardar`;
   const xhr = new XMLHttpRequest();
@@ -548,23 +568,16 @@ formCostoOperacion?.addEventListener("submit", (e)=>{
     let resp = {};
     try { resp = JSON.parse(this.responseText) || {}; } catch { resp = {}; }
 
-if (resp.status === "success"){
-  // mensaje según si fue nuevo o edición
-  if (isEditModeCostosOperacion){
-    Swal.fire('Éxito', '✅ Costo actualizado correctamente.', 'success');
-  } else {
-    Swal.fire('Éxito', '✅ Costo registrado correctamente.', 'success');
-  }
-
-  // cerrar modal y refrescar lista
-  const bsModal = modalElCostosOperacion ? bootstrap.Modal.getInstance(modalElCostosOperacion) : null;
-  bsModal?.hide();
-  if (typeof listarCostosOperacion === "function") listarCostosOperacion(1);
-
-} else {
-  Swal.fire('Error', resp.message || 'No se pudo guardar el costo.', 'error');
-}
-
+    if (resp.status === "success"){
+      Swal.fire('Éxito', isEditModeCostosOperacion
+        ? '✅ Costo actualizado correctamente.'
+        : '✅ Costo registrado correctamente.', 'success');
+      const bsModal = modalElCostosOperacion ? bootstrap.Modal.getInstance(modalElCostosOperacion) : null;
+      bsModal?.hide();
+      if (typeof listarCostosOperacion === "function") listarCostosOperacion(1);
+    } else {
+      Swal.fire('Error', resp.message || 'No se pudo guardar el costo.', 'error');
+    }
   };
   xhr.send(formData);
 });
@@ -591,7 +604,7 @@ function syncMonedaPorTipoCostosOperacion(){
 // Rellena el formulario con datos (para editar o para “sembrar” op desde el filtro)
 function fillFormCostosOperacion({rowId="", opId="", opNom="", tipoId="", moneda="", monto="", comentario=""}={}){
   const hidRow = document.getElementById("costosOperacionRowId");
-  if (hidRow){ hidRow.value = rowId; hidRow.setAttribute("value", rowId); }
+  if (hidRow){ hidRow.value = rowId; } // ← sin setAttribute
 
   if (opIdModalInpCostosOperacion)  opIdModalInpCostosOperacion.value  = opId;
   if (opNomModalInpCostosOperacion) opNomModalInpCostosOperacion.value = opNom;
@@ -611,6 +624,12 @@ function fillFormCostosOperacion({rowId="", opId="", opNom="", tipoId="", moneda
 function openModalNuevoCostosOperacion(){
   isEditModeCostosOperacion = false;
   resetFormCostosOperacion();
+   // doble seguro: sin row_id
+ const hidRow = document.getElementById("costosOperacionRowId");
+ if (hidRow){
+   hidRow.value = "";
+   hidRow.removeAttribute("value");
+ }
   seedOperacionDesdeFiltroCostosOperacion();
   syncMonedaPorTipoCostosOperacion();
   const title = document.getElementById("modalCostoOperacionLabel");
@@ -646,13 +665,52 @@ function openModalEditarCostosOperacion(rowEl){
 // Click en “Nuevo”
 document.getElementById("costosOperacionBtnNuevo")?.addEventListener("click", openModalNuevoCostosOperacion);
 
-// Delegación de eventos para click en Editar (tbody)
+ 
+// EDITAR
 document.getElementById("tbodyCostosOperacionCombined")?.addEventListener("click", (e)=>{
   const btn = e.target.closest(".btnEditarCostoOperacion");
   if (!btn) return;
   const tr = btn.closest("tr");
-  if (!tr || tr.dataset.origen!=="OPERACION") return; // por ahora solo editamos operación
-  openModalEditarCostosOperacion(tr);
+  if (!tr || tr.dataset.origen !== "OPERACION") return; // respeta tu regla
+  // Esta función está dentro del IIFE del modal;
+  // la exponemos más abajo con window.openModalEditarCostosOperacion
+  window.openModalEditarCostosOperacion?.(tr);
 });
+
+// ELIMINAR
+document.getElementById("tbodyCostosOperacionCombined")?.addEventListener("click", (e)=>{
+  const btn = e.target.closest(".btnEliminarCostoOperacion");
+  if (!btn) return;
+  const tr = btn.closest("tr");
+  if (!tr || tr.dataset.origen !== "OPERACION") return; // respeta tu regla
+  const rowId = tr.dataset.rowId;
+  Swal.fire({
+    title: '¿Eliminar costo?',
+    text: 'Esta acción no se puede deshacer',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((r)=>{
+    if (!r.isConfirmed) return;
+    const fd = new FormData();
+    fd.append("id", rowId);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", base_url + "Operaciones_maritimas_costos_operacion/desactivarCostoOperacion", true);
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState !== 4) return;
+      if (xhr.status !== 200) { Swal.fire("Error", "Error HTTP " + xhr.status, "error"); return; }
+      let resp={}; try{ resp=JSON.parse(xhr.responseText)||{} }catch{}
+      if (resp.status === "success"){
+        Swal.fire("Éxito", resp.message || "Costo eliminado", "success");
+        window.listarCostosOperacion?.(1);
+      } else {
+        Swal.fire("Error", resp.message || "No se pudo eliminar", "error");
+      }
+    };
+    xhr.send(fd);
+  });
+});
+window.openModalEditarCostosOperacion = openModalEditarCostosOperacion;
 
 })(); 
