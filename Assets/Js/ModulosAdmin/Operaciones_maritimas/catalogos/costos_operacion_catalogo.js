@@ -1,0 +1,363 @@
+// =======================================================
+//  Módulo: Costos por Operación (LISTAR COMBINADO)
+//  Archivo: assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_operacion_catalogo.js
+//  Nota: todas las vars/funcs quedan con sufijo CostosOperacion para evitar choques.
+// =======================================================
+(function(){
+  "use strict";
+
+  // ---------- Refs del DOM ----------
+  const tbodyCostosOperacionCombined     = document.getElementById("tbodyCostosOperacionCombined");
+  const costosOperacionBuscar            = document.getElementById("costosOperacionBuscar");
+  const costosOperacionFiltroOrigen      = document.getElementById("costosOperacionFiltroOrigen");
+  const costosOperacionFiltroMoneda      = document.getElementById("costosOperacionFiltroMoneda");
+  const costosOperacionFiltroTipo        = document.getElementById("costosOperacionFiltroTipo");
+  const costosOperacionPerPageSel        = document.getElementById("costosOperacionPerPage");
+  const costosOperacionPaginacion        = document.getElementById("costosOperacionPaginacion");
+  const costosOperacionMeta              = document.getElementById("costosOperacionMeta");
+
+  // Tarjetas totales + controles de vista
+  const costosOperacionTotalOperacion    = document.getElementById("costosOperacionTotalOperacion");
+  const costosOperacionTotalContenedores = document.getElementById("costosOperacionTotalContenedores");
+  const costosOperacionTotalGeneral      = document.getElementById("costosOperacionTotalGeneral");
+  const costosOperacionMonedaVistaSel    = document.getElementById("costosOperacionMonedaVista");  // MXN | USD
+  const costosOperacionTipoCambioInp     = document.getElementById("costosOperacionTipoCambio");   // MXN por 1 USD
+
+  // Autocomplete Operación
+  const opIdInp        = document.getElementById("costosOperacionFiltroOpId");
+  const opNombreInp    = document.getElementById("costosOperacionFiltroOpNombre");
+  const opSugBox       = document.getElementById("costosOperacionFiltroOpSugerencias");
+  const opMeta         = document.getElementById("costosOperacionFiltroOpMeta");
+
+  // ---------- Estado ----------
+  let currentPageCostosOperacion   = 1;
+  let perPageCostosOperacion       = parseInt(costosOperacionPerPageSel?.value || "10", 10);
+  let currentXHRCostosOperacion    = null;
+  let debounceIdCostosOperacion    = null;
+
+  // Operación elegida (0 hasta que seleccionen)
+  let operacionIdCostosOperacion   = parseInt(opIdInp?.value || "0", 10) || 0;
+
+  // Cache para conversiones de totales
+  let totalesDetalleCacheCostosOperacion = null;
+
+  // ---------- Helpers ----------
+  const safeCostosOperacion = (v)=> (v === undefined || v === null) ? "" : v;
+
+  function moneyCostosOperacion(n){
+    const num = Number(n);
+    if (!Number.isFinite(num)) return "$ 0.00";
+    return "$ " + num.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+  function prettyMonedaCostosOperacion(m){
+    const t = String(m||"").toUpperCase();
+    return (t==="PESOS" || t==="DLLS") ? t : t;
+  }
+  function fmtFechaCostosOperacion(s){ return s ? String(s).substring(0,10) : ""; }
+
+  function formatMoneyGenericCostosOperacion(n, symbol) {
+    const num = Number(n) || 0;
+    return (symbol || "$") + " " + num.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  // ---------- Render: estados ----------
+  function renderCargandoCostosOperacion(){
+    if (!tbodyCostosOperacionCombined) return;
+    tbodyCostosOperacionCombined.innerHTML = `
+      <tr><td colspan="8" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
+  }
+  function renderErrorCostosOperacion(msg){
+    if (!tbodyCostosOperacionCombined) return;
+    tbodyCostosOperacionCombined.innerHTML = `
+      <tr><td colspan="8" class="text-center text-danger py-4">${msg||"Error al cargar."}</td></tr>`;
+  }
+  function renderVacioCostosOperacion(){
+    if (!tbodyCostosOperacionCombined) return;
+    tbodyCostosOperacionCombined.innerHTML = `
+      <tr><td colspan="8" class="text-center text-muted py-4">No hay costos para mostrar.</td></tr>`;
+  }
+
+  // ---------- Render: tabla ----------
+  function renderTablaCostosOperacion(rows){
+    if (!tbodyCostosOperacionCombined) return;
+    tbodyCostosOperacionCombined.innerHTML = "";
+    if (!Array.isArray(rows) || rows.length===0){ renderVacioCostosOperacion(); return; }
+
+    rows.forEach(r=>{
+      const tr = document.createElement("tr");
+      const origen = String(r.origen||"").toUpperCase();
+      const badge  = (origen==="CONTENEDOR")
+        ? `<span class="badge bg-info-subtle text-info">CONTENEDOR</span>`
+        : `<span class="badge bg-primary-subtle text-primary">OPERACIÓN</span>`;
+      tr.innerHTML = `
+        <td>${fmtFechaCostosOperacion(r.fecha)}</td>
+        <td>${badge}</td>
+        <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : ""}</td>
+        <td>${safeCostosOperacion(r.concepto||"")}</td>
+        <td>${prettyMonedaCostosOperacion(r.moneda||"")}</td>
+        <td class="text-end">${moneyCostosOperacion(r.monto||0)}</td>
+        <td>${safeCostosOperacion(r.comentario||"")}</td>
+        <td class="text-center">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" title="Editar" disabled><i data-feather="edit-2"></i></button>
+            <button class="btn btn-outline-danger" title="Eliminar" disabled><i data-feather="trash-2"></i></button>
+          </div>
+        </td>`;
+      tbodyCostosOperacionCombined.appendChild(tr);
+    });
+    window.feather?.replace?.();
+  }
+
+  // ---------- Render: totales con conversión ----------
+  function renderTotalesCostosOperacion(totales, totalesDetalle){
+    // guarda cache para recalcular al cambiar selector/tipoCambio
+    if (totalesDetalle) totalesDetalleCacheCostosOperacion = totalesDetalle;
+
+    // si no tenemos detalle, pintamos simples
+    if (!totalesDetalleCacheCostosOperacion ||
+        !totalesDetalleCacheCostosOperacion.operacion ||
+        !totalesDetalleCacheCostosOperacion.contenedores) {
+      const tOp  = Number(totales?.total_operacion||0);
+      const tCo  = Number(totales?.total_contenedores||0);
+      const tGen = Number(totales?.total_general || (tOp+tCo));
+      if (costosOperacionTotalOperacion)    costosOperacionTotalOperacion.textContent    = moneyCostosOperacion(tOp);
+      if (costosOperacionTotalContenedores) costosOperacionTotalContenedores.textContent = moneyCostosOperacion(tCo);
+      if (costosOperacionTotalGeneral)      costosOperacionTotalGeneral.textContent      = moneyCostosOperacion(tGen);
+      return;
+    }
+
+    const det = totalesDetalleCacheCostosOperacion;
+    const opPesos  = Number(det.operacion.PESOS||0);
+    const opDlls   = Number(det.operacion.DLLS ||0);
+    const conPesos = Number(det.contenedores.PESOS||0);
+    const conDlls  = Number(det.contenedores.DLLS ||0);
+
+    const vista = (costosOperacionMonedaVistaSel?.value || "MXN").toUpperCase(); // MXN|USD
+    let tc = parseFloat(costosOperacionTipoCambioInp?.value || "0");
+    if (!Number.isFinite(tc) || tc<=0) tc = 1;
+
+    let symbol = "$";
+    let totalOpConv = 0, totalConConv = 0, totalGenConv = 0;
+
+    if (vista === "MXN"){
+      symbol = "$";
+      totalOpConv  = opPesos  + (opDlls  * tc);
+      totalConConv = conPesos + (conDlls * tc);
+    } else {
+      symbol = "US$";
+      totalOpConv  = opDlls  + (opPesos  / tc);
+      totalConConv = conDlls + (conPesos / tc);
+    }
+    totalGenConv = totalOpConv + totalConConv;
+
+    if (costosOperacionTotalOperacion)    costosOperacionTotalOperacion.textContent    = formatMoneyGenericCostosOperacion(totalOpConv, symbol);
+    if (costosOperacionTotalContenedores) costosOperacionTotalContenedores.textContent = formatMoneyGenericCostosOperacion(totalConConv, symbol);
+    if (costosOperacionTotalGeneral)      costosOperacionTotalGeneral.textContent      = formatMoneyGenericCostosOperacion(totalGenConv, symbol);
+  }
+
+  // ---------- Render: paginación + meta ----------
+  function renderPaginacionCostosOperacion(meta){
+    if (!costosOperacionPaginacion) return;
+    const page= parseInt(meta.page||1,10);
+    const totalPages = parseInt(meta.totalPages||1,10);
+    if (totalPages<=1){ costosOperacionPaginacion.innerHTML=""; return; }
+
+    let start=Math.max(1,page-2), end=Math.min(totalPages,start+4); start=Math.max(1,end-4);
+    let html = `
+      <li class="page-item ${page===1?"disabled":""}">
+        <a class="page-link" href="#" data-page="${page-1}">Anterior</a>
+      </li>`;
+    for (let p=start; p<=end; p++){
+      html += `
+        <li class="page-item ${p===page?"active":""}">
+          <a class="page-link" href="#" data-page="${p}">${p}</a>
+        </li>`;
+    }
+    html += `
+      <li class="page-item ${page===totalPages?"disabled":""}">
+        <a class="page-link" href="#" data-page="${page+1}">Siguiente</a>
+      </li>`;
+    costosOperacionPaginacion.innerHTML = html;
+
+    costosOperacionPaginacion.querySelectorAll("a.page-link").forEach(a=>{
+      a.addEventListener("click",(e)=>{
+        e.preventDefault();
+        const p = parseInt(a.dataset.page,10);
+        if (!Number.isNaN(p)) listarCostosOperacion(p);
+      });
+    });
+  }
+
+  function renderMetaCostosOperacion(meta){
+    if (!costosOperacionMeta) return;
+    const page  = parseInt(meta.page||1,10);
+    const perPg = parseInt(meta.perPage||perPageCostosOperacion||10,10);
+    const total = parseInt(meta.total||0,10);
+    const ini   = total===0 ? 0 : ((page-1)*perPg)+1;
+    const fin   = Math.min(page*perPg, total);
+    costosOperacionMeta.textContent = `Mostrando ${ini}–${fin} de ${total}`;
+  }
+
+  // ---------- Listar ----------
+  function listarCostosOperacion(page=1){
+    currentPageCostosOperacion = page;
+
+    // sin operación seleccionada: vacío
+    if (!operacionIdCostosOperacion || operacionIdCostosOperacion<=0){
+      renderVacioCostosOperacion();
+      renderTotalesCostosOperacion({total_operacion:0,total_contenedores:0,total_general:0}, null);
+      renderPaginacionCostosOperacion({page:1,totalPages:0});
+      renderMetaCostosOperacion({page:1,perPage:perPageCostosOperacion,total:0});
+      return;
+    }
+
+    const buscar = (costosOperacionBuscar?.value||"").trim();
+    const moneda = (costosOperacionFiltroMoneda?.value||"").toUpperCase();
+    const tipoId = parseInt(costosOperacionFiltroTipo?.value||"0",10) || 0;
+    const origen = (costosOperacionFiltroOrigen?.value||"").toUpperCase();
+
+    if (currentXHRCostosOperacion && currentXHRCostosOperacion.readyState!==4) currentXHRCostosOperacion.abort();
+    renderCargandoCostosOperacion();
+
+    const params = new URLSearchParams({
+      page: String(currentPageCostosOperacion),
+      perPage: String(perPageCostosOperacion),
+      buscar,
+      moneda,
+      tipo: String(tipoId),
+      operacion_id: String(operacionIdCostosOperacion),
+      origen
+    });
+
+    const url = `${base_url}Operaciones_maritimas_costos_operacion/listarPaginado?${params.toString()}`;
+    currentXHRCostosOperacion = new XMLHttpRequest();
+    currentXHRCostosOperacion.open("GET", url, true);
+    currentXHRCostosOperacion.send();
+    currentXHRCostosOperacion.onreadystatechange = function(){
+      if (this.readyState!==4) return;
+      if (this.status!==200){ console.error(this.responseText); renderErrorCostosOperacion("No se pudo cargar la información."); return; }
+
+      let payload;
+      try{ payload = JSON.parse(this.responseText); } catch{ renderErrorCostosOperacion("Respuesta inválida del servidor."); return; }
+
+      const data            = payload.data    || [];
+      const meta            = payload.meta    || {page:1,totalPages:1,total:0,perPage:perPageCostosOperacion};
+      const totales         = payload.totales || {total_operacion:0,total_contenedores:0,total_general:0};
+      const totalesDetalle  = payload.totales_detalle || null;
+
+      if (data.length===0 && meta.totalPages>0 && currentPageCostosOperacion>meta.totalPages){
+        listarCostosOperacion(meta.totalPages);
+        return;
+      }
+
+      renderTablaCostosOperacion(data);
+      renderPaginacionCostosOperacion(meta);
+      renderMetaCostosOperacion(meta);
+      renderTotalesCostosOperacion(totales, totalesDetalle);
+    };
+  }
+
+  // ---------- Eventos ----------
+  document.addEventListener("DOMContentLoaded", ()=>{
+    if (!perPageCostosOperacion || perPageCostosOperacion<1) perPageCostosOperacion = 10;
+    if (operacionIdCostosOperacion>0) listarCostosOperacion(1);
+  });
+
+  costosOperacionPerPageSel?.addEventListener("change", ()=>{
+    perPageCostosOperacion = parseInt(costosOperacionPerPageSel.value||"10",10);
+    if (!perPageCostosOperacion || perPageCostosOperacion<1) perPageCostosOperacion = 10;
+    listarCostosOperacion(1);
+  });
+
+  costosOperacionBuscar?.addEventListener("keyup",(e)=>{
+    clearTimeout(debounceIdCostosOperacion);
+    debounceIdCostosOperacion = setTimeout(()=>listarCostosOperacion(1), 250);
+    if (e.key==="Enter"){ clearTimeout(debounceIdCostosOperacion); listarCostosOperacion(1); }
+  });
+
+  costosOperacionFiltroMoneda?.addEventListener("change",   ()=>listarCostosOperacion(1));
+  costosOperacionFiltroTipo?.addEventListener("change",     ()=>listarCostosOperacion(1));
+  costosOperacionFiltroOrigen?.addEventListener("change",   ()=>listarCostosOperacion(1));
+
+  // Recalcular tarjetas al cambiar vista de moneda o tipo de cambio
+  costosOperacionMonedaVistaSel?.addEventListener("change", ()=>{
+    renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
+  });
+  costosOperacionTipoCambioInp?.addEventListener("input", ()=>{
+    renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
+  });
+
+  // ---------- Autocomplete de Operación ----------
+  function buscarOperacionesSugerenciasCostosOperacion(term){
+    if (!opSugBox) return;
+    if (!term || term.length<2){ opSugBox.style.display="none"; opSugBox.innerHTML=""; opMeta && (opMeta.textContent=""); return; }
+
+    const url = `${base_url}Operaciones_maritimas_costos_operacion/buscarOperaciones?term=${encodeURIComponent(term)}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.send();
+    xhr.onreadystatechange = function(){
+      if (this.readyState!==4) return;
+      if (this.status!==200){ opSugBox.style.display="none"; opSugBox.innerHTML=""; opMeta && (opMeta.textContent=""); return; }
+
+      let rows = [];
+      try{ rows = JSON.parse(this.responseText) || []; } catch{ rows = []; }
+
+      if (!Array.isArray(rows) || rows.length===0){
+        opSugBox.style.display="none"; opSugBox.innerHTML=""; opMeta && (opMeta.textContent="Sin resultados"); return;
+      }
+
+      let html = "";
+      rows.forEach(r=>{
+        const id  = r.id_operacion;
+        const nom = r.numero_operacion;
+        const cli = r.cliente || "";
+        html += `
+          <button type="button" class="list-group-item list-group-item-action" data-id="${id}" data-nom="${nom}">
+            <div class="d-flex justify-content-between">
+              <div><strong>${nom}</strong></div>
+              <small class="text-muted">${cli}</small>
+            </div>
+          </button>`;
+      });
+      opSugBox.innerHTML = html;
+      opSugBox.style.display = "block";
+      opMeta && (opMeta.textContent = `${rows.length} resultado(s)`);
+
+      opSugBox.querySelectorAll("button.list-group-item").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const id  = parseInt(btn.dataset.id||"0",10) || 0;
+          const nom = btn.dataset.nom || "";
+          if (opIdInp)     opIdInp.value = String(id);
+          if (opNombreInp) opNombreInp.value = nom;
+          operacionIdCostosOperacion = id;
+          opSugBox.innerHTML = "";
+          opSugBox.style.display = "none";
+          listarCostosOperacion(1);
+        });
+      });
+    };
+  }
+
+  opNombreInp?.addEventListener("input", ()=>{
+    const term = (opNombreInp.value||"").trim();
+    if (opIdInp) opIdInp.value = "";
+    operacionIdCostosOperacion = 0;
+    buscarOperacionesSugerenciasCostosOperacion(term);
+  });
+
+  document.addEventListener("click",(e)=>{
+    if (!opSugBox) return;
+    if (!opSugBox.contains(e.target) && e.target !== opNombreInp){
+      opSugBox.style.display = "none";
+    }
+  });
+
+  // Exponer (opcional) para fijar operación desde fuera
+  window.setOperacionIdCostosOperacion = function(opId){
+    operacionIdCostosOperacion = parseInt(opId||"0",10) || 0;
+    if (opIdInp) opIdInp.value = String(operacionIdCostosOperacion);
+    if (operacionIdCostosOperacion>0) listarCostosOperacion(1);
+  };
+
+})();

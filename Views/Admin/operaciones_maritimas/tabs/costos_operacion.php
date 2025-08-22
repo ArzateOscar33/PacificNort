@@ -1,165 +1,221 @@
- 
-<div class="container mt-4 col-md-12">
-  <div class="card shadow">
+<div class="container py-4 col-md-12">
+  <div class="card shadow-sm border-0">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">Costos por Operación</h4>
-        <select class=" form-control w-30">
-          <option selected>JL-46</option>
-          <!-- Puedes cargar más operaciones aquí -->
-        </select>
-      </div>
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4><i data-feather="dollar-sign"></i> Costos por Operación</h4>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarCostoOperacion">
+      <!-- Encabezado + buscador de operación -->
+      <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+        <div>
+          <h4 class="mb-1">Costos por Operación</h4>
+          <small class="text-muted">Consulta y administra los costos a nivel operación y por contenedor en una sola
+            vista.</small>
+        </div>
+
+        <!-- Filtros de la tabla unificada -->
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+          <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" id="costosOperacionBuscar"
+              placeholder="Buscar concepto o comentario…">
+            <select id="costosOperacionFiltroOrigen" class="form-control form-control-sm" style="max-width:180px;">
+              <option value="">Origen: Todos</option>
+              <option value="OPERACION">Operación</option>
+              <option value="CONTENEDOR">Contenedor</option>
+            </select>
+            <select id="costosOperacionFiltroMoneda" class="form-control form-control-sm" style="max-width:140px;">
+              <option value="">Moneda: Todas</option>
+              <option value="PESOS">PESOS</option>
+              <option value="DLLS">DLLS</option>
+            </select>
+            <select id="costosOperacionFiltroTipo" class="form-control form-control-sm" style="max-width:220px;">
+              <option value="">Tipo: Todos</option>
+            </select>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small mb-0">Por página:</label>
+            <select id="costosOperacionPerPage" class="form-control form-control-sm" style="width:90px;">
+              <option>10</option>
+              <option>20</option>
+              <option>50</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+          <div>
+            <label class="form-label small mb-1">Mostrar totales en</label>
+            <select id="costosOperacionMonedaVista" class="form-control form-control-sm" style="width:140px;">
+              <option value="MXN">MXN (pesos)</option>
+              <option value="USD">USD (dólares)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label small mb-1">Tipo de cambio</label>
+            <div class="input-group input-group-sm" style="width:160px;">
+              <span class="input-group-text">$</span>
+              <input type="number" step="0.0001" min="0" id="costosOperacionTipoCambio" class="form-control mt-1"
+                value="17.00">
+                
+            </div>
+          </div>
+        </div>
+        <div class="w-100 w-md-auto" style="min-width:320px;">
+          <label for="costosOperacionFiltroOpNombre" class="form-label mb-1">Operación</label>
+          <div class="position-relative">
+            <input type="hidden" id="costosOperacionFiltroOpId" name="costosOperacionFiltroOpId">
+            <input type="text" id="costosOperacionFiltroOpNombre" name="costosOperacionFiltroOpNombre"
+              class="form-control" placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
+            <div id="costosOperacionFiltroOpSugerencias" class="list-group"
+              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+          </div>
+          <div class="form-text" id="costosOperacionFiltroOpMeta"></div>
+        </div>
+
+        <div class="ms-auto">
+          <button class="btn btn-primary" id="costosOperacionBtnNuevo" data-bs-toggle="modal"
+            data-bs-target="#modalCostoOperacion">
             <i data-feather="plus"></i> Añadir Costo
-        </button>
-    </div>
-      <div class="row mb-4">
-        <div class="col-md-4 mb-2">
-          <div class="bg-primary text-white p-3 rounded shadow-sm">
-            <h5 class="mb-0">$ 6,000 <i data-feather="clock"></i></h5>
-            <small>Total por Servicios</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div class="row g-3 mb-4" id="costosOperacionCards">
+        <div class="col-12 col-md-4">
+          <div class="bg-primary text-white p-3 rounded shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 text-uppercase small">Total operación</h6>
+              <i data-feather="dollar-sign"></i>
+            </div>
+            <div class="mt-2 h3 mb-0" id="costosOperacionTotalOperacion">$ 0.00</div>
+            <small class="opacity-75">Costos registrados a la operación</small>
           </div>
         </div>
-        <div class="col-md-4 mb-2">
-          <div class="bg-info text-dark p-3 rounded shadow-sm">
-            <h5 class="mb-0">$ 1,200</h5>
-            <small>Total por Costos Variables</small>
+        <div class="col-12 col-md-4">
+          <div class="bg-info text-dark p-3 rounded shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 text-uppercase small">Total contenedores</h6>
+              <i data-feather="box"></i>
+            </div>
+            <div class="mt-2 h3 mb-0" id="costosOperacionTotalContenedores">$ 0.00</div>
+            <small class="text-dark-50">Suma de costos por contenedor</small>
           </div>
         </div>
-        <div class="col-md-4 mb-2">
-          <div class="bg-success text-white p-3 rounded shadow-sm">
-            <h5 class="mb-0">$ 4,800</h5>
-            <small>Ganancia Neta</small>
+        <div class="col-12 col-md-4">
+          <div class="bg-success text-white p-3 rounded shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 text-uppercase small">Total general</h6>
+              <i data-feather="trending-up"></i>
+            </div>
+            <div class="mt-2 h3 mb-0" id="costosOperacionTotalGeneral">$ 0.00</div>
+            <small class="opacity-75">Operación + contenedores</small>
           </div>
         </div>
       </div>
 
-      <h5 class="mb-3">Costos por Operación</h5>
+      <!-- Tabla unificada (operación + contenedores) -->
       <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
+        <table class="table table-sm table-hover align-middle">
           <thead class="table-light">
             <tr>
-              <th>Cliente</th>
-              <th>Destino</th>
-              <th>Contenedor</th>
-              <th>Servicio</th>
-              <th>Monto</th>
-              <th>Moneda</th>
+              <th style="width:110px;">Fecha</th>
+              <th style="width:120px;">Origen</th> <!-- OPERACION | CONTENEDOR -->
+              <th style="width:160px;">Contenedor</th> <!-- vacío cuando origen=OPERACION -->
+              <th>Concepto</th>
+              <th style="width:120px;">Moneda</th>
+              <th class="text-end" style="width:140px;">Monto</th>
+              <th>Comentario</th>
+              <th class="text-center" style="width:120px;">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="tbodyCostosOperacionCombined">
             <tr>
-              <td>CP Danny</td>
-              <td>Lázaro</td>
-              <td>CMAU916054</td>
-              <td>Revisiones</td>
-              <td>$ 500</td>
-              <td>USD</td>
-            </tr>
-            <tr>
-              <td>CP Danny</td>
-              <td>Lázaro</td>
-              <td>CMAU916054</td>
-              <td>Transbordo</td>
-              <td>$ 1,000</td>
-              <td>USD</td>
-            </tr>
-            <tr>
-              <td>CP Danny</td>
-              <td>Lázaro</td>
-              <td>CMAU916054</td>
-              <td>Bodega</td>
-              <td>$ 800</td>
-              <td>USD</td>
-            </tr>
-            <tr>
-              <td>CP Danny</td>
-              <td>Lázaro</td>
-              <td>CMAU916054</td>
-              <td>Comisiones</td>
-              <td>$ 500</td>
-              <td>USD</td>
-            </tr>
-            <tr>
-              <td>CP Danny</td>
-              <td>Lázaro</td>
-              <td>CMAU916054 Transporte</td>
-              <td>Gastos Extras</td>
-              <td>$ 3,000</td>
-              <td>USD</td>
+              <td colspan="8" class="text-center text-muted py-4">Selecciona una operación para ver sus costos.</td>
             </tr>
           </tbody>
         </table>
+
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="text-muted small" id="costosOperacionMeta">Mostrando 0–0 de 0</div>
+        <nav>
+          <ul id="costosOperacionPaginacion" class="pagination pagination-sm mb-0"></ul>
+        </nav>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal: Agregar Costo por Operación -->
-<div class="modal fade" id="modalAgregarCostoOperacion" tabindex="-1" aria-labelledby="modalAgregarCostoOperacionLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalAgregarCostoOperacionLabel">
-                    <i data-feather="plus-circle"></i> Añadir Costo a Operación
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<!-- Modal: Agregar / Editar Costo por Operación -->
+<div class="modal fade" id="modalCostoOperacion" tabindex="-1" aria-labelledby="modalCostoOperacionLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalCostoOperacionLabel">
+          <i data-feather="plus-circle" class="me-1"></i> Añadir Costo a Operación
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <form id="formCostoOperacion">
+        <div class="modal-body">
+          <input type="hidden" id="costosOperacionRowId" name="row_id">
+          <input type="hidden" id="costosOperacionOpId" name="operacion_id">
+
+          <div class="mb-3 position-relative">
+            <label class="form-label">Operación</label>
+            <input type="text" id="costosOperacionOpNombre" class="form-control" placeholder="Escribe para buscar…"
+              autocomplete="off">
+            <div id="costosOperacionOpSugerencias" class="list-group"
+              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+            <small class="text-muted">Selecciona la operación a la que registrarás el costo.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tipo de Costo</label>
+            <select id="costosOperacionTipo" name="tipo_movimiento_id" class="form-control" required>
+              <option value="">Seleccione un tipo</option>
+            </select>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Monto</label>
+              <input type="number" step="0.01" id="costosOperacionMonto" name="monto" class="form-control" required
+                placeholder="Ej: 150">
             </div>
-            <form id="formAgregarCostoOperacion">
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="operacion_id" class="form-label">Operación</label>
-                            <select id="operacion_id" name="operacion_id" class="form-control" required>
-                                <option value="">Selecciona una operación</option>
-                                <option value="JL-46">JL-46</option>
-                                <option value="JL-47">JL-47</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="cliente" class="form-label">Cliente</label>
-                            <input type="text" id="cliente" name="cliente" class="form-control" required>
-                        </div>
-                    </div>
+            <div class="col-6">
+              <label class="form-label">Moneda</label>
+              <select id="costosOperacionMoneda" name="moneda" class="form-control" disabled>
+                <option value="">Seleccione</option>
+                <option value="PESOS">PESOS</option>
+                <option value="DLLS">DLLS</option>
+              </select>
+              <small class="text-muted">Derivada del tipo seleccionado.</small>
+            </div>
+          </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="tipo_costo" class="form-label">Tipo de Costo</label>
-                            <input type="text" id="tipo_costo" name="tipo_costo" class="form-control" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="monto" class="form-label">Monto</label>
-                            <input type="number" step="0.01" id="monto" name="monto" class="form-control" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="moneda" class="form-label">Moneda</label>
-                            <select id="moneda" name="moneda" class="form-control" required>
-                                <option value="MXN">MXN</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="observaciones" class="form-label">Observaciones</label>
-                        <textarea id="observaciones" name="observaciones" class="form-control" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i data-feather="x"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i data-feather="save"></i> Guardar
-                    </button>
-                </div>
-            </form>
+          <div class="mt-3">
+            <label class="form-label">Comentario (opcional)</label>
+            <textarea id="costosOperacionComentario" name="comentario" rows="2" class="form-control"></textarea>
+          </div>
         </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i data-feather="x"></i> Cancelar
+          </button>
+          <button type="submit" id="costosOperacionBtnSubmit" class="btn btn-primary">
+            <i data-feather="save"></i> Guardar
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>
-    feather.replace();
-</script> 
+  feather.replace();
+</script>
+
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_operacion_catalogo.js">
+</script>
