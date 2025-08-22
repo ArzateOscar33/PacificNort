@@ -4,78 +4,85 @@
       <!-- Encabezado + buscador de operación -->
       <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
         <div>
-          <h4 class="mb-1">Costos por Operación</h4>
+          <h3 class="mb-1">Costos por Operación</h3>
           <small class="text-muted">Consulta y administra los costos a nivel operación y por contenedor en una sola
             vista.</small>
-        </div>
 
-        <!-- Filtros de la tabla unificada -->
-        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-          <div class="d-flex gap-2">
-            <input type="text" class="form-control form-control-sm" id="costosOperacionBuscar"
-              placeholder="Buscar concepto o comentario…">
-            <select id="costosOperacionFiltroOrigen" class="form-control form-control-sm" style="max-width:180px;">
-              <option value="">Origen: Todos</option>
-              <option value="OPERACION">Operación</option>
-              <option value="CONTENEDOR">Contenedor</option>
-            </select>
-            <select id="costosOperacionFiltroMoneda" class="form-control form-control-sm" style="max-width:140px;">
-              <option value="">Moneda: Todas</option>
-              <option value="PESOS">PESOS</option>
-              <option value="DLLS">DLLS</option>
-            </select>
-            <select id="costosOperacionFiltroTipo" class="form-control form-control-sm" style="max-width:220px;">
-              <option value="">Tipo: Todos</option>
-            </select>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <label class="small mb-0">Por página:</label>
-            <select id="costosOperacionPerPage" class="form-control form-control-sm" style="width:90px;">
-              <option>10</option>
-              <option>20</option>
-              <option>50</option>
-            </select>
-          </div>
         </div>
+                    <div class="ms-auto col-md-12 d-flex justify-content-end mb-3">
+              <button class="btn btn-primary" id="costosOperacionBtnNuevo" data-bs-toggle="modal"
+                data-bs-target="#modalCostoOperacion">
+                <i data-feather="plus"></i> Añadir Costo
+              </button>
+            </div>
+        <div class="container col-md-12">
+          <!-- Filtros de la tabla unificada -->
+          <div class="row justify-content-end align-items-center mb-2"  >
+            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+              <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" id="costosOperacionBuscar"
+                  placeholder="Buscar concepto o comentario…">
+                <select id="costosOperacionFiltroOrigen" class="form-control form-control-sm" style="max-width:180px;">
+                  <option value="">Origen: Todos</option>
+                  <option value="OPERACION">Operación</option>
+                  <option value="CONTENEDOR">Contenedor</option>
+                </select>
+                <select id="costosOperacionFiltroMoneda" class="form-control form-control-sm" style="max-width:140px;">
+                  <option value="">Moneda: Todas</option>
+                  <option value="PESOS">PESOS</option>
+                  <option value="DLLS">DLLS</option>
+                </select>
 
-        <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
-          <div>
-            <label class="form-label small mb-1">Mostrar totales en</label>
-            <select id="costosOperacionMonedaVista" class="form-control form-control-sm" style="width:140px;">
-              <option value="MXN">MXN (pesos)</option>
-              <option value="USD">USD (dólares)</option>
-            </select>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label class="small mb-0">Por página:</label>
+                <select id="costosOperacionPerPage" class="form-control form-control-sm" style="width:90px;">
+                  <option>10</option>
+                  <option>20</option>
+                  <option>50</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="form-label small mb-1">Tipo de cambio</label>
-            <div class="input-group input-group-sm" style="width:160px;">
-              <span class="input-group-text">$</span>
-              <input type="number" step="0.0001" min="0" id="costosOperacionTipoCambio" class="form-control mt-1"
-                value="17.00">
-                
+
+          <div class="row flex-wrap gap-2   align-items-center mb-2">
+            <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
+              <label for="costosOperacionFiltroOpNombre" class="form-label mb-1">Operación</label>
+              <div class="position-relative">
+                <input type="hidden" id="costosOperacionFiltroOpId">
+                <input type="text" id="costosOperacionFiltroOpNombre" class="form-control"
+                  placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
+                <div id="costosOperacionFiltroOpSugerencias" class="list-group"
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+              </div>
+              <div class="form-text" id="costosOperacionFiltroOpMeta"></div>
+            </div>
+
+          </div>
+
+          <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
+            <div class="d-flex flex-wrap   align-items-end mb-2">
+              <div>
+                <label class="form-label small mb-1">Mostrar totales en</label>
+                <select id="costosOperacionMonedaVista" class="form-control form-control-sm" style="width:140px;">
+                  <option value="MXN">MXN (pesos)</option>
+                  <option value="USD">USD (dólares)</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label small mb-1">Tipo de cambio</label>
+                <div class="input-group input-group-sm" style="width:160px;">
+                  <span class="input-group-text">$</span>
+                  <input type="number" step="0.0001" min="0" id="costosOperacionTipoCambio" class="form-control mt-1"
+                    value="17.00">
+
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="w-100 w-md-auto" style="min-width:320px;">
-          <label for="costosOperacionFiltroOpNombre" class="form-label mb-1">Operación</label>
-          <div class="position-relative">
-            <input type="hidden" id="costosOperacionFiltroOpId" name="costosOperacionFiltroOpId">
-            <input type="text" id="costosOperacionFiltroOpNombre" name="costosOperacionFiltroOpNombre"
-              class="form-control" placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
-            <div id="costosOperacionFiltroOpSugerencias" class="list-group"
-              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-          </div>
-          <div class="form-text" id="costosOperacionFiltroOpMeta"></div>
-        </div>
 
-        <div class="ms-auto">
-          <button class="btn btn-primary" id="costosOperacionBtnNuevo" data-bs-toggle="modal"
-            data-bs-target="#modalCostoOperacion">
-            <i data-feather="plus"></i> Añadir Costo
-          </button>
-        </div>
       </div>
-
       <!-- Totales -->
       <div class="row g-3 mb-4" id="costosOperacionCards">
         <div class="col-12 col-md-4">
@@ -174,6 +181,15 @@
             <label class="form-label">Tipo de Costo</label>
             <select id="costosOperacionTipo" name="tipo_movimiento_id" class="form-control" required>
               <option value="">Seleccione un tipo</option>
+              <?php foreach ($tiposMovimiento as $t): 
+              $id     = (int)($t['id_tipo_movimiento'] ?? 0);
+              $nombre = (string)($t['nombre'] ?? '');
+              $moneda = strtoupper((string)($t['moneda'] ?? ''));
+            ?>
+              <option value="<?= $id ?>" data-moneda="<?= htmlspecialchars($moneda) ?>">
+                <?= htmlspecialchars($nombre) ?> (<?= htmlspecialchars($moneda) ?>)
+              </option>
+              <?php endforeach; ?>
             </select>
           </div>
 

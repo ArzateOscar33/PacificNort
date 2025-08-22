@@ -1,5 +1,8 @@
 <?php include 'Views/Template/admin_header.php'; ?>
-
+<?php
+// Si tu motor NO hace extract($data):
+$tiposMovimiento = $data['tiposMovimiento'] ?? [];
+?>
 <div class="container mt-4 col-md-12">
  
 
@@ -56,7 +59,7 @@
             <?php include 'tabs/costos.php'; ?>
         </div>
         <div class="tab-pane fade" id="costos_operacion" role="tabpanel" aria-labelledby="costos_operacion-tab">
-            <?php include 'tabs/costos_operacion.php'; ?>
+            <?php include __DIR__ . '/tabs/costos_operacion.php'; ?>
         </div>
         <div class="tab-pane fade" id="trazabilidad" role="tabpanel" aria-labelledby="trazabilidad-tab">
             <?php include 'tabs/trazabilidad.php'; ?>

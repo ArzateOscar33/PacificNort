@@ -297,4 +297,21 @@ public function buscarOperacionesPorTerm(string $term): array
     ];
 }
 
+public function obtenerTiposMovimientoActivos(): array
+{
+    $sql = "SELECT 
+                id_tipo_movimiento, 
+                nombre, 
+                UPPER(moneda) AS moneda
+            FROM tipos_movimiento
+            WHERE estatus = 1 and tipo_operacion_id=1
+            ORDER BY nombre ASC";
+    try {
+        return $this->selectAll($sql) ?: [];
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
+
+
 }

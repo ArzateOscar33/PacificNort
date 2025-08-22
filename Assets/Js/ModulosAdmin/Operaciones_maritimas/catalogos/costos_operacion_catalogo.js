@@ -361,3 +361,160 @@
   };
 
 })();
+ 
+// ---------- Modal: Autocomplete + Tipo->Moneda + Sync operación seleccionada ----------
+(function(){
+  "use strict";
+
+  const modalElCostosOperacion       = document.getElementById("modalCostoOperacion");
+  const opIdModalInpCostosOperacion  = document.getElementById("costosOperacionOpId");
+  const opNomModalInpCostosOperacion = document.getElementById("costosOperacionOpNombre");
+  const opSugModalBoxCostosOperacion = document.getElementById("costosOperacionOpSugerencias");
+
+  const tipoSelCostosOperacion       = document.getElementById("costosOperacionTipo");
+  const monedaSelCostosOperacion     = document.getElementById("costosOperacionMoneda");
+  const montoInpCostosOperacion      = document.getElementById("costosOperacionMonto");
+  const comentTAreaCostosOperacion   = document.getElementById("costosOperacionComentario");
+  const formCostoOperacion           = document.getElementById("formCostoOperacion");
+
+  // Refs del filtro superior (para copiar la operación si ya está elegida)
+  const opIdFiltroInp                = document.getElementById("costosOperacionFiltroOpId");
+  const opNombreFiltroInp            = document.getElementById("costosOperacionFiltroOpNombre");
+
+  // Limpia el formulario
+  function resetFormCostosOperacion(){
+    formCostoOperacion?.reset();
+    if (opIdModalInpCostosOperacion)  opIdModalInpCostosOperacion.value = "";
+    if (opNomModalInpCostosOperacion) opNomModalInpCostosOperacion.value = "";
+    if (opSugModalBoxCostosOperacion){ opSugModalBoxCostosOperacion.innerHTML = ""; opSugModalBoxCostosOperacion.style.display = "none"; }
+    // deja "Moneda" deshabilitado, pero reseteado
+    if (monedaSelCostosOperacion) monedaSelCostosOperacion.value = "";
+  }
+
+  // Copia operación del filtro superior si existe
+  function seedOperacionDesdeFiltroCostosOperacion(){
+    const filtroId  = parseInt(opIdFiltroInp?.value || "0", 10) || 0;
+    const filtroNom = (opNombreFiltroInp?.value || "").trim();
+    if (filtroId > 0 && filtroNom){
+      if (opIdModalInpCostosOperacion)  opIdModalInpCostosOperacion.value  = String(filtroId);
+      if (opNomModalInpCostosOperacion) opNomModalInpCostosOperacion.value = filtroNom;
+    }
+  }
+
+  // Autocomplete dentro del modal (idéntico al de la cabecera, pero con IDs del modal)
+  function buscarOperacionesModalCostosOperacion(term){
+    if (!opSugModalBoxCostosOperacion) return;
+    if (!term || term.length < 2){
+      opSugModalBoxCostosOperacion.style.display = "none";
+      opSugModalBoxCostosOperacion.innerHTML = "";
+      return;
+    }
+    const url = `${base_url}Operaciones_maritimas_costos_operacion/buscarOperaciones?term=${encodeURIComponent(term)}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.send();
+    xhr.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      if (this.status !== 200){ opSugModalBoxCostosOperacion.style.display="none"; opSugModalBoxCostosOperacion.innerHTML=""; return; }
+
+      let rows = [];
+      try { rows = JSON.parse(this.responseText) || []; } catch { rows = []; }
+
+      if (!Array.isArray(rows) || rows.length === 0){
+        opSugModalBoxCostosOperacion.style.display = "none";
+        opSugModalBoxCostosOperacion.innerHTML = "";
+        return;
+      }
+
+      let html = "";
+      rows.forEach(r=>{
+        const id  = r.id_operacion;
+        const nom = r.numero_operacion;
+        const cli = r.cliente || "";
+        html += `
+          <button type="button" class="list-group-item list-group-item-action" data-id="${id}" data-nom="${nom}">
+            <div class="d-flex justify-content-between">
+              <div><strong>${nom}</strong></div>
+              <small class="text-muted">${cli}</small>
+            </div>
+          </button>`;
+      });
+      opSugModalBoxCostosOperacion.innerHTML = html;
+      opSugModalBoxCostosOperacion.style.display = "block";
+
+opSugModalBoxCostosOperacion.querySelectorAll("button.list-group-item").forEach(btn=>{
+  btn.addEventListener("click", (e)=>{
+    e.preventDefault();
+    e.stopPropagation(); // <- evita que otro listener “afuera” toque el input de cabecera
+    const id  = parseInt(btn.dataset.id || "0", 10) || 0;
+    const nom = btn.dataset.nom || "";
+    if (opIdModalInpCostosOperacion)  opIdModalInpCostosOperacion.value  = String(id);
+    if (opNomModalInpCostosOperacion) opNomModalInpCostosOperacion.value = nom;
+    opSugModalBoxCostosOperacion.innerHTML = "";
+    opSugModalBoxCostosOperacion.style.display = "none";
+  });
+});
+    };
+  }
+
+  // Auto-moneda según tipo seleccionado
+  function syncMonedaPorTipoCostosOperacion(){
+    if (!tipoSelCostosOperacion || !monedaSelCostosOperacion) return;
+    const opt = tipoSelCostosOperacion.selectedOptions?.[0];
+    const m   = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
+    if (m === "PESOS" || m === "DLLS"){
+      monedaSelCostosOperacion.value = m;
+    } else {
+      monedaSelCostosOperacion.value = "";
+    }
+  }
+
+  // Eventos
+  opNomModalInpCostosOperacion?.addEventListener("input", ()=>{
+    // Si el usuario edita el nombre, reseteamos el ID hasta que seleccione de la lista
+    if (opIdModalInpCostosOperacion) opIdModalInpCostosOperacion.value = "";
+    buscarOperacionesModalCostosOperacion(opNomModalInpCostosOperacion.value.trim());
+  });
+
+  document.addEventListener("click", (e)=>{
+    if (!opSugModalBoxCostosOperacion) return;
+    if (!opSugModalBoxCostosOperacion.contains(e.target) &&
+        e.target !== opNomModalInpCostosOperacion) {
+      opSugModalBoxCostosOperacion.style.display = "none";
+    }
+  });
+
+  tipoSelCostosOperacion?.addEventListener("change", syncMonedaPorTipoCostosOperacion);
+
+  // Al abrir el modal: limpia, copia operación (si existe), y sincroniza moneda por tipo
+  modalElCostosOperacion?.addEventListener("show.bs.modal", ()=>{
+  resetFormCostosOperacion();
+
+
+  });
+
+  modalElCostosOperacion?.addEventListener("shown.bs.modal", ()=>{
+    syncMonedaPorTipoCostosOperacion();
+    opNomModalInpCostosOperacion?.focus();
+  });
+
+  // (Aún no guardamos: solo llenado) – evita submit accidental
+  formCostoOperacion?.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    // Aquí luego haremos el POST al endpoint de guardado.
+    // Por ahora solo validamos que haya operacion_id
+    const opId = parseInt(opIdModalInpCostosOperacion?.value || "0", 10) || 0;
+    if (!opId){
+      alert("Selecciona una operación para registrar el costo.");
+      return;
+    }
+    console.log("[DEBUG] listo para guardar:", {
+      operacion_id: opIdModalInpCostosOperacion.value,
+      tipo_movimiento_id: tipoSelCostosOperacion?.value || "",
+      moneda: monedaSelCostosOperacion?.value || "",
+      monto: montoInpCostosOperacion?.value || "",
+      comentario: comentTAreaCostosOperacion?.value || ""
+    });
+  });
+
+})(); 

@@ -1,8 +1,10 @@
 <?php
 require_once "Models/Operaciones_maritimas_contenedoresModel.php";
+require_once "Models/Operaciones_maritimas_costos_operacionModel.php";
 class Operaciones_maritimas extends Controller
 {
     private $contenedoresModel; 
+    private $costos_OperacionModel;
     public function __construct()
     {
         parent::__construct();
@@ -13,6 +15,7 @@ class Operaciones_maritimas extends Controller
         }
         // Modelo especializado para el tab de contenedores
            $this->contenedoresModel = new Operaciones_maritimas_contenedoresModel();
+           $this->costos_OperacionModel = new Operaciones_maritimas_costos_operacionModel();
     }
 
     
@@ -31,6 +34,11 @@ class Operaciones_maritimas extends Controller
         $data['ops']       = $this->contenedoresModel->catalogoOperaciones();
         $data['fisicos']   = $this->contenedoresModel->catalogoContenedoresFisicos();
         $data['shippers']  = $this->contenedoresModel->catalogoShippers();
+
+
+        // Catálogos del tab “Costos por Operación” 
+        $data['tiposMovimiento'] = $this->costos_OperacionModel->obtenerTiposMovimientoActivos();
+
         $this->views->getView('admin/operaciones_maritimas/', "ver", $data);
     }
 
