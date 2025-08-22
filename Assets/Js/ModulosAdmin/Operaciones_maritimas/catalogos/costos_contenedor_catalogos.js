@@ -3,7 +3,8 @@
 //   Catálogo para filtro: Tipos de movimiento
 // ============================================
 function cargarTiposMovimientoFiltroCostosContenedor(){
-  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento`;
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?solo_gastos=1&categoria=Terrestre`;
+
   const http = new XMLHttpRequest();
   http.open("GET", url, true);
   http.send();
@@ -52,7 +53,7 @@ selTipoCostoContenedor?.addEventListener("change",   () => listarCostosContenedo
 // ============================================
 //           Acciones (stubs únicos)
 // ============================================
-window.ccEditarCostoContenedor = function(id){
+/*window.ccEditarCostoContenedor = function(id){
   // TODO: abrir modal, cargar por id, setear campos
   console.log("[CostosContenedor] Editar id:", id);
 };
@@ -60,7 +61,7 @@ window.ccEditarCostoContenedor = function(id){
 window.ccEliminarCostoContenedor = function(id){
   // TODO: confirm + request para eliminar (baja lógica) y refrescar
   console.log("[CostosContenedor] Eliminar id:", id);
-};
+};*/
 // =======================================================
 //  Catálogos Modal - Costos por Contenedor (EXCLUSIVO)
 //  Endpoints:
@@ -161,7 +162,7 @@ ccBtnNuevo?.addEventListener("click", () => {
 function ccCargarTiposMovimiento() {
   if (ccXHR_Tipos && ccXHR_Tipos.readyState !== 4) ccXHR_Tipos.abort();
 
-  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento`;
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?solo_gastos=1&categoria=Terrestre`; 
   ccXHR_Tipos = new XMLHttpRequest();
   ccXHR_Tipos.open("GET", url, true);
   ccXHR_Tipos.send();
@@ -201,17 +202,19 @@ function ccCargarTiposMovimiento() {
   };
 }
 
-// Al cambiar el tipo → auto-moneda
+// Al cambiar el tipo → auto-moneda (cc* - REEMPLAZAR ESTE LISTENER)
 ccSelTipoCosto?.addEventListener("change", () => {
   if (!ccSelMoneda) return;
   const tipoId = parseInt(ccSelTipoCosto.value || "0", 10) || 0;
-  const tipo   = ccTiposCache[tipoId];
 
-  if (!tipo) {
-    ccPrepararMoneda();
-    return;
-  }
-  ccSelMoneda.value = tipo.moneda;   // 'PESOS' | 'DLLS'
+  // Intenta con ambos caches
+  const mon =
+    (ccTiposCache[tipoId]?.moneda) ||
+    costosContenedorTiposMap[String(tipoId)] ||
+    "";
+
+  if (!mon) return;             // 👈 NO resetees a "Seleccione" si no hay dato
+  ccSelMoneda.value = mon;      // 'PESOS' | 'DLLS'
   ccBloquearMoneda();
 });
 

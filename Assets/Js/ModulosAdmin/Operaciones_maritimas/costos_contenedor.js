@@ -11,7 +11,7 @@ const selTipoCostoContenedor            = document.getElementById("filtroTipoCos
 const perPageSelectCostosContenedor     = document.getElementById("perPageCostos");
 const paginacionCostosContenedor        = document.getElementById("paginacionCostos");
 const metaResumenCostosContenedor       = document.getElementById("metaResumenCostos");
-
+const costosContenedorTiposMap = Object.create(null);
 // ------- Estado -------
 let currentPageCostosContenedor = 1;
 let perPageCostosContenedor     = parseInt(perPageSelectCostosContenedor?.value || "10", 10);
@@ -241,3 +241,269 @@ function renderMetaCostosContenedor(meta){
 
   metaResumenCostosContenedor.textContent = `Mostrando ${inicio}–${fin} de ${total}`;
 }
+// =======================================================
+//  INSERTAR: Costos por Contenedor (prefijo: costosContenedor*)
+// =======================================================
+
+// ------- Refs Modal -------
+const costosContenedorModalEl         = document.getElementById("modalAgregarCosto");
+const costosContenedorModal           = costosContenedorModalEl ? new bootstrap.Modal(costosContenedorModalEl) : null;
+const costosContenedorForm            = document.getElementById("formAgregarCostoContenedores");
+const costosContenedorBtnNuevo        = document.getElementById("btnNuevoCostoContenedor");
+
+// Operación
+const costosContenedorInpOpId         = document.getElementById("costosOperacionid");
+const costosContenedorInpOpNombre     = document.getElementById("costosOperacionNombre");
+const costosContenedorBoxOps          = document.getElementById("costosSugerenciasOperaciones");
+
+// Contenedor (en operación)
+const costosContenedorInpContOpId     = document.getElementById("costosContenedorContenedorId");
+const costosContenedorInpContOpNombre = document.getElementById("costosContenedorContenedorNombre");
+const costosContenedorBoxConts        = document.getElementById("sugerenciasCostosContenedor");
+
+// Tipo / Moneda / Monto / Comentarios
+const costosContenedorSelTipo         = document.getElementById("costosContenedoresTipoCosto");
+const costosContenedorSelMoneda       = document.getElementById("costosContenedoresMoneda");
+const costosContenedorInpMonto        = document.getElementById("costosContenedoresMonto");
+const costosContenedorInpComentarios  = document.getElementById("costosContenedoresComentarios");
+const costosContenedorBtnSubmit       = document.getElementById("btnSubmitCostoContenedor");
+
+ 
+// ------- Catálogo: tipos (solo TERRESTRE + GASTO) -------
+// ACEPTA callback opcional que se ejecuta cuando termina de poblar el select
+function costosContenedorCargarTiposMovimiento(done){
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?solo_gastos=1&categoria=Terrestre`;
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.send();
+  xhr.onreadystatechange = function () {
+    if (this.readyState !== 4) return;
+    if (this.status !== 200) { console.error("[costosContenedor] tipos error:", this.responseText); return; }
+
+    let data = [];
+    try { data = JSON.parse(this.responseText) || []; } catch { return; }
+
+    if (!costosContenedorSelTipo) return;
+    costosContenedorSelTipo.innerHTML = `<option value="">Seleccione un tipo</option>`;
+    // limpia el mapa
+    for (const k in costosContenedorTiposMap) delete costosContenedorTiposMap[k];
+
+    data.forEach(t => {
+      if (!t) return;
+      const opt = document.createElement("option");
+      opt.value = t.id_tipo_movimiento;
+      opt.textContent = t.nombre;
+      const mon = (String(t.moneda || "").toUpperCase() === "DLLS") ? "DLLS" : "PESOS";
+      opt.dataset.moneda = mon;
+      costosContenedorTiposMap[String(t.id_tipo_movimiento)] = mon; // ← guarda en mapa
+      costosContenedorSelTipo.appendChild(opt);
+    });
+
+    if (typeof done === "function") done();   // ← callback opcional
+  };
+}
+
+
+
+// Autollenar moneda al cambiar tipo
+function costosContenedorPrepararMoneda() {
+  if (!costosContenedorSelMoneda) return;
+  costosContenedorSelMoneda.innerHTML = `
+    <option value="">Seleccione</option>
+    <option value="PESOS">PESOS</option>
+    <option value="DLLS">DLLS</option>
+  `;
+  costosContenedorSelMoneda.setAttribute("readonly","readonly");
+  costosContenedorSelMoneda.setAttribute("disabled","disabled");
+}
+costosContenedorSelTipo?.addEventListener("change", () => {
+  if (!costosContenedorSelMoneda) return;
+  const sel = costosContenedorSelTipo.options[costosContenedorSelTipo.selectedIndex];
+  // usa dataset o, si no viene, el mapa
+  const mon = sel?.dataset?.moneda || costosContenedorTiposMap[costosContenedorSelTipo.value] || "";
+  costosContenedorSelMoneda.value = mon;
+  costosContenedorSelMoneda.setAttribute("disabled","disabled");
+});
+
+
+// ------- Abrir modal (reset limpio) -------
+costosContenedorBtnNuevo?.addEventListener("click", () => {
+  costosContenedorForm?.reset();
+   document.getElementById("row_id")?.setAttribute("value", "");
+ document.getElementById("row_id").value = "";
+ costosContenedorForm?.removeAttribute("data-mode");
+ if (costosContenedorBtnSubmit) {
+   costosContenedorBtnSubmit.innerHTML = `<i data-feather="save"></i> Guardar`;
+ }
+  if (costosContenedorInpOpId)         costosContenedorInpOpId.value = "";
+  if (costosContenedorInpContOpId)     costosContenedorInpContOpId.value = "";
+  if (costosContenedorBoxOps)          { costosContenedorBoxOps.innerHTML = ""; costosContenedorBoxOps.style.display = "none"; }
+  if (costosContenedorBoxConts)        { costosContenedorBoxConts.innerHTML = ""; costosContenedorBoxConts.style.display = "none"; }
+
+  costosContenedorCargarTiposMovimiento();
+  costosContenedorPrepararMoneda();
+
+  feather?.replace();
+});
+ 
+// ------- Submit: insertar/actualizar costo -------
+costosContenedorForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const contOpId = parseInt(costosContenedorInpContOpId?.value || "0", 10) || 0;
+  const tipoId   = parseInt(costosContenedorSelTipo?.value || "0", 10) || 0;
+  const montoVal = parseFloat(costosContenedorInpMonto?.value || "0") || 0;
+
+  if (contOpId <= 0) { Swal.fire("Aviso","Selecciona una operación y un contenedor válido.","warning"); costosContenedorInpOpNombre?.focus(); return; }
+  if (tipoId <= 0)   { Swal.fire("Aviso","Selecciona un tipo de costo.","warning"); costosContenedorSelTipo?.focus(); return; }
+  if (montoVal <= 0) { Swal.fire("Aviso","El monto debe ser mayor a 0.","warning"); costosContenedorInpMonto?.focus(); return; }
+
+  const isEdit = costosContenedorForm?.dataset.mode === "edit";
+  const url = isEdit
+    ? `${base_url}Operaciones_maritimas_costos_Contenedor/actualizarCostoContenedor`
+    : `${base_url}Operaciones_maritimas_costos_Contenedor/registrarCostoContenedor`;
+
+  
+
+  costosContenedorBtnSubmit?.setAttribute("disabled","disabled");
+  costosContenedorBtnSubmit?.classList.add("disabled");
+  const fd  = new FormData(costosContenedorForm);
+  if (isEdit) fd.set('row_id', document.getElementById('row_id').value);
+  fd.append('moneda', (costosContenedorSelMoneda?.value || '').toUpperCase());
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.send(fd);
+  xhr.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+
+    costosContenedorBtnSubmit?.removeAttribute("disabled");
+    costosContenedorBtnSubmit?.classList.remove("disabled");
+
+    if (this.status !== 200) {
+      console.error("[costosContenedor] guardar error:", this.responseText);
+      Swal.fire("Error","No se pudo guardar el costo.","error");
+      return;
+    }
+
+    let res; try { res = JSON.parse(this.responseText); } catch { Swal.fire("Error","Respuesta inválida.","error"); return; }
+    if (res.status === "success") {
+      costosContenedorModal?.hide();
+      costosContenedorForm?.reset();
+           // aseguramos volver a modo "nuevo":
+     document.getElementById("row_id").value = "";
+     costosContenedorForm?.removeAttribute("data-mode");
+     if (costosContenedorBtnSubmit) {
+       costosContenedorBtnSubmit.innerHTML = `<i data-feather="save"></i> Guardar`;
+     }
+      // refresca manteniendo la página actual
+      listarCostosContenedor(currentPageCostosContenedor || 1);
+      Swal.fire("Listo", res.msg || "Guardado correctamente.", "success");
+    } else {
+      Swal.fire("Aviso", res.msg || "No se pudo guardar.", res.status || "warning");
+    }
+  };
+});
+
+
+window.ccEditarCostoContenedor = function(id){
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/obtenerCosto/${encodeURIComponent(id)}`;
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.send();
+  xhr.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+    if (this.status !== 200) { Swal.fire("Error","No se pudo cargar el costo.","error"); return; }
+    console.log(this.responseText);
+    let res; try { res = JSON.parse(this.responseText); } catch { Swal.fire("Error","Respuesta inválida.","error"); return; }
+    if (res.status !== "success" || !res.data) { Swal.fire("Aviso", res.msg || "Registro no encontrado.","warning"); return; }
+
+    const d = res.data;
+
+    // setear campos básicos
+    document.getElementById("row_id").value = d.id_costo_contenedor;
+    costosContenedorInpOpId.value         = d.id_operacion || "";
+    costosContenedorInpOpNombre.value     = d.numero_operacion || "";
+    costosContenedorInpContOpId.value     = d.id_contenedor_operacion || d.contenedor_operacion_id || "";
+    costosContenedorInpContOpNombre.value = d.contenedor || "";
+    costosContenedorInpMonto.value        = d.monto ?? "";
+    costosContenedorInpComentarios.value  = d.comentario ?? "";
+
+    // cargar catálogo y luego preseleccionar el tipo + moneda
+costosContenedorCargarTiposMovimiento(() => {
+  // Tipo
+  if (costosContenedorSelTipo) {
+    costosContenedorSelTipo.value = String(d.id_tipo_movimiento || "");
+  }
+
+  // Moneda (mostrarla aunque no sea editable)
+  costosContenedorPrepararMoneda(); // ← asegura opciones PESOS/DLLS disponibles
+  if (costosContenedorSelMoneda) {
+    const sel = costosContenedorSelTipo.options[costosContenedorSelTipo.selectedIndex];
+    const mon = (sel?.dataset?.moneda) || (String(d.moneda || "").toUpperCase());
+    costosContenedorSelMoneda.value = mon || "";
+    costosContenedorSelMoneda.setAttribute("disabled","disabled"); // no editable
+    // (no uses readonly en <select>; no aplica en HTML)
+  }
+
+  // abrir modal + botón
+  costosContenedorModal?.show();
+  if (costosContenedorBtnSubmit) {
+    costosContenedorBtnSubmit.innerHTML = `<i data-feather="save"></i> Actualizar`;
+  }
+  costosContenedorForm?.setAttribute("data-mode", "edit");
+  feather?.replace();
+});
+  }
+}
+costosContenedorModalEl?.addEventListener('hidden.bs.modal', () => {
+  costosContenedorForm?.reset();
+  document.getElementById("row_id").value = "";
+  costosContenedorForm?.removeAttribute("data-mode");
+  if (costosContenedorBtnSubmit) {
+    costosContenedorBtnSubmit.innerHTML = `<i data-feather="save"></i> Guardar`;
+  }
+});
+window.ccEliminarCostoContenedor = function(id){
+  // Blindaje rápido
+  id = Number(id) || 0;
+  if (!id) { Swal.fire("Aviso","ID inválido.","warning"); return; }
+
+  Swal.fire({
+    title: "¿Eliminar costo?",
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  }).then((r) => {
+    if (!r.isConfirmed) return;
+
+    const fd = new FormData();
+    fd.append("id", String(id));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${base_url}Operaciones_maritimas_costos_Contenedor/eliminarCostoContenedor`, true);
+    xhr.send(fd);
+    xhr.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+
+      if (this.status !== 200) {
+        console.error("[costosContenedor] eliminar error:", this.responseText);
+        Swal.fire("Error","No se pudo eliminar.","error");
+        return;
+      }
+
+      let res;
+      try { res = JSON.parse(this.responseText); }
+      catch { Swal.fire("Error","Respuesta inválida.","error"); return; }
+
+      if (res.status === "success") {
+        // Refresca manteniendo página; tu listar ajusta página si queda vacía
+        listarCostosContenedor(currentPageCostosContenedor || 1);
+        Swal.fire("Eliminado", res.msg || "Costo eliminado correctamente.", "success");
+      } else {
+        Swal.fire("Aviso", res.msg || "No se pudo eliminar.", res.status || "warning");
+      }
+    };
+  });
+};

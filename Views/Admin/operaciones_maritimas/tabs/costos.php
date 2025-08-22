@@ -120,9 +120,9 @@
           </div>
 
           <div class="mb-3">
-            <label for="costosContenedoresMoneda" class="form-label">Moneda</label>
+            <label for="costosContenedoresMoneda" class="form-label">Modneda</label>
             <select id="costosContenedoresMoneda" name="costosContenedoresMoneda"
-                    class="form-control" readonly>
+                    class="form-control" >
               <option value="">Seleccione</option>
             </select>
           </div>
