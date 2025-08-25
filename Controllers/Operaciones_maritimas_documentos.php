@@ -266,5 +266,73 @@ public function ver($id = 0)
     readfile($realFile);
     exit;
 }
+public function eliminar($id = 0)
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    try {
+        // Solo por POST para operaciones destructivas
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['status'=>'error','msg'=>'Método no permitido']);
+            return;
+        }
+
+        $id = (int)$id;
+        if ($id <= 0) {
+            echo json_encode(['status'=>'warning','msg'=>'ID inválido']);
+            return;
+        }
+
+        // 1) Buscar registro
+        $doc = $this->model->getDocumentoPorId($id);
+        if (!$doc) {
+            echo json_encode(['status'=>'warning','msg'=>'Documento no encontrado']);
+            return;
+        }
+
+        // 2) Construir ruta absoluta segura
+        $root     = rtrim(self::UPLOAD_ROOT, '/\\');
+        $rel      = str_replace(['\\'], '/', $doc['ruta_archivo'] ?? '');
+        $abs      = $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rel);
+        $realRoot = realpath($root);
+        $realFile = realpath($abs);
+
+        // 3) Borrar archivo físico (si existe y está bajo el root)
+        if ($realFile && strpos($realFile, $realRoot) === 0 && is_file($realFile)) {
+            @unlink($realFile);
+
+            // Limpia directorios vacíos (contenedor y/o operación) — opcional
+            $this->rmEmptyDirs(dirname($realFile), $realRoot);
+        }
+
+        // 4) Borrar registro en BD
+        if (!$this->model->eliminarDocumento($id)) {
+            echo json_encode(['status'=>'error','msg'=>'No se pudo eliminar en BD']);
+            return;
+        }
+
+        echo json_encode(['status'=>'success','msg'=>'Documento eliminado']);
+    } catch (Throwable $e) {
+        error_log("DOCS_ELIMINAR: ".$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'Error inesperado']);
+    }
+}
+
+// Elimina recursivamente carpetas vacías hasta root
+private function rmEmptyDirs(string $path, string $stopAt): void
+{
+    $stopAtReal = realpath($stopAt);
+    $pathReal   = realpath($path);
+    while ($pathReal && $stopAtReal && strpos($pathReal, $stopAtReal) === 0) {
+        // si hay algo dentro, paramos
+        $scan = @scandir($pathReal);
+        if ($scan === false || count(array_diff($scan, ['.','..'])) > 0) break;
+        @rmdir($pathReal);
+        $parent  = dirname($pathReal);
+        if ($parent === $pathReal) break;
+        $pathReal = $parent;
+    }
+}
 
 }

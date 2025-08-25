@@ -212,34 +212,54 @@ function renderSubidosDocumentos(rows){
   }).join("");
 }
 
-// Exponer listar para poder refrescar después de registrar
-window.listarDocumentosDocumentos   = listarDocumentos;
-window.documentosRefrescarListado   = function(){
-  if (window.listarDocumentosDocumentos) window.listarDocumentosDocumentos();
-};
+ 
 
 
   // Evita colisión con otros módulos:
   window.documentosVerDocumento = function(id){
     Swal.fire("Por implementar", "Ver documento ID " + id, "info");
   };
-  window.documentosEliminarDocumento = function(id){
-    Swal.fire("Por implementar", "Eliminar documento ID " + id, "warning");
-  };
+window.documentosEliminarDocumento = function(id){
+  Swal.fire({
+    title: '¿Eliminar documento?',
+    text: 'Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (!result.isConfirmed) return;
 
-  // Al final de la IIFE del listar:
-window.documentosRefrescarListado = function(){ 
-  // reusa la función interna
-  const evt = new Event('keyup'); // forzar estado actual
-  // o simplemente:
-  (function reList(){ 
-    const opId  = document.getElementById("documentosFiltroOpId")?.value || "";
-    if (!opId) return;
-    // llama a la misma listarDocumentos() que ya tienes
-    // truco: la hicimos closure privada, así que:
-    // mejor guarda una ref global al definirse:
-  })();
+    const http = new XMLHttpRequest();
+    http.open("POST", docBaseDocumentos + "eliminar/" + encodeURIComponent(id), true);
+    http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+    http.send();
+
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      let res = {};
+      try { res = JSON.parse(this.responseText) || {}; } catch {}
+
+      Swal.fire(
+        res.status === 'success' ? 'Eliminado' : 'Aviso',
+        res.msg || '(sin mensaje)',
+        res.status || 'info'
+      );
+
+      if (res.status === 'success' && window.documentosRefrescarListado) {
+        window.documentosRefrescarListado();
+      }
+    };
+  });
 };
+
+
+ // Exporta la función interna para poder llamarla desde otros handlers
+window.listarDocumentosDocumentos = listarDocumentos;
+window.documentosRefrescarListado = () => {
+  if (window.listarDocumentosDocumentos) window.listarDocumentosDocumentos();
+};
+
 
 // En la IIFE LISTAR (o en un bloque <script> después):
 window.documentosVerDocumento = function(id, btn){
@@ -481,7 +501,8 @@ formDocumentos?.addEventListener("submit", function(e){
     const inst = bootstrap.Modal.getInstance(modalElDocumentos);
     if (inst) inst.hide();
     formDocumentos.reset();
-    if (window.documentosRefrescarListado) window.documentosRefrescarListado();  // ⬅️
+    if (window.documentosRefrescarListado) window.documentosRefrescarListado(); 
+    if (window.feather) feather.replace();
     }
   };
 });

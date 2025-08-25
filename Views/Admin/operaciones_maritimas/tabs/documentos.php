@@ -1,13 +1,12 @@
 <div id="documentosRoot">
-    <div class="container py-4 col-md-12"> 
+    <div class="container py-4 col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4><i data-feather="file-text" class="me-2"></i>Gestión de Documentos</h4>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarDocumentoDocumentos">
                 <i data-feather="plus-circle"></i> Añadir Documento
             </button>
-        </div>
-
-        <div class="row flex-wrap gap-2   align-items-center mb-2">
+        </div> 
+         <div class="row flex-wrap gap-2   align-items-center mb-2">
             <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
                 <label for="documentosFiltroOpNombre" class="form-label mb-1">Operación</label>
                 <div class="position-relative">
@@ -18,9 +17,8 @@
                         style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                 </div>
                 <div class="form-text" id="documentosFiltroOpMeta"></div>
-            </div>
-
-        </div>
+            </div> 
+         </div>
         <div class="row flex-wrap gap-2   align-items-center mb-2">
             <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
                 <label for="documentosFiltroContenedorFisico" class="form-label mb-1">Contenedor </label>
@@ -30,20 +28,17 @@
                         placeholder="Escribe para buscar (ej. FXE o MGU)" autocomplete="off">
                     <div id="documentosFiltroContenedorSugerencias" class="list-group"
                         style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-                </div>
-
+                </div> 
+             </div> 
             </div>
-
-        </div>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6">
                 <div class="card border-success">
                     <div class="card-header bg-success text-white">
                         <i data-feather="check-circle" class="me-2"></i>Documentos Subidos
-                    </div>
-
-                </div>
+                    </div> 
+                 </div>
             </div>
 
             <div class="col-md-6">
@@ -71,7 +66,7 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tablaDocumentos"></tbody> 
+                <tbody id="tablaDocumentos"></tbody>
             </table>
         </div>
     </div>
@@ -122,7 +117,8 @@
                         <!-- TIPO DE DOCUMENTO -->
                         <div class="mb-3">
                             <label for="tipo_documentoDocumentos" class="form-label">Tipo de Documento</label>
-                            <select id="tipo_documentoDocumentos" name="tipo_documento_id" class="form-control" required>
+                            <select id="tipo_documentoDocumentos" name="tipo_documento_id" class="form-control"
+                                required>
                                 <option value="">-- Selecciona tipo --</option>
                             </select>
                         </div>
@@ -149,31 +145,33 @@
         </div>
     </div>
     <!-- Modal Vista Previa Documento -->
-<div class="modal fade" id="modalPreviewDocumentoDocumentos" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-secondary text-white">
-        <h5 class="modal-title"><i data-feather="file-text" class="me-2"></i>Vista previa</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body p-0">
-         <!-- Mensaje cuando no se puede ver inline -->
-  <div id="previewUnavailableDocumentos" class="p-5 text-center" style="display:none;">
-    <div class="mb-3"><i data-feather="file" style="width:48px;height:48px;"></i></div>
-    <div class="h5 mb-2">Este formato no se puede previsualizar aquí</div>
-    <p class="text-muted mb-0">Puedes descargar el archivo para abrirlo con su aplicación.</p>
-  </div>
-        <iframe id="previewFrameDocumentos" src="" style="width:100%;min-height:75vh;border:0;"></iframe>
-      </div>
-      <div class="modal-footer">
-        <a id="previewDownloadLinkDocumentos" href="#" class="btn btn-primary" target="_blank" rel="noopener">
-          <i data-feather="download"></i> Descargar
-        </a>
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-      </div>
+    <div class="modal fade" id="modalPreviewDocumentoDocumentos" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title"><i data-feather="file-text" class="me-2"></i>Vista previa</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Mensaje cuando no se puede ver inline -->
+                    <div id="previewUnavailableDocumentos" class="p-5 text-center" style="display:none;">
+                        <div class="mb-3"><i data-feather="file" style="width:48px;height:48px;"></i></div>
+                        <div class="h5 mb-2">Este formato no se puede previsualizar aquí</div>
+                        <p class="text-muted mb-0">Puedes descargar el archivo para abrirlo con su aplicación.</p>
+                    </div>
+                    <iframe id="previewFrameDocumentos" src="" style="width:100%;min-height:75vh;border:0;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <a id="previewDownloadLinkDocumentos" href="#" class="btn btn-primary" target="_blank"
+                        rel="noopener">
+                        <i data-feather="download"></i> Descargar
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
 </div>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/documentos.js"></script>

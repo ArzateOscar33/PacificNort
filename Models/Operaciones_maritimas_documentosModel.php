@@ -258,5 +258,11 @@ public function getDocumentoPorId(int $id): ?array
             LIMIT 1";
     return $this->select($sql, [$id]);
 }
+public function eliminarDocumento(int $id): bool
+{
+    $sql = "DELETE FROM documentos_operacion WHERE id_documento = ? LIMIT 1";
+ 
+    return (bool)$this->save($sql, [$id]); 
+}
 
 }
