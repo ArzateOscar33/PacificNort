@@ -1,4 +1,6 @@
 <?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 class Operaciones_maritimas_documentos extends Controller
 {
     private const UPLOAD_ROOT = 'C:/xampp/htdocs/PacificNort/Documents/DocumentosContenedor';
@@ -334,5 +336,130 @@ private function rmEmptyDirs(string $path, string $stopAt): void
         $pathReal = $parent;
     }
 }
+public function faltantes()
+{
+    header('Content-Type: application/json; charset=UTF-8');
 
+    $operacion_id  = (int)($_GET['operacion_id'] ?? 0);
+    $contenedor_id = isset($_GET['contenedor_id']) ? (int)$_GET['contenedor_id'] : null;
+    $tipo          = isset($_GET['tipo']) ? trim($_GET['tipo']) : null; // 'F'|'M'
+
+    if ($operacion_id <= 0) { echo json_encode([]); return; }
+    // Si no hay contenedor seleccionado, de momento devolvemos vacío (o podrías manejar nivel operación)
+    if (empty($contenedor_id) || !in_array($tipo, ['F','M'], true)) { echo json_encode([]); return; }
+
+    try {
+        $rows = $this->model->faltantesMixto($operacion_id, $contenedor_id, $tipo);
+        echo json_encode($rows, JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+        error_log("DOCS_FALTANTES: ".$e->getMessage());
+        echo json_encode([]);
+    }
+}
+public function notificarFaltantes()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    try {
+        // 1) Validación básica
+        $operacion_id  = (int)($_POST['operacion_id'] ?? 0);
+        $contenedor_id = (int)($_POST['contenedor_id'] ?? 0);
+        $tipo          = isset($_POST['tipo']) ? strtoupper(trim($_POST['tipo'])) : '';
+        $emailOverride = trim($_POST['email'] ?? ''); // opcional, para cuando cliente no tiene correo
+
+        if ($operacion_id <= 0 || $contenedor_id <= 0 || !in_array($tipo, ['F','M'], true)) {
+            echo json_encode(['status'=>'warning','msg'=>'Parámetros inválidos']); return;
+        }
+
+        // 2) Traer faltantes
+        $faltantes = $this->model->faltantesMixto($operacion_id, $contenedor_id, $tipo);
+        if (!is_array($faltantes) || count($faltantes) === 0) {
+            echo json_encode(['status'=>'info','msg'=>'No hay documentos faltantes para notificar']); return;
+        }
+
+        // 3) Info operación y contenedor
+        $numOp  = $this->model->getNumeroOperacion($operacion_id) ?: ('OP '.$operacion_id);
+        $etq    = $this->model->getEtiquetaContenedor($tipo, $contenedor_id) ?: ('CONT '.$contenedor_id);
+
+        // 4) Cliente (nombre + email)
+        $cli = $this->model->getClienteInfo($operacion_id, $contenedor_id, $tipo);
+        $clienteNombre = $cli['cliente_nombre'] ?? 'Cliente';
+        $clienteEmail  = $cli['cliente_email']  ?? '';
+
+        // Si no hay email en DB y no se proporcionó uno, pedimos al front que lo solicite
+        if ($clienteEmail === '' && $emailOverride === '') {
+            echo json_encode(['status'=>'need_email','msg'=>'No se encontró correo del cliente. Solicita un correo destino.']); return;
+        }
+        $destino = ($emailOverride !== '') ? $emailOverride : $clienteEmail;
+
+        // 5) Construir HTML del listado
+        $itemsHtml = '';
+        foreach ($faltantes as $t) {
+            $nombre = htmlspecialchars($t['nombre'] ?? $t['clave'] ?? 'Documento', ENT_QUOTES, 'UTF-8');
+            $clave  = htmlspecialchars($t['clave'] ?? '', ENT_QUOTES, 'UTF-8');
+            $scope  = $t['aplica_sobre'] ?? '';
+            $alcance = ($scope === 'contenedor_fisico' ? 'Físico' : ($scope === 'contenedor_maritimo' ? 'Marítimo' : ($scope === 'operacion' ? 'Operación' : 'General')));
+            $itemsHtml .= "<li style=\"padding:6px 0;\">{$nombre} <small style=\"color:#666;\">({$clave})</small> — <em>{$alcance}</em></li>";
+        }
+
+        // 6) Asunto y cuerpo
+        $subject = "Documentos faltantes Operacion{$numOp}-{$etq}";
+        $body = '
+            <div style="max-width:680px;margin:0 auto;font-family:\'Segoe UI\',sans-serif;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #eee;">
+              <div style="background:#1c1e74;color:#fff;padding:18px 24px;">
+                <h2 style="margin:0;font-size:18px;">Pendientes de documentación</h2>
+                <div style="font-size:13px;opacity:.9;">Operación <strong>'.htmlspecialchars($numOp).'</strong> — Contenedor <strong>'.htmlspecialchars($etq).'</strong></div>
+              </div>
+              <div style="padding:22px;color:#333;font-size:15px;line-height:1.5;">
+                <p>Hola '.htmlspecialchars($clienteNombre).',</p>
+                <p>Te compartimos el listado de <strong>documentos faltantes</strong> para continuar con el proceso:</p>
+                <ul style="margin:10px 0 18px 18px;padding:0;">'.$itemsHtml.'</ul>
+                <p>Puedes responder a este correo adjuntando los documentos o compartir un enlace de descarga.</p>
+                <p>Gracias y saludos,</p>
+                <p><strong>'.(defined('TITLE') ? TITLE : 'Equipo').'</strong></p>
+              </div>
+              <div style="background:#f7f7f7;color:#666;padding:12px 18px;font-size:12px;text-align:center;">
+                Este mensaje fue generado por el sistema de gestión de documentos.
+              </div>
+            </div>';
+
+        // 7) Envío con PHPMailer
+        require_once __DIR__ . '/../vendor/autoload.php'; // ajusta si tu autoload está en otra ruta
+
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = HOST_SMTP;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = USER_SMTP;
+        $mail->Password   = PASS_SMTP;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = PUERTO_SMTP;
+
+        $mail->setFrom(USER_SMTP, (defined('TITLE') ? TITLE : 'Sistema'));
+        $mail->addAddress($destino, $clienteNombre);
+
+        // (Opcional) CC al usuario actual
+        $userMail = $_SESSION['email'] ?? $_SESSION['correo'] ?? null;
+        if ($userMail) { $mail->addCC($userMail); }
+
+        // (Opcional) BCC a la empresa para control
+        // $mail->addBCC(USER_SMTP);
+
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $body;
+        $mail->AltBody = "Documentos faltantes (Op: {$numOp}, Cont: {$etq}):\n" .
+                         implode("\n", array_map(fn($t)=>"- ".($t['nombre'] ?? $t['clave'] ?? 'Documento'), $faltantes));
+
+        $mail->send();
+
+        echo json_encode(['status'=>'success','msg'=>"Correo enviado a {$destino}"]);
+    } catch (Exception $e) {
+        error_log('DOCS_NOTIF: '.$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'No se pudo enviar el correo. '.$e->getMessage()]);
+    } catch (Throwable $e) {
+        error_log('DOCS_NOTIF_T: '.$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'Error inesperado.']);
+    }
+}
 }

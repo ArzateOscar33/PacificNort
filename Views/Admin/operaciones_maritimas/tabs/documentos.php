@@ -5,8 +5,8 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarDocumentoDocumentos">
                 <i data-feather="plus-circle"></i> Añadir Documento
             </button>
-        </div> 
-         <div class="row flex-wrap gap-2   align-items-center mb-2">
+        </div>
+        <div class="row flex-wrap gap-2   align-items-center mb-2">
             <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
                 <label for="documentosFiltroOpNombre" class="form-label mb-1">Operación</label>
                 <div class="position-relative">
@@ -17,8 +17,8 @@
                         style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                 </div>
                 <div class="form-text" id="documentosFiltroOpMeta"></div>
-            </div> 
-         </div>
+            </div>
+        </div>
         <div class="row flex-wrap gap-2   align-items-center mb-2">
             <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
                 <label for="documentosFiltroContenedorFisico" class="form-label mb-1">Contenedor </label>
@@ -28,27 +28,40 @@
                         placeholder="Escribe para buscar (ej. FXE o MGU)" autocomplete="off">
                     <div id="documentosFiltroContenedorSugerencias" class="list-group"
                         style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-                </div> 
-             </div> 
+                </div>
             </div>
+        </div>
 
         <div class="row g-3 mb-4">
+            <!-- … tarjeta: Documentos Subidos … -->
             <div class="col-md-6">
                 <div class="card border-success">
                     <div class="card-header bg-success text-white">
                         <i data-feather="check-circle" class="me-2"></i>Documentos Subidos
-                    </div> 
-                 </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card border-danger">
-                    <div class="card-header bg-danger text-white">
-                        <i data-feather="alert-circle" class="me-2"></i>Documentos Faltantes
                     </div>
-
+                    <div class="card-body p-0">
+                        <ul id="listaDocumentos" class="list-group list-group-flush small"></ul>
+                    </div>
                 </div>
             </div>
+            <!-- … tarjeta: Documentos Faltantes … -->
+<div class="col-md-6">
+  <div class="card border-danger">
+    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+      <span><i data-feather="alert-circle" class="me-2"></i>Documentos Faltantes</span>
+      <button id="btnNotificarFaltantes" class="btn btn-warning btn-sm" style="display:none;">
+        <i data-feather="mail"></i> Notificar al cliente
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <ul id="listaFaltantesDocumentos" class="list-group list-group-flush small">
+        <li class="list-group-item text-muted">Sin faltantes</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
         </div>
 
         <div class="table-responsive mb-4">

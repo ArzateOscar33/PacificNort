@@ -265,4 +265,59 @@ public function eliminarDocumento(int $id): bool
     return (bool)$this->save($sql, [$id]); 
 }
 
+public function faltantesMixto(int $operacion_id, int $contenedor_id, string $tipo): array
+{
+    // Mapea el tipo a la condición y a los aplica_sobre válidos
+    if ($tipo === 'F') {
+        $joinCond = "d.operacion_id = ? AND d.contenedor_operacion_id = ?";
+        $params   = [$operacion_id, $contenedor_id];
+        $aplicaIn = "('contenedor_fisico','cualquiera')";
+    } else { // 'M'
+        $joinCond = "d.operacion_id = ? AND d.cont_maritimo_operacion_id = ?";
+        $params   = [$operacion_id, $contenedor_id];
+        $aplicaIn = "('contenedor_maritimo','cualquiera')";
+    }
+
+    $sql = "
+        SELECT
+            t.id_tipo_documento AS id,
+            t.nombre,
+            t.clave,
+            t.aplica_sobre
+        FROM tipos_documento t
+        LEFT JOIN documentos_operacion d
+          ON d.tipo_documento_id = t.id_tipo_documento
+         AND {$joinCond}
+        WHERE t.activo = 1
+          AND t.aplica_sobre IN {$aplicaIn}
+        GROUP BY t.id_tipo_documento, t.nombre, t.clave, t.aplica_sobre
+        HAVING COUNT(d.id_documento) = 0
+        ORDER BY t.nombre ASC
+        LIMIT 500
+    ";
+
+    return $this->selectAll($sql, $params);
+}
+// models/Operaciones_maritimas_documentosModel.php
+public function getClienteInfo(int $operacion_id, int $contenedor_id, string $tipo): array
+{
+    if ($tipo === 'F') {
+        // Cliente viene del contenedor físico
+        $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
+                FROM contenedores_operacion co
+                LEFT JOIN clientes cl ON cl.id_cliente = co.cliente_id
+                WHERE co.id_contenedor = ? LIMIT 1";
+        return $this->select($sql, [$contenedor_id]) ?? [];
+    } else {
+        // Cliente viene de la operación (marítimo)
+        $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
+                FROM operaciones o
+                LEFT JOIN clientes cl ON cl.id_cliente = o.cliente_id
+                WHERE o.id_operacion = ? LIMIT 1";
+        return $this->select($sql, [$operacion_id]) ?? [];
+    }
+}
+
+
+
 }

@@ -22,6 +22,8 @@
 
   const tbodyDocumentos           = document.getElementById("tablaDocumentos");
   const listaSubidosDocumentos    = document.getElementById("listaDocumentos");
+  const listaFaltantesDocumentos = document.getElementById("listaFaltantesDocumentos");
+  const btnNotificarFaltantes = document.getElementById("btnNotificarFaltantes");
 
   // Helpers con sufijo
   const clearDocumentos = el => { if (el) el.innerHTML = ""; };
@@ -84,6 +86,8 @@
       opMetaDocumentos.textContent = `Operación ${label} — ${conts.length} contenedores (Físicos y Marítimos)`;
       renderSugerenciasContenedorDocumentos(conts);
       listarDocumentos(); // sigue abajo
+      renderFaltantesDocumentos([]);
+if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = 'none';
     };
   }
 
@@ -106,6 +110,8 @@
       contSugBoxDocumentos.appendChild(btn);
     });
     showDocumentos(contSugBoxDocumentos, true);
+    renderFaltantesDocumentos([]);
+if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = 'none';
   }
 
   contNombreInputDocumentos?.addEventListener("input", function(){
@@ -154,6 +160,7 @@
 
       renderTablaDocumentos(data);
       renderSubidosDocumentos(data);
+      cargarFaltantes(opId, contId, tipo);
       feather.replace();
     };
   }
@@ -311,6 +318,84 @@ window.documentosVerDocumento = function(id, btn){
   }, {once:true});
 };
 
+
+function renderFaltantesDocumentos(items){
+  if (!listaFaltantesDocumentos) return;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    listaFaltantesDocumentos.innerHTML = '<li class="list-group-item text-muted">Sin faltantes</li>';
+    if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = 'none';
+    if (window.feather) feather.replace();
+    return;
+  }
+
+  listaFaltantesDocumentos.innerHTML = items.map(it=>{
+    const nom  = (it.nombre ?? '').toString();
+    const clave= (it.clave  ?? '').toString();
+    return `<li class="list-group-item">
+              <strong>${nom}</strong> ${clave ? `<span class="text-muted">(${clave})</span>` : ''}
+            </li>`;
+  }).join('');
+  if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = '';
+  if (window.feather) feather.replace();
+}
+
+function cargarFaltantes(opId, contId, tipo){
+  // si falta alguno, limpiar/ocultar
+  if (!opId || !contId || !tipo) {
+    renderFaltantesDocumentos([]);
+    return;
+  }
+  const http = new XMLHttpRequest();
+  http.open("GET",
+    docBaseDocumentos + "faltantes?operacion_id="+encodeURIComponent(opId)
+                      + "&contenedor_id="+encodeURIComponent(contId)
+                      + "&tipo="+encodeURIComponent(tipo),
+    true
+  );
+  http.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+    let data = [];
+    try { data = JSON.parse(this.responseText) || []; } catch {}
+    renderFaltantesDocumentos(data);
+  };
+  http.send();
+}
+btnNotificarFaltantes?.addEventListener("click", function(){
+  const opId   = opIdInputDocumentos.value.trim();
+  const contId = contIdInputDocumentos.value.trim();
+  const tipo   = (contIdInputDocumentos.dataset.tipo || '').trim();
+
+  if (!opId)  { Swal.fire('Aviso','Selecciona una operación','info'); return; }
+  if (!contId || !tipo) { Swal.fire('Aviso','Selecciona un contenedor','info'); return; }
+
+  Swal.fire({
+    title: 'Enviar correo al cliente',
+    text: 'Se enviará un correo con la lista de documentos faltantes.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Enviar',
+    cancelButtonText: 'Cancelar'
+  }).then((r)=>{
+    if (!r.isConfirmed) return;
+
+    const fd = new FormData();
+    fd.append('operacion_id', opId);
+    fd.append('contenedor_id', contId);
+    fd.append('tipo', tipo);
+
+    const http = new XMLHttpRequest();
+    http.open("POST", docBaseDocumentos + "notificarFaltantes", true);
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      console.log(this.responseText);
+      let j = {};
+      try { j = JSON.parse(this.responseText) || {}; } catch {}
+      Swal.fire(j.status === 'success' ? 'Enviado' : 'Aviso', j.msg || '(sin mensaje)', j.status || 'info');
+    };
+    http.send(fd);
+  });
+});
 
 })();
 ;
