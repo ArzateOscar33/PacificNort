@@ -1,6 +1,5 @@
 <div id="documentosRoot">
-    <div class="container py-4 col-md-12">
-   <h2> <?php echo $_SESSION['id_usuario'] ?></h2>
+    <div class="container py-4 col-md-12"> 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4><i data-feather="file-text" class="me-2"></i>Gestión de Documentos</h4>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarDocumentoDocumentos">
@@ -72,8 +71,7 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tablaDocumentos"></tbody>
-                </tbody>
+                <tbody id="tablaDocumentos"></tbody> 
             </table>
         </div>
     </div>
@@ -150,5 +148,32 @@
             </div>
         </div>
     </div>
+    <!-- Modal Vista Previa Documento -->
+<div class="modal fade" id="modalPreviewDocumentoDocumentos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary text-white">
+        <h5 class="modal-title"><i data-feather="file-text" class="me-2"></i>Vista previa</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-0">
+         <!-- Mensaje cuando no se puede ver inline -->
+  <div id="previewUnavailableDocumentos" class="p-5 text-center" style="display:none;">
+    <div class="mb-3"><i data-feather="file" style="width:48px;height:48px;"></i></div>
+    <div class="h5 mb-2">Este formato no se puede previsualizar aquí</div>
+    <p class="text-muted mb-0">Puedes descargar el archivo para abrirlo con su aplicación.</p>
+  </div>
+        <iframe id="previewFrameDocumentos" src="" style="width:100%;min-height:75vh;border:0;"></iframe>
+      </div>
+      <div class="modal-footer">
+        <a id="previewDownloadLinkDocumentos" href="#" class="btn btn-primary" target="_blank" rel="noopener">
+          <i data-feather="download"></i> Descargar
+        </a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/documentos.js"></script>

@@ -55,6 +55,7 @@ class Operaciones_maritimas_documentosModel extends Query
                 cl.nombre               AS cliente,
                 d.tipo,
                 d.nombre_archivo,
+                d.mime_type,
                 d.ruta_archivo,
                 d.fecha_subida,
                 d.subido_por
@@ -218,6 +219,7 @@ public function listarDocumentosMixto(int $operacion_id, ?int $contenedor_id, ?s
             t.nombre                                        AS tipo_nombre,
             t.clave                                         AS tipo_clave,
             d.nombre_archivo,
+            d.mime_type, 
             d.ruta_archivo,
             d.fecha_subida,
             /* Quién lo subió (intenta nombre completo; si no, cae al id) */
@@ -242,5 +244,19 @@ public function listarDocumentosMixto(int $operacion_id, ?int $contenedor_id, ?s
 }
 
 
+public function getDocumentoPorId(int $id): ?array
+{
+    $sql = "SELECT 
+              id_documento,
+              nombre_archivo,
+              ruta_archivo,
+              mime_type,
+              tamano_bytes,
+              hash_sha256
+            FROM documentos_operacion
+            WHERE id_documento = ?
+            LIMIT 1";
+    return $this->select($sql, [$id]);
+}
 
 }

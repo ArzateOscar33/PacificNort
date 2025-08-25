@@ -5,6 +5,7 @@ class Operaciones_maritimas_documentos extends Controller
     public function __construct()
     {
         parent::__construct();
+        if (session_status() === PHP_SESSION_NONE) { @session_start(); }
     }
 
     // === BUSCAR OPERACIONES (solo las que tengan contenedores) ===
@@ -169,6 +170,10 @@ class Operaciones_maritimas_documentos extends Controller
                     $_SESSION['id']              ??
                     $_SESSION['admin_id']        ??
                     null;
+                    if ($userId === null) {
+                    // log opcional para depurar qué llaves tienes en la sesión
+                    error_log('DOCS_REGISTRAR sin userId. Session: ' . json_encode(array_keys($_SESSION ?? [])));
+}
             $ok = $this->model->insertarDocumento([
                 'operacion_id' => $operacion_id,
                 'co_id'        => ($contenedor_tipo === 'F' ? $contenedor_id : null),
@@ -204,4 +209,62 @@ class Operaciones_maritimas_documentos extends Controller
         $s = preg_replace('/[^A-Za-z0-9_.-]/', '_', $s);
         return preg_replace('/_+/', '_', $s);
     }
+    // controllers/Operaciones_maritimas_documentos.php
+public function ver($id = 0)
+{
+    $id = (int)$id;
+    if ($id <= 0) { http_response_code(400); echo "Solicitud inválida"; return; }
+
+    $doc = $this->model->getDocumentoPorId($id);
+    if (!$doc) { http_response_code(404); echo "Documento no encontrado"; return; }
+
+    // Construir ruta absoluta segura
+    $root     = rtrim(self::UPLOAD_ROOT, '/\\');
+    $rel      = str_replace(['\\'], '/', $doc['ruta_archivo'] ?? ''); // normaliza separadores
+    $abs      = $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rel);
+    $realRoot = realpath($root);
+    $realFile = realpath($abs);
+
+    if (!$realFile || strpos($realFile, $realRoot) !== 0 || !is_file($realFile)) {
+        http_response_code(404); echo "Archivo no disponible"; return;
+    }
+
+    // Determinar MIME
+    $mime = $doc['mime_type'] ?: null;
+    if (!$mime) {
+        $ext = strtolower(pathinfo($realFile, PATHINFO_EXTENSION));
+        $map = [
+            'pdf'=>'application/pdf','jpg'=>'image/jpeg','jpeg'=>'image/jpeg',
+            'png'=>'image/png','gif'=>'image/gif','webp'=>'image/webp',
+            'txt'=>'text/plain','csv'=>'text/csv','doc'=>'application/msword',
+            'docx'=>'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls'=>'application/vnd.ms-excel',
+            'xlsx'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        $mime = $map[$ext] ?? 'application/octet-stream';
+    }
+
+    $filename  = $doc['nombre_archivo'] ?: basename($realFile);
+    $filesize  = filesize($realFile);
+    $etag      = !empty($doc['hash_sha256']) ? '"'.$doc['hash_sha256'].'"' : null;
+    $lastMod   = gmdate('D, d M Y H:i:s', filemtime($realFile)) . ' GMT';
+    $forceDl   = isset($_GET['dl']) && $_GET['dl'] == '1';
+
+    // Cache básica + validación condicional (opcional)
+    header('X-Content-Type-Options: nosniff');
+    header('Content-Type: '.$mime);
+    header('Content-Length: '.$filesize);
+    header('Last-Modified: '.$lastMod);
+    if ($etag) header('ETag: '.$etag);
+    header('Cache-Control: private, max-age=86400'); // 1 día
+
+    // inline para previsualizar; si ?dl=1 => attachment
+    $disposition = $forceDl ? 'attachment' : 'inline';
+    header('Content-Disposition: '.$disposition.'; filename="'.basename($filename).'"');
+
+    // Sirve el archivo
+    readfile($realFile);
+    exit;
+}
+
 }

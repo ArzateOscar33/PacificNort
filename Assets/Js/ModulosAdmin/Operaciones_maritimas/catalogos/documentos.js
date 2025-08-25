@@ -163,27 +163,39 @@
       tbodyDocumentos.innerHTML = liEmptyDocumentos(9);
       return;
     }
-    const html = rows.map(r=>`
-      <tr>
-        <td>${safeDocumentos(r.numero_operacion)}</td>
-        <td>${safeDocumentos(r.contenedor)}</td>
-        <td>${safeDocumentos(r.cliente)}</td>
-        <td class="text-uppercase">${safeDocumentos(r.tipo_nombre)}</td>
-        <td>${safeDocumentos(r.nombre_archivo)}</td>
-        <td>${fmtFechaDocumentos(r.fecha_subida)}</td>
-        <td>${safeDocumentos(r.subido_por)}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-primary" title="Ver" onclick="documentosVerDocumento(${r.id_documento})">
-            <i data-feather="eye"></i>
-          </button>
-        </td>
-        <td>
-          <button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="documentosEliminarDocumento(${r.id_documento})">
-            <i data-feather="trash-2"></i>
-          </button>
-        </td>
-      </tr>
-    `).join("");
+    // Escape de atributo simple
+const escAttrDocumentos = s => String(s ?? '').replace(/&/g,'&amp;')
+                                             .replace(/"/g,'&quot;')
+                                             .replace(/</g,'&lt;')
+                                             .replace(/>/g,'&gt;')
+                                             .replace(/'/g,'&#39;');
+
+const html = rows.map(r=>`
+  <tr>
+    <td>${safeDocumentos(r.numero_operacion)}</td>
+    <td>${safeDocumentos(r.contenedor)}</td>
+    <td>${safeDocumentos(r.cliente)}</td>
+    <td class="text-uppercase">${safeDocumentos(r.tipo_nombre)}</td>
+    <td>${safeDocumentos(r.nombre_archivo)}</td>
+    <td>${fmtFechaDocumentos(r.fecha_subida)}</td>
+    <td>${safeDocumentos(r.subido_por)}</td>
+    <td>
+      <button class="btn btn-sm btn-outline-primary"
+              title="Ver"
+              data-nombre="${escAttrDocumentos(r.nombre_archivo)}"
+              data-mime="${escAttrDocumentos(r.mime_type || '')}"
+              onclick="documentosVerDocumento(${r.id_documento}, this)">
+        <i data-feather="eye"></i>
+      </button>
+    </td>
+    <td>
+      <button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="documentosEliminarDocumento(${r.id_documento})">
+        <i data-feather="trash-2"></i>
+      </button>
+    </td>
+  </tr>
+`).join("");
+
     tbodyDocumentos.innerHTML = html;
   }
 
@@ -227,6 +239,56 @@ window.documentosRefrescarListado = function(){
     // truco: la hicimos closure privada, así que:
     // mejor guarda una ref global al definirse:
   })();
+};
+
+// En la IIFE LISTAR (o en un bloque <script> después):
+window.documentosVerDocumento = function(id, btn){
+  const url     = base_url + "operaciones_maritimas_documentos/ver/" + encodeURIComponent(id);
+  const iframe  = document.getElementById('previewFrameDocumentos');
+  const aDown   = document.getElementById('previewDownloadLinkDocumentos');
+  const msg     = document.getElementById('previewUnavailableDocumentos');
+  const titleEl = document.getElementById('previewTitleDocumentos');
+
+  const nombre  = (btn?.dataset?.nombre || '').trim();
+  const mime    = (btn?.dataset?.mime   || '').trim();
+
+  // Título del modal
+  if (titleEl) titleEl.textContent = nombre ? `Vista previa — ${nombre}` : 'Vista previa';
+
+  // Decide si es previsualizable (pdf, imágenes, txt, csv)
+  const esPreview = (m, file) => {
+    const ext = (file.split('.').pop() || '').toLowerCase();
+    const extsOK  = ['pdf','jpg','jpeg','png','gif','webp','txt','csv'];
+    const mimesOK = ['application/pdf','image/jpeg','image/png','image/gif','image/webp','text/plain','text/csv'];
+    if (m && mimesOK.includes(m.toLowerCase())) return true;
+    if (extsOK.includes(ext)) return true;
+    return false;
+  };
+
+  const previewable = esPreview(mime, nombre);
+
+  // Link de descarga siempre listo
+  if (aDown) aDown.href = url + "?dl=1";
+
+  // Mostrar/hide
+  if (previewable) {
+    if (msg)    msg.style.display = 'none';
+    if (iframe) { iframe.style.display = 'block'; iframe.src = url; }
+  } else {
+    if (iframe) { iframe.style.display = 'none'; iframe.src = 'about:blank'; }
+    if (msg)    msg.style.display = 'block';
+  }
+
+  // Abre modal
+  const modalEl = document.getElementById('modalPreviewDocumentoDocumentos');
+  const m = new bootstrap.Modal(modalEl);
+  m.show();
+
+  // Limpia iframe al cerrar
+  modalEl.addEventListener('hidden.bs.modal', function _cleanup(){
+    if (iframe) iframe.src = 'about:blank';
+    modalEl.removeEventListener('hidden.bs.modal', _cleanup);
+  }, {once:true});
 };
 
 
@@ -403,9 +465,7 @@ window.documentosRefrescarListado = function(){
 formDocumentos?.addEventListener("submit", function(e){
   e.preventDefault();
 
-  const fd = new FormData(formDocumentos);
-  // Asegúrate de que existan estos campos:
-  // operacion_id, contenedor_id, contenedor_tipo, tipo_documento_id, archivo
+  const fd = new FormData(formDocumentos); 
 
   const http = new XMLHttpRequest();
   http.open("POST", docBaseDocumentos + "registrar", true);
