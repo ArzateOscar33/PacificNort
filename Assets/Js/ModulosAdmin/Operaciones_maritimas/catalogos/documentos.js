@@ -168,7 +168,7 @@
         <td>${safeDocumentos(r.numero_operacion)}</td>
         <td>${safeDocumentos(r.contenedor)}</td>
         <td>${safeDocumentos(r.cliente)}</td>
-        <td class="text-uppercase">${safeDocumentos(r.tipo)}</td>
+        <td class="text-uppercase">${safeDocumentos(r.tipo_nombre)}</td>
         <td>${safeDocumentos(r.nombre_archivo)}</td>
         <td>${fmtFechaDocumentos(r.fecha_subida)}</td>
         <td>${safeDocumentos(r.subido_por)}</td>
@@ -187,17 +187,25 @@
     tbodyDocumentos.innerHTML = html;
   }
 
-  function renderSubidosDocumentos(rows){
-    if (!listaSubidosDocumentos) return;
-    if (!Array.isArray(rows) || rows.length === 0) {
-      listaSubidosDocumentos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
-      return;
-    }
-    listaSubidosDocumentos.innerHTML = rows.map(r=>{
-      const fecha = fmtFechaDocumentos(r.fecha_subida);
-      return `<li class="list-group-item">${safeDocumentos(r.tipo).toUpperCase()} — ${safeDocumentos(r.nombre_archivo)} <span class="text-muted">(${fecha})</span></li>`;
-    }).join("");
+function renderSubidosDocumentos(rows){
+  if (!listaSubidosDocumentos) return;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    listaSubidosDocumentos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
+    return;
   }
+  listaSubidosDocumentos.innerHTML = rows.map(r=>{
+    const fecha = fmtFechaDocumentos(r.fecha_subida);
+    const tipo  = r.tipo_nombre || r.tipo_clave || '';   // <-- 🔁 aquí
+    return `<li class="list-group-item">${safeDocumentos(tipo).toUpperCase()} — ${safeDocumentos(r.nombre_archivo)} <span class="text-muted">(${fecha})</span></li>`;
+  }).join("");
+}
+
+// Exponer listar para poder refrescar después de registrar
+window.listarDocumentosDocumentos   = listarDocumentos;
+window.documentosRefrescarListado   = function(){
+  if (window.listarDocumentosDocumentos) window.listarDocumentosDocumentos();
+};
+
 
   // Evita colisión con otros módulos:
   window.documentosVerDocumento = function(id){
@@ -206,6 +214,21 @@
   window.documentosEliminarDocumento = function(id){
     Swal.fire("Por implementar", "Eliminar documento ID " + id, "warning");
   };
+
+  // Al final de la IIFE del listar:
+window.documentosRefrescarListado = function(){ 
+  // reusa la función interna
+  const evt = new Event('keyup'); // forzar estado actual
+  // o simplemente:
+  (function reList(){ 
+    const opId  = document.getElementById("documentosFiltroOpId")?.value || "";
+    if (!opId) return;
+    // llama a la misma listarDocumentos() que ya tienes
+    // truco: la hicimos closure privada, así que:
+    // mejor guarda una ref global al definirse:
+  })();
+};
+
 
 })();
 ;
@@ -252,13 +275,20 @@
 
     if (mdOpIdDocumentos.value) {
       cargarContenedoresModalDocumentos(mdOpIdDocumentos.value, mdOpNombreDocumentos.value);
+      if (mdContTipoDocumentos.value) {
+      cargarTiposDocumentosParaModalDocumentos(mdContTipoDocumentos.value);
     } else {
-      clearDocumentos(mdOpSugDocumentos);  showDocumentos(mdOpSugDocumentos,false);
-      clearDocumentos(mdContSugDocumentos);showDocumentos(mdContSugDocumentos,false);
-      mdOpMetaDocumentos.textContent = "";
+      const sel = document.getElementById('tipo_documentoDocumentos');
+      if (sel) sel.innerHTML = '<option value="">-- Selecciona tipo --</option>';
     }
-  });
-
+  } else {
+    clearDocumentos(mdOpSugDocumentos);  showDocumentos(mdOpSugDocumentos,false);
+    clearDocumentos(mdContSugDocumentos);showDocumentos(mdContSugDocumentos,false);
+    const sel = document.getElementById('tipo_documentoDocumentos');
+    if (sel) sel.innerHTML = '<option value="">-- Selecciona tipo --</option>';
+    mdOpMetaDocumentos.textContent = "";
+  }
+});
   // Autocomplete Operación
   mdOpNombreDocumentos?.addEventListener("keyup", function(){
     const term = this.value.trim();
@@ -305,6 +335,8 @@
     mdContTipoDocumentos.value = "";
     clearDocumentos(mdContSugDocumentos); showDocumentos(mdContSugDocumentos,false);
 
+    const sel = document.getElementById('tipo_documentoDocumentos');
+    if (sel) sel.innerHTML = '<option value="">-- Selecciona tipo --</option>';
     cargarContenedoresModalDocumentos(id, label);
   }
 
@@ -337,6 +369,10 @@
         mdContTipoDocumentos.value   = c.tipo; // 'F' o 'M'
         mdContNombreDocumentos.value = c.label;
         showDocumentos(mdContSugDocumentos,false);
+        const sel = document.getElementById('tipo_documentoDocumentos');
+        if (sel) sel.innerHTML = '<option value="">Cargando…</option>';
+         
+        cargarTiposDocumentosParaModalDocumentos(c.tipo);
       };
       mdContSugDocumentos.appendChild(btn);
     });
@@ -363,15 +399,64 @@
   });
 
   // Validación mínima al enviar
-  formDocumentos?.addEventListener("submit", function(ev){
-    const opOk   = mdOpIdDocumentos.value.trim() !== "";
-    const contOk = mdContIdDocumentos.value.trim() !== "" && mdContTipoDocumentos.value.trim() !== "";
-    if (!opOk || !contOk) {
-      ev.preventDefault();
-      Swal.fire("Faltan datos", "Selecciona operación y contenedor (F o M).", "warning");
-      return false;
+// Dentro de la IIFE del modal:
+formDocumentos?.addEventListener("submit", function(e){
+  e.preventDefault();
+
+  const fd = new FormData(formDocumentos);
+  // Asegúrate de que existan estos campos:
+  // operacion_id, contenedor_id, contenedor_tipo, tipo_documento_id, archivo
+
+  const http = new XMLHttpRequest();
+  http.open("POST", docBaseDocumentos + "registrar", true);
+  http.send(fd);
+  http.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+    let res = {};
+    try { res = JSON.parse(this.responseText) || {}; } catch {}
+
+    Swal.fire(res.status === 'success' ? 'Éxito' : 'Aviso', res.msg || '(sin mensaje)', res.status || 'info');
+
+    if (res.status === 'success') {
+    const inst = bootstrap.Modal.getInstance(modalElDocumentos);
+    if (inst) inst.hide();
+    formDocumentos.reset();
+    if (window.documentosRefrescarListado) window.documentosRefrescarListado();  // ⬅️
     }
-  });
+  };
+});
+
+
+function cargarTiposDocumentosParaModalDocumentos(tipoFM){
+    const sel = document.getElementById('tipo_documentoDocumentos');
+    if (!sel) return;
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">Cargando…</option>';
+
+    const http = new XMLHttpRequest();
+    http.open('GET', docBaseDocumentos + 'tipos?contenedor_tipo=' + encodeURIComponent(tipoFM), true);
+    http.send();
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      if (this.status !== 200) {
+        sel.innerHTML = '<option value="">(Error al cargar tipos)</option>';
+        sel.disabled = false;
+        return;
+      }
+      let data = [];
+      try { data = JSON.parse(this.responseText) || []; } catch {}
+
+      if (!Array.isArray(data) || data.length === 0) {
+        sel.innerHTML = '<option value="">(Sin tipos disponibles)</option>';
+        sel.disabled = false;
+        return;
+      }
+
+      sel.innerHTML = '<option value="">-- Selecciona tipo --</option>' +
+        data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+      sel.disabled = false;
+    };
+  }
 
 })();
 

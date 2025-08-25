@@ -1,6 +1,6 @@
 <div id="documentosRoot">
     <div class="container py-4 col-md-12">
-
+   <h2> <?php echo $_SESSION['id_usuario'] ?></h2>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4><i data-feather="file-text" class="me-2"></i>Gestión de Documentos</h4>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarDocumentoDocumentos">
@@ -124,14 +124,8 @@
                         <!-- TIPO DE DOCUMENTO -->
                         <div class="mb-3">
                             <label for="tipo_documentoDocumentos" class="form-label">Tipo de Documento</label>
-                            <select id="tipo_documentoDocumentos" name="tipo_documento" class="form-control" required>
+                            <select id="tipo_documentoDocumentos" name="tipo_documento_id" class="form-control" required>
                                 <option value="">-- Selecciona tipo --</option>
-                                <option value="argos">Pago de Argos Locales</option>
-                                <option value="revalidacion">Pago de Revalidación</option>
-                                <option value="encomienda">Carta Encomienda</option>
-                                <option value="garantia">Garantía</option>
-                                <option value="eir">EIR</option>
-                                <option value="arribo">Notificación de Arribo</option>
                             </select>
                         </div>
 

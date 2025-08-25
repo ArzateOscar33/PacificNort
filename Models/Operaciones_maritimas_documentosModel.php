@@ -104,43 +104,143 @@ class Operaciones_maritimas_documentosModel extends Query
     return $this->selectAll($sql, [$operacion_id, $operacion_id]);
 }
 
+ 
+public function validarTipoDocumento(int $id_tipo, string $tipoCont): bool {
+    // Opcional: validar aplica_sobre vs F/M
+    $row = $this->select("SELECT aplica_sobre, activo FROM tipos_documento WHERE id_tipo_documento = ? LIMIT 1", [$id_tipo]);
+    if (!$row || (int)$row['activo'] !== 1) return false;
+    if ($row['aplica_sobre'] === 'contenedor_fisico'     && $tipoCont !== 'F') return false;
+    if ($row['aplica_sobre'] === 'contenedor_maritimo'   && $tipoCont !== 'M') return false;
+    return true;
+}
+
+public function insertarDocumento(array $d): bool {
+    $sql = "INSERT INTO documentos_operacion
+           (operacion_id, contenedor_operacion_id, cont_maritimo_operacion_id,
+            tipo_documento_id, nombre_archivo, ruta_archivo, mime_type, tamano_bytes, hash_sha256,
+            fecha_subida, subido_por)
+            VALUES (?,?,?,?,?,?,?,?,?, NOW(), ?)";
+    return (bool)$this->insertar($sql, [
+        $d['operacion_id'],
+        $d['co_id'],
+        $d['cmo_id'],
+        $d['tipo_doc_id'],
+        $d['nombre_orig'],
+        $d['ruta'],
+        $d['mime'],
+        $d['size'],
+        $d['hash'],
+        $d['subido_por']
+    ]);
+}
+public function tiposDocumentoFiltrados(?array $aplicaSobre, bool $soloActivos = true, ?string $q = null): array
+{
+    $where = [];
+    $params = [];
+
+    if ($aplicaSobre && count($aplicaSobre) > 0) {
+        // Construir IN dinámico
+        $in = implode(',', array_fill(0, count($aplicaSobre), '?'));
+        $where[] = "aplica_sobre IN ($in)";
+        foreach ($aplicaSobre as $v) { $params[] = $v; }
+    }
+
+    if ($soloActivos) {
+        $where[] = "activo = 1";
+    }
+
+    if ($q !== null && $q !== '') {
+        $where[] = "(LOWER(nombre) LIKE ? OR LOWER(clave) LIKE ?)";
+        $needle = '%'.mb_strtolower($q, 'UTF-8').'%';
+        $params[] = $needle;
+        $params[] = $needle;
+    }
+
+    $whereSql = count($where) ? ('WHERE '.implode(' AND ', $where)) : '';
+    $sql = "
+        SELECT 
+            id_tipo_documento      AS id,
+            clave,
+            nombre,
+            aplica_sobre,
+            activo
+        FROM tipos_documento
+        $whereSql
+        ORDER BY nombre ASC
+        LIMIT 500
+    ";
+
+    return $this->selectAll($sql, $params);
+}
+ public function getNumeroOperacion(int $operacion_id): ?string {
+    $row = $this->select("SELECT numero_operacion FROM operaciones WHERE id_operacion = ? LIMIT 1", [$operacion_id]);
+    return $row ? $row['numero_operacion'] : null;
+}
+
+public function getEtiquetaContenedor(string $tipo, int $contenedor_id): ?string {
+    if ($tipo === 'F') {
+        $row = $this->select("
+            SELECT cf.numero_ferro AS etiqueta
+            FROM contenedores_operacion co
+            JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
+            WHERE co.id_contenedor = ? LIMIT 1
+        ", [$contenedor_id]);
+    } else { // 'M'
+        $row = $this->select("
+            SELECT cm.numero_contenedor AS etiqueta
+            FROM contenedores_maritimos_operacion cmo
+            JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+            WHERE cmo.id = ? LIMIT 1
+        ", [$contenedor_id]);
+    }
+    return $row ? $row['etiqueta'] : null;
+}
+
 public function listarDocumentosMixto(int $operacion_id, ?int $contenedor_id, ?string $tipo): array
 {
     $params = [$operacion_id];
-    $filtro = "";
+    $filtro = '';
 
-    if (!empty($contenedor_id) && $tipo === "F") {
-        $filtro = " AND d.contenedor_operacion_id = ? ";
+    if (!empty($contenedor_id) && $tipo === 'F') {
+        $filtro = ' AND d.contenedor_operacion_id = ? ';
         $params[] = $contenedor_id;
-    } elseif (!empty($contenedor_id) && $tipo === "M") {
-        $filtro = " AND d.cont_maritimo_operacion_id = ? ";
+    } elseif (!empty($contenedor_id) && $tipo === 'M') {
+        $filtro = ' AND d.cont_maritimo_operacion_id = ? ';
         $params[] = $contenedor_id;
     }
 
     $sql = "
-        SELECT 
+        SELECT
             d.id_documento,
             o.numero_operacion,
             COALESCE(cf.numero_ferro, cm.numero_contenedor) AS contenedor,
             COALESCE(clco.nombre, clop.nombre)              AS cliente,
-            d.tipo,
+            t.nombre                                        AS tipo_nombre,
+            t.clave                                         AS tipo_clave,
             d.nombre_archivo,
             d.ruta_archivo,
             d.fecha_subida,
-            d.subido_por
+            /* Quién lo subió (intenta nombre completo; si no, cae al id) */
+            COALESCE(CONCAT(u.nombre,' ',u.apellido), u.nombre, u.apellido, CAST(d.subido_por AS CHAR)) AS subido_por
         FROM documentos_operacion d
-        JOIN operaciones o ON o.id_operacion = d.operacion_id
-        LEFT JOIN contenedores_operacion co  ON co.id_contenedor = d.contenedor_operacion_id
-        LEFT JOIN contenedores_fisicos cf    ON cf.id_fisico    = co.id_fisico
-        LEFT JOIN clientes clco              ON clco.id_cliente = co.cliente_id
-        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = d.cont_maritimo_operacion_id
+        JOIN tipos_documento t ON t.id_tipo_documento = d.tipo_documento_id
+        JOIN operaciones o     ON o.id_operacion      = d.operacion_id
+        LEFT JOIN contenedores_operacion co  ON co.id_contenedor          = d.contenedor_operacion_id
+        LEFT JOIN contenedores_fisicos cf    ON cf.id_fisico              = co.id_fisico
+        LEFT JOIN clientes clco              ON clco.id_cliente           = co.cliente_id
+        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id          = d.cont_maritimo_operacion_id
         LEFT JOIN contenedores_maritimos cm  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        LEFT JOIN clientes clop              ON clop.id_cliente = o.cliente_id
+        LEFT JOIN clientes clop              ON clop.id_cliente           = o.cliente_id
+        LEFT JOIN usuarios u                 ON u.id_usuario              = d.subido_por
         WHERE d.operacion_id = ?
         $filtro
         ORDER BY d.fecha_subida DESC, d.id_documento DESC
         LIMIT 500
     ";
+
     return $this->selectAll($sql, $params);
 }
+
+
+
 }
