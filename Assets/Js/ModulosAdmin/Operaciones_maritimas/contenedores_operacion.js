@@ -554,6 +554,6 @@ window.addEventListener("DOMContentLoaded", () => {
   perPageCont = parseInt(selectPerPageCont?.value || "10", 10);
   listarContenedores();
 });
-if (payload.meta && typeof payload.meta.page === 'number') {
+/*if (payload.meta && typeof payload.meta.page === 'number') {
   currentPageCont = payload.meta.page; // mantener la UI en sincronía
-}
+}*/

@@ -469,3 +469,6 @@
 <!-- Luego tu dashboard -->
 <script src="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.js"></script>
  
+ <script>
+     const base_url = '<?php echo BASE_URL; ?>';
+ </script>

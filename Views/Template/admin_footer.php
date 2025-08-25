@@ -34,7 +34,5 @@
     <script src="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-2.0.2.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-world-mill-en.js"></script>
     
- <script>
-     const base_url = '<?php echo BASE_URL; ?>';
- </script>
+
  
