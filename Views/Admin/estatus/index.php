@@ -1,52 +1,51 @@
 
 <?php include 'Views/Template/admin_header.php';
 ?>
-<div class="container col-md-12">
+<div class="container col-md-12 mt-3">
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
       <div class="card">
-        <div class="card-header bg-primary ">
+        <div class="card-header bg-primary">
           <h3 class="card-title mt-3 mb-3 text-white">Estatus</h3>
         </div>
-        <!-- /.card-header -->
+
         <div class="card-body">
-          <div class="d-flex justify-content-between mb-3">
-            <div class="col-md-10 position-relative">
-              <input type="text" class="form-control " id="buscarEstatus"  name="buscarEstatus" placeholder="Buscar Estatus" autocomplete="off">
-              <!-- Sugerencias dinámicas -->
-            <div id="sugerenciasEstatus" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
-            </div> 
-             <div class="col-md-3">
-              <button href="#" id="btnAgregarEstatus" class="btn btn-primary" data-bs-toggle="modal"
-                data-bs-target="#modalRegistrarEstatus"><i class="fas fa-plus"></i> Agregar Estatus</button>
-              </div>
+          <!-- Buscador + botón -->
+          <div class="row g-2 align-items-start mb-3">
+            <div class="col-12 col-md-9 position-relative">
+              <input type="text" class="form-control" id="buscarEstatus" name="buscarEstatus"
+                     placeholder="Buscar Estatus" autocomplete="off">
+              <div id="sugerenciasEstatus" class="list-group position-absolute w-100" style="z-index:999;"></div>
+            </div>
+
+            <div class="col-12 col-md-3 text-md-end">
+              <button id="btnAgregarEstatus" class="btn btn-primary w-100 w-md-auto"
+                      data-bs-toggle="modal" data-bs-target="#modalRegistrarEstatus">
+                <i class="fas fa-plus"></i> Agregar Estatus
+              </button>
             </div>
           </div>
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-primary text-center">
-              <tr>
-                <th>Nombre</th>  
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tablaEstatus" class="text-center">
-              <!-- Aquí se cargarán los datos de los estatus -->
 
-            </tbody>
-          </table>
-        </div>
-        </div>
-        <!-- /.d-flex -->
+          <!-- Tabla -->
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-primary text-center">
+                <tr>
+                  <th>Nombre</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaEstatus" class="text-center">
+                <!-- Aquí se cargarán los datos de los estatus -->
+              </tbody>
+            </table>
+          </div>
+        </div> <!-- /card-body -->
+      </div> <!-- /card -->
+    </div> <!-- /col-12 -->
+  </div> <!-- /row -->
+</div> <!-- /container -->
 
-        <!-- /.table-responsive -->
-      </div>
-      <!-- /.card-body -->
-    </div>
-    <!-- /.card -->
-  </div>
-  <!-- /.col -->
-</div>
 
 
  

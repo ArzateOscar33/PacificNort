@@ -1,23 +1,25 @@
 <?php include 'Views/Template/admin_header.php'; ?>
-<div class="container col-md-12">
+<div class="container col-md-12 mt-3">
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
       <div class="card">
         <div class="card-header bg-primary">
           <h3 class="card-title mt-3 mb-3 text-white">Puertos</h3>
         </div>
 
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <!-- Barra superior: buscador + filtro ciudad + botón -->
+          <div class="row g-2 align-items-center mb-3">
             <!-- Buscador -->
-            <div class="col-md-6 position-relative">
+            <div class="col-12 col-lg-6 position-relative">
               <input type="text" id="buscarPuerto" class="form-control" placeholder="Buscar Puerto" autocomplete="off">
-              <div id="sugerenciasPuerto" class="list-group position-absolute top-100 start-0 w-100"
+              <div id="sugerenciasPuerto"
+                   class="list-group position-absolute top-100 start-0 w-100"
                    style="display:none; z-index:999;"></div>
             </div>
 
             <!-- Filtro por Ciudad -->
-            <div class="col-md-4">
+            <div class="col-12 col-lg-4">
               <select name="ciudades_filtro" id="ciudades_filtro" class="form-control">
                 <option value="">Todas las ciudades</option>
                 <?php foreach ($data['ciudades'] as $ciudad): ?>
@@ -27,8 +29,10 @@
             </div>
 
             <!-- Botón Agregar -->
-            <div class="d-flex justify-content-end col-md-2">
-              <button id="btnAgregarPuerto" class="btn btn-primary" data-bs-toggle="modal"
+            <div class="col-12 col-lg-2 text-lg-end">
+              <button id="btnAgregarPuerto"
+                      class="btn btn-primary w-100 w-lg-auto"
+                      data-bs-toggle="modal"
                       data-bs-target="#modalRegistrarPuerto">
                 <i class="fas fa-plus"></i> Agregar Puerto
               </button>
@@ -36,7 +40,7 @@
           </div>
 
           <!-- Selector 25/50 -->
-          <div class="d-flex justify-content-end align-items-center mb-2 gap-2">
+          <div class="d-flex flex-wrap justify-content-end align-items-center mb-2 gap-2">
             <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
             <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
               <option value="25" selected>25</option>
@@ -63,11 +67,12 @@
           <nav aria-label="Paginación de puertos" class="mt-3">
             <ul class="pagination justify-content-end" id="paginacion"></ul>
           </nav>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+        </div><!-- /card-body -->
+      </div><!-- /card -->
+    </div><!-- /col-12 -->
+  </div><!-- /row -->
+</div><!-- /container -->
+
 
 <!-- Modal Crear/Editar -->
 <div class="modal fade" id="modalRegistrarPuerto" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"

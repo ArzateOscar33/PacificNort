@@ -9,24 +9,18 @@
 
         <div class="card-body">
           <!-- Barra superior: búsqueda + selector 25/50 + botón agregar -->
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <!-- Buscador con contenedor relativo para las sugerencias -->
-            <div class="col-md-8 position-relative">
-              <input
-                type="text"
-                class="form-control"
-                id="buscarContenedorMaritimo"
-                name="buscarContenedorMaritimo"
+          <div class="row g-2 align-items-center mb-3">
+            <!-- Buscador -->
+            <div class="col-12 col-lg-8 position-relative">
+              <input type="text" class="form-control" id="buscarContenedorMaritimo" name="buscarContenedorMaritimo"
                 placeholder="Buscar Contenedor Marítimo">
-              <div
-                id="sugerenciasContenedores"
-                class="list-group position-absolute top-100 start-0 w-100"
+              <div id="sugerenciasContenedores" class="list-group position-absolute top-100 start-0 w-100"
                 style="display:none; z-index:999;">
               </div>
             </div>
 
-            <!-- Selector 25/50 y botón Agregar -->
-            <div class="d-flex align-items-center gap-2">
+            <!-- Selector + botón -->
+            <div class="col-12 col-lg-4 d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
               <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
               <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
                 <option value="25" selected>25</option>
@@ -34,11 +28,8 @@
               </select>
               <span class="small text-muted">por página</span>
 
-              <button
-                id="btnAgregarContenedorMaritimo"
-                class="btn btn-primary ms-2 ml-2"
-                data-bs-toggle="modal"
-                data-bs-target="#modalRegistrarContenedorMaritimo">
+              <button id="btnAgregarContenedorMaritimo" class="btn btn-primary w-100 w-lg-auto ms-lg-2"
+                data-bs-toggle="modal" data-bs-target="#modalRegistrarContenedorMaritimo">
                 <i class="fas fa-plus"></i> Agregar Contenedor Marítimo
               </button>
             </div>
@@ -64,20 +55,15 @@
             <ul class="pagination justify-content-end" id="paginacion"></ul>
           </nav>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 
 <!-- Modal: Crear / Editar -->
-<div
-  class="modal fade"
-  id="modalRegistrarContenedorMaritimo"
-  data-bs-backdrop="static"
-  data-bs-keyboard="false"
-  tabindex="-1"
-  aria-labelledby="modalRegistrarContenedorMaritimoLabel"
-  aria-hidden="true">
+<div class="modal fade" id="modalRegistrarContenedorMaritimo" data-bs-backdrop="static" data-bs-keyboard="false"
+  tabindex="-1" aria-labelledby="modalRegistrarContenedorMaritimoLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">

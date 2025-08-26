@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover" id="tablaPuestos">
+                        <table class="table table-hover " id="tablaPuestos">
                             <thead class="table-primary text-center">
                                 <tr>
                                     <th>Departamento</th>

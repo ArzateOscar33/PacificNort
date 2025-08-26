@@ -327,7 +327,7 @@ class Operaciones_maritimasModel extends Query
         $sql = "SELECT st.id_subtipo, st.nombre, st.requiere_naviera, st.requiere_forwarder, st.puerto_arribo_default_id
                 FROM subtipos_operacion st
                 INNER JOIN tipos_operacion tt ON tt.id_tipo_operacion = st.tipo_operacion_id
-                WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%'
+                WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%' AND st.estatus = 1
                 ORDER BY st.nombre";
         return $this->selectAll($sql) ?: [];
     }

@@ -9,48 +9,50 @@
                     <h3 class="card-title mt-3 mb-3 text-white">Contenedores fisicos</h3>
                 </div>
                 <!-- /.card-header -->
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="col-md-8 position-relative">
-                            <input type="text" class="form-control" id="buscarContenedorFisico" name="buscarContenedorFisico" placeholder="Buscar Contenedor Físico">
-                            <div id="sugerenciasContenedorFisico" class="list-group position-absolute w-100" style="z-index:999; display:none;"></div>
-                        </div>
-                        <div class="col-md-12">
-                        <div class="d-flex gap-2 align-items-center">
-                            <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
-                            <select id="perPageSelect" class="form-control " style="width:auto">
-                            <option value="25" selected>25</option>
-                            <option value="50">50</option>
-                            </select>
-                            <span class="small text-muted">por página</span>
+<div class="card-body">
+  <!-- Barra superior -->
+  <div class="row g-2 align-items-center mb-3">
+    <!-- Buscador -->
+    <div class="col-12 col-lg-6 position-relative">
+      <input type="text" class="form-control" id="buscarContenedorFisico" name="buscarContenedorFisico" placeholder="Buscar Contenedor Físico">
+      <div id="sugerenciasContenedorFisico" class="list-group position-absolute w-100" style="z-index:999; display:none;"></div>
+    </div>
 
-                            <button id="btnAgregarContenedorFisico" class="btn btn-primary ms-2 ml-2" data-bs-toggle="modal" data-bs-target="#modalRegistrarContenedorFisico">
-                            <i class="fas fa-plus"></i> Agregar Contenedor Físico
-                            </button>
-                        </div>
-                        </div>
-                        </div>
-                    </div>
-                    <!-- /.d-flex -->
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-primary text-center">
-                                <tr>
-                                    <th>Numero de Ferro/Nombre de Físico</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaContenedoresFisicos">
-                                
-                            </tbody>
-                        </table>
-                        <nav aria-label="Paginación de contenedores" class="mt-3">
-                        <ul class="pagination justify-content-end" id="paginacion"></ul>
-                        </nav>
+    <!-- Selector + botón -->
+    <div class="col-12 col-lg-6 d-flex flex-wrap align-items-center justify-content-lg-end gap-2">
+      <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
+      <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
+        <option value="25" selected>25</option>
+        <option value="50">50</option>
+      </select>
+      <span class="small text-muted">por página</span>
 
-                    </div>
-                    <!-- /.table-responsive -->
-                </div>
+      <button id="btnAgregarContenedorFisico" class="btn btn-primary w-100 w-lg-auto ms-lg-2"
+              data-bs-toggle="modal" data-bs-target="#modalRegistrarContenedorFisico">
+        <i class="fas fa-plus"></i> Agregar Contenedor Físico
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead class="table-primary text-center">
+        <tr>
+          <th>Número de Ferro / Nombre de Físico</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaContenedoresFisicos"></tbody>
+    </table>
+
+    <!-- Paginación -->
+    <nav aria-label="Paginación de contenedores" class="mt-3">
+      <ul class="pagination justify-content-end" id="paginacion"></ul>
+    </nav>
+  </div>
+</div>
+
                 <!-- /.card-body -->
             </div>
             <!-- /.card -->

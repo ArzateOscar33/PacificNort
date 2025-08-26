@@ -1,8 +1,8 @@
 <?php include 'Views/Template/admin_header.php'; ?>
 
-<div class="container col-md-12">
+<div class="container col-md-12 mt-3">
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
       <div class="card mt-3">
         <div class="card-header bg-primary">
           <h3 class="card-title mt-3 mb-3 text-white">Estados</h3>
@@ -10,9 +10,9 @@
 
         <div class="card-body">
           <!-- Barra superior: búsqueda + selector 25/50 + botón agregar -->
-          <div class="mb-3 d-flex justify-content-between align-items-center">
+          <div class="row g-2 align-items-center mb-3">
             <!-- Buscador con contenedor relativo para las sugerencias -->
-            <div class="position-relative col-md-8">
+            <div class="col-12 col-md-8 position-relative">
               <input
                 type="text"
                 class="form-control"
@@ -28,7 +28,7 @@
             </div>
 
             <!-- Selector 25/50 y botón Agregar -->
-            <div class="d-flex align-items-center gap-2">
+            <div class="col-12 col-md-4 d-flex flex-wrap justify-content-md-end align-items-center gap-2">
               <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
               <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
                 <option value="25" selected>25</option>
@@ -38,7 +38,7 @@
 
               <button
                 id="btnAgregarEstado"
-                class="btn btn-primary ms-2 ml-2"
+                class="btn btn-primary ms-md-2 w-100 w-md-auto"
                 data-bs-toggle="modal"
                 data-bs-target="#modalRegistrarEstado">
                 <i class="fas fa-plus"></i> Agregar Estado
@@ -63,11 +63,12 @@
           <nav aria-label="Paginación de estados" class="mt-3">
             <ul class="pagination justify-content-end" id="paginacion"></ul>
           </nav>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+        </div> <!-- /card-body -->
+      </div> <!-- /card -->
+    </div> <!-- /col-12 -->
+  </div> <!-- /row -->
+</div> <!-- /container -->
+
 
 <?php include 'Views/Template/admin_footer.php'; ?>
 

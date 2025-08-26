@@ -1,57 +1,62 @@
 <?php include 'Views/Template/admin_header.php';
 ?>
-<div class="container col-md-12">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary ">
-                    <h3 class="card-title mt-3 mb-3 text-white">Tipos de De Documentos</h3>
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-3">
-                        <div class="col-md-10 position-relative">
-                            <input type="text" class="form-control " id="buscarTipoDocumento" name="buscarTipoDocumento"
-                                placeholder="Buscar Tipo de Documento" autocomplete="off">
-                            <!-- Sugerencias dinámicas -->
-                            <div id="sugerenciasTipoDocumento" class="list-group position-absolute w-100 z-3"
-                                style="z-index:999;"></div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <button href="#" id="btnAgregarTipoDocumento" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#modalRegistrarTipoDocumento"><i class="fas fa-plus"></i> Agregar Tipo
-                                de Documento</button>
-                        </div>
-                    </div>
-
-                </div>
-                <!-- /.d-flex -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-primary text-center">
-                            <tr>
-                                <th>Clave</th>
-                                <th>Nombre</th>
-                                <th>Aplica Sobre</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaTipoDocumentos" class="text-center">
-                            <!-- Contenido dinámico -->
-
-                        </tbody>
-                    </table>
-                </div>
-                <!-- /.table-responsive -->
-            </div>
-            <!-- /.card-body -->
+<div class="container col-md-12 mt-3">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary">
+          <h3 class="card-title mt-3 mb-3 text-white">Tipos de Documentos</h3>
         </div>
-        <!-- /.card -->
-    </div>
-    <!-- /.col -->
-</div>
-</div>
+
+        <div class="card-body">
+          <!-- Buscador + botón -->
+          <div class="row g-2 align-items-start mb-3">
+            <div class="col-12 col-md-9 position-relative">
+              <input
+                type="text"
+                class="form-control"
+                id="buscarTipoDocumento"
+                name="buscarTipoDocumento"
+                placeholder="Buscar Tipo de Documento"
+                autocomplete="off">
+              <div id="sugerenciasTipoDocumento"
+                   class="list-group position-absolute w-100"
+                   style="z-index:999;"></div>
+            </div>
+
+            <div class="col-12 col-md-3 text-md-end">
+              <button id="btnAgregarTipoDocumento"
+                      class="btn btn-primary w-100 w-md-auto"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalRegistrarTipoDocumento">
+                <i class="fas fa-plus"></i> Agregar Tipo de Documento
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabla -->
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-primary text-center">
+                <tr>
+                  <th>Clave</th>
+                  <th>Nombre</th>
+                  <th>Aplica Sobre</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaTipoDocumentos" class="text-center">
+                <!-- Contenido dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div> <!-- /card-body -->
+      </div> <!-- /card -->
+    </div> <!-- /col-12 -->
+  </div> <!-- /row -->
+</div> <!-- /container -->
+
+ 
 <div class="modal fade" id="modalRegistrarTipoDocumento" data-bs-backdrop="static" data-bs-keyboard="false"
     tabindex="-1" aria-labelledby="modalRegistrarTipoDocumentoLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
