@@ -171,7 +171,10 @@
                                             de Movimiento</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_eventos_logisticos"
                                         class="sidebar-link"><i data-feather="activity"></i><span
-                                            class="hide-menu">Tipos de Evento Logístico</span></a></li>
+                                            class="hide-menu">Tipos de Evento Logístico</span></a></li>                               
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Tipos_documentos"
+                                        class="sidebar-link"><i data-feather="file-text"></i><span
+                                            class="hide-menu">Tipos de Documento</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
                                             data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>permisos" class="sidebar-link"><i
