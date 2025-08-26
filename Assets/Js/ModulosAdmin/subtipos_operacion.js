@@ -1,14 +1,14 @@
- //definimimos las variables y constantes
-const tabla =document.getElementById('tablaTipoDocumentos');
-const form  = document.getElementById("formTipoDocumento");
-const modal = new bootstrap.Modal(document.getElementById("modalRegistrarTipoDocumento"));
-const btnAgregarTipoDocumento = document.getElementById("btnAgregarTipoDocumento");
-const label=document.getElementById("modalRegistrarTipoDocumentoLabel");
+  //definimimos las variables y constantes
+const tabla =document.getElementById('tablaSubTiposOperacion');
+const form  = document.getElementById("formSubtipoOperacion");
+const modal = new bootstrap.Modal(document.getElementById("modalRegistrarSubtipoOperacion"));
+const btnAgregarSubtipoOperacion = document.getElementById("btnAgregarSubtipoOperacion");
+const label=document.getElementById("modalRegistrarSubtipoOperacionLabel");
 listar();
 // Listar
 function listar() {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_documentos/listar", true);
+  http.open("GET", base_url + "subtipoOperacion/listar", true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -17,6 +17,7 @@ function listar() {
     }
   };
 }
+
  // Render
 function renderTabla(data) {
   tabla.innerHTML = "";
@@ -27,13 +28,14 @@ function renderTabla(data) {
   data.forEach((item) => {
     const row = document.createElement("tr");
     row.classList.add("text-center");
-    row.innerHTML = `
+    row.innerHTML = ` 
+      <td>${item.nombre_operacion}</td>
       <td>${item.clave}</td>
       <td>${item.nombre}</td>
-      <td>${item.aplica_sobre}</td>  
+      <td>${item.puerto}</td>  
       <td>
-        <button class="btn btn-sm btn-info" onclick="editarTipoDocumento(${item.id_tipo_documento})"><i class="fas fa-edit"></i> Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="eliminarTipoDocumento(${item.id_tipo_documento})"><i class="fas fa-trash-alt"></i> Eliminar</button>
+        <button class="btn btn-sm btn-info" onclick="editar(${item.id_subtipo})"><i class="fas fa-edit"></i> Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminar(${item.id_subtipo})"><i class="fas fa-trash-alt"></i> Eliminar</button>
       </td>
     `;
     tabla.appendChild(row);
@@ -41,38 +43,47 @@ function renderTabla(data) {
 }
 
 // Abrir modal modo Agregar
-btnAgregarTipoDocumento.addEventListener("click", () => {
+btnAgregarSubtipoOperacion.addEventListener("click", () => {
   form.reset();
-  document.getElementById("idTipoDocumento").value = "";
-  document.getElementById("modalRegistrarTipoDocumentoLabel").textContent = "Registrar Tipo de Documento";
-  // si usas un botón con id para cambiar texto, cámbialo aquí
+  document.getElementById("id").value = "";
+   
+  label.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Registrar Tipo de Documento';
+  document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
 });
 
-// Submit (registrar)
 form.addEventListener("submit", function (e) {
   e.preventDefault();
+
+  const id = (document.getElementById("id").value || "").trim();
+  const url = base_url + "subtipoOperacion/" + (id ? "actualizar" : "registrar");
+
   const http = new XMLHttpRequest();
-  http.open("POST", base_url + "tipos_documentos/registrar", true);
-  http.send(new FormData(form)); // incluye id_estatus + nombre
+  http.open("POST", url, true);
+  http.send(new FormData(form));
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-        console.log(this.responseText);
-      const res = JSON.parse(this.responseText);
-      if (res.status === "success") {
+      let res;
+      try { res = JSON.parse(this.responseText); } catch { 
+        Swal.fire("Aviso", "Respuesta inválida del servidor", "error"); 
+        return; 
+      }
+      if (res.status === true || res.status === "success") {
         modal.hide();
         form.reset();
         listar();
       }
-      Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
+      // normaliza status para Swal
+      const tipo = (res.status === true || res.status === "success") ? "success" : "error";
+      Swal.fire("Aviso", (res.msg || "").toUpperCase(), tipo);
     }
   };
 });
 
 
-function editarTipoDocumento(id) {
+function editar(id) {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_documentos/editar/" + id, true);
+  http.open("GET", base_url + "subtipoOperacion/editar/" + id, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -89,12 +100,12 @@ function editarTipoDocumento(id) {
       }
 
       // Setear campos
-      document.getElementById("idTipoDocumento").value = data.id_tipo_documento;
-      form.nombreDocumento.value    = data.nombre || "";
-      form.clave.value  = data.clave || "";
-      form.descripcionDocumento.value    = data.descripcion || "";
-      form.aplicaSobre.value  = data.aplica_sobre || ""; 
-      document.getElementById("modalRegistrarTipoDocumentoLabel").textContent = "Editar Tipo Documento";
+      document.getElementById("id").value = data.id_subtipo;
+      form.tipo_operacion_id.value    = data.tipo_operacion_id || "";
+      form.claveSubtipoOperacion.value  = data.clave || "";
+      form.nombreSubtipoOperacion.value    = data.nombre || "";
+      form.puerto_id.value  = data.puerto_arribo_default_id || ""; 
+      label.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Editar Subtipo de Documento';
       document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
       modal.show();
@@ -104,9 +115,8 @@ function editarTipoDocumento(id) {
     }
   };
 }
-
 // Eliminar
-function eliminarTipoDocumento(id) {    
+function eliminar(id) {    
   Swal.fire({
     title: "¿Estás seguro?",
     text: "Esta acción no se puede deshacer.",
@@ -117,7 +127,7 @@ function eliminarTipoDocumento(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      const url=base_url + "tipos_documentos/eliminar/" + id;
+      const url=base_url + "subtipooperacion/eliminar/" + id;
       http.open("GET", url, true);
       http.send();
       http.onreadystatechange = function () {
@@ -131,9 +141,8 @@ function eliminarTipoDocumento(id) {
     }
   });
 }
-
-const inputBuscar   = document.getElementById("buscarTipoDocumento");
-const sugerenciasEl = document.getElementById("sugerenciasTipoDocumento");
+const inputBuscar   = document.getElementById("buscarSubSubtipoOperacion");
+const sugerenciasEl = document.getElementById("sugerenciasSubtipoOperacion");
 // Buscar + sugerencias
 inputBuscar?.addEventListener("keyup", function () {
   const term = this.value.trim();
@@ -147,7 +156,7 @@ inputBuscar?.addEventListener("keyup", function () {
   }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_documentos/buscar?term=" + encodeURIComponent(term), true);
+  http.open("GET", base_url + "subtipooperacion/buscar?term=" + encodeURIComponent(term), true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {

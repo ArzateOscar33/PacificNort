@@ -166,6 +166,9 @@
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
                                         class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
                                             de Operación</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>subtipoOperacion"
+                                        class="sidebar-link"><i data-feather="refresh-cw"></i><span class="hide-menu">Tipos
+                                            de SubOperación</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
                                         class="sidebar-link"><i data-feather="repeat"></i><span class="hide-menu">Tipos
                                             de Movimiento</span></a></li>
