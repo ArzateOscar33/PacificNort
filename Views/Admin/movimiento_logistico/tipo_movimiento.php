@@ -29,9 +29,11 @@
               </select>
             </div>
             <div class="col-md-3">
-              <button href="#" id="btnAgregarDepartamento" class="btn btn-primary" data-bs-toggle="modal"
-                data-bs-target="#modalRegistrarTipoMovimiento"><i class="fas fa-plus"></i> Agregar Tipo de
-                Movimiento</button>
+            <button href="#" id="btnAgregarTipoMovimiento" class="btn btn-primary" 
+                    data-bs-toggle="modal" data-bs-target="#modalRegistrarTipoMovimiento">
+              <i class="fas fa-plus"></i> Agregar Tipo de Movimiento
+            </button>
+
             </div>
           </div>
 
@@ -98,7 +100,7 @@
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
               <i data-feather="x-circle" class="me-1"></i> Cancelar
             </button>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" id="btnSubmit" class="btn btn-primary">
               <i data-feather="check-circle" class="me-1"></i> Agregar
             </button>
           </div>

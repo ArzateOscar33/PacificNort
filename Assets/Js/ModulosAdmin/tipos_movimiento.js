@@ -18,7 +18,7 @@ document.getElementById("btnAgregarTipoMovimiento").addEventListener("click", ()
   form.reset();
   document.getElementById("id_movimiento").value = "";
   document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Registrar Tipo de Movimiento";
-  document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+  document.getElementById("btnSubmit").innerHTML =  '<i data-feather="check-circle" class="me-1"></i> Registrar';
   feather.replace();
 });
 
@@ -180,7 +180,9 @@ function editarTipoMovimiento(id) {
       form.tipo.value = data.tipo;
       form.moneda.value = data.moneda;
       form.tipo_operacion_id.value = data.tipo_operacion_id || "";
-      document.getElementById("btnSubmit").innerHTML = '<i class="fas fa-save me-1"></i> Actualizar';
+      document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Actualizar Tipo de Movimiento";
+      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i>Actualizar';
+      feather.replace();
       modal.show();
     }
   };

@@ -79,6 +79,8 @@ btnAgregar.addEventListener("click", () => {
   formPermiso.reset();
   hiddenId.value = "";
   document.getElementById("modalAsignarPermisoLabel").textContent = "Asignar Permiso de Operación";
+  document.getElementById("btnSubmit").innerHTML =  '<i data-feather="check-circle" class="me-1"></i> Registrar';
+  feather.replace();
   cargarUsuarios();           // sin seleccionado
   cargarTiposOperacion();     // sin seleccionado
 });
@@ -167,6 +169,8 @@ window.editarPermiso = function (id) {
     cargarTiposOperacion(data.tipo_operacion_id);
 
     document.getElementById("modalAsignarPermisoLabel").textContent = "Editar Permiso de Operación";
+    document.getElementById("btnSubmit").innerHTML =  '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+    feather.replace();
     modalPermiso.show();
   });
 };
