@@ -24,77 +24,109 @@ class Usuarios extends Controller
         die();
     }
 
-    public function registrar()
-    {
-        $id           = $_POST['id_usuario'] ?? '';
-        $nombre       = trim($_POST['nombre'] ?? '');
-        $apellido     = trim($_POST['apellido'] ?? '');
-        $correo       = trim($_POST['correo'] ?? '');
-        $clave        = $_POST['clave'] ?? ''; // opcional en edición
-        $telefono     = trim($_POST['telefono'] ?? '');
-        $puestoId     = $_POST['puesto_id'] ?? '';
-        $rolId        = $_POST['rol_id'] ?? '';
-        $estatus      = isset($_POST['active']) ? (int)$_POST['active'] : 1;
+public function registrar()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-        if ($nombre === '' || $apellido === '' || $correo === '' || $puestoId === '' || $rolId === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
-        }
-        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Correo no válido']); die();
-        }
+    $id           = $_POST['id_usuario'] ?? '';
+    $nombre       = trim($_POST['nombre'] ?? '');
+    $apellido     = trim($_POST['apellido'] ?? '');
+    $correo       = trim($_POST['correo'] ?? '');
+    $telefono     = trim($_POST['telefono'] ?? '');
+    $puestoId     = $_POST['puesto_id'] ?? '';
+    $rolId        = $_POST['rol_id'] ?? '';
+    $estatus      = isset($_POST['active']) ? (int)$_POST['active'] : 1;
 
-        // Derivar departamento desde puesto (blindaje de consistencia)
-        $rowDepto = $this->model->obtenerDepartamentoDePuesto($puestoId);
-        if (!$rowDepto || empty($rowDepto['departamento_id'])) {
-            echo json_encode(['status' => 'warning', 'msg' => 'El puesto no tiene departamento válido']); die();
-        }
-        $deptoId = $rowDepto['departamento_id'];
+    // Contraseñas (solo para creación o cuando el admin marca "Cambiar contraseña")
+    $claveNueva   = $_POST['nueva_clave'] ?? '';
+    $claveConf    = $_POST['confirmar_clave'] ?? '';
 
-        if ($id === '') {
-            // --------- ALTA ---------
-            if ($this->model->existeCorreo($correo)) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un usuario con ese correo']); die();
-            }
-            if ($clave === '') {
-                echo json_encode(['status' => 'warning', 'msg' => 'La contraseña es obligatoria']); die();
-            }
-            $hash = password_hash($clave, PASSWORD_BCRYPT);
-
-            $nuevoId = $this->model->registrarUsuario($nombre, $apellido, $correo, $hash, $telefono, $puestoId, $deptoId, $estatus);
-            if (!$nuevoId) { echo json_encode(['status' => 'error', 'msg' => 'Error al registrar usuario']); die(); }
-            if (!is_numeric($nuevoId)) {
-                $row = $this->model->obtenerPorCorreo($correo);
-                if (!$row || empty($row['id_usuario'])) {
-                    echo json_encode(['status' => 'error', 'msg' => 'Usuario creado pero sin ID']); die();
-                }
-                $nuevoId = $row['id_usuario'];
-            }
-            if (!$this->model->asignarRol($nuevoId, $rolId)) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Usuario creado, pero fallo al asignar rol']); die();
-            }
-            echo json_encode(['status' => 'success', 'msg' => 'Usuario y rol registrados correctamente']); die();
-
-        } else {
-            // --------- EDICIÓN ---------
-            // Correo duplicado (excluyéndome)
-            if ($this->model->existeCorreoOtro($correo, $id)) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Otro usuario ya usa ese correo']); die();
-            }
-
-            $hash = $clave !== '' ? password_hash($clave, PASSWORD_BCRYPT) : null;
-
-            $ok = $this->model->actualizarUsuario($id, $nombre, $apellido, $correo, $telefono, $puestoId, $deptoId, $estatus, $hash);
-            if (!$ok) { echo json_encode(['status' => 'error', 'msg' => 'Error al actualizar usuario']); die(); }
-
-            // Reasignar rol (simple: limpiamos y asignamos)
-            $this->model->limpiarRolesUsuario($id);
-            if (!$this->model->asignarRol($id, $rolId)) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Usuario actualizado, pero el rol no se pudo asignar']); die();
-            }
-
-            echo json_encode(['status' => 'success', 'msg' => 'Usuario actualizado correctamente']); die();
-        }
+    // ---------- Validaciones generales ----------
+    if ($nombre === '' || $apellido === '' || $correo === '' || $puestoId === '' || $rolId === '') {
+        echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
     }
+    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['status' => 'warning', 'msg' => 'Correo no válido']); die();
+    }
+
+    // Derivar departamento desde puesto (blindaje de consistencia)
+    $rowDepto = $this->model->obtenerDepartamentoDePuesto($puestoId);
+    if (!$rowDepto || empty($rowDepto['departamento_id'])) {
+        echo json_encode(['status' => 'warning', 'msg' => 'El puesto no tiene departamento válido']); die();
+    }
+    $deptoId = $rowDepto['departamento_id'];
+
+    // ---------- ALTA ----------
+    if ($id === '') {
+        if ($this->model->existeCorreo($correo)) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un usuario con ese correo']); die();
+        }
+
+        // En alta, la contraseña es obligatoria y debe coincidir
+        if ($claveNueva === '' || $claveConf === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'La contraseña es obligatoria']); die();
+        }
+        if ($claveNueva !== $claveConf) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Las contraseñas no coinciden']); die();
+        }
+        if (mb_strlen($claveNueva) < 8) {
+            echo json_encode(['status' => 'warning', 'msg' => 'La contraseña debe tener al menos 8 caracteres']); die();
+        }
+
+        $hash = password_hash($claveNueva, PASSWORD_BCRYPT);
+
+        $nuevoId = $this->model->registrarUsuario($nombre, $apellido, $correo, $hash, $telefono, $puestoId, $deptoId, $estatus);
+        if (!$nuevoId) { echo json_encode(['status' => 'error', 'msg' => 'Error al registrar usuario']); die(); }
+
+        // Si el insertar no devuelve ID, lo buscamos por correo
+        if (!is_numeric($nuevoId)) {
+            $row = $this->model->obtenerPorCorreo($correo);
+            if (!$row || empty($row['id_usuario'])) {
+                echo json_encode(['status' => 'error', 'msg' => 'Usuario creado pero sin ID']); die();
+            }
+            $nuevoId = $row['id_usuario'];
+        }
+
+        if (!$this->model->asignarRol($nuevoId, $rolId)) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Usuario creado, pero falló la asignación de rol']); die();
+        }
+
+        echo json_encode(['status' => 'success', 'msg' => 'Usuario y rol registrados correctamente']); die();
+    }
+
+    // ---------- EDICIÓN ----------
+    // Correo duplicado (excluyéndome)
+    if ($this->model->existeCorreoOtro($correo, $id)) {
+        echo json_encode(['status' => 'warning', 'msg' => 'Otro usuario ya usa ese correo']); die();
+    }
+
+    // Si el admin decidió cambiar contraseña: validar y hashear
+    $hash = null;
+    if ($claveNueva !== '' || $claveConf !== '') {
+        if ($claveNueva === '' || $claveConf === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Debes ingresar y confirmar la nueva contraseña']); die();
+        }
+        if ($claveNueva !== $claveConf) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Las contraseñas no coinciden']); die();
+        }
+        if (mb_strlen($claveNueva) < 8) {
+            echo json_encode(['status' => 'warning', 'msg' => 'La contraseña debe tener al menos 8 caracteres']); die();
+        }
+        $hash = password_hash($claveNueva, PASSWORD_BCRYPT);
+    }
+
+    $ok = $this->model->actualizarUsuario($id, $nombre, $apellido, $correo, $telefono, $puestoId, $deptoId, $estatus, $hash);
+    if (!$ok) { echo json_encode(['status' => 'error', 'msg' => 'Error al actualizar usuario']); die(); }
+
+    // Reasignar rol (simple: limpiamos y asignamos)
+    $this->model->limpiarRolesUsuario($id);
+    if (!$this->model->asignarRol($id, $rolId)) {
+        echo json_encode(['status' => 'warning', 'msg' => 'Usuario actualizado, pero el rol no se pudo asignar']); die();
+    }
+
+    echo json_encode(['status' => 'success', 'msg' => 'Usuario actualizado correctamente']); die();
+}
+
 
 
 
