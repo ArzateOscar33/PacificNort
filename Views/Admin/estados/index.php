@@ -9,41 +9,32 @@
         </div>
 
         <div class="card-body">
-          <!-- Barra superior: búsqueda + selector 25/50 + botón agregar -->
+          <!-- Fila superior: buscador + botón -->
           <div class="row g-2 align-items-center mb-3">
-            <!-- Buscador con contenedor relativo para las sugerencias -->
             <div class="col-12 col-md-8 position-relative">
-              <input
-                type="text"
-                class="form-control"
-                id="buscarEstado"
-                name="buscarEstado"
-                placeholder="Buscar Estado"
+              <input type="text" class="form-control" id="buscarEstado" name="buscarEstado" placeholder="Buscar Estado"
                 autocomplete="off">
-              <div
-                id="sugerenciasEstado"
-                class="list-group position-absolute top-100 start-0 w-100"
-                style="display:none; z-index:1000;">
-              </div>
+              <div id="sugerenciasEstado" class="list-group position-absolute top-100 start-0 w-100"
+                style="display:none; z-index:1000;"></div>
             </div>
 
-            <!-- Selector 25/50 y botón Agregar -->
-            <div class="col-12 col-md-4 d-flex flex-wrap justify-content-md-end align-items-center gap-2">
-              <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
-              <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-              </select>
-              <span class="small text-muted">por página</span>
-
-              <button
-                id="btnAgregarEstado"
-                class="btn btn-primary ms-md-2 w-100 w-md-auto"
-                data-bs-toggle="modal"
+            <!-- Botón Agregar (solo) -->
+            <div class="col-12 col-md-4   text-md-end">
+              <button id="btnAgregarEstado" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal"
                 data-bs-target="#modalRegistrarEstado">
                 <i class="fas fa-plus"></i> Agregar Estado
               </button>
             </div>
+          </div>
+
+          <!-- Selector 25/50 (igual que Ciudades) -->
+          <div class="d-flex flex-wrap justify-content-end align-items-center mb-2 gap-2">
+            <label for="perPageSelectEstados" class="mb-0 small text-muted">Mostrar</label>
+            <select id="perPageSelectEstados" class="form-control form-control-sm" style="width:auto">
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+            </select>
+            <span class="small text-muted">por página</span>
           </div>
 
           <!-- Tabla -->
@@ -69,12 +60,11 @@
   </div> <!-- /row -->
 </div> <!-- /container -->
 
-
 <?php include 'Views/Template/admin_footer.php'; ?>
 
 <!-- Modal: Crear / Editar -->
 <div class="modal fade" id="modalRegistrarEstado" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-     aria-labelledby="modalRegistrarEstadoLabel" aria-hidden="true">
+  aria-labelledby="modalRegistrarEstadoLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
 

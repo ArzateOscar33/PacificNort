@@ -7,54 +7,58 @@
           <h3 class="card-title mt-3 mb-3 text-white">Contenedores Marítimos</h3>
         </div>
 
-        <div class="card-body">
-          <!-- Barra superior: búsqueda + selector 25/50 + botón agregar -->
-          <div class="row g-2 align-items-center mb-3">
-            <!-- Buscador -->
-            <div class="col-12 col-lg-8 position-relative">
-              <input type="text" class="form-control" id="buscarContenedorMaritimo" name="buscarContenedorMaritimo"
-                placeholder="Buscar Contenedor Marítimo">
-              <div id="sugerenciasContenedores" class="list-group position-absolute top-100 start-0 w-100"
-                style="display:none; z-index:999;">
-              </div>
-            </div>
+<div class="card-body">
+  <!-- Fila superior: buscador + botón -->
+  <div class="row g-2 align-items-center mb-3">
+    <!-- Buscador -->
+    <div class="col-12 col-lg-10 position-relative">
+      <input type="text" class="form-control" id="buscarContenedorMaritimo" name="buscarContenedorMaritimo"
+             placeholder="Buscar Contenedor Marítimo" autocomplete="off">
+      <div id="sugerenciasContenedores"
+           class="list-group position-absolute top-100 start-0 w-100"
+           style="display:none; z-index:999;"></div>
+    </div>
 
-            <!-- Selector + botón -->
-            <div class="col-12 col-lg-4 d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
-              <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
-              <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-              </select>
-              <span class="small text-muted">por página</span>
+    <!-- Botón Agregar alineado a la derecha -->
+    <div class="col-12 col-lg-2 d-flex justify-content-lg-end">
+      <button id="btnAgregarContenedorMaritimo" class="btn btn-primary w-100 w-lg-auto ms-lg-2"
+              data-bs-toggle="modal" data-bs-target="#modalRegistrarContenedorMaritimo">
+        <i class="fas fa-plus"></i> Agregar Contenedor Marítimo
+      </button>
+    </div>
+  </div> <!-- /row -->
 
-              <button id="btnAgregarContenedorMaritimo" class="btn btn-primary w-100 w-lg-auto ms-lg-2"
-                data-bs-toggle="modal" data-bs-target="#modalRegistrarContenedorMaritimo">
-                <i class="fas fa-plus"></i> Agregar Contenedor Marítimo
-              </button>
-            </div>
-          </div>
+  <!-- Selector 25/50 (bloque aparte, MISMO id) -->
+  <div class="d-flex flex-wrap justify-content-end align-items-center mb-2 gap-2">
+    <label for="perPageSelect" class="mb-0 small text-muted">Mostrar</label>
+    <select id="perPageSelect" class="form-control form-control-sm" style="width:auto">
+      <option value="25" selected>25</option>
+      <option value="50">50</option>
+    </select>
+    <span class="small text-muted">por página</span>
+  </div>
 
-          <!-- Tabla -->
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-primary text-center">
-                <tr>
-                  <th>Número de Contenedor</th>
-                  <th>Tipo</th>
-                  <th>Observaciones</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tablaContenedoresMaritimos"></tbody>
-            </table>
-          </div>
+  <!-- Tabla -->
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead class="table-primary text-center">
+        <tr>
+          <th>Número de Contenedor</th>
+          <th>Tipo</th>
+          <th>Observaciones</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaContenedoresMaritimos"></tbody>
+    </table>
+  </div>
 
-          <!-- Paginación -->
-          <nav aria-label="Paginación de contenedores" class="mt-3">
-            <ul class="pagination justify-content-end" id="paginacion"></ul>
-          </nav>
-        </div>
+  <!-- Paginación -->
+  <nav aria-label="Paginación de contenedores" class="mt-3">
+    <ul class="pagination justify-content-end" id="paginacion"></ul>
+  </nav>
+</div>
+
 
       </div>
     </div>
