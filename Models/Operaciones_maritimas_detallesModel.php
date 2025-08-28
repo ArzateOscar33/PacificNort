@@ -26,14 +26,14 @@ class Operaciones_maritimas_detallesModel extends Query
         ";
         return $this->selectAll($sql);
     }
- 
- /** Sugerencias de operaciones marítimas por texto (LI, JL-0, etc.) */
-public function buscarOperacionesMaritimas(string $term, int $limit = 10): array
-{
-    $limit = max(1, (int)$limit); // sanitiza LIMIT
-    $needle = '%'.mb_strtolower($term, 'UTF-8').'%';
 
-    $sql = "
+    /** Sugerencias de operaciones marítimas por texto (LI, JL-0, etc.) */
+    public function buscarOperacionesMaritimas(string $term, int $limit = 10): array
+    {
+        $limit = max(1, (int)$limit); // sanitiza LIMIT
+        $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
+
+        $sql = "
         SELECT 
             o.id_operacion AS id,
             o.numero_operacion AS label,
@@ -51,29 +51,29 @@ public function buscarOperacionesMaritimas(string $term, int $limit = 10): array
         LIMIT $limit
     ";
 
-    $rows = $this->selectAll($sql, [$needle]);
-    return is_array($rows) ? $rows : [];
-}
+        $rows = $this->selectAll($sql, [$needle]);
+        return is_array($rows) ? $rows : [];
+    }
 
     /**
      * Sugerencias de contenedores (FÍSICOS y MARÍTIMOS) pertenecientes a una operación.
      * Filtra opcionalmente por texto (ej. FXEU, WHSU, EMCU...).
      */
-public function buscarContenedoresDeOperacion(int $operacionId, string $term = '', int $limit = 15): array
-{
-    $limit  = max(1, (int)$limit);
-    $params = [];
-    $needle = '%'.mb_strtolower($term, 'UTF-8').'%';
+    public function buscarContenedoresDeOperacion(int $operacionId, string $term = '', int $limit = 15): array
+    {
+        $limit  = max(1, (int)$limit);
+        $params = [];
+        $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
 
-    $filtroFis = '';
-    $filtroMar = '';
+        $filtroFis = '';
+        $filtroMar = '';
 
-    if ($term !== '') {
-        $filtroFis = " AND LOWER(cf.numero_ferro) LIKE ? ";
-        $filtroMar = " AND LOWER(cm.numero_contenedor) LIKE ? ";
-    }
+        if ($term !== '') {
+            $filtroFis = " AND LOWER(cf.numero_ferro) LIKE ? ";
+            $filtroMar = " AND LOWER(cm.numero_contenedor) LIKE ? ";
+        }
 
-    $sql = "
+        $sql = "
         SELECT id, label, tipo FROM (
             -- FÍSICOS
             SELECT 
@@ -101,14 +101,35 @@ public function buscarContenedoresDeOperacion(int $operacionId, string $term = '
         LIMIT $limit
     ";
 
-    // Orden de parámetros según el SQL
-    $params[] = $operacionId;
-    if ($term !== '') $params[] = $needle;
-    $params[] = $operacionId;
-    if ($term !== '') $params[] = $needle;
+        // Orden de parámetros según el SQL
+        $params[] = $operacionId;
+        if ($term !== '') $params[] = $needle;
+        $params[] = $operacionId;
+        if ($term !== '') $params[] = $needle;
 
-    $rows = $this->selectAll($sql, $params);
-    return is_array($rows) ? $rows : [];
-}
+        $rows = $this->selectAll($sql, $params);
+        return is_array($rows) ? $rows : [];
+    }
 
+    public function listarTiposEvento(): array
+    {
+        $sql = "SELECT `id_tipo_evento`,`nombre` FROM `tipos_evento_logistico` WHERE `id_tipo_operacion`=1  AND estatus=1 ORDER BY nombre ASC";
+        $rows = $this->selectAll($sql);
+        return is_array($rows) ? $rows : [];
+    }
+
+    public function registrar(array $data): int
+    {
+        $sql = "INSERT INTO eventos_logisticos (operacion_id, contenedor_operacion_id, tipo_evento_id, fecha, comentario, estatus)
+                VALUES (?, ?, ?, ?, ?, 1)";
+        $params = [
+            $data['operacion_id'],
+            $data['contenedor_operacion_id'] ?: null,
+            $data['tipo_operacion_id'],
+            $data['fecha'],
+            $data['comentario'] ?: null
+        ];
+        return $this->insertar($sql, $params);
+    }
+     
 }

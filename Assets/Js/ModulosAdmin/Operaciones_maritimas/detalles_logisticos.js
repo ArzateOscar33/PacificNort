@@ -231,6 +231,4 @@ function xhrGetDetallesLogisticos(url, cb) {
   document.addEventListener("click", (e) => {
     if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
   });
-})();
-
-  
+})();   

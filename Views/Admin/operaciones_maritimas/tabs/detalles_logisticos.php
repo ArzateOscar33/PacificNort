@@ -141,10 +141,16 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label for="tipo_evento_id" class="form-label">Tipo de evento</label>
-              <select id="tipo_evento_id" name="tipo_evento_id" class="form-control" required>
-                <option value="">Selecciona...</option>
-                <!-- se llena dinámicamente (globales + de tipo marítimo) -->
-              </select>
+  <select id="tipo_operacion_id" name="tipo_operacion_id" class="form-control">
+    <option value="">Selecciona...</option>
+    <?php if (!empty($data['tipos_evento'])): ?>
+      <?php foreach ($data['tipos_evento'] as $op): ?>
+        <option value="<?= $op['id_tipo_evento'] ?>">
+          <?= htmlspecialchars($op['nombre']) ?>
+        </option>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </select>
             </div>
 
             <div class="col-md-4">
