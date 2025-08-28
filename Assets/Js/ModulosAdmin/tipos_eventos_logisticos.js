@@ -28,10 +28,15 @@ function renderTabla(data) {
     const tr = document.createElement("tr");
     tr.classList.add("text-center");
     tr.innerHTML = `
-      <td>${t.nombre}</td> 
+      <td>${t.nombre}</td>
+      <td>${t.nombre_operacion ? t.nombre_operacion : '<span class="text-muted">Global</span>'}</td>
       <td>
-        <button class="btn btn-sm btn-info" onclick="editarTipoEvento(${t.id_tipo_evento})"><i class="fas fa-edit"></i> Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="eliminarTipoEvento(${t.id_tipo_evento})"><i class="fas fa-trash-alt"></i> Eliminar</button>
+        <button class="btn btn-sm btn-info" onclick="editarTipoEvento(${t.id_tipo_evento})">
+          <i class="fas fa-edit"></i> Editar
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="eliminarTipoEvento(${t.id_tipo_evento})">
+          <i class="fas fa-trash-alt"></i> Eliminar
+        </button>
       </td>
     `;
     tabla.appendChild(tr);
@@ -42,11 +47,32 @@ function renderTabla(data) {
 document.getElementById("btnAgregarTipoEvento")?.addEventListener("click", () => {
   form.reset();
   document.getElementById("id_tipo_evento").value = "";
+  document.getElementById("tipo_operacion_id").value = ""; // reset select
   document.getElementById("modalRegistrarTipoEventoLabel").textContent = "Registrar Tipo de Evento";
   document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
   modal.show();
 });
+
+// Editar (cargar datos)
+function editarTipoEvento(id) {
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "tipos_eventos_logisticos/editar/" + id, true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      const data = JSON.parse(this.responseText);
+      document.getElementById("id_tipo_evento").value = data.id_tipo_evento;
+      form.nombre.value = data.nombre;
+      document.getElementById("tipo_operacion_id").value = data.id_tipo_operacion ?? "";
+      document.getElementById("modalRegistrarTipoEventoLabel").textContent = "Editar Tipo de Evento";
+      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      feather.replace();
+      modal.show();
+    }
+  };
+}
+
 
 // Submit (Registrar / Actualizar)
 form?.addEventListener("submit", function (e) {
@@ -68,23 +94,7 @@ form?.addEventListener("submit", function (e) {
   };
 });
 
-// Editar (cargar datos)
-function editarTipoEvento(id) {
-  const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_eventos_logisticos/editar/" + id, true);
-  http.send();
-  http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      const data = JSON.parse(this.responseText);
-      document.getElementById("id_tipo_evento").value = data.id_tipo_evento;
-      form.nombre.value = data.nombre; 
-      document.getElementById("modalRegistrarTipoEventoLabel").textContent = "Editar Tipo de Evento";
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
-      feather.replace();
-      modal.show();
-    }
-  };
-}
+ 
 
 // Eliminar
 function eliminarTipoEvento(id) {
