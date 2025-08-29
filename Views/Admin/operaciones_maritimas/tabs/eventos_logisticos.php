@@ -5,7 +5,7 @@
         <i data-feather="file-text" class="me-1"></i> Eventos Logísticos
       </h5>
       <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos"
-              id="btnAbrirModalDetalles">
+        id="btnAbrirModalDetalles">
         <i data-feather="plus-circle" class="me-1"></i> Añadir / Editar Evento
       </button>
     </div>
@@ -20,9 +20,9 @@
           <div class="position-relative">
             <input type="hidden" id="eventosFiltroOpId">
             <input type="text" id="eventosFiltroOpNombre" class="form-control"
-                   placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
+              placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
             <div id="eventosFiltroOpSugerencias" class="list-group"
-                 style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
           <div class="form-text" id="eventosFiltroOpMeta"></div>
         </div>
@@ -34,11 +34,11 @@
             <!-- Aquí guardamos el contenedor_operacion_id para filtrar -->
             <input type="hidden" id="eventosFiltroContenedorId">
             <input type="text" id="eventosFiltroContenedorNombre" class="form-control"
-                   placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
+              placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
             <div id="eventosFiltroContenedorSugerencias" class="list-group"
-                 style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
-         
+
         </div>
 
         <!-- Buscador libre -->
@@ -73,7 +73,9 @@
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="tbodyDetallesLogisticos"><!-- filas dinámicas --></tbody>
+          <tbody id="tbodyDetallesLogisticos">
+            <!-- filas dinámicas -->
+          </tbody>
         </table>
 
         <!-- Paginación + resumen -->
@@ -105,20 +107,20 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-      <form id="formDetallesLogisticos" autocomplete="off">
+      <form id="formEventosLogisticos" autocomplete="off">
         <div class="modal-body">
-          <input type="hidden" id="id_detalles" name="id_detalles"><!-- id_evento -->
+          <input type="hidden" id="idEvento" name="idEvento" value="">
 
           <div class="row g-3 mb-2">
             <!-- Operación con sugerencias -->
             <div class="col-md-6">
               <label for="eventoOperacionNombre" class="form-label">Operación</label>
               <div class="position-relative">
-                <input type="hidden" id="eventoOperacionId" name="operacion_id">
+                <input type="hidden" id="eventoOperacionId" name="eventoOperacionId">
                 <input type="text" id="eventoOperacionNombre" class="form-control"
-                       placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off" required>
+                  placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off" required>
                 <div id="eventoOperacionSugerencias" class="list-group"
-                     style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               </div>
               <div class="form-text" id="eventoOperacionMeta"></div>
             </div>
@@ -128,11 +130,11 @@
               <label for="eventoContenedorNombre" class="form-label">Contenedor físico (Caja/Ferro)</label>
               <div class="position-relative">
                 <!-- Guardaremos directamente el contenedor_operacion_id -->
-                <input type="hidden" id="eventoContenedorOperacionId" name="contenedor_operacion_id">
+                <input type="hidden" id="eventoContenedorOperacionId" name="eventoContenedorOperacionId">
                 <input type="text" id="eventoContenedorNombre" class="form-control"
-                       placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
+                  placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
                 <div id="eventoContenedorSugerencias" class="list-group"
-                     style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               </div>
               <div class="form-text">Se listan los contenedores físicos de la operación seleccionada.</div>
             </div>
@@ -141,26 +143,29 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label for="tipo_evento_id" class="form-label">Tipo de evento</label>
-  <select id="tipo_operacion_id" name="tipo_operacion_id" class="form-control">
-    <option value="">Selecciona...</option>
-    <?php if (!empty($data['tipos_evento'])): ?>
-      <?php foreach ($data['tipos_evento'] as $op): ?>
-        <option value="<?= $op['id_tipo_evento'] ?>">
-          <?= htmlspecialchars($op['nombre']) ?>
-        </option>
-      <?php endforeach; ?>
-    <?php endif; ?>
-  </select>
+              <select id="tipoEventoId" name="tipoEventoId" class="form-control">
+                <option value="">Selecciona...</option>
+                <?php if (!empty($data['tipos_evento'])): ?>
+                <?php foreach ($data['tipos_evento'] as $op): ?>
+                <option value="<?= $op['id_tipo_evento'] ?>">
+                  <?= htmlspecialchars($op['nombre']) ?>
+                </option>
+                <?php echo $op['id_tipo_evento']?>
+                <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
             </div>
 
             <div class="col-md-4">
               <label for="fecha_evento" class="form-label">Fecha</label>
-              <input type="date" class="form-control" id="fecha_evento" name="fecha" required>
+              <input type="date" class="form-control" id="fechaEventoLogistico"
+                name="fechaEventoLogistico" required>
             </div>
 
             <div class="col-md-4">
               <label for="comentarios" class="form-label">Comentarios</label>
-              <input type="text" id="comentarios" name="comentario" class="form-control" placeholder="Opcional">
+              <input type="text" id="comentarioEventoLogistico" name="comentarioEventoLogistico"
+                class="form-control" placeholder="Opcional">
             </div>
           </div>
         </div>
@@ -170,7 +175,7 @@
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
               <i data-feather="x-circle" class="me-1"></i> Cancelar
             </button>
-            <button type="submit" class="btn btn-primary" id="btnGuardarDetalles">
+            <button type="submit" id="btnSubmitEventoLogistico" class="btn btn-primary" id="btnGuardarDetalles">
               <i data-feather="save" class="me-1"></i> Guardar
             </button>
           </div>
@@ -181,5 +186,7 @@
   </div>
 </div>
 
-<script>feather.replace();</script>
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/detalles_logisticos.js"></script>
+<script>
+  feather.replace();
+</script>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/eventos_logisticos.js"></script>

@@ -1,5 +1,5 @@
 <?php
-class Operaciones_maritimas_detallesModel extends Query
+class Operaciones_maritimas_eventosModel extends Query
 {
     public function listar()
     {
@@ -118,18 +118,74 @@ class Operaciones_maritimas_detallesModel extends Query
         return is_array($rows) ? $rows : [];
     }
 
-    public function registrar(array $data): int
+    public function registrar(array $data,int $idUsuario): int
     {
-        $sql = "INSERT INTO eventos_logisticos (operacion_id, contenedor_operacion_id, tipo_evento_id, fecha, comentario, estatus)
-                VALUES (?, ?, ?, ?, ?, 1)";
+        // Normaliza: solo uno de los dos contenedores debe ir con valor.
+        $idFisico   = !empty($data['contenedor_operacion_id']) ? (int)$data['contenedor_operacion_id'] : null;
+        $idMaritimo = !empty($data['cont_maritimo_operacion_id']) ? (int)$data['cont_maritimo_operacion_id'] : null;
+
+        if ($idFisico !== null && $idMaritimo !== null) {
+            // Si te gusta dejarlo a nivel modelo:
+            // forzar uno a NULL (o podrías lanzar una excepción y validarlo en el controlador)
+            $idMaritimo = null;
+        }
+
+        $sql = "INSERT INTO eventos_logisticos 
+                (operacion_id, contenedor_operacion_id, cont_maritimo_operacion_id, tipo_evento_id, fecha, comentario, creado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         $params = [
-            $data['operacion_id'],
-            $data['contenedor_operacion_id'] ?: null,
-            $data['tipo_operacion_id'],
-            $data['fecha'],
-            $data['comentario'] ?: null
+            (int)$data['operacion_id'],
+            $idFisico,
+            $idMaritimo,
+            (int)$data['tipo_evento_id'],
+            $data['fecha'],                           // 'YYYY-MM-DD'
+            $data['comentario'] ?? null,
+            $idUsuario ?? null
         ];
         return $this->insertar($sql, $params);
+    }
+
+    /**
+     * Actualiza un evento logístico existente.
+     * Espera keys como en registrar() + id_evento (int, req).
+     */
+    public function actualizar(array $data): bool
+    {
+        $idFisico   = !empty($data['contenedor_operacion_id']) ? (int)$data['contenedor_operacion_id'] : null;
+        $idMaritimo = !empty($data['cont_maritimo_operacion_id']) ? (int)$data['cont_maritimo_operacion_id'] : null;
+
+        if ($idFisico !== null && $idMaritimo !== null) {
+            $idMaritimo = null;
+        }
+
+        $sql = "UPDATE eventos_logisticos
+                SET operacion_id = ?, 
+                    contenedor_operacion_id = ?, 
+                    cont_maritimo_operacion_id = ?, 
+                    tipo_evento_id = ?, 
+                    fecha = ?, 
+                    comentario = ?
+                WHERE id_evento = ? AND estatus = 1";
+        $params = [
+            (int)$data['operacion_id'],
+            $idFisico,
+            $idMaritimo,
+            (int)$data['tipo_evento_id'],
+            $data['fecha'],
+            $data['comentario'] ?? null,
+            (int)$data['id_evento']
+        ];
+        return $this->save($sql, $params);
+    }
+
+    /** Opcional: para el editar() del controlador */
+    public function obtenerEvento(int $id)
+    {
+        $sql = "SELECT id_evento, operacion_id, contenedor_operacion_id, cont_maritimo_operacion_id, 
+                       tipo_evento_id, fecha, comentario
+                FROM eventos_logisticos
+                WHERE id_evento = ? AND estatus = 1";
+        return $this->select($sql, [$id]);
     }
      
 }

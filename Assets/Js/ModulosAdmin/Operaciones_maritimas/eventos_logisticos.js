@@ -2,25 +2,24 @@
   // Referencias
   const tablaDetallesLogisticos = document.getElementById("tbodyDetallesLogisticos");
   const inputBuscarDetallesLogisticos = document.getElementById("buscarDetalles"); // opcional si lo tienes
-listar();
+listarEventoLogistico();
   // LISTAR (GET)
-  function listar() {
+  function listarEventoLogistico() {
     const http = new XMLHttpRequest();
-    // Ajusta el path del controlador según tu ruta real:
-    // Ej: "operaciones_maritimas_detalles/listar"
-    http.open("GET", base_url + "operaciones_maritimas_detalles/listar", true);
+ 
+    http.open("GET", base_url + "operaciones_maritimas_eventos/listar", true);
     http.send();
     http.onreadystatechange = function () {
       if (this.readyState === 4 && this.status === 200) {
         console.log(this.responseText); // para depuración
         const data = JSON.parse(this.responseText);
-        renderTabla(data);
+        renderTablaEventoLogistico(data);
       }
     };
   }
 
   // RENDER
-  function renderTabla(data) {
+  function renderTablaEventoLogistico(data) {
     tablaDetallesLogisticos.innerHTML = "";
     if (!Array.isArray(data) || data.length === 0) {
       tablaDetallesLogisticos.innerHTML = "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
@@ -101,7 +100,7 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (term === lastTermDetallesLogisticos) return;
     lastTermDetallesLogisticos = term;
 
-    const url = base_url + "operaciones_maritimas_detalles/buscar_operaciones?term=" + encodeURIComponent(term);
+    const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
     xhrGetDetallesLogisticos(url, (rows) => {
       renderSugerenciasDetallesLogisticos(list, rows, (it) => {
         input.value = it.label;
@@ -141,7 +140,7 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (term === lastTermDetallesLogisticos) return;
     lastTermDetallesLogisticos = term;
 
-    const url = base_url + "operaciones_maritimas_detalles/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
+    const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
     xhrGetDetallesLogisticos(url, (rows) => {
       renderSugerenciasDetallesLogisticos(list, rows, (it) => {
         input.value = it.label;
@@ -178,7 +177,7 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (term === lastTermDetallesLogisticos) return;
     lastTermDetallesLogisticos = term;
 
-    const url = base_url + "operaciones_maritimas_detalles/buscar_operaciones?term=" + encodeURIComponent(term);
+    const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
     xhrGetDetallesLogisticos(url, (rows) => {
       renderSugerenciasDetallesLogisticos(list, rows, (it) => {
         input.value = it.label;
@@ -218,7 +217,7 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (term === lastTermDetallesLogisticos) return;
     lastTermDetallesLogisticos = term;
 
-    const url = base_url + "operaciones_maritimas_detalles/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
+    const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
     xhrGetDetallesLogisticos(url, (rows) => {
       renderSugerenciasDetallesLogisticos(list, rows, (it) => {
         input.value = it.label;
@@ -232,3 +231,99 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
   });
 })();   
+
+const formDetalles = document.getElementById("formEventosLogisticos");
+const modalDetalles = document.getElementById("modalDetallesLogisticos");
+const btnAgregarDetalles = document.getElementById("btnAbrirModalDetalles");
+
+// Campos del formulario
+const fldIdEventoDetallesLogisticos    = document.getElementById("idEvento");
+const fldOperacionIdDetallesLogisticos = document.getElementById("eventoOperacionId");
+const fldContenedorIdDetallesLogisticos= document.getElementById("eventoContenedorOperacionId");
+const fldTipoEventoIdDetallesLogisticos= document.getElementById("tipoEventoId");
+const fldFechaDetallesLogisticos       = document.getElementById("fechaEventoLogistico");
+const fldComentarioDetallesLogisticos  = document.getElementById("comentarioEventoLogistico");
+ 
+formDetalles.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const idEvento    = fldIdEventoDetallesLogisticos.value.trim();
+  const operacionId = fldOperacionIdDetallesLogisticos.value.trim();
+  const contenedorId= fldContenedorIdDetallesLogisticos.value.trim();
+  const tipoEventoId= fldTipoEventoIdDetallesLogisticos.value.trim();
+  const fecha       = fldFechaDetallesLogisticos.value.trim();
+  const comentario  = fldComentarioDetallesLogisticos.value.trim();
+
+  // ===== Validaciones =====
+  if (!operacionId || !tipoEventoId || !fecha) {
+    Swal.fire("Campos requeridos", "Debes seleccionar operación, tipo de evento y fecha", "warning");
+    return;
+  }
+
+  // ===== Construir FormData =====
+  const fd = new FormData();
+  if (idEvento !== "") fd.append("id_evento", idEvento);
+  fd.append("operacion_id", operacionId);
+  if (contenedorId) fd.append("contenedor_operacion_id", contenedorId); // opcional
+  fd.append("tipo_evento_id", tipoEventoId);
+  fd.append("fecha", fecha);
+  fd.append("comentario", comentario);
+
+  const url = base_url + (idEvento === "" 
+    ? "operaciones_maritimas_eventos/registrar" 
+    : "operaciones_maritimas_eventos/actualizar");
+
+  // ===== AJAX =====
+  const http = new XMLHttpRequest();
+  http.open("POST", url, true);
+  http.send(fd);
+  http.onreadystatechange = function () {
+    if (this.readyState === 4) {
+      if (this.status !== 200) {
+        console.error("Error guardar:", this.responseText);
+        Swal.fire("Error", "No se pudo guardar el evento", "error");
+        return;
+      }
+
+      let res;
+      try {
+        res = JSON.parse(this.responseText);
+      } catch (e) {
+        console.log(this.responseText);
+        console.error("JSON inválido:", this.responseText);
+        Swal.fire("Error", "Respuesta no válida del servidor", "error");
+        return;
+      }
+
+      Swal.fire(
+        res.status === "success" ? "Éxito" : "Atención",
+        res.msg,
+        res.status
+      );
+
+      if (res.status === "success") {
+        formDetalles.reset();
+        fldIdEventoDetallesLogisticos.value = "";
+        bootstrap.Modal.getInstance(modalDetalles).hide();
+        listarEventoLogistico();
+         
+
+        // Reset del modal
+        document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
+        const btnSubmit = formDetalles.querySelector('button[type="submit"]');
+        btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+        feather.replace();
+      }
+    }
+  };
+});
+
+// ===== Botón Agregar =====
+btnAgregarDetalles.addEventListener("click", () => {
+  formDetalles.reset();
+  fldIdEventoDetallesLogisticos.value = "";
+  document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
+  const btnSubmit = formDetalles.querySelector('button[type="submit"]');
+  btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+  feather.replace();
+});

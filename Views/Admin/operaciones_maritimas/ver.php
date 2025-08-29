@@ -40,7 +40,7 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
  
         <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#detalles-logisticos">
-            <i data-feather="file-text"></i> Detalles Logísticos
+            <i data-feather="file-text"></i> Eventos Logísticos
         </a>
         </li>
     </ul>
@@ -73,7 +73,7 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
         </div> 
 
         <div class="tab-pane fade" id="detalles-logisticos" role="tabpanel" aria-labelledby="detalles-logisticos-tab">
-            <?php include 'tabs/detalles_logisticos.php'; ?>
+            <?php include 'tabs/eventos_logisticos.php'; ?>
         </div> 
     </div>
 </div>
