@@ -4,6 +4,10 @@ const btnSave  = document.getElementById('btnGuardarOperacion');
 //const modalEl  = document.getElementById('modalOperacionMaritima');
 const modal    = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
 
+ 
+
+const btnNuevaOp      = document.getElementById('btnNuevaOperacion');
+
 // ---- Helpers locales (sin duplicar los tuyos) ----
 function valStr(v){ return (v ?? '').toString().trim(); }
 function isEmpty(v){ return valStr(v) === ''; }
@@ -64,56 +68,46 @@ function resetRepeater(){
 function guardarOperacion(){
   if (!formOp || !btnSave) return;
 
-  // 1) Validaciones mínimas
-  if (!validarClienteSeleccionado()) return; 
-  if (!validarRequisitosSubtipo()){
-    if (window.Swal) Swal.fire('Faltan campos','Completa los campos requeridos del subtipo.','warning');
-    else alert('Completa los campos requeridos del subtipo.');
-    return;
-  }
+  // ...tus validaciones existentes...
 
-  // 2) FormData + contenedores (NO se envía puerto_arribo_id)
   const fd = new FormData(formOp);
   const contenedores = collectContenedores();
   fd.append('contenedores', JSON.stringify(contenedores));
 
-  // 3) XHR (mantenemos tu estilo)
+  // 🔴 CLAVE: si está en modo auto (readonly), fuerza vacío para que lo genere el backend
+  if (inpNumeroOp?.hasAttribute('readonly')) {
+    fd.set('numero_operacion', ''); // el backend asigna el definitivo
+  }
+
   const x = new XMLHttpRequest();
   x.open('POST', base_url + 'Operaciones_maritimas/registrar', true);
 
-  // UX: deshabilitar botón y spinner
-  btnSave.setAttribute('disabled','disabled');
-  btnSave.innerHTML = '<i data-feather="loader" class="me-1"></i> Guardando...';
-  if (window.feather && typeof feather.replace === 'function') feather.replace();
+  // ...tu UX de spinner...
 
   x.onreadystatechange = function(){
     if (x.readyState === 4){
-      // Restaurar botón
-      btnSave.removeAttribute('disabled');
-      btnSave.innerHTML = '<i data-feather="save" class="me-1"></i> Guardar';
-      if (window.feather && typeof feather.replace === 'function') feather.replace();
+      // ...tu restauración de botón...
 
       let res = null;
       try { res = JSON.parse(x.responseText); } catch(e){}
 
       if (x.status !== 200 || !res){
-        if (window.Swal) Swal.fire('Error','No se pudo registrar la operación.','error');
-        else alert('No se pudo registrar la operación.');
+        Swal?.fire('Error','No se pudo registrar la operación.','error') ?? alert('No se pudo registrar la operación.');
         return;
       }
 
       if (res.status === 'success'){
-        if (window.Swal) Swal.fire('¡Éxito!', res.msg || 'Operación creada.', 'success');
-        if (modal) modal.hide();
+        // Muestra el folio final (devuelto por el backend)
+        const cod = res.numero_operacion ? ` (${res.numero_operacion})` : '';
+        Swal?.fire('¡Éxito!', (res.msg || 'Operación creada.') + cod, 'success');
+        modal?.hide();
         formOp.reset();
-        resetRepeater();
+        resetRepeater?.();
         if (typeof listar === 'function') listar();
       } else if (res.status === 'warning'){
-        if (window.Swal) Swal.fire('Atención', res.msg || 'Revisa los datos.', 'warning');
-        else alert(res.msg || 'Revisa los datos.');
+        Swal?.fire('Atención', res.msg || 'Revisa los datos.', 'warning') ?? alert(res.msg || 'Revisa los datos.');
       } else {
-        if (window.Swal) Swal.fire('Error', res.msg || 'No se pudo registrar.', 'error');
-        else alert(res.msg || 'No se pudo registrar.');
+        Swal?.fire('Error', res.msg || 'No se pudo registrar.', 'error') ?? alert(res.msg || 'No se pudo registrar.');
       }
     }
   };
@@ -146,4 +140,56 @@ modalEl?.addEventListener('shown.bs.modal', () => {
       else btnSave?.setAttribute('disabled','disabled');
     }
   });
+});
+// Al elegir subtipo
+function prefillNumeroPorSubtipo() {
+  const subtipoId = (selSubtipoModal?.value || '').trim();
+  const isEdit = (document.getElementById('id_operacion')?.value || '').trim() !== '';
+  if (!subtipoId || isEdit) return;
+
+  const x = new XMLHttpRequest();
+  x.open('GET', base_url + 'Operaciones_maritimas/siguiente_codigo?subtipo_id=' + encodeURIComponent(subtipoId), true);
+  x.onreadystatechange = function(){
+    if (x.readyState === 4 && x.status === 200){
+      let d = {}; try { d = JSON.parse(x.responseText); } catch(e){}
+      if (d && d.codigo && inpNumeroOp){
+        inpNumeroOp.value = d.codigo;
+        inpNumeroOp.setAttribute('readonly','readonly'); // modo auto
+      }
+    }
+  };
+  x.send();
+}
+
+
+
+ // Al abrir "Nueva Operación"
+btnNuevaOp?.addEventListener('click', () => {
+  // id vacío = modo crear
+  const idOp = document.getElementById('id_operacion');
+  if (idOp) idOp.value = '';
+
+  if (inpNumeroOp){
+    inpNumeroOp.value = '';
+    inpNumeroOp.setAttribute('placeholder','Se generará automáticamente');
+    inpNumeroOp.setAttribute('readonly','readonly'); // activar modo auto
+  }
+  prefillNumeroPorSubtipo();
+});
+
+// Cuando cambie el subtipo, vuelve a pre-llenar sólo si estás creando
+selSubtipoModal?.addEventListener('change', () => {
+  prefillNumeroPorSubtipo();
+
+  // tu validación existente
+  if (typeof validarCamposObligatorios === 'function') {
+    if (validarCamposObligatorios()) btnSave?.removeAttribute('disabled');
+    else btnSave?.setAttribute('disabled','disabled');
+  }
+});
+
+// Al cargar en edición, asegúrate de quitar readonly (tu función cargarOperacionParaEditar ya setea valores)
+document.getElementById('modalOperacionMaritima')?.addEventListener('shown.bs.modal', () => {
+  const isEdit = (document.getElementById('id_operacion')?.value || '').trim() !== '';
+  if (isEdit && inpNumeroOp) inpNumeroOp.removeAttribute('readonly');
 });

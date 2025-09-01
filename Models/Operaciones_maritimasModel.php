@@ -171,34 +171,50 @@ class Operaciones_maritimasModel extends Query
      * @param int        $usuarioId
      * @return array     ['status'=>'success','id_operacion'=>X] | ['status'=>'error','msg'=>...]
      */
-    public function insertarOperacion(array $op, array $contenedores, int $usuarioId): array
-    {
-        try {
-            // Iniciar transacción
-            $this->save("START TRANSACTION", []);
+public function insertarOperacion(array $op, array $contenedores, int $usuarioId): array
+{
+    try {
+        // =====================================================
+        // 0) Generar número de operación si viene vacío (ATÓMICO)
+        //    Lo hacemos ANTES de la transacción principal para
+        //    evitar anidar transacciones. El método interno usa
+        //    GET_LOCK + MAX(...) y resuelve concurrencia.
+        // =====================================================
+        if (empty($op['numero_operacion'])) {
+            $codigo = $this->generarCodigoAtomic((int)$op['subtipo_operacion_id']);
+            if (!$codigo) {
+                return ['status' => 'error', 'msg' => 'No se pudo generar el folio'];
+            }
+            $op['numero_operacion'] = $codigo;
+        }
 
-            // 1) Validar subtipo y flags
-            $st = $this->getSubtipo((int)$op['subtipo_operacion_id']);
-            if (!$st) {
-                $this->save("ROLLBACK", []);
-                return ['status'=>'error','msg'=>'Subtipo inválido'];
-            }
-            if ((int)$st['requiere_naviera'] === 1 && empty($op['naviera_id'])) {
-                $this->save("ROLLBACK", []);
-                return ['status'=>'warning','msg'=>'Selecciona una naviera'];
-            }
-            if ((int)$st['requiere_forwarder'] === 1 && empty($op['forwarder_id'])) {
-                $this->save("ROLLBACK", []);
-                return ['status'=>'warning','msg'=>'Selecciona un forwarder'];
-            }
+        // =====================================================
+        // 1) Transacción principal de inserción
+        // =====================================================
+        $this->save("START TRANSACTION", []);
 
-            // 2) Insert en operaciones
-            $sqlOp = "INSERT INTO operaciones
+        // 1.1) Validaciones de subtipo y flags (como ya tenías)
+        $st = $this->getSubtipo((int)$op['subtipo_operacion_id']);
+        if (!$st) {
+            $this->save("ROLLBACK", []);
+            return ['status' => 'error', 'msg' => 'Subtipo inválido'];
+        }
+        if ((int)$st['requiere_naviera'] === 1 && empty($op['naviera_id'])) {
+            $this->save("ROLLBACK", []);
+            return ['status' => 'warning', 'msg' => 'Selecciona una naviera'];
+        }
+        if ((int)$st['requiere_forwarder'] === 1 && empty($op['forwarder_id'])) {
+            $this->save("ROLLBACK", []);
+            return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
+        }
+
+        // 1.2) Insert principal en operaciones
+        $sqlOp = "INSERT INTO operaciones
             (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
-            cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
+             cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
-            $paramsOp = [
-            $op['numero_operacion'] ?? null,
+        $paramsOp = [
+            $op['numero_operacion'],
             (int)$op['tipo_operacion_id'],
             (int)$op['subtipo_operacion_id'],
             $op['etd'] ?? null,
@@ -210,63 +226,71 @@ class Operaciones_maritimasModel extends Query
             !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
             !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null,
             $op['notas'] ?? null,
-            ];
-            $opId = (int)$this->insertar($sqlOp, $paramsOp);
-            if ($opId <= 0) {
-                $this->save("ROLLBACK", []);
-                return ['status'=>'error','msg'=>'No se pudo guardar la operación'];
-            }
+        ];
 
-            // 3) Contenedores (alta en catálogo si hace falta + enlace)
-            if (!empty($contenedores)) {
-                $vistos = [];
-                foreach ($contenedores as $c) {
-                    $cid  = isset($c['id']) ? (int)$c['id'] : 0;
-                    $cnum = trim($c['numero'] ?? '');
+        $opId = (int)$this->insertar($sqlOp, $paramsOp);
+        if ($opId <= 0) {
+            $this->save("ROLLBACK", []);
+            return ['status' => 'error', 'msg' => 'No se pudo guardar la operación'];
+        }
 
-                    if ($cid <= 0 && $cnum === '') continue;
+        // 1.3) Contenedores (alta en catálogo si hace falta + relación)
+        if (!empty($contenedores)) {
+            $vistos = [];
+            foreach ($contenedores as $c) {
+                $cid  = isset($c['id']) ? (int)$c['id'] : 0;
+                $cnum = trim($c['numero'] ?? '');
 
-                    $key = $cid > 0 ? 'id:'.$cid : 'num:'.mb_strtolower($cnum,'UTF-8');
-                    if (isset($vistos[$key])) continue;
-                    $vistos[$key] = true;
+                if ($cid <= 0 && $cnum === '') continue;
+
+                $key = $cid > 0 ? 'id:' . $cid : 'num:' . mb_strtolower($cnum, 'UTF-8');
+                if (isset($vistos[$key])) continue;
+                $vistos[$key] = true;
+
+                if ($cid <= 0) {
+                    $found = $this->findContenedorByNumero($cnum);
+                    if ($found) $cid = (int)$found['id_contenedor_maritimo'];
+                    else        $cid = (int)$this->createContenedor($cnum);
 
                     if ($cid <= 0) {
-                        $found = $this->findContenedorByNumero($cnum);
-                        if ($found) $cid = (int)$found['id_contenedor_maritimo'];
-                        else        $cid = (int)$this->createContenedor($cnum);
-                        if ($cid <= 0) {
-                            $this->save("ROLLBACK", []);
-                            return ['status'=>'error','msg'=>"No se pudo crear el contenedor: {$cnum}"];
-                        }
-                    }
-
-                    $linkId = $this->linkContenedorOperacion($opId, $cid);
-                    if ($linkId <= 0) {
                         $this->save("ROLLBACK", []);
-                        return ['status'=>'error','msg'=>'No se pudo relacionar contenedor con la operación'];
+                        return ['status' => 'error', 'msg' => "No se pudo crear el contenedor: {$cnum}"];
                     }
                 }
+
+                $linkId = $this->linkContenedorOperacion($opId, $cid);
+                if ($linkId <= 0) {
+                    $this->save("ROLLBACK", []);
+                    return ['status' => 'error', 'msg' => 'No se pudo relacionar contenedor con la operación'];
+                }
             }
-
-            // (Se eliminó la lógica de movimientos_logisticos)
-
-            // 4) Log de creación
-            $logId = $this->crearLog($opId, $usuarioId, 'creacion', 'Operación creada');
-            if ($logId <= 0) {
-                $this->save("ROLLBACK", []);
-                return ['status'=>'error','msg'=>'No se pudo registrar la bitácora de creación'];
-            }
-
-            // Commit
-            $this->save("COMMIT", []);
-            return ['status'=>'success','msg'=>'Operación creada','id_operacion'=>$opId];
-
-        } catch (\Throwable $ex) {
-            $this->save("ROLLBACK", []);
-            error_log("insertarOperacion error: ".$ex->getMessage());
-            return ['status'=>'error','msg'=>'Error inesperado al guardar'];
         }
+
+        // 1.4) Bitácora
+        $logId = $this->crearLog($opId, $usuarioId, 'creacion', 'Operación creada');
+        if ($logId <= 0) {
+            $this->save("ROLLBACK", []);
+            return ['status' => 'error', 'msg' => 'No se pudo registrar la bitácora de creación'];
+        }
+
+        // 1.5) Commit
+        $this->save("COMMIT", []);
+
+        return [
+            'status'           => 'success',
+            'msg'              => 'Operación creada',
+            'id_operacion'     => $opId,
+            'numero_operacion' => $op['numero_operacion'], // <- útil para mostrar al usuario
+        ];
+
+    } catch (\Throwable $ex) {
+        // Cerrar transacción si quedó abierta
+        try { $this->save("ROLLBACK", []); } catch (\Throwable $e2) {}
+        error_log("insertarOperacion error: " . $ex->getMessage());
+        return ['status' => 'error', 'msg' => 'Error inesperado al guardar'];
     }
+}
+
 
     /* =========================
        === LECTURAS PARA EDIT ===
@@ -496,5 +520,81 @@ public function buscarShippers(string $term): array {
           LIMIT 10";
   return $this->selectAll($sql, [$like]) ?: [];
 }
+
+
+// 1) Si tienes prefijo en la BD:
+public function getPrefijoSubtipo(int $subtipoId): ?string {
+  $row = $this->select("SELECT prefijo_codigo FROM subtipos_operacion WHERE id_subtipo=? LIMIT 1", [$subtipoId]);
+  $p = $row ? trim((string)$row['prefijo_codigo']) : '';
+  return $p !== '' ? $p : null;
+}
+
+ 
+
+private function lpadNumero(int $n): string {
+  return str_pad((string)$n, ($n < 100 ? 2 : strlen((string)$n)), '0', STR_PAD_LEFT);
+}
+
+/**
+ * Obtiene preview rápido (SIN candado). Útil para autollenar el input al elegir subtipo.
+ */
+public function previewCodigoSubtipo(int $subtipoId): ?array {
+  $pref = $this->getPrefijoSubtipo($subtipoId);
+  if (!$pref) return null;
+
+  $row = $this->select("
+    SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion,'-',-1) AS UNSIGNED)), 0) AS maxn
+    FROM operaciones
+    WHERE tipo_operacion_id = 1 AND subtipo_operacion_id = ?
+  ", [$subtipoId]);
+
+  $next = (int)($row['maxn'] ?? 0) + 1;
+  return [
+    'prefijo' => $pref,
+    'numero'  => $next,
+    'codigo'  => $pref . '-' . $this->lpadNumero($next),
+  ];
+}
+
+/**
+ * Calcula y fija el código de manera **atómica** (con candado) SIN tabla de folios.
+ */
+public function generarCodigoAtomic(int $subtipoId): ?string {
+  try {
+    $this->save("START TRANSACTION", []);
+
+    $lockKey = "folio_marit_" . (int)$subtipoId;
+    $got = $this->select("SELECT GET_LOCK(?, 5) AS ok", [$lockKey]);
+    if ((int)($got['ok'] ?? 0) !== 1) { $this->save("ROLLBACK", []); return null; }
+
+    // Solo desde la BD
+    $pref = $this->getPrefijoSubtipo($subtipoId);
+    if (!$pref) {
+      $this->select("SELECT RELEASE_LOCK(?)", [$lockKey]);
+      $this->save("ROLLBACK", []);
+      return null;
+    }
+
+    $row = $this->select("
+      SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion,'-',-1) AS UNSIGNED)), 0) AS maxn
+      FROM operaciones
+      WHERE tipo_operacion_id = 1 AND subtipo_operacion_id = ?
+      FOR UPDATE
+    ", [$subtipoId]);
+
+    $next = (int)($row['maxn'] ?? 0) + 1;
+    $codigo = $pref . '-' . $this->lpadNumero($next);
+
+    $this->select("SELECT RELEASE_LOCK(?)", [$lockKey]);
+    $this->save("COMMIT", []);
+    return $codigo;
+
+  } catch (\Throwable $e) {
+    try { $this->select("SELECT RELEASE_LOCK(?)", ["folio_marit_" . (int)$subtipoId]); } catch (\Throwable $e2) {}
+    $this->save("ROLLBACK", []);
+    return null;
+  }
+}
+
 
 }

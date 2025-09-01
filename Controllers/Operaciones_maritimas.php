@@ -302,5 +302,15 @@ public function buscar_shippers() {
   echo json_encode($term === '' ? [] : $this->model->buscarShippers($term), JSON_UNESCAPED_UNICODE);
   die();
 }
+public function siguiente_codigo() {
+  header('Content-Type: application/json; charset=UTF-8');
+  $subtipoId = (int)($_GET['subtipo_id'] ?? 0);
+  if ($subtipoId <= 0) { echo json_encode([]); die(); }
+
+  $prev = $this->model->previewCodigoSubtipo($subtipoId);
+  echo json_encode($prev ?: []);
+  die();
+}
+
 
 }
