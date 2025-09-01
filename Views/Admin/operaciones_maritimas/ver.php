@@ -8,13 +8,13 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
 
     <ul class="nav nav-tabs" id="operacionTabs" role="tablist">
         <li class="nav-item">
-            <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true">Resumen</a>
+            <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true"><i data-feather="bar-chart"></i> Resumen</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false">Crear Operación</a>
+            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="activity"></i> Operaciones</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false">Contenedores En Operacion</a>
+            <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false"><i data-feather="codesandbox"></i>Contenedores En Operacion</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="costos-tab"
@@ -22,7 +22,7 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
             href="#costos"
             role="tab"
             aria-controls="costos"
-            aria-selected="false">Costos Contenedor</a>
+            aria-selected="false"><i data-feather="dollar-sign"></i>Costos Contenedor</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="costos_operacion-tab"
@@ -30,17 +30,17 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
             href="#costos_operacion"
             role="tab"
             aria-controls="costos_operacion"
-            aria-selected="false">Costos por Operación</a>
+            aria-selected="false"><i data-feather="dollar-sign"></i>Costos por Operación</a>
         </li>
  
         <li class="nav-item">
-            <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false">Documentos</a>
+            <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false"><i data-feather="file-plus"></i>Documentos</a>
         </li>
  
  
         <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#detalles-logisticos">
-            <i data-feather="file-text"></i> Eventos Logísticos
+              <i data-feather="calendar"></i>Eventos Logísticos
         </a>
         </li>
     </ul>

@@ -183,7 +183,7 @@
     let start=Math.max(1,page-2), end=Math.min(totalPages,start+4); start=Math.max(1,end-4);
     let html = `
       <li class="page-item ${page===1?"disabled":""}">
-        <a class="page-link" href="#" data-page="${page-1}">Anterior</a>
+        <a class="page-link" href="#" data-page="${page-1}">«</a>
       </li>`;
     for (let p=start; p<=end; p++){
       html += `
@@ -193,7 +193,7 @@
     }
     html += `
       <li class="page-item ${page===totalPages?"disabled":""}">
-        <a class="page-link" href="#" data-page="${page+1}">Siguiente</a>
+        <a class="page-link" href="#" data-page="${page+1}">»</a>
       </li>`;
     costosOperacionPaginacion.innerHTML = html;
 

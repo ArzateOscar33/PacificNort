@@ -199,7 +199,7 @@ function renderPaginacionCostosContenedor(meta){
 
   let html = `
     <li class="page-item ${page === 1 ? "disabled" : ""}">
-      <a class="page-link" href="#" data-page="${page - 1}">Anterior</a>
+      <a class="page-link" href="#" data-page="${page - 1}">«</a>
     </li>
   `;
   for (let p = start; p <= end; p++){
@@ -211,7 +211,7 @@ function renderPaginacionCostosContenedor(meta){
   }
   html += `
     <li class="page-item ${page === totalPages ? "disabled" : ""}">
-      <a class="page-link" href="#" data-page="${page + 1}">Siguiente</a>
+      <a class="page-link" href="#" data-page="${page + 1}">»</a>
     </li>
   `;
 

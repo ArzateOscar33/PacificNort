@@ -178,7 +178,7 @@ function renderTabla(data){
       
       <td>${safe(item.estatus)}</td>
       <td> 
-        <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${safe(item.id_operacion)}" title="Editar"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-outline-secondary me-1 btn-edit" data-id="${safe(item.id_operacion)}" title="Editar"><i data-feather="edit"></i></button>
       </td> 
     `;
     tabla.appendChild(tr);

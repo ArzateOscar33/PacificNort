@@ -42,8 +42,7 @@
           <th>Cliente</th>
           <th>Bultos</th>
           <th>ETA</th>
-          <th>ETD</th>
-          <th>Arribo SD</th>
+          <th>ETD</th> 
           <th>Shipper</th>
           <th>Acciones</th>
         </tr>

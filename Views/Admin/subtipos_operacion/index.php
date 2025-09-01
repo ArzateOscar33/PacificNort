@@ -29,6 +29,7 @@
                                     <th>Tipo de Operacion</th>
                                     <th>Clave</th>
                                     <th>Nombre</th>
+                                    <th>Prefijo</th>
                                     <th>Puerto</th> 
                                     <th>Acciones</th>
                                 </tr>
@@ -84,6 +85,12 @@
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Nombre del Subtipo de Operacion</label>
                         <input type="text" name="nombreSubtipoOperacion"  id="nombreSubtipoOperacion" class="form-control" placeholder=" " required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="nombre_operacion" class="form-label">Prefijo </label>
+                        <input type="text" name="prefijo_codigo"  id="prefijo_codigo" class="form-control" placeholder=" " >
+        
                     </div>
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Puerto </label>

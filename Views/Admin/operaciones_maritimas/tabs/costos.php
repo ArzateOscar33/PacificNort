@@ -58,7 +58,7 @@
 
       <div id="metaResumenCostos" class="text-muted small">Mostrando 0–0 de 0</div>
 
-      <nav>
+      <nav class="d-flex justify-content-end" aria-label="Paginación de costos">
         <ul id="paginacionCostos" class="pagination pagination-sm mb-0"></ul>
       </nav>
     </div>

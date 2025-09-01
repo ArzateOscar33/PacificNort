@@ -46,20 +46,17 @@ function renderTablaCont(data){
       
       <td>${safeCont(item.eta)}</td>
       <td>${safeCont(item.etd)}</td>
-      <td>${safeCont(item.arribo_sd)}</td>
+      
       <td>${safeCont(item.shipper)}</td>
       <td>
         <button 
-          class="btn btn-sm btn-outline-secondary btn-edit-contenedor" 
+          class="btn btn-sm btn-outline-secondary me-1 btn-edit-contenedor" 
           title="Editar"
           data-row-id="${safeCont(item.row_id)}"
           data-tipo="${safeCont(item.tipo)}"
           data-operacion-id="${safeCont(item.id_operacion)}">
           <i data-feather="edit"></i>
-       </button>
-        <button class="btn btn-sm btn-outline-danger" title="Eliminar">
-          <i data-feather="x"></i>
-        </button>
+       </button> 
       </td>
     `;
     tablaContenedores.appendChild(tr);

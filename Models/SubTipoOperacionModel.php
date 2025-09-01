@@ -18,7 +18,7 @@ class SubTipoOperacionModel extends Query
     }
     public function getSubTiposOperacion()
     {
-        $sql = "SELECT st.id_subtipo,st.clave,st.nombre,tp.nombre_operacion,tp.id_tipo_operacion,tp.nombre_operacion,pu.nombre as puerto
+        $sql = "SELECT st.id_subtipo,st.clave,st.nombre,tp.nombre_operacion,tp.id_tipo_operacion,tp.nombre_operacion,pu.nombre as puerto,st.prefijo_codigo as prefijo
                 FROM subtipos_operacion st
                 LEFT JOIN tipos_operacion tp ON tp.id_tipo_operacion = st.tipo_operacion_id
                 LEFT JOIN puertos pu ON pu.id_puerto = st.puerto_arribo_default_id
@@ -57,25 +57,30 @@ class SubTipoOperacionModel extends Query
     }
 
 
-    public function registrarSubTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id)
-    {
-        $sql = "INSERT INTO subtipos_operacion (tipo_operacion_id,clave,nombre,puerto_arribo_default_id, estatus) VALUES (?,?,?,?,1)";
-        return $this->insertar($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id]);
-    }
+public function registrarSubTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo = null)
+{
+    $sql = "INSERT INTO subtipos_operacion 
+            (tipo_operacion_id, clave, nombre, puerto_arribo_default_id, prefijo_codigo, estatus) 
+            VALUES (?,?,?,?,?,1)";
+    return $this->insertar($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo]);
+}
 
-    public function getSubtipoOperacion($id)
-    {
-        $sql = "SELECT id_subtipo,tipo_operacion_id,clave,nombre,puerto_arribo_default_id
-                FROM subtipos_operacion
-                WHERE id_subtipo = ? AND estatus = 1";
-        return $this->select($sql, [$id]);
-    }
+public function getSubtipoOperacion($id)
+{
+    $sql = "SELECT id_subtipo,tipo_operacion_id,clave,nombre,puerto_arribo_default_id,prefijo_codigo
+            FROM subtipos_operacion
+            WHERE id_subtipo = ? AND estatus = 1";
+    return $this->select($sql, [$id]);
+}
 
-    public function actualizarTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $id)
-    {
-        $sql = "UPDATE subtipos_operacion SET tipo_operacion_id = ?, clave = ?, nombre = ?, puerto_arribo_default_id = ? WHERE id_subtipo = ?";
-        return $this->save($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $id]);
-    }
+public function actualizarTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo, $id)
+{
+    $sql = "UPDATE subtipos_operacion 
+            SET tipo_operacion_id = ?, clave = ?, nombre = ?, puerto_arribo_default_id = ?, prefijo_codigo = ?
+            WHERE id_subtipo = ?";
+    return $this->save($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo, $id]);
+}
+
     public function eliminarSubtipoOperacion($id)
     {
         $sql = "UPDATE subtipos_operacion SET estatus = 0 WHERE id_subtipo = ?";
@@ -112,7 +117,17 @@ class SubTipoOperacionModel extends Query
         return $this->selectAll($sql, [$like, $like, $like, $like]);
     }
   
-     
+ public function existePrefijo($prefijo, $excluirId = null)
+{
+    $sql = "SELECT id_subtipo FROM subtipos_operacion 
+            WHERE estatus = 1 AND LOWER(prefijo_codigo) = LOWER(?)";
+    $params = [$prefijo];
+    if (!empty($excluirId)) {
+        $sql .= " AND id_subtipo <> ?";
+        $params[] = $excluirId;
+    }
+    return $this->select($sql, $params);
+}
     /*
 
 

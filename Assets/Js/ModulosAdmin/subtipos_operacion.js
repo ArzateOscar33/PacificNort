@@ -32,6 +32,7 @@ function renderTabla(data) {
       <td>${item.nombre_operacion}</td>
       <td>${item.clave}</td>
       <td>${item.nombre}</td>
+      <td>${item.prefijo}</td>
       <td>${item.puerto}</td>  
       <td>
         <button class="btn btn-sm btn-info" onclick="editar(${item.id_subtipo})"><i class="fas fa-edit"></i> Editar</button>
@@ -65,6 +66,7 @@ form.addEventListener("submit", function (e) {
     if (this.readyState === 4 && this.status === 200) {
       let res;
       try { res = JSON.parse(this.responseText); } catch { 
+        console.log(this.responseText);
         Swal.fire("Aviso", "Respuesta inválida del servidor", "error"); 
         return; 
       }
@@ -105,6 +107,7 @@ function editar(id) {
       form.claveSubtipoOperacion.value  = data.clave || "";
       form.nombreSubtipoOperacion.value    = data.nombre || "";
       form.puerto_id.value  = data.puerto_arribo_default_id || ""; 
+      form.prefijo_codigo.value = data.prefijo_codigo || "";
       label.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Editar Subtipo de Documento';
       document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
