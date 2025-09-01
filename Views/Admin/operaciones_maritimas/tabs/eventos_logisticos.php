@@ -67,8 +67,8 @@
             <tr class="text-center">
               <th>Evento</th>
               <th>Fecha</th>
-              <th>Operación</th>
-              <th>Contenedor (Caja/Ferro)</th>
+              <th>Operación</th> 
+              <th>Contenedor</th> 
               <th>Comentarios</th>
               <th>Acciones</th>
             </tr>
@@ -110,7 +110,7 @@
       <form id="formEventosLogisticos" autocomplete="off">
         <div class="modal-body">
           <input type="hidden" id="idEvento" name="idEvento" value="">
-
+          <input type="hidden" id="eventoContenedorTipo">
           <div class="row g-3 mb-2">
             <!-- Operación con sugerencias -->
             <div class="col-md-6">

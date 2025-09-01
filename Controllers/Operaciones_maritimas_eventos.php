@@ -9,12 +9,30 @@ class Operaciones_maritimas_eventos extends Controller
         }
     }
 
-    public function listar()
-    {
-        $data = $this->model->listar();
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        die();
-    }
+public function listar()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    // Parámetros opcionales (filtros + paginado)
+    $page    = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $perPage = isset($_GET['per_page']) ? min(100, max(1, (int)$_GET['per_page'])) : 10;
+
+    $opId   = (isset($_GET['op_id'])   && $_GET['op_id']   !== '') ? (int)$_GET['op_id']   : null;
+    $contId = (isset($_GET['cont_id']) && $_GET['cont_id'] !== '') ? (int)$_GET['cont_id'] : null;
+    $q      = isset($_GET['q']) ? trim($_GET['q']) : '';
+
+    // Llama al modelo (ya ordena por Operación, Contenedor, Fecha DESC)
+    $res = $this->model->listarPaginado($page, $perPage, $opId, $contId, $q);
+
+    echo json_encode([
+        'data'     => $res['rows'],
+        'total'    => (int)$res['total'],
+        'page'     => $page,
+        'per_page' => $perPage
+    ], JSON_UNESCAPED_UNICODE);
+    die();
+}
+
 
     /** GET ?term=LI */
     public function buscar_operaciones()

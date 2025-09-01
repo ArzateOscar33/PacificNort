@@ -27,31 +27,28 @@ class Operaciones_maritimas_eventosModel extends Query
         return $this->selectAll($sql);
     }
 
-    public function listarPaginado(int $page, int $perPage, ?int $opId, ?int $contId, string $q = ''): array
+public function listarPaginado(int $page, int $perPage, ?int $opId = null, ?int $contId = null, string $q = ''): array
 {
     $perPage = min(100, max(1, $perPage));
     $offset  = max(0, ($page - 1) * $perPage);
 
-    $where   = [];
-    $params  = [];
-
-    // Base: activos y marítimo
-    $where[] = "e.estatus = 1";
-    $where[] = "o.tipo_operacion_id = 1";
+    // WHERE dinámico
+    $where  = ["e.estatus = 1", "o.tipo_operacion_id = 1"];
+    $params = [];
 
     if (!empty($opId)) {
         $where[] = "e.operacion_id = ?";
         $params[] = $opId;
     }
 
-    // Filtrado por contenedor físico (si usas marítimo, puedes agregar otro filtro similar)
+    // Filtro por contenedor físico (si luego filtras marítimo, añade otra rama)
     if (!empty($contId)) {
         $where[] = "e.contenedor_operacion_id = ?";
         $params[] = $contId;
     }
 
     if ($q !== '') {
-        $like = '%' . mb_strtolower($q, 'UTF-8') . '%';
+        $like = '%'.mb_strtolower($q, 'UTF-8').'%';
         $where[] = "(LOWER(te.nombre) LIKE ? 
                      OR LOWER(e.comentario) LIKE ?
                      OR LOWER(o.numero_operacion) LIKE ?
@@ -60,9 +57,9 @@ class Operaciones_maritimas_eventosModel extends Query
         array_push($params, $like, $like, $like, $like, $like);
     }
 
-    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+    $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-    // COUNT total
+    // Total
     $countSql = "
         SELECT COUNT(*) AS total
         FROM eventos_logisticos e
@@ -77,7 +74,7 @@ class Operaciones_maritimas_eventosModel extends Query
     $rowCount = $this->select($countSql, $params);
     $total    = $rowCount ? (int)$rowCount['total'] : 0;
 
-    // Data
+    // Data (orden: Operación ↑, Contenedor ↑, Fecha ↓, Id ↓)
     $dataSql = "
         SELECT
             e.id_evento,
@@ -96,7 +93,7 @@ class Operaciones_maritimas_eventosModel extends Query
         $whereSql
         ORDER BY 
             o.numero_operacion ASC,
-            COALESCE(cf.numero_ferro, cm.numero_contenedor) ASC,
+            contenedor ASC,
             e.fecha DESC,
             e.id_evento DESC
         LIMIT $perPage OFFSET $offset
@@ -105,6 +102,7 @@ class Operaciones_maritimas_eventosModel extends Query
 
     return ['rows' => is_array($rows) ? $rows : [], 'total' => $total];
 }
+
 
     /** Sugerencias de operaciones marítimas por texto (LI, JL-0, etc.) */
     public function buscarOperacionesMaritimas(string $term, int $limit = 10): array
