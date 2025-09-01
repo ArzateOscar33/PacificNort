@@ -27,6 +27,85 @@ class Operaciones_maritimas_eventosModel extends Query
         return $this->selectAll($sql);
     }
 
+    public function listarPaginado(int $page, int $perPage, ?int $opId, ?int $contId, string $q = ''): array
+{
+    $perPage = min(100, max(1, $perPage));
+    $offset  = max(0, ($page - 1) * $perPage);
+
+    $where   = [];
+    $params  = [];
+
+    // Base: activos y marítimo
+    $where[] = "e.estatus = 1";
+    $where[] = "o.tipo_operacion_id = 1";
+
+    if (!empty($opId)) {
+        $where[] = "e.operacion_id = ?";
+        $params[] = $opId;
+    }
+
+    // Filtrado por contenedor físico (si usas marítimo, puedes agregar otro filtro similar)
+    if (!empty($contId)) {
+        $where[] = "e.contenedor_operacion_id = ?";
+        $params[] = $contId;
+    }
+
+    if ($q !== '') {
+        $like = '%' . mb_strtolower($q, 'UTF-8') . '%';
+        $where[] = "(LOWER(te.nombre) LIKE ? 
+                     OR LOWER(e.comentario) LIKE ?
+                     OR LOWER(o.numero_operacion) LIKE ?
+                     OR LOWER(cf.numero_ferro) LIKE ?
+                     OR LOWER(cm.numero_contenedor) LIKE ?)";
+        array_push($params, $like, $like, $like, $like, $like);
+    }
+
+    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+    // COUNT total
+    $countSql = "
+        SELECT COUNT(*) AS total
+        FROM eventos_logisticos e
+        LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
+        LEFT JOIN operaciones o             ON o.id_operacion = e.operacion_id
+        LEFT JOIN contenedores_operacion co ON co.id_contenedor = e.contenedor_operacion_id
+        LEFT JOIN contenedores_fisicos cf   ON cf.id_fisico = co.id_fisico
+        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = e.cont_maritimo_operacion_id
+        LEFT JOIN contenedores_maritimos cm  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        $whereSql
+    ";
+    $rowCount = $this->select($countSql, $params);
+    $total    = $rowCount ? (int)$rowCount['total'] : 0;
+
+    // Data
+    $dataSql = "
+        SELECT
+            e.id_evento,
+            te.nombre AS evento,
+            e.fecha,
+            o.numero_operacion AS operacion,
+            COALESCE(cf.numero_ferro, cm.numero_contenedor) AS contenedor,
+            e.comentario
+        FROM eventos_logisticos e
+        LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
+        LEFT JOIN operaciones o             ON o.id_operacion = e.operacion_id
+        LEFT JOIN contenedores_operacion co ON co.id_contenedor = e.contenedor_operacion_id
+        LEFT JOIN contenedores_fisicos cf   ON cf.id_fisico = co.id_fisico
+        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = e.cont_maritimo_operacion_id
+        LEFT JOIN contenedores_maritimos cm  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        $whereSql
+        ORDER BY 
+            o.numero_operacion ASC,
+            COALESCE(cf.numero_ferro, cm.numero_contenedor) ASC,
+            e.fecha DESC,
+            e.id_evento DESC
+        LIMIT $perPage OFFSET $offset
+    ";
+    $rows = $this->selectAll($dataSql, $params);
+
+    return ['rows' => is_array($rows) ? $rows : [], 'total' => $total];
+}
+
     /** Sugerencias de operaciones marítimas por texto (LI, JL-0, etc.) */
     public function buscarOperacionesMaritimas(string $term, int $limit = 10): array
     {
@@ -149,43 +228,91 @@ class Operaciones_maritimas_eventosModel extends Query
      * Actualiza un evento logístico existente.
      * Espera keys como en registrar() + id_evento (int, req).
      */
-    public function actualizar(array $data): bool
-    {
-        $idFisico   = !empty($data['contenedor_operacion_id']) ? (int)$data['contenedor_operacion_id'] : null;
-        $idMaritimo = !empty($data['cont_maritimo_operacion_id']) ? (int)$data['cont_maritimo_operacion_id'] : null;
+public function actualizar(array $data): bool
+{
+    $sql = "UPDATE eventos_logisticos
+            SET operacion_id = ?, 
+                contenedor_operacion_id = ?, 
+                cont_maritimo_operacion_id = ?, 
+                tipo_evento_id = ?, 
+                fecha = ?, 
+                comentario = ?
+            WHERE id_evento = ? AND estatus = 1";
+    $params = [
+        (int)$data['operacion_id'],
+        !empty($data['contenedor_operacion_id']) ? (int)$data['contenedor_operacion_id'] : null,
+        !empty($data['cont_maritimo_operacion_id']) ? (int)$data['cont_maritimo_operacion_id'] : null,
+        (int)$data['tipo_evento_id'],
+        $data['fecha'],
+        $data['comentario'] ?? null,
+        (int)$data['id_evento']
+    ];
+    return $this->save($sql, $params);
+}
 
-        if ($idFisico !== null && $idMaritimo !== null) {
-            $idMaritimo = null;
-        }
 
-        $sql = "UPDATE eventos_logisticos
-                SET operacion_id = ?, 
-                    contenedor_operacion_id = ?, 
-                    cont_maritimo_operacion_id = ?, 
-                    tipo_evento_id = ?, 
-                    fecha = ?, 
-                    comentario = ?
-                WHERE id_evento = ? AND estatus = 1";
-        $params = [
-            (int)$data['operacion_id'],
-            $idFisico,
-            $idMaritimo,
-            (int)$data['tipo_evento_id'],
-            $data['fecha'],
-            $data['comentario'] ?? null,
-            (int)$data['id_evento']
-        ];
-        return $this->save($sql, $params);
-    }
+public function obtenerEvento(int $id)
+{
+    $sql = "SELECT 
+                e.id_evento,
+                e.operacion_id,
+                e.contenedor_operacion_id,
+                e.cont_maritimo_operacion_id,
+                e.tipo_evento_id,
+                e.fecha,
+                e.comentario,
+                o.numero_operacion AS operacion_label,
+                COALESCE(cf.numero_ferro, cm.numero_contenedor) AS contenedor_label
+            FROM eventos_logisticos e
+            LEFT JOIN operaciones o ON o.id_operacion = e.operacion_id
+            LEFT JOIN contenedores_operacion co ON co.id_contenedor = e.contenedor_operacion_id
+            LEFT JOIN contenedores_fisicos  cf ON cf.id_fisico = co.id_fisico
+            LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = e.cont_maritimo_operacion_id
+            LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+            WHERE e.id_evento = ? AND e.estatus = 1
+            LIMIT 1";
+    return $this->select($sql, [$id]);
+}
 
-    /** Opcional: para el editar() del controlador */
-    public function obtenerEvento(int $id)
-    {
-        $sql = "SELECT id_evento, operacion_id, contenedor_operacion_id, cont_maritimo_operacion_id, 
-                       tipo_evento_id, fecha, comentario
-                FROM eventos_logisticos
-                WHERE id_evento = ? AND estatus = 1";
-        return $this->select($sql, [$id]);
-    }
-     
+     public function existeEventoFisicoDuplicado(int $contenedorOperacionId, int $tipoEventoId, ?int $excluirId = null): bool
+{
+    $sql = "SELECT id_evento
+            FROM eventos_logisticos
+            WHERE estatus = 1
+              AND contenedor_operacion_id = ?
+              AND tipo_evento_id = ?"
+          . ($excluirId ? " AND id_evento <> ?" : "")
+          . " LIMIT 1";
+
+    $params = $excluirId
+        ? [$contenedorOperacionId, $tipoEventoId, $excluirId]
+        : [$contenedorOperacionId, $tipoEventoId];
+
+    return (bool)$this->select($sql, $params);
+}
+
+public function existeEventoMaritimoDuplicado(int $contMaritimoOperacionId, int $tipoEventoId, ?int $excluirId = null): bool
+{
+    $sql = "SELECT id_evento
+            FROM eventos_logisticos
+            WHERE estatus = 1
+              AND cont_maritimo_operacion_id = ?
+              AND tipo_evento_id = ?"
+          . ($excluirId ? " AND id_evento <> ?" : "")
+          . " LIMIT 1";
+
+    $params = $excluirId
+        ? [$contMaritimoOperacionId, $tipoEventoId, $excluirId]
+        : [$contMaritimoOperacionId, $tipoEventoId];
+
+    return (bool)$this->select($sql, $params);
+}
+public function desactivar(int $idEvento): bool
+{
+    $sql = "UPDATE eventos_logisticos
+            SET estatus = 0
+            WHERE id_evento = ? AND estatus = 1";
+    return $this->save($sql, [$idEvento]);
+}
+
 }

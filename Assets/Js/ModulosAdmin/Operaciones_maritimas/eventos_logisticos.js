@@ -94,6 +94,7 @@ function xhrGetDetallesLogisticos(url, cb) {
 
   let lastTermDetallesLogisticos = "";
   input.addEventListener("input", () => {
+    if (input.disabled) return; 
     const term = input.value.trim();
     hidden.value = ""; // reset seleccionado
     if (term.length < 1) { list.style.display = "none"; return; }
@@ -133,6 +134,7 @@ function xhrGetDetallesLogisticos(url, cb) {
 
   let lastTermDetallesLogisticos = "";
   input.addEventListener("input", () => {
+    if (input.disabled) return; 
     const term = input.value.trim();
     hiddenF.value = "";
     const opId = parseInt(opHidden.value || "0", 10);
@@ -304,11 +306,13 @@ formDetalles.addEventListener("submit", function (e) {
       if (res.status === "success") {
         formDetalles.reset();
         fldIdEventoDetallesLogisticos.value = "";
+
+        // Re-habilitar por si veníamos de editar
+        document.getElementById("eventoOperacionNombre").disabled = false;
+        document.getElementById("eventoContenedorNombre").disabled = false;
+
         bootstrap.Modal.getInstance(modalDetalles).hide();
         listarEventoLogistico();
-         
-
-        // Reset del modal
         document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
         const btnSubmit = formDetalles.querySelector('button[type="submit"]');
         btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
@@ -322,8 +326,118 @@ formDetalles.addEventListener("submit", function (e) {
 btnAgregarDetalles.addEventListener("click", () => {
   formDetalles.reset();
   fldIdEventoDetallesLogisticos.value = "";
+
+  // Re-habilitar campos bloqueados
+  document.getElementById("eventoOperacionNombre").disabled = false;
+  document.getElementById("eventoContenedorNombre").disabled = false;
+
+  // Asegurar que los hidden queden vacíos (nuevo registro)
+  fldOperacionIdDetallesLogisticos.value = "";
+  fldContenedorIdDetallesLogisticos.value = "";
+
   document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
   const btnSubmit = formDetalles.querySelector('button[type="submit"]');
   btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
 });
+
+
+
+// ===== Editar =====
+function editarEvento(id) {
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "operaciones_maritimas_eventos/editar/" + id, true);
+  http.send();
+
+  http.onreadystatechange = function () {
+    if (this.readyState !== 4) return;
+
+    if (this.status !== 200) {
+      console.error("Error editar:", this.responseText);
+      Swal.fire("Error", "No se pudo cargar el evento", "error");
+      return;
+    }
+
+    let data;
+    try { data = JSON.parse(this.responseText); }
+    catch { Swal.fire("Error", "Respuesta no válida del servidor", "error"); return; }
+
+    if (!data || !data.id_evento) {
+      Swal.fire("Atención", "No se encontró el evento", "warning");
+      return;
+    }
+
+    // ==== Rellenar campos ====
+    // IDs ocultos
+    fldIdEventoDetallesLogisticos.value    = data.id_evento || "";
+    fldOperacionIdDetallesLogisticos.value = data.operacion_id || "";
+    // Sólo seteamos el hidden del contenedor físico si existe (tu form envía contenedor_operacion_id)
+    if (data.contenedor_operacion_id) {
+      fldContenedorIdDetallesLogisticos.value = data.contenedor_operacion_id;
+      document.getElementById("eventoContenedorNombre").value = data.contenedor_label || "";
+    } else {
+      // si usas marítimo en el futuro, aquí podrías manejarlo con otro hidden name
+      fldContenedorIdDetallesLogisticos.value = "";
+      document.getElementById("eventoContenedorNombre").value = "";
+    }
+
+    // Inputs visibles
+    document.getElementById("eventoOperacionNombre").value = data.operacion_label || "";
+    fldTipoEventoIdDetallesLogisticos.value = data.tipo_evento_id || "";
+    fldFechaDetallesLogisticos.value        = (data.fecha || "").substring(0, 10);
+    fldComentarioDetallesLogisticos.value   = data.comentario || "";
+    // Bloquear campos dependientes para edición
+    document.getElementById("eventoOperacionNombre").disabled = true;
+    document.getElementById("eventoContenedorNombre").disabled = true;
+    // UI modal en modo actualizar
+    document.getElementById("modalTituloDetalles").textContent = "Actualizar Evento";
+    const btnSubmit = formDetalles.querySelector('button[type="submit"]');
+    btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+    if (window.feather) feather.replace();
+
+    // Mostrar modal
+    new bootstrap.Modal(modalDetalles).show();
+  };
+}
+function eliminarEvento(id) {
+  Swal.fire({
+    title: "¿Eliminar evento?",
+    text: "Se desactivará (eliminado lógico).",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar"
+  }).then((r) => {
+    if (!r.isConfirmed) return;
+
+    const fdEventosLogisticosData = new FormData();
+    fdEventosLogisticosData.append("id_evento", id);
+
+    const http = new XMLHttpRequest();
+    http.open("POST", base_url + "operaciones_maritimas_eventos/eliminar", true);
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
+
+      if (this.status !== 200) {
+        console.error("Error eliminar:", this.responseText);
+        Swal.fire("Error", "No se pudo eliminar", "error");
+        return;
+      }
+
+      let res;
+      try { res = JSON.parse(this.responseText); }
+      catch { Swal.fire("Error", "Respuesta no válida del servidor", "error"); return; }
+
+      Swal.fire(
+        res.status === "success" ? "Eliminado" : "Atención",
+        res.msg,
+        res.status === "success" ? "success" : (res.status || "info")
+      );
+
+      if (res.status === "success") {
+        listarEventoLogistico(); // refresca tabla
+      }
+    };
+    http.send(fdEventosLogisticosData);
+  });
+}
