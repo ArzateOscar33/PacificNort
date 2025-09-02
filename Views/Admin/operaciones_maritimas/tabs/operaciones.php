@@ -131,7 +131,7 @@
                         <div class="col-md-4">
                             <label class="form-label">Número de Operación</label>
                             <input type="text" id="numeroOperacion" name="numero_operacion" class="form-control"
-                                placeholder="JL-61">
+                                placeholder="JL-61"  >
                         </div>
 
                         <!-- Estado (Estatus en BD) -->

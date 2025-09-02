@@ -68,7 +68,7 @@ function resetRepeater(){
 function guardarOperacion(){
   if (!formOp || !btnSave) return;
 
-  // ...tus validaciones existentes...
+
 
   const fd = new FormData(formOp);
   const contenedores = collectContenedores();
@@ -90,12 +90,12 @@ function guardarOperacion(){
 
       let res = null;
       try { res = JSON.parse(x.responseText); } catch(e){}
-
+      console.log(this.responseText);
       if (x.status !== 200 || !res){
         Swal?.fire('Error','No se pudo registrar la operación.','error') ?? alert('No se pudo registrar la operación.');
         return;
       }
-
+ 
       if (res.status === 'success'){
         // Muestra el folio final (devuelto por el backend)
         const cod = res.numero_operacion ? ` (${res.numero_operacion})` : '';

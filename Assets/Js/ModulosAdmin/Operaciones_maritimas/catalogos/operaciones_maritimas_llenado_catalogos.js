@@ -45,33 +45,31 @@ function setSelectValue(sel, val){
   if (has) sel.value = s;
 }
 
-// Limpia modal a estado base (1 fila en repeater, etc.)
-/*
-function resetModalEdicion(){
-  if (tituloModal) tituloModal.textContent = 'Editar Operación Marítima';
-  if (inpIdOperacion) inpIdOperacion.value = '';
-  if (inpNumeroOp)    inpNumeroOp.value = '';
-  setSelectValue(selSubtipoEd, '');
-  setSelectValue(selEstatus,   '');
-  if (inpETD) inpETD.value = '';
-  if (inpETA) inpETA.value = '';
-  if (inpBL)  inpBL.value  = '';
-  if (hidCliente)    hidCliente.value = '';
-  if (inpClienteNom) inpClienteNom.value = '';
-  setSelectValue(selNavieraEd,   '');
-  setSelectValue(selForwarderEd, '');
-  setSelectValue(selShipper,     '');
-  // Puerto: solo mostrar (disabled/readonly)
-  setSelectValue(selPuerto, '');
-  // Repeater: deja 1 fila vacía
-  if (repeater) {
-    repeater.innerHTML = '';
-    const first = addRow(); // usa tu helper existente
-    // limpia valores
-    first.querySelector('.contenedor-id').value = '';
-    first.querySelector('.contenedor-input').value = '';
-  }
-}*/
+// Nombre único para evitar colisiones entre archivos
+function om_setContenedoresReadonly(isReadonly){
+  if (!repeater) return;
+  const items = repeater.querySelectorAll('.contenedor-item');
+  items.forEach(it => {
+    const inp = it.querySelector('.contenedor-input');
+    const btnAdd = it.querySelector('.btnContAddOne');
+    const btnRem = it.querySelector('.btnContRemoveOne');
+
+    if (inp){
+      if (isReadonly){
+        inp.setAttribute('readonly', 'readonly');
+        inp.classList.add('bg-light');
+      } else {
+        inp.removeAttribute('readonly');
+        inp.classList.remove('bg-light');
+      }
+    }
+
+    // Evita toggleAttribute (por si hay polyfill conflictivo)
+    if (btnAdd) btnAdd.disabled = !!isReadonly;
+    if (btnRem) btnRem.disabled = !!isReadonly;
+  });
+}
+
 
 // ========== 1) Reset duro del modal a modo "crear" ==========
 function resetModalOperacion(mode = 'create'){
@@ -128,6 +126,7 @@ function resetModalOperacion(mode = 'create'){
     if (validarCamposObligatorios()) btnGuardarOp?.removeAttribute('disabled');
     else btnGuardarOp?.setAttribute('disabled','disabled');
   }
+om_setContenedoresReadonly(false);
 }
 
 // ========== 2) Al pulsar “Nueva Operación”: limpiar SIEMPRE antes de mostrar ==========
@@ -183,6 +182,7 @@ function renderTabla(data){
     `;
     tabla.appendChild(tr);
   });
+   if (window.feather) feather.replace();
 }
  
 function renderResumen(meta){
@@ -581,6 +581,7 @@ function setContenedor($item, id, numero){
 // Crear una nueva fila (usando el template)
 function addRow(afterItem=null){
   const node = tplContenedor.content.cloneNode(true);
+  
   const newItem = node.querySelector('.contenedor-item');
   if (afterItem && afterItem.parentNode === repeater){
     afterItem.insertAdjacentElement('afterend', newItem);
@@ -789,7 +790,7 @@ function cargarOperacionParaEditar(id){
           row.querySelector('.contenedor-input').value = c.numero_contenedor || '';
         });
       }
-
+      om_setContenedoresReadonly(true);
       if (modalInstance) modalInstance.show();
       if (window.feather) feather.replace();
     }
@@ -845,6 +846,7 @@ function actualizarOperacion(){
         if (window.Swal) Swal.fire('Error', 'No se pudo actualizar la operación', 'error');
         return;
       }
+      console.log(this.responseText);
       let payload = {};
       try { payload = JSON.parse(x.responseText); } catch(e){ payload = {}; }
 

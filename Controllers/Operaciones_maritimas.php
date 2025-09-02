@@ -137,11 +137,26 @@ public function listar()
         'notas'                => trim($_POST['notas'] ?? ''),
         ];
 
-        $contenedores = [];
-        if (!empty($_POST['contenedores'])) {
-            $tmp = json_decode($_POST['contenedores'], true);
-            if (is_array($tmp)) $contenedores = $tmp;
-        }
+    if (!empty($_POST['contenedores'])) {
+        $tmp = json_decode($_POST['contenedores'], true);
+        if (is_array($tmp)) $contenedores = $tmp;
+    }
+
+    // === VALIDACIONES REQUERIDAS ===
+    if (empty($contenedores)) {
+        echo json_encode(['status' => 'warning', 'msg' => 'Agrega al menos un contenedor a la operación.']);
+        die();
+    }
+
+    if ($op['forwarder_id'] <= 0 ) {
+        echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un forwarder válido.']);
+        die();
+    }
+
+    if ($op['shipper_id'] <= 0 ) {
+        echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un shipper válido.']);
+        die();
+    }
 
         $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
 

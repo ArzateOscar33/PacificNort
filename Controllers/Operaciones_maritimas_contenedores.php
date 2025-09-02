@@ -35,7 +35,11 @@ public function registrarFisico()
         if ($bultos !== null && $bultos < 0) {
             echo json_encode(['status'=>'warning','msg'=>'Bultos inválidos']); return;
         }
-
+        $dupeNum = $this->model->existsFerroEnOperacionPorNumero($operacion_id, $numero_ferro);
+        if (!empty($dupeNum)) {
+            echo json_encode(['status'=>'warning','msg'=>'Este contenedor físico (FERRO) ya está asignado a la operación']); 
+            return;
+        }
         // ✅ Forzar cliente desde la operación (fuente de la verdad)
         $cliRow = $this->model->getClienteDeOperacion($operacion_id);
         if (empty($cliRow) || (int)$cliRow['cliente_id'] <= 0) {
@@ -245,7 +249,11 @@ public function actualizarFisico()
         if ($bultos !== null && $bultos < 0) {
             echo json_encode(['status' => 'warning', 'msg' => 'Bultos inválidos']); return;
         }
-
+$dupeNum = $this->model->existsFerroEnOperacionPorNumeroExcept($operacion_id, $numero_ferro, $row_id);
+if (!empty($dupeNum)) {
+    echo json_encode(['status'=>'warning','msg'=>'Ya existe otro contenedor con ese número en la operación']); 
+    return;
+}
         // Reutilizamos el helper de modelo que valida/asegura físico y evita duplicados
         $res = $this->model->actualizarTerrestreByNumero(
             $row_id,

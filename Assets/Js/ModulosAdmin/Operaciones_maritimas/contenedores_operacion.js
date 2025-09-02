@@ -257,87 +257,124 @@ window.addEventListener("DOMContentLoaded", listarContenedores);
   const form = document.getElementById('formAgregarContenedor');
   const modalEl = document.getElementById('modalAgregarContenedor');
   const modal = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+// Normaliza un ferro: trim + UPPER + sin espacios internos
+function normFerro(s){ return (s||"").trim().toUpperCase().replace(/\s+/g,''); }
+
+// (Opcional) Detección rápida en la tabla ya cargada
+function ferroYaEnTabla(opId, ferro){
+  const f = normFerro(ferro);
+  if (!tablaContenedores) return false;
+  const rows = Array.from(tablaContenedores.querySelectorAll('tr'));
+  return rows.some(tr=>{
+    const btn = tr.querySelector('.btn-edit-contenedor');
+    const op  = parseInt(btn?.dataset.operacionId||'0',10);
+    // Columna 3 = contenedor (ajusta si cambiaste orden)
+    const ferroTxt = normFerro(tr.children?.[2]?.textContent || '');
+    return op===opId && ferroTxt===f;
+  });
+}
 
   form?.addEventListener('submit', function (e) {
-    e.preventDefault(); // evita refresh
-    const modo          = form.dataset.mode || 'create';
-    const row_id        = document.getElementById('row_id')?.value?.trim() || '';
-    const operacion_id   = document.getElementById('operacion_id')?.value?.trim() || '';
-    const numero_ferro   = document.getElementById('contenedorNombre')?.value?.trim() || ''; // número visible
-    const bultos         = document.getElementById('bultos')?.value?.trim() || '';
-    const cliente_id     = document.getElementById('cliente_id')?.value?.trim() || '';
-    const comentarios   = document.getElementById('comentarios')?.value?.trim() || '';
+e.preventDefault();
 
-    // Validaciones mínimas
-    if (!operacion_id) {
-      Swal.fire('Aviso', 'Selecciona una operación', 'warning'); return;
-    }
-    if (!cliente_id) {
-      Swal.fire('Aviso', 'La operación no tiene cliente asignado', 'warning'); return;
-    }
-    if (!numero_ferro) {
-      Swal.fire('Aviso', 'Captura o selecciona el contenedor físico', 'warning'); return;
-    }
+const btnGuardar = document.querySelector('button[form="formAgregarContenedor"]');
+const modo       = form.dataset.mode || 'create';
+const row_id     = document.getElementById('row_id')?.value?.trim() || '';
 
-    const fd = new FormData();
-    fd.append('operacion_id', operacion_id);
-    fd.append('numero_ferro', numero_ferro);
-    fd.append('bultos', bultos);
-    fd.append('cliente_id', cliente_id); // 👉 se envía, aunque el backend lo vuelve a forzar
-    let url = '';
-   // Si estamos editando (hay row_id) → actualizar
-  if ((modo === 'edit' || row_id) && row_id) {
+const operacion_id = parseInt(document.getElementById('operacion_id')?.value?.trim() || '0', 10) || 0;
+let numero_ferro   = document.getElementById('contenedorNombre')?.value?.trim() || '';
+const bultos       = document.getElementById('bultos')?.value?.trim() || '';
+const cliente_id   = document.getElementById('cliente_id')?.value?.trim() || '';
+const comentarios  = document.getElementById('comentarios')?.value?.trim() || '';
+
+// Normaliza ferro
+numero_ferro = normFerro(numero_ferro);
+
+// Validaciones mínimas
+if (!operacion_id){ Swal.fire('Aviso','Selecciona una operación','warning'); return; }
+if (!cliente_id){ Swal.fire('Aviso','La operación no tiene cliente asignado','warning'); return; }
+if (!numero_ferro){ Swal.fire('Aviso','Captura o selecciona el contenedor físico','warning'); return; }
+
+// (Opcional) Corte en front: ya existe en la tabla actual
+if ((modo==='create' || !row_id) && ferroYaEnTabla(operacion_id, numero_ferro)){
+  Swal.fire('Aviso','Este contenedor físico ya está en la operación (vista actual)','warning');
+  return;
+}
+
+// Arma payload
+const fd = new FormData();
+let url  = '';
+
+if ((modo === 'edit' || row_id) && row_id){
   url = base_url + 'Operaciones_maritimas_contenedores/actualizarFisico';
-  fd.append('row_id', row_id);
-  fd.append('operacion_id', operacion_id);
+  fd.append('row_id', String(row_id));
+  fd.append('operacion_id', String(operacion_id));
   fd.append('numero_ferro', numero_ferro);
   fd.append('bultos', bultos);
   fd.append('comentarios', comentarios);
-  } else {
-  // Alta normal
+} else {
   url = base_url + 'Operaciones_maritimas_contenedores/registrarFisico';
-  fd.append('operacion_id', operacion_id);
+  fd.append('operacion_id', String(operacion_id));
   fd.append('numero_ferro', numero_ferro);
   fd.append('bultos', bultos);
-  fd.append('cliente_id', cliente_id); // el backend fuerza el de la operación
-    fd.append('comentarios', comentarios); // por si luego decides guardarlo
-    }
+  fd.append('cliente_id', cliente_id); // el backend forzará el de la operación
+  fd.append('comentarios', comentarios);
+}
 
-    const http = new XMLHttpRequest();
-    http.open('POST', url, true);
-    http.send(fd);
+// Bloquea doble submit
+btnGuardar?.setAttribute('disabled','disabled');
 
-    http.onreadystatechange = function () {
-      if (this.readyState === 4) {
-        if (this.status !== 200) {
-          Swal.fire('Error', 'Error HTTP ' + this.status, 'error');
-          return;
-        }
-        let res;
-        try { res = JSON.parse(this.responseText); }
-        catch(e){ Swal.fire('Error', 'Respuesta inválida del servidor', 'error'); return; }
+const http = new XMLHttpRequest();
+http.open('POST', url, true);
+http.onreadystatechange = function(){
+  if (this.readyState !== 4) return;
 
-        Swal.fire('Aviso', (res.msg || '').toUpperCase(), res.status || 'info');
+  // Rehabilita botón siempre al terminar
+  btnGuardar?.removeAttribute('disabled');
 
-        if (res.status === 'success') {
-          // reset form y limpiar hiddens
-          form.reset();
-          ['operacion_id','cliente_id','contenedor_id','shipper_id'].forEach(id=>{
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-          });
-          // limpiar visibles
-          ['operacionNombre','clienteNombreContenedores','contenedorNombre','shipperNombre','bultos','comentarios'].forEach(id=>{
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-          });
+  if (this.status !== 200){
+    Swal.fire('Error','Error HTTP ' + this.status,'error');
+    return;
+  }
 
-          modal?.hide?.();
-          resetModalContenedor('create');
-          listarContenedores();
-        }
-      }
-    };
+  let res = {};
+  try { res = JSON.parse(this.responseText) || {}; } catch { 
+    Swal.fire('Error','Respuesta inválida del servidor','error');
+    return;
+  }
+
+  // 🔴 Caso: warning por duplicado u otra regla → no cerrar modal
+  if (res.status === 'warning'){
+    Swal.fire('Aviso', res.msg || 'No se pudo completar la acción', 'warning');
+    // focus al campo ferro para corregir
+    document.getElementById('contenedorNombre')?.focus();
+    return;
+  }
+
+  if (res.status === 'success'){
+    Swal.fire('Éxito', res.msg || (modo==='edit' ? 'Contenedor actualizado' : 'Contenedor registrado'), 'success');
+    // Limpia y cierra modal solo en éxito
+    form.reset();
+    ['row_id','operacion_id','cliente_id','contenedor_id','shipper_id'].forEach(id=>{
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    ['operacionNombre','clienteNombreContenedores','contenedorNombre','shipperNombre','bultos','comentarios'].forEach(id=>{
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+
+    modal?.hide?.();
+    resetModalContenedor('create');
+    listarContenedores();
+    return;
+  }
+
+  // Otros errores
+  Swal.fire('Error', res.msg || 'No se pudo guardar', 'error');
+};
+http.send(fd);
+
+  
+  
   });
 })();
 // ===============================
@@ -432,6 +469,9 @@ tablaContenedores.addEventListener('click', function (e) {
     feather.replace();
     modal?.show();
   };
+});
+document.getElementById('contenedorNombre')?.addEventListener('input', (e)=>{
+  e.target.value = e.target.value.toUpperCase();
 });
 // Reset fuerte del modal (deja listo para crear)
 function resetModalContenedor(mode = 'create'){

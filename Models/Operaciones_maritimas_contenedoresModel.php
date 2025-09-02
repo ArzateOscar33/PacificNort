@@ -489,4 +489,29 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
                 ]
             ];
         }
+                /** ¿Ya existe ESTE número de ferro en la operación? (case/trim-insensitive) */
+        public function existsFerroEnOperacionPorNumero(int $operacion_id, string $numero_ferro)
+        {
+            $sql = "SELECT co.id_contenedor
+                    FROM contenedores_operacion co
+                    INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
+                    WHERE co.operacion_id = ?
+                    AND UPPER(TRIM(cf.numero_ferro)) = UPPER(TRIM(?))
+                    LIMIT 1";
+            return $this->select($sql, [$operacion_id, $numero_ferro]);
+        }
+
+        /** Igual que la anterior, pero excluyendo un row_id (para edición) */
+        public function existsFerroEnOperacionPorNumeroExcept(int $operacion_id, string $numero_ferro, int $exclude_row_id)
+        {
+            $sql = "SELECT co.id_contenedor
+                    FROM contenedores_operacion co
+                    INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
+                    WHERE co.operacion_id = ?
+                    AND UPPER(TRIM(cf.numero_ferro)) = UPPER(TRIM(?))
+                    AND co.id_contenedor <> ?
+                    LIMIT 1";
+            return $this->select($sql, [$operacion_id, $numero_ferro, $exclude_row_id]);
+        }
+
 }
