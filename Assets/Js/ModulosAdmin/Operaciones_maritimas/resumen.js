@@ -1,11 +1,12 @@
 // =========================
-// Refs
+// Refs + estado
 // =========================
 const selectContenedorResumen  = document.getElementById("selectContenedorResumen");
 const inpBuscarOpResumen       = document.getElementById("buscarOperacionResumen");
 const boxSugsOpResumen         = document.getElementById("sugerenciasOperacionResumen");
+const btnRef                   = document.getElementById("btnRefrescarResumen");
 
-// Asegúrate de tener base_url en tu layout (ej: const base_url = "<?php echo BASE_URL; ?>";)
+let operacionIdActivo   = null;
 let lastXHRContenedores = null;
 let lastXHRSugerencias  = null;
 let debounceTimer       = null;
@@ -23,16 +24,36 @@ function clearSugerencias() {
   boxSugsOpResumen.style.display = 'none';
   boxSugsOpResumen.innerHTML = '';
 }
+function limpiarDetalleUI() {
+  document.getElementById('nombreContenedorResumen').textContent = '—';
+  const badge = document.getElementById('tipoBadgeResumen');
+  badge.textContent = '—';
+  badge.className = 'badge bg-secondary';
+  // Marítimo
+  document.getElementById('puertoResumen').textContent = '—';
+  document.getElementById('etaContenedor').textContent = '—';
+  document.getElementById('etdContenedor').textContent = '—';
+  document.getElementById('blContenedor').textContent = '—';
+  document.getElementById('comentarioContenedor').textContent = '—';
+  // Ferro
+  document.getElementById('arriboPuerto').textContent = '—';
+  document.getElementById('bultos').textContent = '—';
+}
+function setDetalleLoading() {
+  document.getElementById('comentarioContenedor').textContent = 'Cargando…';
+}
+
+// =========================
+// Sugerencias (autocomplete)
+// =========================
 function renderSugerencias(items) {
   if (!Array.isArray(items) || items.length === 0) { clearSugerencias(); return; }
   boxSugsOpResumen.innerHTML = '';
   items.forEach(row => {
     const a = document.createElement('a');
-    a.className     = 'list-group-item list-group-item-action';
-    a.href          = '#';
-    a.dataset.id    = row.id;
-    a.dataset.label = row.label;
-    a.textContent   = row.label; // "EN-06 — Cliente X"
+    a.className   = 'list-group-item list-group-item-action';
+    a.href        = '#';
+    a.textContent = row.label; // "EN-06 — Cliente X"
     a.addEventListener('click', (e) => {
       e.preventDefault();
       seleccionarSugerencia(row);
@@ -42,22 +63,51 @@ function renderSugerencias(items) {
   boxSugsOpResumen.style.display = 'block';
 }
 
-function seleccionarSugerencia(row) {
-  // 1) Poner el texto elegido en el input (opcional)
-  inpBuscarOpResumen.value = row.label;
+function doSearchSugerencias(term) {
+  if (lastXHRSugerencias) { try { lastXHRSugerencias.abort(); } catch(e){} }
+  const http = new XMLHttpRequest();
+  lastXHRSugerencias = http;
 
-  // 2) Cargar contenedores de esa operación (ya no existe select de operaciones)
-  const id = String(row.id);
-  if (typeof cargarContenedores === 'function') {
-    cargarContenedores(id);
+  http.open("GET", base_url + "operaciones_maritimas_resumen/sugerencias?term=" + encodeURIComponent(term), true);
+  http.onreadystatechange = function() {
+    if (this.readyState !== 4) return;
+    if (this.status === 200) {
+      let res; try { res = JSON.parse(this.responseText); } catch { res = null; }
+      if (!res || res.status !== 'ok') { clearSugerencias(); return; }
+      renderSugerencias(res.data);
+    } else {
+      clearSugerencias();
+    }
+  };
+  http.send();
+}
+
+inpBuscarOpResumen.addEventListener('input', function() {
+  const term = this.value.trim();
+  clearTimeout(debounceTimer);
+  if (term.length < 2) { clearSugerencias(); return; }
+  debounceTimer = setTimeout(() => doSearchSugerencias(term), 250);
+});
+
+document.addEventListener('click', (e) => {
+  if (!boxSugsOpResumen.contains(e.target) && e.target !== inpBuscarOpResumen) {
+    clearSugerencias();
   }
+});
+inpBuscarOpResumen.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') clearSugerencias();
+});
 
-  // 3) Cerrar las sugerencias
+// Al elegir una sugerencia -> fijamos operación y cargamos contenedores
+function seleccionarSugerencia(row) {
+  inpBuscarOpResumen.value = row.label;
+  operacionIdActivo = String(row.id);
+  cargarContenedores(operacionIdActivo);
   clearSugerencias();
 }
 
 // =========================
-// Cargar contenedores por operación
+// Contenedores por operación
 // =========================
 function cargarContenedores(operacionIdResumen) {
   if (lastXHRContenedores) { try { lastXHRContenedores.abort(); } catch(e){} }
@@ -75,8 +125,7 @@ function cargarContenedores(operacionIdResumen) {
     if (this.readyState !== 4) return;
 
     if (this.status === 200) {
-      let res;
-      try { res = JSON.parse(this.responseText); } catch { res = null; }
+      let res; try { res = JSON.parse(this.responseText); } catch { res = null; }
       if (!res || (res.status && res.status !== 'ok')) {
         setContenedoresEmpty('No se pudieron cargar contenedores');
         return;
@@ -91,66 +140,85 @@ function cargarContenedores(operacionIdResumen) {
 
 function renderContenedores(res) {
   selectContenedorResumen.innerHTML = "";
+  const rows = Array.isArray(res.contenedores) ? res.contenores : (Array.isArray(res.data) ? res.data : res.contenedores);
+  // Fallback correcto:
+  const data = Array.isArray(res.contenedores) ? res.contenedores : (Array.isArray(res.data) ? res.data : []);
 
-  // Compatibilidad: {status, contenedores:[...]} o {data:[...]}
-  const rows = Array.isArray(res.contenedores) ? res.contenedores : (Array.isArray(res.data) ? res.data : []);
+  if (!data || data.length === 0) { setContenedoresEmpty(); return; }
 
-  if (!rows || rows.length === 0) {
-    setContenedoresEmpty();
-    return;
-  }
-
-  rows.forEach(c => {
+  data.forEach(c => {
     const option = document.createElement("option");
-    // Esperado: { id_contenedor, tipo_contenedor, numero_contenedor }
-    option.value = c.id_contenedor;
+    option.value = c.id_contenedor;                                    // id genérico
     option.textContent = `${c.tipo_contenedor} · ${c.numero_contenedor}`;
+    option.dataset.tipo   = (c.tipo_contenedor || '').toUpperCase();   // "MARITIMO" | "FERRO"
+    option.dataset.numero = c.numero_contenedor || '';
     selectContenedorResumen.appendChild(option);
   });
+
+  if (selectContenedorResumen.options.length > 0) {
+    selectContenedorResumen.selectedIndex = 0;
+    consultarDetallesContenedor();
+  }
 }
 
 // =========================
-// Autocomplete de operaciones (input)
+// Detalle del contenedor
 // =========================
-inpBuscarOpResumen.addEventListener('input', function() {
-  const term = this.value.trim();
-  clearTimeout(debounceTimer);
-  if (term.length < 2) { clearSugerencias(); return; }
-  debounceTimer = setTimeout(() => doSearchSugerencias(term), 250);
+selectContenedorResumen.addEventListener('change', consultarDetallesContenedor);
+
+if (btnRef) btnRef.addEventListener('click', (e) => {
+  e.preventDefault();
+  consultarDetallesContenedor();
 });
 
-function doSearchSugerencias(term) {
-  if (lastXHRSugerencias) { try { lastXHRSugerencias.abort(); } catch(e){} }
+function consultarDetallesContenedor() {
+  const opt = selectContenedorResumen.options[selectContenedorResumen.selectedIndex];
+  if (!opt || !operacionIdActivo) return;
+
+  const tipo   = (opt.dataset.tipo || '').toUpperCase();  // "MARITIMO" | "FERRO"
+  const idCont = opt.value;
+  const numero = opt.dataset.numero || opt.textContent || '—';
+
+  // Cabecera
+  document.getElementById('nombreContenedorResumen').textContent = numero;
+  const badge = document.getElementById('tipoBadgeResumen');
+  badge.textContent = (tipo === 'MARITIMO') ? 'Marítimo' : 'Ferro';
+  badge.className = 'badge ' + (tipo === 'MARITIMO' ? 'bg-primary' : 'bg-secondary');
+
+  // Alterna paneles
+  document.getElementById('bloqueMaritimo').classList.toggle('d-none', tipo !== 'MARITIMO');
+  document.getElementById('bloqueFerro').classList.toggle('d-none', tipo === 'MARITIMO');
+
+  limpiarDetalleUI();
+  setDetalleLoading();
 
   const http = new XMLHttpRequest();
-  lastXHRSugerencias = http;
-
-  http.open("GET", base_url + "operaciones_maritimas_resumen/sugerencias?term=" + encodeURIComponent(term), true);
+  const url = `${base_url}operaciones_maritimas_resumen/detalles_contenedor?operacion_id=${encodeURIComponent(operacionIdActivo)}&tipo=${encodeURIComponent(tipo)}&id_contenedor=${encodeURIComponent(idCont)}`;
+  http.open('GET', url, true);
   http.onreadystatechange = function() {
     if (this.readyState !== 4) return;
 
     if (this.status === 200) {
-      let res;
-      try { res = JSON.parse(this.responseText); } catch { res = null; }
-      // Log opcional para depurar:
-      // console.log('sugerencias:', res);
-      if (!res || res.status !== 'ok') { clearSugerencias(); return; }
-      renderSugerencias(res.data);
+      let res; try { res = JSON.parse(this.responseText); } catch { res = null; }
+      if (!res || res.status !== 'ok' || !res.data) return;
+      pintarDetalleContenedor(tipo, res.data);
     } else {
-      clearSugerencias();
+      // deja placeholders
     }
   };
   http.send();
 }
 
-// Cerrar sugerencias al hacer click fuera
-document.addEventListener('click', (e) => {
-  if (!boxSugsOpResumen.contains(e.target) && e.target !== inpBuscarOpResumen) {
-    clearSugerencias();
+function pintarDetalleContenedor(tipo, data) {
+  if (tipo === 'MARITIMO') {
+    document.getElementById('puertoResumen').textContent   = data.puerto || '—';
+    document.getElementById('etaContenedor').textContent   = data.eta || '—';
+    document.getElementById('etdContenedor').textContent   = data.etd || '—';
+    document.getElementById('blContenedor').textContent    = data.bl || '—';
+    document.getElementById('comentarioContenedor').textContent = data.comentarios || '—';
+  } else {
+    document.getElementById('arriboPuerto').textContent    = data.arribo_puerto || '—';
+    document.getElementById('bultos').textContent          = (data.bultos != null ? data.bultos : '—');
+    document.getElementById('comentarioContenedor').textContent = data.comentarios || '—';
   }
-});
-
-// Cerrar con Esc
-inpBuscarOpResumen.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') clearSugerencias();
-});
+}

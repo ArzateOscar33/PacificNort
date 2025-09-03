@@ -3,10 +3,12 @@
          <div class="d-flex justify-content-between align-items-center mb-3">
              <h3 class="fw-bold">Resumen de Operación</h3>
              <div class="d-flex gap-2">
-                <div class="col-md-12 position-relative">
-                    <input type="text" id="buscarOperacionResumen" name="buscarOperacionResumen" class="form-control " placeholder="Buscar Operacion">
-                    <div id="sugerenciasOperacionResumen"  class="list-group position-absolute w-100" style="z-index:999; display:none; top:100%; left:0;"></div> 
-                </div> 
+                 <div class="col-md-12 position-relative">
+                     <input type="text" id="buscarOperacionResumen" name="buscarOperacionResumen" class="form-control "
+                         placeholder="Buscar Operacion">
+                     <div id="sugerenciasOperacionResumen" class="list-group position-absolute w-100"
+                         style="z-index:999; display:none; top:100%; left:0;"></div>
+                 </div>
              </div>
          </div>
 
@@ -14,49 +16,65 @@
          <div id="contenidoOperacion" style="display:block;">
              <div class="row g-3">
                  <!-- Contenedor Info -->
-                 <div class="col-md-4" style="border: red solid 1px;">
+                 <div class="col-md-4" style="border:1px solid red;">
                      <div class="mb-2">
-                         <label for="selectContenedor" class="form-label">Seleccionar Contenedor:</label>
+                         <label for="selectContenedorResumen" class="form-label">Seleccionar Contenedor:</label>
                          <div class="d-flex gap-2">
                              <select class="form-control" id="selectContenedorResumen">
- 
+                                <option value=""  >-- Selecciona una Operación --</option>
                              </select>
-                             <button class="btn btn-outline-secondary" title="Refrescar">
+                             <button class="btn btn-outline-secondary" id="btnRefrescarResumen" title="Refrescar">
                                  <i data-feather="refresh-cw"></i>
                              </button>
                          </div>
                      </div>
 
-                     <div class="border rounded p-3">
-                         <div class="d-flex justify-content-end align-items-start">
-
-                             <span class="text-muted small">Marítimo</span>
-                         </div>
-
-                         <div class="mb-2">
-                             <div class="small text-muted">Puerto</div>
-                             <div id="puertoResumen">Lazaro Cárdenas</div>
-                         </div>
-                         <div class="mb-2">
-                             <div class="small text-muted">ETA</div>
-                             <div id="etaContenedor">07/09/2025</div>
-                         </div>
-
-                         <div class="row g-2">
-                             <div class="col-6">
-                                 <div class="small text-muted">Bultos</div>
-                                 <div id="bultos">28</div>
+                     <div class="border rounded p-3" id="cardInfoContenedor">
+                         <div class="d-flex justify-content-between align-items-start mb-2">
+                             <div>
+                                 <div class="small text-muted">Contenedor</div>
+                                 <div id="nombreContenedorResumen">—</div>
                              </div>
-
+                             <span id="tipoBadgeResumen" class="badge bg-primary">—</span>
                          </div>
 
-                         <div class="mt-2">
-                             <div class="small text-muted">ETD</div>
-                             <div id="etdContenedor">07/09/2025</div>
+                         <!-- ===== Vista MARÍTIMO ===== -->
+                         <div id="bloqueMaritimo" class="mt-2">
+                             <div class="mb-2">
+                                 <div class="small text-muted">Puerto</div>
+                                 <div id="puertoResumen">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">ETA</div>
+                                 <div id="etaContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">ETD</div>
+                                 <div id="etdContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">No. BL</div>
+                                 <div id="blContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">Comentarios</div>
+                                 <div id="comentarioContenedor">—</div>
+                             </div>
+                         </div>
+
+                         <!-- ===== Vista FÍSICO / FERRO ===== -->
+                         <div id="bloqueFerro" class="mt-2 d-none">
+                             <div class="mb-2">
+                                 <div class="small text-muted">Arribo a puerto</div>
+                                 <div id="arriboPuerto">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">Bultos</div>
+                                 <div id="bultos">—</div>
+                             </div>
                          </div>
 
                          <div class="d-flex flex-wrap gap-2 mt-3">
-
                              <button class="btn btn-sm btn-outline-warning">
                                  <i data-feather="file" class="me-1"></i> PDF
                              </button>
@@ -66,6 +84,7 @@
                          </div>
                      </div>
                  </div>
+
                  <div class="row g-3 col-md-8">
                      <!-- Docs pendientes -->
                      <div class="col-md-3">
@@ -124,14 +143,14 @@
 
                  <!-- Costos -->
                  <div class="col-md-6" style="border:1px solid red;">
-                <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
-                <div class="d-flex">
-                <canvas id="costosChart" class="w-50 h-50 mt-3 "></canvas>
-                <ul class="list-unstyled mt-3" id="costosLeyenda">
-                    <!-- La leyenda se llenará con JS -->
-                </ul>
-                </div>
-                </div>
+                     <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
+                     <div class="d-flex">
+                         <canvas id="costosChart" class="w-50 h-50 mt-3 "></canvas>
+                         <ul class="list-unstyled mt-3" id="costosLeyenda">
+                             <!-- La leyenda se llenará con JS -->
+                         </ul>
+                     </div>
+                 </div>
              </div>
 
              <!-- Documentos + Trazabilidad -->

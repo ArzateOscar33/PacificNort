@@ -84,4 +84,132 @@ class Operaciones_maritimas_resumen extends Controller
         ], JSON_UNESCAPED_UNICODE);
         die();
     }
+
+    public function detalles_contenedor()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    // 1) Sesión
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode([
+            'status'  => 'warning',
+            'data'    => [],
+            'message' => 'Sesión expirada'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    // 2) Leer y validar params
+    $operacionId   = isset($_GET['operacion_id'])   ? (int)$_GET['operacion_id']   : 0;
+    $tipoRaw       = isset($_GET['tipo'])           ? trim($_GET['tipo'])           : '';
+    $contenedorId  = isset($_GET['id_contenedor'])  ? (int)$_GET['id_contenedor']  : 0;
+
+    if ($operacionId <= 0 || $contenedorId <= 0 || $tipoRaw === '') {
+        echo json_encode([
+            'status'  => 'warning',
+            'data'    => [],
+            'message' => 'Parámetros inválidos (operacion_id, tipo, id_contenedor)'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    // Normaliza tipo
+    $tipo = strtoupper($tipoRaw);
+    if ($tipo === 'FISICO') { $tipo = 'FERRO'; } // tratamos FISICO y FERRO como el mismo caso
+
+    // 3) Ruteo por tipo
+    try {
+        if ($tipo === 'MARITIMO') {
+            $row = $this->model->getDetalleContenedorMaritimo($operacionId, $contenedorId);
+                if (!$row) {
+                    echo json_encode(['status'=>'ok','tipo'=>'MARITIMO','data'=>[],'message'=>'Sin datos'], JSON_UNESCAPED_UNICODE);
+                    die();
+                }
+
+                // Normaliza $row a una sola fila asociativa
+                if (is_array($row)) {
+                    // si vino como array de filas, toma la primera
+                    if (isset($row[0]) && is_array($row[0])) { $row = $row[0]; }
+                } elseif (is_object($row)) {
+                    // si vino como objeto, castea a array
+                    $row = (array)$row;
+                }
+
+                $data = [
+                    'numero_contenedor' => (string)($row['numero_contenedor'] ?? ''),
+                    'puerto'            => (string)($row['puerto'] ?? ''),
+                    'eta'               => (string)($row['eta'] ?? ''),
+                    'etd'               => (string)($row['etd'] ?? ''),
+                    'bl'                => (string)($row['numero_bl'] ?? ''),
+                    'comentarios'       => (string)($row['comentarios_operacion'] ?? ($row['observaciones_contenedor'] ?? ''))
+                ];
+
+                echo json_encode([
+                    'status' => 'ok',
+                    'tipo'   => 'MARITIMO',
+                    'data'   => $data,
+                    'meta'   => ['operacion_id'=>$operacionId,'id_contenedor'=>$contenedorId]
+                ], JSON_UNESCAPED_UNICODE);
+                die();
+
+        }
+
+if ($tipo === 'FERRO') {
+    $row = $this->model->getDetalleContenedorFisico($operacionId, $contenedorId);
+    if (!$row) {
+        echo json_encode([
+            'status'  => 'ok',
+            'tipo'    => 'FERRO',
+            'data'    => [],
+            'message' => 'Sin datos para ese contenedor'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    // --- Normaliza a una sola fila asociativa ---
+    if (is_array($row)) {
+        // Si vino como array de filas, toma la primera
+        if (isset($row[0]) && (is_array($row[0]) || is_object($row[0]))) {
+            $row = $row[0];
+        }
+    }
+    if (is_object($row)) {
+        $row = (array)$row;
+    }
+
+    // --- Mapea con tolerancia al nombre de las llaves ---
+    $data = [
+        'numero_ferro'  => (string)($row['numero_ferro'] ?? $row['NUMERO_FERRO'] ?? $row['numeroFerro'] ?? ''),
+        'arribo_puerto' => (string)($row['arribo_a_puerto'] ?? $row['arribo_puerto'] ?? $row['ARRIBO_A_PUERTO'] ?? ''),
+        'bultos'        => (int)   ($row['bultos'] ?? $row['BULTOS'] ?? 0),
+        'comentarios'   => (string)($row['comentarios_contenedor'] ?? $row['comentarios'] ?? '')
+    ];
+
+    echo json_encode([
+        'status' => 'ok',
+        'tipo'   => 'FERRO',
+        'data'   => $data,
+        'meta'   => ['operacion_id' => $operacionId, 'id_contenedor' => $contenedorId]
+    ], JSON_UNESCAPED_UNICODE);
+    die();
+        }
+
+        // Tipo no soportado
+        echo json_encode([
+            'status'  => 'warning',
+            'data'    => [],
+            'message' => 'Tipo no soportado. Use MARITIMO o FERRO.'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+
+    } catch (Throwable $e) {
+        echo json_encode([
+            'status'  => 'error',
+            'data'    => [],
+            'message' => 'Error al obtener detalles: ' . $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+}
+
 }
