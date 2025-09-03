@@ -2,11 +2,12 @@
 require_once "Models/Operaciones_maritimas_contenedoresModel.php";
 require_once "Models/Operaciones_maritimas_costos_operacionModel.php";
 require_once "Models/Operaciones_maritimas_eventosModel.php";
+require_once "Models/Operaciones_maritimas_resumenModel.php";
 class Operaciones_maritimas extends Controller
 {
     private $contenedoresModel; 
     private $costos_OperacionModel;
-    private $eventosModel;
+    private $eventosModel; 
     public function __construct()
     {
         parent::__construct();
@@ -18,7 +19,7 @@ class Operaciones_maritimas extends Controller
         // Modelo especializado para el tab de contenedores
            $this->contenedoresModel = new Operaciones_maritimas_contenedoresModel();
            $this->costos_OperacionModel = new Operaciones_maritimas_costos_operacionModel();
-           $this->eventosModel = new Operaciones_maritimas_eventosModel();
+           $this->eventosModel = new Operaciones_maritimas_eventosModel(); 
     }
 
     
@@ -44,6 +45,8 @@ class Operaciones_maritimas extends Controller
 
         // Catálogos del tab “Detalles de Eventos Logísticos”
         $data['tipos_evento'] = $this->eventosModel->listarTiposEvento();
+
+         
 
         $this->views->getView('admin/operaciones_maritimas/', "ver", $data);
     }

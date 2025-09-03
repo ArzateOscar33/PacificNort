@@ -101,11 +101,11 @@ function renderPaginacionEventosLogisticos(total, page, perPage) {
         <td>${item.contenedor ?? ""}</td>
         <td>${item.comentario ?? ""}</td>
         <td>
-          <button class="btn btn-sm btn-info" onclick="editarEvento(${item.id_evento})">
-            <i class="fas fa-edit"></i> Editar
+          <button class="btn btn-sm btn-outline-secondary me-1" onclick="editarEvento(${item.id_evento})">
+            <i data-feather="edit"></i>
           </button>
-          <button class="btn btn-sm btn-danger" onclick="eliminarEvento(${item.id_evento})">
-            <i class="fas fa-trash-alt"></i> Eliminar
+          <button class="btn btn-sm btn-outline-danger" onclick="eliminarEvento(${item.id_evento})">
+            <i data-feather="x"></i>
           </button>
         </td>
       `;
