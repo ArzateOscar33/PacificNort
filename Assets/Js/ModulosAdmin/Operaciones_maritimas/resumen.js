@@ -26,9 +26,7 @@ function clearSugerencias() {
 }
 function limpiarDetalleUI() {
   document.getElementById('nombreContenedorResumen').textContent = '—';
-  const badge = document.getElementById('tipoBadgeResumen');
-  badge.textContent = '—';
-  badge.className = 'badge bg-secondary';
+   
   // Marítimo
   document.getElementById('puertoResumen').textContent = '—';
   document.getElementById('etaContenedor').textContent = '—';
@@ -181,9 +179,7 @@ function consultarDetallesContenedor() {
 
   // Cabecera
   document.getElementById('nombreContenedorResumen').textContent = numero;
-  const badge = document.getElementById('tipoBadgeResumen');
-  badge.textContent = (tipo === 'MARITIMO') ? 'Marítimo' : 'Ferro';
-  badge.className = 'badge ' + (tipo === 'MARITIMO' ? 'bg-primary' : 'bg-secondary');
+   
 
   // Alterna paneles
   document.getElementById('bloqueMaritimo').classList.toggle('d-none', tipo !== 'MARITIMO');
@@ -210,14 +206,19 @@ function consultarDetallesContenedor() {
 }
 
 function pintarDetalleContenedor(tipo, data) {
+   
   if (tipo === 'MARITIMO') {
+    document.getElementById('nombreContenedorResumen').textContent = data.numero_contenedor || '—';
     document.getElementById('puertoResumen').textContent   = data.puerto || '—';
     document.getElementById('etaContenedor').textContent   = data.eta || '—';
     document.getElementById('etdContenedor').textContent   = data.etd || '—';
     document.getElementById('blContenedor').textContent    = data.bl || '—';
     document.getElementById('comentarioContenedor').textContent = data.comentarios || '—';
+    
+     
   } else {
-    document.getElementById('arriboPuerto').textContent    = data.arribo_puerto || '—';
+    document.getElementById('nombreContenedorResumen').textContent = data.numero_ferro || '—';
+    document.getElementById('arriboPuerto').textContent    = data.arribo_puerto || 'Falta Registrar Arribo';
     document.getElementById('bultos').textContent          = (data.bultos != null ? data.bultos : '—');
     document.getElementById('comentarioContenedor').textContent = data.comentarios || '—';
   }

@@ -35,7 +35,7 @@
                                  <div class="small text-muted">Contenedor</div>
                                  <div id="nombreContenedorResumen">—</div>
                              </div>
-                             <span id="tipoBadgeResumen" class="badge bg-primary">—</span>
+                            
                          </div>
 
                          <!-- ===== Vista MARÍTIMO ===== -->
