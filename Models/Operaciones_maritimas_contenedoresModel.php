@@ -2,10 +2,10 @@
 class Operaciones_maritimas_contenedoresModel extends Query
 {
 
-       // Operaciones “abiertas” o activas (ajusta criterio si usas otro estatus)
-public function catalogoOperaciones(): array
-{
-    $sql = "SELECT 
+    // Operaciones “abiertas” o activas (ajusta criterio si usas otro estatus)
+    public function catalogoOperaciones(): array
+    {
+        $sql = "SELECT 
                 o.id_operacion,
                 o.numero_operacion,
                 o.numero_bl,
@@ -17,8 +17,8 @@ public function catalogoOperaciones(): array
             WHERE o.estatus_id <> 6
             ORDER BY o.id_operacion DESC
             LIMIT 1000";
-    return $this->selectAll($sql) ?: [];
-}
+        return $this->selectAll($sql) ?: [];
+    }
 
 
     // Contenedores físicos (terrestres/ferros)
@@ -41,16 +41,16 @@ public function catalogoOperaciones(): array
         return $this->selectAll($sql) ?: [];
     }
     /** Retorna [cliente_id, cliente_nombre] para una operación */
-public function getClienteDeOperacion(int $operacion_id): ?array
-{
-    $sql = "SELECT c.id_cliente AS cliente_id, COALESCE(c.nombre,'') AS cliente
+    public function getClienteDeOperacion(int $operacion_id): ?array
+    {
+        $sql = "SELECT c.id_cliente AS cliente_id, COALESCE(c.nombre,'') AS cliente
             FROM operaciones o
             LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
             WHERE o.id_operacion = ?
             LIMIT 1";
-    $row = $this->select($sql, [$operacion_id]);
-    return $row ?: null;
-}
+        $row = $this->select($sql, [$operacion_id]);
+        return $row ?: null;
+    }
 
     /**
      * Lista contenedores en operación (marítimos + terrestres) con filtros opcionales.
@@ -59,21 +59,21 @@ public function getClienteDeOperacion(int $operacion_id): ?array
      *   'term' => 'texto a buscar en contenedor o cliente'
      * ]
      */
-public function listar(array $filters = []): array
-{
-    $args = [];
+    public function listar(array $filters = []): array
+    {
+        $args = [];
 
-    // Búsqueda libre
-    $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'],'UTF-8')) : '';
-    $buscar = ($term !== '');
-    if ($buscar) {
-        $needle = "%{$term}%";
-    }
+        // Búsqueda libre
+        $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
+        $buscar = ($term !== '');
+        if ($buscar) {
+            $needle = "%{$term}%";
+        }
 
-    // Filtro por tipo
-    $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
+        // Filtro por tipo
+        $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
 
-    $sql = "
+        $sql = "
     SELECT * FROM (
         /* ===== MARÍTIMO ===== */
         SELECT   
@@ -142,35 +142,35 @@ public function listar(array $filters = []): array
     ORDER BY x.eta DESC, x.contenedor ASC
     ";
 
-    if ($buscar) {
-        // tramo marítimo
-        $args[] = $needle; // numero_contenedor
-        $args[] = $needle; // cliente
-        $args[] = $needle; // numero_operacion
-        // tramo terrestre
-        $args[] = $needle; // numero_ferro
-        $args[] = $needle; // cliente (cli2/cli)
-        $args[] = $needle; // numero_operacion
+        if ($buscar) {
+            // tramo marítimo
+            $args[] = $needle; // numero_contenedor
+            $args[] = $needle; // cliente
+            $args[] = $needle; // numero_operacion
+            // tramo terrestre
+            $args[] = $needle; // numero_ferro
+            $args[] = $needle; // cliente (cli2/cli)
+            $args[] = $needle; // numero_operacion
+        }
+
+        return $this->selectAll($sql, $args) ?: [];
     }
 
-    return $this->selectAll($sql, $args) ?: [];
-}
+    public function listarPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
+    {
+        $args = [];
+        $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
+        $buscar = ($term !== '');
+        $needle = $buscar ? "%{$term}%" : null;
 
-public function listarPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
-{
-    $args = [];
-    $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'],'UTF-8')) : '';
-    $buscar = ($term !== '');
-    $needle = $buscar ? "%{$term}%" : null;
+        $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
 
-    $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
+        // --- WHERE de búsqueda para cada tramo ---
+        $whereBusqMar = $buscar ? " AND (LOWER(cm.numero_contenedor) LIKE ? OR LOWER(cli.nombre) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
+        $whereBusqTer = $buscar ? " AND (LOWER(cf.numero_ferro) LIKE ? OR LOWER(COALESCE(cli2.nombre, cli.nombre, '')) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
 
-    // --- WHERE de búsqueda para cada tramo ---
-    $whereBusqMar = $buscar ? " AND (LOWER(cm.numero_contenedor) LIKE ? OR LOWER(cli.nombre) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
-    $whereBusqTer = $buscar ? " AND (LOWER(cf.numero_ferro) LIKE ? OR LOWER(COALESCE(cli2.nombre, cli.nombre, '')) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
-
-    // --- Subquery base (sin orden ni limit) ---
-    $sub = "
+        // --- Subquery base (sin orden ni limit) ---
+        $sub = "
       SELECT * FROM (
         /* ===== MARÍTIMO ===== */
         SELECT   
@@ -227,45 +227,45 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
       " . ($filtroTipo === 'maritimo' ? " AND x.tipo = 'maritimo' " : "") . "
       " . ($filtroTipo === 'terrestre' ? " AND x.tipo = 'terrestre' " : "");
 
-    // --- Args búsqueda (se duplican para ambos tramos si corresponde) ---
-    $argsBuscar = [];
-    if ($buscar) {
-        // marítimo
-        array_push($argsBuscar, $needle, $needle, $needle);
-        // terrestre
-        array_push($argsBuscar, $needle, $needle, $needle);
-    }
+        // --- Args búsqueda (se duplican para ambos tramos si corresponde) ---
+        $argsBuscar = [];
+        if ($buscar) {
+            // marítimo
+            array_push($argsBuscar, $needle, $needle, $needle);
+            // terrestre
+            array_push($argsBuscar, $needle, $needle, $needle);
+        }
 
-    // --- TOTAL ---
-    $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
-    $row = $this->select($sqlCount, $argsBuscar);
-    $total = (int)($row['total'] ?? 0);
+        // --- TOTAL ---
+        $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
+        $row = $this->select($sqlCount, $argsBuscar);
+        $total = (int)($row['total'] ?? 0);
 
-    // --- Paginación ---
-    $per_page = max(1, min($per_page, 200));
-    $total_pages = max(1, (int)ceil($total / $per_page));
-    $page   = max(1, min($page, $total_pages));
-    $offset = ($page - 1) * $per_page;
+        // --- Paginación ---
+        $per_page = max(1, min($per_page, 200));
+        $total_pages = max(1, (int)ceil($total / $per_page));
+        $page   = max(1, min($page, $total_pages));
+        $offset = ($page - 1) * $per_page;
 
-    // --- DATA ---
+        // --- DATA ---
         $sqlData = "{$sub} ORDER BY x.eta DESC, x.contenedor ASC
                 LIMIT {$per_page} OFFSET {$offset}";
-    $argsData = $argsBuscar;
+        $argsData = $argsBuscar;
 
-    $data = $this->selectAll($sqlData, $argsData) ?: [];
+        $data = $this->selectAll($sqlData, $argsData) ?: [];
 
-    return [
-        'data' => $data,
-        'meta' => [
-            'total'       => $total,
-            'page'        => $page,
-            'per_page'    => $per_page,
-            'total_pages' => $total_pages,
-        ]
-    ];
-}
+        return [
+            'data' => $data,
+            'meta' => [
+                'total'       => $total,
+                'page'        => $page,
+                'per_page'    => $per_page,
+                'total_pages' => $total_pages,
+            ]
+        ];
+    }
 
-/** Busca un contenedor físico por su número (case-insensitive). */
+    /** Busca un contenedor físico por su número (case-insensitive). */
     public function findContenedorFisicoByNumero(string $numero_ferro)
     {
         $sql = "SELECT id_fisico, numero_ferro, estatus
@@ -298,14 +298,15 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
     }
 
     /** Verifica si ya existe la relación contenedor físico ↔ operación. */
-    public function existsContenedorFisicoOperacion(int $operacion_id, int $id_fisico)
-    {
-        $sql = "SELECT id_contenedor_operacion
-                FROM contenedores_operacion
-                WHERE operacion_id = ? AND id_fisico = ?
-                LIMIT 1";
-        return $this->select($sql, [$operacion_id, $id_fisico]);
-    }
+public function existsContenedorFisicoOperacion(int $operacion_id, int $id_fisico)
+{
+    $sql = "SELECT id_contenedor
+            FROM contenedores_operacion
+            WHERE operacion_id = ? AND id_fisico = ?
+            LIMIT 1";
+    return $this->select($sql, [$operacion_id, $id_fisico]);
+}
+
 
     /**
      * Inserta la relación contenedor físico ↔ operación.
@@ -367,7 +368,7 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
     }
 
 
-        /** Detalle para Editar por tipo + row_id (vínculo) */
+    /** Detalle para Editar por tipo + row_id (vínculo) */
     public function getDetalleParaEditar(string $tipo, int $row_id): ?array
     {
         $tipo = strtolower(trim($tipo));
@@ -411,7 +412,7 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
                     COALESCE(cli.nombre,'')    AS cliente,
                     cf.id_fisico,
                     cf.numero_ferro,
-                    co.bultos,
+                    COALESCE(co.bultos, 0)    AS bultos,
                     co.peso,
                     co.comentarios,
                     o.shipper_id,
@@ -432,86 +433,90 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
         $row['editable'] = true;
         return $row;
     }
-        /** ¿Ya existe el mismo id_fisico en esta operación, excluyendo este row_id? */
-        public function existsContenedorFisicoOperacionExcept(int $operacion_id, int $id_fisico, int $row_id)
-        {
-            $sql = "SELECT id_contenedor
+    /** ¿Ya existe el mismo id_fisico en esta operación, excluyendo este row_id? */
+    public function existsContenedorFisicoOperacionExcept(int $operacion_id, int $id_fisico, int $row_id)
+    {
+        $sql = "SELECT id_contenedor
                     FROM contenedores_operacion
                     WHERE operacion_id = ? AND id_fisico = ? AND id_contenedor <> ?
                     LIMIT 1";
-            return $this->select($sql, [$operacion_id, $id_fisico, $row_id]);
-        }
+        return $this->select($sql, [$operacion_id, $id_fisico, $row_id]);
+    }
 
-        /** Actualiza el vínculo terrestre (cambia físico, bultos, comentarios) */
-        public function updateContenedorFisicoOperacion(int $row_id, int $id_fisico, ?int $bultos, ?string $comentarios): bool
-        {
-            $sql = "UPDATE contenedores_operacion
+    /** Actualiza el vínculo terrestre (cambia físico, bultos, comentarios) */
+    public function updateContenedorFisicoOperacion(int $row_id, int $id_fisico, ?int $bultos, ?string $comentarios): bool
+    {
+        $sql = "UPDATE contenedores_operacion
                     SET id_fisico = ?, bultos = ?, comentarios = ?
                     WHERE id_contenedor = ?";
-            $ok = $this->save($sql, [$id_fisico, $bultos, $comentarios, $row_id]);
-            return $ok > 0;
+        $ok = $this->save($sql, [$id_fisico, $bultos, $comentarios, $row_id]);
+        return $ok > 0;
+    }
+    // En Operaciones_maritimas_contenedoresModel.php
+    public function actualizarTerrestreByNumero( int $rowId,int $operacionId, string $numeroFerro, ?int $bultos, ?string $comentarios): array 
+    {
+        // Normaliza ferro
+        $numeroFerro = strtoupper(preg_replace('/\s+/', '', $numeroFerro));
+
+        // Asegura/obtiene id_fisico
+        $fisico = $this->findContenedorFisicoByNumero($numeroFerro);
+        if ($fisico && (int)$fisico['estatus'] === 0) {
+            return ['status' => 'warning', 'msg' => 'El contenedor físico existe pero está INACTIVO'];
         }
-        public function actualizarTerrestreByNumero(
-            int $row_id,
-            int $operacion_id,
-            string $numero_ferro,
-            ?int $bultos,
-            ?string $comentarios
-        ): array {
-            // Asegurar contenedor físico activo
-            $rowFis = $this->findContenedorFisicoByNumero($numero_ferro);
-            if (!empty($rowFis) && isset($rowFis['estatus']) && (int)$rowFis['estatus'] === 0) {
-                return ['status'=>'warning','msg'=>'El contenedor existe pero está INACTIVO. Reactívalo primero.'];
-            }
-            $id_fisico = !empty($rowFis) ? (int)$rowFis['id_fisico'] : (int)$this->insertContenedorFisico($numero_ferro);
-            if ($id_fisico <= 0) {
-                return ['status'=>'error','msg'=>'No se pudo crear/obtener el contenedor físico'];
-            }
-
-            // Duplicado (otra fila en la misma operación con el mismo físico)
-            $dupe = $this->existsContenedorFisicoOperacionExcept($operacion_id, $id_fisico, $row_id);
-            if (!empty($dupe)) {
-                return ['status'=>'warning','msg'=>'Ya existe este contenedor físico en la operación'];
-            }
-
-            $ok = $this->updateContenedorFisicoOperacion($row_id, $id_fisico, $bultos, $comentarios);
-            if (!$ok) return ['status'=>'error','msg'=>'No se pudo actualizar el contenedor'];
-
-            return [
-                'status'=>'success',
-                'msg'=>'Contenedor actualizado',
-                'data'=>[
-                    'row_id'      => $row_id,
-                    'id_fisico'   => $id_fisico,
-                    'numero_ferro'=> $numero_ferro,
-                    'bultos'      => $bultos,
-                    'comentarios' => $comentarios
-                ]
-            ];
+        $id_fisico = $fisico ? (int)$fisico['id_fisico'] : (int)$this->insertContenedorFisico($numeroFerro);
+        if ($id_fisico <= 0) {
+            return ['status' => 'error', 'msg' => 'No se pudo asegurar el contenedor físico'];
         }
-                /** ¿Ya existe ESTE número de ferro en la operación? (case/trim-insensitive) */
-        public function existsFerroEnOperacionPorNumero(int $operacion_id, string $numero_ferro)
-        {
-            $sql = "SELECT co.id_contenedor
+
+        // Valida duplicado del mismo físico en la operación (excluyendo este row)
+        $dupe = $this->existsContenedorFisicoOperacionExcept($operacionId, $id_fisico, $rowId); // implementa el exclude si no lo tienes
+        if (!empty($dupe)) {
+            return ['status' => 'warning', 'msg' => 'Ya existe ese contenedor físico en la operación'];
+        }
+
+        // IMPORTANTE: No uses empty($bultos). 0 es válido.
+        // Guarda tal cual el valor: NULL o 0/positivo.
+        $sql = "UPDATE contenedores_operacion
+            SET id_fisico = ?,
+                bultos = ?,                 -- 👈 asignación directa; permite 0
+                comentarios = ?
+            WHERE id_contenedor = ?
+            LIMIT 1";
+        $ok = $this->save($sql, [
+            $id_fisico,
+            $bultos,                           // puede ser NULL o 0 o >0
+            ($comentarios !== null && $comentarios !== '') ? $comentarios : null,
+            $rowId
+        ]);
+
+        if (!$ok) {
+            return ['status' => 'error', 'msg' => 'No se pudo actualizar el contenedor'];
+        }
+        return ['status' => 'success', 'msg' => 'Contenedor actualizado'];
+    }
+
+    /** ¿Ya existe ESTE número de ferro en la operación? (case/trim-insensitive) */
+    public function existsFerroEnOperacionPorNumero(int $operacion_id, string $numero_ferro)
+    {
+        $sql = "SELECT co.id_contenedor
                     FROM contenedores_operacion co
                     INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
                     WHERE co.operacion_id = ?
                     AND UPPER(TRIM(cf.numero_ferro)) = UPPER(TRIM(?))
                     LIMIT 1";
-            return $this->select($sql, [$operacion_id, $numero_ferro]);
-        }
+        return $this->select($sql, [$operacion_id, $numero_ferro]);
+    }
 
-        /** Igual que la anterior, pero excluyendo un row_id (para edición) */
-        public function existsFerroEnOperacionPorNumeroExcept(int $operacion_id, string $numero_ferro, int $exclude_row_id)
-        {
-            $sql = "SELECT co.id_contenedor
+    /** Igual que la anterior, pero excluyendo un row_id (para edición) */
+    public function existsFerroEnOperacionPorNumeroExcept(int $operacion_id, string $numero_ferro, int $exclude_row_id)
+    {
+        $sql = "SELECT co.id_contenedor
                     FROM contenedores_operacion co
                     INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
                     WHERE co.operacion_id = ?
                     AND UPPER(TRIM(cf.numero_ferro)) = UPPER(TRIM(?))
                     AND co.id_contenedor <> ?
                     LIMIT 1";
-            return $this->select($sql, [$operacion_id, $numero_ferro, $exclude_row_id]);
-        }
-
+        return $this->select($sql, [$operacion_id, $numero_ferro, $exclude_row_id]);
+    }
 }

@@ -283,7 +283,7 @@ const row_id     = document.getElementById('row_id')?.value?.trim() || '';
 
 const operacion_id = parseInt(document.getElementById('operacion_id')?.value?.trim() || '0', 10) || 0;
 let numero_ferro   = document.getElementById('contenedorNombre')?.value?.trim() || '';
-const bultos       = document.getElementById('bultos')?.value?.trim() || '';
+const bultos       = document.getElementById('bultosContenedores')?.value?.trim() || '';
 const cliente_id   = document.getElementById('cliente_id')?.value?.trim() || '';
 const comentarios  = document.getElementById('comentarios')?.value?.trim() || '';
 
@@ -310,13 +310,13 @@ if ((modo === 'edit' || row_id) && row_id){
   fd.append('row_id', String(row_id));
   fd.append('operacion_id', String(operacion_id));
   fd.append('numero_ferro', numero_ferro);
-  fd.append('bultos', bultos);
+  fd.append('bultosContenedores', bultos);
   fd.append('comentarios', comentarios);
 } else {
   url = base_url + 'Operaciones_maritimas_contenedores/registrarFisico';
   fd.append('operacion_id', String(operacion_id));
   fd.append('numero_ferro', numero_ferro);
-  fd.append('bultos', bultos);
+  fd.append('bultosContenedores', bultos);
   fd.append('cliente_id', cliente_id); // el backend forzará el de la operación
   fd.append('comentarios', comentarios);
 }
@@ -416,7 +416,7 @@ tablaContenedores.addEventListener('click', function (e) {
       Swal.fire('Error', 'Respuesta inválida del servidor', 'error');
       return;
     }
-
+  console.log('DETALLE CONTENEDOR:', res.data);
     if (res.status === 'warning' && res.data?.editable === false) {
       Swal.fire('Aviso', (res.msg || 'Este contenedor se edita en el módulo de Operaciones'), 'warning');
       return;
@@ -457,7 +457,7 @@ tablaContenedores.addEventListener('click', function (e) {
     // Contenedor físico y demás campos editables
     document.getElementById('contenedor_id').value   = d.id_fisico || ''; // (opcional)
     document.getElementById('contenedorNombre').value= d.numero_ferro || '';
-    document.getElementById('bultos').value          = (d.bultos ?? '');
+    document.getElementById('bultosContenedores').value          = (d.bultos ?? '');
     document.getElementById('comentarios').value     = (d.comentarios ?? '');
 
     // Título del modal y botón

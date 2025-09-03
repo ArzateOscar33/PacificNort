@@ -112,7 +112,7 @@
             </div>
             <div class="col-md-6">
               <label for="bultos" class="form-label">Bultos</label>
-              <input type="number" id="bultos" name="bultos" class="form-control">
+              <input type="number" id="bultosContenedores" name="bultosContenedores" class="form-control">
             </div>
 
           </div>

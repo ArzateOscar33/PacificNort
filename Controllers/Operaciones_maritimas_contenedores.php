@@ -21,7 +21,7 @@ public function registrarFisico()
     try {
         $operacion_id = (int)($_POST['operacion_id'] ?? 0);
         $numero_ferro = isset($_POST['numero_ferro']) ? trim($_POST['numero_ferro']) : '';
-        $bultos       = isset($_POST['bultos']) ? (int)$_POST['bultos'] : null;
+        $bultos       = isset($_POST['bultosContenedores']) ? (int)$_POST['bultosContenedores'] : null;
 
         // viene desde la vista pero lo validaremos contra la operación
         $cliente_id_in = isset($_POST['cliente_id']) ? (int)$_POST['cliente_id'] : 0;
@@ -237,7 +237,7 @@ public function actualizarFisico()
         $row_id       = (int)($_POST['row_id'] ?? 0);           // id de contenedores_operacion
         $operacion_id = (int)($_POST['operacion_id'] ?? 0);     // para validar duplicados
         $numero_ferro = isset($_POST['numero_ferro']) ? trim($_POST['numero_ferro']) : '';
-        $bultos       = (isset($_POST['bultos']) && $_POST['bultos'] !== '') ? (int)$_POST['bultos'] : null;
+        $bultos       = (isset($_POST['bultosContenedores']) && $_POST['bultosContenedores'] !== '') ? (int)$_POST['bultosContenedores'] : null;
         $comentarios  = isset($_POST['comentarios']) ? trim($_POST['comentarios']) : null;
 
         if ($row_id <= 0 || $operacion_id <= 0) {

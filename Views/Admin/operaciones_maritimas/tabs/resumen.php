@@ -5,7 +5,7 @@
              <div class="d-flex gap-2">
                  <div class="col-md-12 position-relative">
                      <input type="text" id="buscarOperacionResumen" name="buscarOperacionResumen" class="form-control "
-                         placeholder="Buscar Operacion">
+                         placeholder="Buscar Operacion" autocomplete="off">
                      <div id="sugerenciasOperacionResumen" class="list-group position-absolute w-100"
                          style="z-index:999; display:none; top:100%; left:0;"></div>
                  </div>
