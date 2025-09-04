@@ -91,7 +91,7 @@
                          <div
                              class="bg-warning text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="file-text" class="mb-1"></i>
-                             <h5 class="fw-bold">3</h5>
+                             <h5 class="fw-bold" id="docsPendientesResumen">3</h5>
                              <p class="mb-0">Docs pendientes</p>
                          </div>
                      </div>
@@ -156,36 +156,38 @@
              <!-- Documentos + Trazabilidad -->
              <div class="row mt-4 g-3">
                  <!-- Checklist de Documentos -->
-                 <div class="col-md-6">
-                     <div class="border rounded p-3">
-                         <div class="d-flex justify-content-between align-items-center mb-2">
-                             <h6 class="mb-0"><i data-feather="clipboard" class="me-1"></i> Documentos</h6>
+                <!-- ===== Documentos faltantes por contenedor ===== -->
+                <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Documentos faltantes</strong><br>
+                        <small id="dfContenedorInfo" class="text-muted">Seleccione un contenedor…</small>
+                    </div>
+                    <span class="badge bg-warning text-dark" id="dfBadgeCount">0</span>
+                    </div>
+                    <div class="card-body">
+                    <!-- Placeholder Cargando -->
+                    <div id="dfLoading" class="text-center text-muted" style="display:none;">
+                        Cargando pendientes…
+                    </div>
 
-                         </div>
+                    <!-- Placeholder Sin pendientes -->
+                    <div id="dfEmpty" class="alert alert-success py-2" style="display:none;">
+                        No hay documentos pendientes para este contenedor.
+                    </div>
 
-                         <ul class="list-group">
+                    <!-- Lista de faltantes -->
+                    <ul id="dfLista" class="list-group list-group-flush" style="display:none;"></ul>
+                    </div>
+                </div>
+                </div>
 
-                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                 Lista de Empaque
-                                 <span class="badge bg-warning text-dark">Pendiente</span>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                 Carta Porte
-                                 <span class="badge bg-warning text-dark">Pendiente</span>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                 Pedimento
-                                 <span class="badge bg-warning text-dark">Pendiente</span>
-                             </li>
-                         </ul>
+<!-- Hidden helpers que poblará JS cuando selecciones operación/contenedor -->
+<input type="hidden" id="dfOperacionId" value="">
+<input type="hidden" id="dfContenedorId" value="">
+<input type="hidden" id="dfContenedorTipo" value=""> <!-- 'F' o 'M' -->
 
-                         <div class="text-end mt-2">
-                             <button class="btn btn-sm btn-outline-primary">
-                                 <i data-feather="link" class="me-1"></i> Ir a Modulo de Documentos
-                             </button>
-                         </div>
-                     </div>
-                 </div>
 
                  <!-- Trazabilidad (tabla) -->
                  <div class="col-md-6">

@@ -1,225 +1,336 @@
+ 
 // =========================
 // Refs + estado
 // =========================
-const selectContenedorResumen  = document.getElementById("selectContenedorResumen");
-const inpBuscarOpResumen       = document.getElementById("buscarOperacionResumen");
-const boxSugsOpResumen         = document.getElementById("sugerenciasOperacionResumen");
-const btnRef                   = document.getElementById("btnRefrescarResumen");
+const selectContenedorResumen            = document.getElementById("selectContenedorResumen");
+const inpBuscarOpResumen                 = document.getElementById("buscarOperacionResumen");
+const boxSugsOpResumen                   = document.getElementById("sugerenciasOperacionResumen");
+const btnRefResumen                      = document.getElementById("btnRefrescarResumen");
 
-let operacionIdActivo   = null;
-let lastXHRContenedores = null;
-let lastXHRSugerencias  = null;
-let debounceTimer       = null;
+// Estado (con sufijo Resumen)
+let operacionIdActivoResumen             = null;
+let lastXHRContenedoresResumen           = null;
+let lastXHRSugerenciasResumen            = null;
+let lastXHRFaltantesResumen              = null;
+let debounceTimerResumen                 = null;
 
 // =========================
 // Helpers UI
 // =========================
-function setContenedoresLoading() {
+function setContenedoresLoadingResumen() {
   selectContenedorResumen.innerHTML = '<option value="">Cargando contenedores…</option>';
 }
-function setContenedoresEmpty(msg = 'Sin contenedores') {
+function setContenedoresEmptyResumen(msg = 'Sin contenedores') {
   selectContenedorResumen.innerHTML = `<option value="">${msg}</option>`;
 }
-function clearSugerencias() {
+function clearSugerenciasResumen() {
   boxSugsOpResumen.style.display = 'none';
   boxSugsOpResumen.innerHTML = '';
 }
-function limpiarDetalleUI() {
+function limpiarDetalleUIResumen() {
   document.getElementById('nombreContenedorResumen').textContent = '—';
-   
   // Marítimo
-  document.getElementById('puertoResumen').textContent = '—';
-  document.getElementById('etaContenedor').textContent = '—';
-  document.getElementById('etdContenedor').textContent = '—';
-  document.getElementById('blContenedor').textContent = '—';
-  document.getElementById('comentarioContenedor').textContent = '—';
+  document.getElementById('puertoResumen').textContent           = '—';
+  document.getElementById('etaContenedor').textContent           = '—';
+  document.getElementById('etdContenedor').textContent           = '—';
+  document.getElementById('blContenedor').textContent            = '—';
+  document.getElementById('comentarioContenedor').textContent    = '—';
   // Ferro
-  document.getElementById('arriboPuerto').textContent = '—';
-  document.getElementById('bultos').textContent = '—';
+  document.getElementById('arriboPuerto').textContent            = '—';
+  document.getElementById('bultos').textContent                  = '—';
 }
-function setDetalleLoading() {
+function setDetalleLoadingResumen() {
   document.getElementById('comentarioContenedor').textContent = 'Cargando…';
 }
 
 // =========================
 // Sugerencias (autocomplete)
 // =========================
-function renderSugerencias(items) {
-  if (!Array.isArray(items) || items.length === 0) { clearSugerencias(); return; }
+function renderSugerenciasResumen(itemsResumen) {
+  if (!Array.isArray(itemsResumen) || itemsResumen.length === 0) { clearSugerenciasResumen(); return; }
   boxSugsOpResumen.innerHTML = '';
-  items.forEach(row => {
-    const a = document.createElement('a');
-    a.className   = 'list-group-item list-group-item-action';
-    a.href        = '#';
-    a.textContent = row.label; // "EN-06 — Cliente X"
-    a.addEventListener('click', (e) => {
+  itemsResumen.forEach(rowResumen => {
+    const aResumen = document.createElement('a');
+    aResumen.className   = 'list-group-item list-group-item-action';
+    aResumen.href        = '#';
+    aResumen.textContent = rowResumen.label; // "EN-06 — Cliente X"
+    aResumen.addEventListener('click', (e) => {
       e.preventDefault();
-      seleccionarSugerencia(row);
+      seleccionarSugerenciaResumen(rowResumen);
     });
-    boxSugsOpResumen.appendChild(a);
+    boxSugsOpResumen.appendChild(aResumen);
   });
   boxSugsOpResumen.style.display = 'block';
 }
 
-function doSearchSugerencias(term) {
-  if (lastXHRSugerencias) { try { lastXHRSugerencias.abort(); } catch(e){} }
-  const http = new XMLHttpRequest();
-  lastXHRSugerencias = http;
+function doSearchSugerenciasResumen(termResumen) {
+  if (lastXHRSugerenciasResumen) { try { lastXHRSugerenciasResumen.abort(); } catch(e){} }
+  const httpResumen = new XMLHttpRequest();
+  lastXHRSugerenciasResumen = httpResumen;
 
-  http.open("GET", base_url + "operaciones_maritimas_resumen/sugerencias?term=" + encodeURIComponent(term), true);
-  http.onreadystatechange = function() {
+  httpResumen.open("GET", base_url + "operaciones_maritimas_resumen/sugerencias?term=" + encodeURIComponent(termResumen), true);
+  httpResumen.onreadystatechange = function() {
     if (this.readyState !== 4) return;
     if (this.status === 200) {
-      let res; try { res = JSON.parse(this.responseText); } catch { res = null; }
-      if (!res || res.status !== 'ok') { clearSugerencias(); return; }
-      renderSugerencias(res.data);
+      let resResumen; try { resResumen = JSON.parse(this.responseText); } catch { resResumen = null; }
+      if (!resResumen || resResumen.status !== 'ok') { clearSugerenciasResumen(); return; }
+      renderSugerenciasResumen(resResumen.data);
     } else {
-      clearSugerencias();
+      clearSugerenciasResumen();
     }
   };
-  http.send();
+  httpResumen.send();
 }
 
 inpBuscarOpResumen.addEventListener('input', function() {
-  const term = this.value.trim();
-  clearTimeout(debounceTimer);
-  if (term.length < 2) { clearSugerencias(); return; }
-  debounceTimer = setTimeout(() => doSearchSugerencias(term), 250);
+  const termResumen = this.value.trim();
+  clearTimeout(debounceTimerResumen);
+  if (termResumen.length < 2) { clearSugerenciasResumen(); return; }
+  debounceTimerResumen = setTimeout(() => doSearchSugerenciasResumen(termResumen), 250);
 });
 
 document.addEventListener('click', (e) => {
   if (!boxSugsOpResumen.contains(e.target) && e.target !== inpBuscarOpResumen) {
-    clearSugerencias();
+    clearSugerenciasResumen();
   }
 });
 inpBuscarOpResumen.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') clearSugerencias();
+  if (e.key === 'Escape') clearSugerenciasResumen();
 });
 
-// Al elegir una sugerencia -> fijamos operación y cargamos contenedores
-function seleccionarSugerencia(row) {
-  inpBuscarOpResumen.value = row.label;
-  operacionIdActivo = String(row.id);
-  cargarContenedores(operacionIdActivo);
-  clearSugerencias();
+// Elegir operación de las sugerencias
+function seleccionarSugerenciaResumen(rowResumen) {
+  inpBuscarOpResumen.value = rowResumen.label;
+  operacionIdActivoResumen = String(rowResumen.id);
+  cargarContenedoresResumen(operacionIdActivoResumen);
+  clearSugerenciasResumen();
 }
 
 // =========================
 // Contenedores por operación
 // =========================
-function cargarContenedores(operacionIdResumen) {
-  if (lastXHRContenedores) { try { lastXHRContenedores.abort(); } catch(e){} }
-  setContenedoresLoading();
+function cargarContenedoresResumen(operacionIdResumen) {
+  if (lastXHRContenedoresResumen) { try { lastXHRContenedoresResumen.abort(); } catch(e){} }
+  setContenedoresLoadingResumen();
 
-  const http = new XMLHttpRequest();
-  lastXHRContenedores = http;
+  const httpResumen = new XMLHttpRequest();
+  lastXHRContenedoresResumen = httpResumen;
 
-  http.open(
+  httpResumen.open(
     "GET",
     base_url + "operaciones_maritimas_resumen/listarContenedoresPorOperacion?id_operacion=" + encodeURIComponent(operacionIdResumen),
     true
   );
-  http.onreadystatechange = function () {
+  httpResumen.onreadystatechange = function () {
     if (this.readyState !== 4) return;
 
     if (this.status === 200) {
-      let res; try { res = JSON.parse(this.responseText); } catch { res = null; }
-      if (!res || (res.status && res.status !== 'ok')) {
-        setContenedoresEmpty('No se pudieron cargar contenedores');
+      let resResumen; try { resResumen = JSON.parse(this.responseText); } catch { resResumen = null; }
+      if (!resResumen || (resResumen.status && resResumen.status !== 'ok')) {
+        setContenedoresEmptyResumen('No se pudieron cargar contenedores');
         return;
       }
-      renderContenedores(res);
+      renderContenedoresResumen(resResumen);
     } else {
-      setContenedoresEmpty('Error al cargar contenedores');
+      setContenedoresEmptyResumen('Error al cargar contenedores');
     }
   };
-  http.send();
+  httpResumen.send();
 }
 
-function renderContenedores(res) {
+function renderContenedoresResumen(resResumen) {
   selectContenedorResumen.innerHTML = "";
-  const rows = Array.isArray(res.contenedores) ? res.contenores : (Array.isArray(res.data) ? res.data : res.contenedores);
-  // Fallback correcto:
-  const data = Array.isArray(res.contenedores) ? res.contenedores : (Array.isArray(res.data) ? res.data : []);
 
-  if (!data || data.length === 0) { setContenedoresEmpty(); return; }
+  // Normaliza posibles formas de respuesta {contenedores:[...]} o {data:[...]}
+  const dataResumen = Array.isArray(resResumen.contenedores) ? resResumen.contenedores
+                    : Array.isArray(resResumen.data)         ? resResumen.data
+                    : [];
 
-  data.forEach(c => {
-    const option = document.createElement("option");
-    option.value = c.id_contenedor;                                    // id genérico
-    option.textContent = `${c.tipo_contenedor} · ${c.numero_contenedor}`;
-    option.dataset.tipo   = (c.tipo_contenedor || '').toUpperCase();   // "MARITIMO" | "FERRO"
-    option.dataset.numero = c.numero_contenedor || '';
-    selectContenedorResumen.appendChild(option);
+  if (!dataResumen || dataResumen.length === 0) { setContenedoresEmptyResumen(); return; }
+
+  dataResumen.forEach(cResumen => {
+    const optionResumen = document.createElement("option");
+    // MUY IMPORTANTE: value = ID PIVOT (co.id_contenedor para F | cmo.id para M)
+    optionResumen.value = cResumen.id_pivot ?? cResumen.id_contenedor ?? '';
+    optionResumen.textContent = `${cResumen.tipo_contenedor} · ${cResumen.numero_contenedor}`;
+    optionResumen.dataset.tipo   = (cResumen.tipo_contenedor || '').toUpperCase(); // "MARITIMO" | "FERRO" (o "M"/"F")
+    optionResumen.dataset.fm     = (cResumen.fm_tipo || '').toUpperCase();         // "M" | "F" si viene
+    optionResumen.dataset.numero = cResumen.numero_contenedor || '';
+    selectContenedorResumen.appendChild(optionResumen);
   });
 
   if (selectContenedorResumen.options.length > 0) {
     selectContenedorResumen.selectedIndex = 0;
-    consultarDetallesContenedor();
+    consultarDetallesContenedorResumen();
   }
 }
 
 // =========================
 // Detalle del contenedor
 // =========================
-selectContenedorResumen.addEventListener('change', consultarDetallesContenedor);
+selectContenedorResumen.addEventListener('change', consultarDetallesContenedorResumen);
 
-if (btnRef) btnRef.addEventListener('click', (e) => {
+if (btnRefResumen) btnRefResumen.addEventListener('click', (e) => {
   e.preventDefault();
-  consultarDetallesContenedor();
+  consultarDetallesContenedorResumen();
 });
 
-function consultarDetallesContenedor() {
-  const opt = selectContenedorResumen.options[selectContenedorResumen.selectedIndex];
-  if (!opt || !operacionIdActivo) return;
+function consultarDetallesContenedorResumen() {
+  const optResumen = selectContenedorResumen.options[selectContenedorResumen.selectedIndex];
+  if (!optResumen || !operacionIdActivoResumen) return;
 
-  const tipo   = (opt.dataset.tipo || '').toUpperCase();  // "MARITIMO" | "FERRO"
-  const idCont = opt.value;
-  const numero = opt.dataset.numero || opt.textContent || '—';
+  const tipoUIResumen = (optResumen.dataset.tipo || '').toUpperCase();  // "MARITIMO" | "FERRO" | "M" | "F"
+  const tipoFMResumen = mapTipoToFMResumen(tipoUIResumen, optResumen.dataset.fm); // "M" | "F"
+  const idPivotResumen = optResumen.value;   // IMPORTANTE: pivot ID (co.id_contenedor | cmo.id)
+  const numeroResumen  = optResumen.dataset.numero || optResumen.textContent || '—';
 
-  // Cabecera
-  document.getElementById('nombreContenedorResumen').textContent = numero;
-   
+  // Cabecera contenedor en “Detalle”
+  document.getElementById('nombreContenedorResumen').textContent = numeroResumen;
 
-  // Alterna paneles
-  document.getElementById('bloqueMaritimo').classList.toggle('d-none', tipo !== 'MARITIMO');
-  document.getElementById('bloqueFerro').classList.toggle('d-none', tipo === 'MARITIMO');
+  // Mostrar/ocultar bloques por tipo UI
+  const esMaritimoResumen = (tipoFMResumen === 'M');
+  document.getElementById('bloqueMaritimo').classList.toggle('d-none', !esMaritimoResumen);
+  document.getElementById('bloqueFerro').classList.toggle('d-none', esMaritimoResumen);
 
-  limpiarDetalleUI();
-  setDetalleLoading();
+  // Limpia y pone "Cargando…" en el panel
+  limpiarDetalleUIResumen();
+  setDetalleLoadingResumen();
 
-  const http = new XMLHttpRequest();
-  const url = `${base_url}operaciones_maritimas_resumen/detalles_contenedor?operacion_id=${encodeURIComponent(operacionIdActivo)}&tipo=${encodeURIComponent(tipo)}&id_contenedor=${encodeURIComponent(idCont)}`;
-  http.open('GET', url, true);
-  http.onreadystatechange = function() {
+  // ====> 1) Detalle del contenedor
+  const httpResumen = new XMLHttpRequest();
+  const urlResumen = `${base_url}operaciones_maritimas_resumen/detalles_contenedor`
+    + `?operacion_id=${encodeURIComponent(operacionIdActivoResumen)}`
+    + `&tipo=${encodeURIComponent(esMaritimoResumen ? 'MARITIMO' : 'FERRO')}`
+    + `&id_contenedor=${encodeURIComponent(idPivotResumen)}`; // El endpoint debe aceptar pivot para resolver detalle
+  httpResumen.open('GET', urlResumen, true);
+  httpResumen.onreadystatechange = function() {
     if (this.readyState !== 4) return;
-
     if (this.status === 200) {
-      let res; try { res = JSON.parse(this.responseText); } catch { res = null; }
-      if (!res || res.status !== 'ok' || !res.data) return;
-      pintarDetalleContenedor(tipo, res.data);
-    } else {
-      // deja placeholders
+      let resDetResumen; try { resDetResumen = JSON.parse(this.responseText); } catch { resDetResumen = null; }
+      if (resDetResumen && resDetResumen.status === 'ok' && resDetResumen.data) {
+        pintarDetalleContenedorResumen(esMaritimoResumen ? 'MARITIMO' : 'FERRO', resDetResumen.data);
+      }
     }
   };
-  http.send();
+  httpResumen.send();
+
+  // ====> 2) FALTANTES (nuevo endpoint sencillo)
+  const etiquetaTextoResumen = `${esMaritimoResumen ? 'Contenedor' : 'Ferro'} ${numeroResumen}`;
+  cargarFaltantesResumen(operacionIdActivoResumen, tipoFMResumen, idPivotResumen, etiquetaTextoResumen);
 }
 
-function pintarDetalleContenedor(tipo, data) {
-   
-  if (tipo === 'MARITIMO') {
-    document.getElementById('nombreContenedorResumen').textContent = data.numero_contenedor || '—';
-    document.getElementById('puertoResumen').textContent   = data.puerto || '—';
-    document.getElementById('etaContenedor').textContent   = data.eta || '—';
-    document.getElementById('etdContenedor').textContent   = data.etd || '—';
-    document.getElementById('blContenedor').textContent    = data.bl || '—';
-    document.getElementById('comentarioContenedor').textContent = data.comentarios || '—';
-    
-     
+function pintarDetalleContenedorResumen(tipoResumen, dataResumen) {
+  if (tipoResumen === 'MARITIMO') {
+    document.getElementById('nombreContenedorResumen').textContent = dataResumen.numero_contenedor || '—';
+    document.getElementById('puertoResumen').textContent           = dataResumen.puerto || '—';
+    document.getElementById('etaContenedor').textContent           = dataResumen.eta || '—';
+    document.getElementById('etdContenedor').textContent           = dataResumen.etd || '—';
+    document.getElementById('blContenedor').textContent            = dataResumen.bl || '—';
+    document.getElementById('comentarioContenedor').textContent    = dataResumen.comentarios || '—';
   } else {
-    document.getElementById('nombreContenedorResumen').textContent = data.numero_ferro || '—';
-    document.getElementById('arriboPuerto').textContent    = data.arribo_puerto || 'Falta Registrar Arribo';
-    document.getElementById('bultos').textContent          = (data.bultos != null ? data.bultos : '—');
-    document.getElementById('comentarioContenedor').textContent = data.comentarios || '—';
+    document.getElementById('nombreContenedorResumen').textContent = dataResumen.numero_ferro || '—';
+    document.getElementById('arriboPuerto').textContent            = dataResumen.arribo_puerto || 'Falta Registrar Arribo';
+    document.getElementById('bultos').textContent                  = (dataResumen.bultos != null ? dataResumen.bultos : '—');
+    document.getElementById('comentarioContenedor').textContent    = dataResumen.comentarios || '—';
   }
 }
+
+// =========================
+// Faltantes (card + lista)
+// =========================
+const dfContenedorInfoResumen = document.getElementById('dfContenedorInfo');
+const dfBadgeCountResumen     = document.getElementById('dfBadgeCount');
+const dfLoadingResumen        = document.getElementById('dfLoading');
+const dfEmptyResumen          = document.getElementById('dfEmpty');
+const dfListaResumen          = document.getElementById('dfLista');
+const docsPendientesResumen   = document.getElementById('docsPendientesResumen');
+
+function toggleDFResumen(loadingResumen=false, hasDataResumen=false, emptyResumen=false){
+  dfLoadingResumen.style.display = loadingResumen ? '' : 'none';
+  dfListaResumen.style.display   = hasDataResumen ? '' : 'none';
+  dfEmptyResumen.style.display   = emptyResumen ? '' : 'none';
+}
+
+function setDFHeaderResumen(infoTextoResumen, countResumen=0){
+  dfContenedorInfoResumen.textContent = infoTextoResumen || 'Seleccione un contenedor…';
+  dfBadgeCountResumen.textContent     = String(countResumen || 0);
+  docsPendientesResumen.textContent   = String(countResumen || 0); // número grande de la tarjeta
+}
+
+function escapeHtmlResumen(sResumen){
+  return String(sResumen ?? '').replace(/[&<>"']/g, m => (
+    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
+  ));
+}
+
+// Mapea tipo UI a 'F'/'M'; si ya viene fm ('F'|'M'), úsalo directo
+function mapTipoToFMResumen(tipoUIResumen, fmResumen){
+  const fmCleanResumen = (fmResumen || '').toUpperCase();
+  if (fmCleanResumen === 'F' || fmCleanResumen === 'M') return fmCleanResumen;
+
+  const tResumen = (tipoUIResumen || '').toUpperCase();
+  if (tResumen === 'M' || tResumen === 'MARITIMO' || tResumen === 'MARÍTIMO') return 'M';
+  if (tResumen === 'F' || tResumen === 'FERRO' || tResumen === 'FISICO' || tResumen === 'FÍSICO') return 'F';
+  return null;
+}
+
+function renderFaltantesResumen(itemsResumen){
+  dfListaResumen.innerHTML = '';
+
+  const countResumen = Array.isArray(itemsResumen) ? itemsResumen.length : 0;
+  if (countResumen === 0){
+    toggleDFResumen(false, false, true);
+    setDFHeaderResumen(dfContenedorInfoResumen.textContent, 0);
+    return;
+  }
+
+  itemsResumen.forEach(rowResumen => {
+    const liResumen = document.createElement('li');
+    liResumen.className = 'list-group-item d-flex justify-content-between align-items-center';
+    const nombreResumen = escapeHtmlResumen(rowResumen.nombre);
+    const claveResumen  = escapeHtmlResumen(rowResumen.clave ?? '');
+    liResumen.innerHTML = `<span>${nombreResumen}</span><span class="badge bg-light text-dark">${claveResumen}</span>`;
+    dfListaResumen.appendChild(liResumen);
+  });
+
+  toggleDFResumen(false, true, false);
+  setDFHeaderResumen(dfContenedorInfoResumen.textContent, countResumen);
+}
+
+function cargarFaltantesResumen(operacionIdResumen, tipoFMResumen, idPivotResumen, etiquetaTextoResumen){
+  if (!operacionIdResumen || !tipoFMResumen || !idPivotResumen){
+    setDFHeaderResumen('Seleccione un contenedor…', 0);
+    toggleDFResumen(false, false, false);
+    dfListaResumen.innerHTML = '';
+    return;
+  }
+
+  // Header e indicadores
+  setDFHeaderResumen(etiquetaTextoResumen || '—', 0);
+  toggleDFResumen(true, false, false);
+
+  if (lastXHRFaltantesResumen){ try{ lastXHRFaltantesResumen.abort(); }catch(e){} }
+
+  const httpResumen = new XMLHttpRequest();
+  lastXHRFaltantesResumen = httpResumen;
+
+  const urlResumen = `${base_url}operaciones_maritimas_resumen/faltantes`
+    + `?operacion_id=${encodeURIComponent(operacionIdResumen)}`
+    + `&contenedor_id=${encodeURIComponent(idPivotResumen)}` // PIVOT
+    + `&tipo=${encodeURIComponent(tipoFMResumen)}`;
+
+  httpResumen.open('GET', urlResumen, true);
+  httpResumen.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+
+    if (this.status === 200){
+      let dataResumen; 
+      try { dataResumen = JSON.parse(this.responseText); } catch { dataResumen = null; }
+      renderFaltantesResumen(Array.isArray(dataResumen) ? dataResumen : []);
+    } else {
+      renderFaltantesResumen([]); // en error, muestra vacío
+    }
+  };
+  httpResumen.send();
+}
+ 
