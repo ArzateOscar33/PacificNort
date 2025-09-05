@@ -21,7 +21,7 @@
                          <label for="selectContenedorResumen" class="form-label">Seleccionar Contenedor:</label>
                          <div class="d-flex gap-2">
                              <select class="form-control" id="selectContenedorResumen">
-                                <option value=""  >-- Selecciona una Operación --</option>
+                                 <option value="">-- Selecciona una Operación --</option>
                              </select>
                              <button class="btn btn-outline-secondary" id="btnRefrescarResumen" title="Refrescar">
                                  <i data-feather="refresh-cw"></i>
@@ -35,7 +35,7 @@
                                  <div class="small text-muted">Contenedor</div>
                                  <div id="nombreContenedorResumen">—</div>
                              </div>
-                            
+
                          </div>
 
                          <!-- ===== Vista MARÍTIMO ===== -->
@@ -101,7 +101,7 @@
                          <div
                              class="bg-danger text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="dollar-sign" class="mb-1"></i>
-                             <h5 class="fw-bold">$24,800</h5>
+                             <h5 class="fw-bold" id="badgeTotalCostos">$29,800</h5>
                              <p class="mb-0">Costos</p>
                          </div>
                      </div>
@@ -156,38 +156,39 @@
              <!-- Documentos + Trazabilidad -->
              <div class="row mt-4 g-3">
                  <!-- Checklist de Documentos -->
-                <!-- ===== Documentos faltantes por contenedor ===== -->
-                <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Documentos faltantes</strong><br>
-                        <small id="dfContenedorInfo" class="text-muted">Seleccione un contenedor…</small>
-                    </div>
-                    <span class="badge bg-warning text-dark" id="dfBadgeCount">0</span>
-                    </div>
-                    <div class="card-body">
-                    <!-- Placeholder Cargando -->
-                    <div id="dfLoading" class="text-center text-muted" style="display:none;">
-                        Cargando pendientes…
-                    </div>
+                 <!-- ===== Documentos faltantes por contenedor ===== -->
+                 <div class="col-md-6">
+                     <div class="card h-100">
+                         <div class="card-header d-flex justify-content-between align-items-center">
+                             <div>
+                                 <strong>Documentos faltantes</strong><br>
+                                 <small id="dfContenedorInfo" class="text-muted">Seleccione un contenedor…</small>
+                             </div>
+                             <span class="badge bg-warning text-dark" id="dfBadgeCount">0</span>
+                         </div>
+                         <div class="card-body">
+                             <!-- Placeholder Cargando -->
+                             <div id="dfLoading" class="text-center text-muted" style="display:none;">
+                                 Cargando pendientes…
+                             </div>
 
-                    <!-- Placeholder Sin pendientes -->
-                    <div id="dfEmpty" class="alert alert-success py-2" style="display:none;">
-                        No hay documentos pendientes para este contenedor.
-                    </div>
+                             <!-- Placeholder Sin pendientes -->
+                             <div id="dfEmpty" class="alert alert-success py-2" style="display:none;">
+                                 No hay documentos pendientes para este contenedor.
+                             </div>
 
-                    <!-- Lista de faltantes -->
-                    <ul id="dfLista" class="list-group list-group-flush" style="display:none;"></ul>
-                    </div>
-                </div>
-                </div>
+                             <!-- Lista de faltantes -->
+                             <ul id="dfLista" class="list-group list-group-flush" style="display:none;"></ul>
+                         </div>
+                         
+                     </div>
+                     
+                 </div>
 
-<!-- Hidden helpers que poblará JS cuando selecciones operación/contenedor -->
-<input type="hidden" id="dfOperacionId" value="">
-<input type="hidden" id="dfContenedorId" value="">
-<input type="hidden" id="dfContenedorTipo" value=""> <!-- 'F' o 'M' -->
-
+                 <!-- Hidden helpers que poblará JS cuando selecciones operación/contenedor -->
+                 <input type="hidden" id="dfOperacionId" value="">
+                 <input type="hidden" id="dfContenedorId" value="">
+                 <input type="hidden" id="dfContenedorTipo" value=""> <!-- 'F' o 'M' -->
 
                  <!-- Trazabilidad (tabla) -->
                  <div class="col-md-6">

@@ -218,28 +218,78 @@ class Operaciones_maritimas_resumen extends Controller
         }
     }
 
-public function faltantes()
+    public function faltantes()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+
+        $operacionId = (int)($_GET['operacion_id'] ?? 0);
+        $idPivot     = (int)($_GET['contenedor_id'] ?? 0);  // co.id_contenedor (F) o cmo.id (M)
+        $fm          = strtoupper(trim($_GET['tipo'] ?? '')); // 'F'|'M'
+
+        if ($operacionId <= 0 || $idPivot <= 0 || !in_array($fm, ['F','M'], true)) {
+            echo json_encode([]);
+            return;
+        }
+
+        try {
+            $busca = isset($_GET['q']) ? trim($_GET['q']) : null; // opcional
+            $rows  = $this->model->faltantesPorContenedor($operacionId, $idPivot, $fm, true, $busca);
+            echo json_encode($rows, JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            error_log("FALTANTES_RESUMEN: ".$e->getMessage());
+            echo json_encode([]);
+        }
+    }
+
+    //costos totales por contenedor
+    public function costos_totales_contenedor_fisico()
 {
-    header('Content-Type: application/json; charset=UTF-8');
+    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+    $idFisico    = isset($_GET['id_fisico'])    ? (int)$_GET['id_fisico']    : 0;
 
-    $operacionId = (int)($_GET['operacion_id'] ?? 0);
-    $idPivot     = (int)($_GET['contenedor_id'] ?? 0);  // co.id_contenedor (F) o cmo.id (M)
-    $fm          = strtoupper(trim($_GET['tipo'] ?? '')); // 'F'|'M'
-
-    if ($operacionId <= 0 || $idPivot <= 0 || !in_array($fm, ['F','M'], true)) {
-        echo json_encode([]);
-        return;
+    if ($operacionId <= 0 || $idFisico <= 0) {
+        echo json_encode(['status'=>'error','msg'=>'Parámetros inválidos']); return;
     }
 
     try {
-        $busca = isset($_GET['q']) ? trim($_GET['q']) : null; // opcional
-        $rows  = $this->model->faltantesPorContenedor($operacionId, $idPivot, $fm, true, $busca);
-        echo json_encode($rows, JSON_UNESCAPED_UNICODE);
+        $total = $this->model->getCostosTotalesContenedor($operacionId, $idFisico);
+        echo json_encode([
+            'status'=>'ok',
+            'data'=>[
+                'operacion_id'=>$operacionId,
+                'id_fisico'=>$idFisico,
+                'total'=>$total,
+                'total_fmt'=>number_format($total, 2)
+            ]
+        ]);
     } catch (Throwable $e) {
-        error_log("FALTANTES_RESUMEN: ".$e->getMessage());
-        echo json_encode([]);
+        error_log("ERR costos_totales_contenedor_fisico: ".$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'No fue posible calcular el total']);
     }
 }
+
+
+public function costos_desglosados_contenedor_fisico()
+{
+    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+    $idFisico    = isset($_GET['id_fisico'])    ? (int)$_GET['id_fisico']    : 0;
+
+    if ($operacionId <= 0 || $idFisico <= 0) {
+        echo json_encode(['status'=>'error','msg'=>'Parámetros inválidos']); return;
+    }
+
+    try {
+        $rows = $this->model->getCostosDesglosadosContenedor($operacionId, $idFisico);
+        echo json_encode([
+            'status'=>'ok',
+            'data'=>$rows
+        ]);
+    } catch (Throwable $e) {
+        error_log("ERR costos_desglosados_contenedor_fisico: ".$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el desglose']);
+    }
+}
+
 
 
 }

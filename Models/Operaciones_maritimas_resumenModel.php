@@ -210,4 +210,39 @@ class Operaciones_maritimas_resumenModel extends Query
     $rows = $this->faltantesPorContenedor($operacionId, $idBase, $tipoUI, true, null);
     return is_array($rows) ? count($rows) : 0;
   }
+ 
+public function getCostosTotalesContenedor(int $operacionId, int $idFisico): float
+{
+    $sql = "
+      SELECT SUM(c.monto) AS total
+      FROM contenedores_operacion co
+      JOIN costos_contenedor_operacion c
+        ON c.contenedor_operacion_id = co.id_contenedor
+      WHERE co.operacion_id = ?
+        AND co.id_fisico    = ?
+    ";
+    $row = $this->select($sql, [$operacionId, $idFisico]);
+    return isset($row['total']) ? (float)$row['total'] : 0.0;
+}
+
+public function getCostosDesglosadosContenedor(int $operacionId, int $idFisico): array
+{
+    $sql = "
+      SELECT 
+        c.id_costo_contenedor,
+        c.tipo_movimiento_id,
+        c.monto,
+        c.comentario,
+        c.fecha_creacion
+      FROM contenedores_operacion co
+      JOIN costos_contenedor_operacion c
+        ON c.contenedor_operacion_id = co.id_contenedor
+      WHERE co.operacion_id = ?
+        AND co.id_fisico    = ?
+      ORDER BY c.fecha_creacion ASC
+    ";
+    $rows = $this->selectAll($sql, [$operacionId, $idFisico]);
+    return is_array($rows) ? $rows : [];
+}
+
 }

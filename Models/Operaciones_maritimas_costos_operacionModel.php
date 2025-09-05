@@ -306,11 +306,11 @@ public function obtenerTiposMovimientoActivos(): array
             FROM tipos_movimiento
             WHERE estatus = 1 and tipo_operacion_id=1
             ORDER BY nombre ASC";
-    try {
-        return $this->selectAll($sql) ?: [];
-    } catch (\Throwable $e) {
-        return [];
-    }
+        try {
+            return $this->selectAll($sql) ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
 }
 
 // === CRUD básico para costos a NIVEL OPERACIÓN ===

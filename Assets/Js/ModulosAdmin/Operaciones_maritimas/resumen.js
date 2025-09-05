@@ -158,6 +158,7 @@ function renderContenedoresResumen(resResumen) {
     optionResumen.dataset.numero = cResumen.numero_contenedor || '';
     selectContenedorResumen.appendChild(optionResumen);
   });
+  console.log('Contenedores cargados:', dataResumen);
 
   if (selectContenedorResumen.options.length > 0) {
     selectContenedorResumen.selectedIndex = 0;
@@ -195,6 +196,20 @@ function consultarDetallesContenedorResumen() {
   // Limpia y pone "Cargando…" en el panel
   limpiarDetalleUIResumen();
   setDetalleLoadingResumen();
+
+  const opt = selectContenedorResumen.options[selectContenedorResumen.selectedIndex];
+  const tipoUI = (opt.dataset.tipo || '').toUpperCase();
+
+  if (tipoUI.startsWith('FERRO')) {
+    const idFisico = opt.dataset.idFisico || opt.value; // preferimos dataset
+    const operacionId = operacionIdActivoResumen;
+    fetchCostosTotalesFisico(operacionId, idFisico);
+    fetchCostosDesglosadosFisico(operacionId, idFisico);
+  } else {
+    // Marítimo: de momento no mostramos costos por contenedor
+    setTotalCostos('—');
+    if (listaCostos) listaCostos.innerHTML = '<li class="list-group-item text-muted">No aplica (Marítimo)</li>';
+  }
 
   // ====> 1) Detalle del contenedor
   const httpResumen = new XMLHttpRequest();
@@ -334,3 +349,55 @@ function cargarFaltantesResumen(operacionIdResumen, tipoFMResumen, idPivotResume
   httpResumen.send();
 }
  
+const badgeTotalCostos = document.getElementById('badgeTotalCostos'); // <span> del total
+function setTotalCostos(v){ if (badgeTotalCostos) badgeTotalCostos.textContent = String(v ?? '—'); }
+
+// (opcional) donde pintar el desglose: ul/tabla
+const listaCostos = document.getElementById('listaCostosContenedor'); 
+function renderCostosDesglosados(rows){
+  if (!listaCostos) return;
+  listaCostos.innerHTML = '';
+  if (!Array.isArray(rows) || rows.length === 0){
+    listaCostos.innerHTML = '<li class="list-group-item text-muted">Sin costos</li>';
+    return;
+  }
+  rows.forEach(r => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between';
+    li.innerHTML = `<span>#${r.id_costo_contenedor} · ${r.comentario ?? ''}</span><strong>${Number(r.monto).toFixed(2)}</strong>`;
+    listaCostos.appendChild(li);
+  });
+}
+
+function fetchCostosTotalesFisico(operacionId, idFisico){
+  setTotalCostos('…');
+  const url = `${base_url}operaciones_maritimas_resumen/costos_totales_contenedor_fisico?operacion_id=${encodeURIComponent(operacionId)}&id_fisico=${encodeURIComponent(idFisico)}`;
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200) { setTotalCostos('—'); return; }
+    let r; try { r = JSON.parse(xhr.responseText); } catch { setTotalCostos('—'); return; }
+    if (r.status !== 'ok') { setTotalCostos('—'); return; }
+    const data = r.data || {};
+    const total = typeof data.total === 'number' ? data.total : 0;
+    const totalFmt = data.total_fmt ?? total.toFixed(2);
+    setTotalCostos(totalFmt);
+  };
+  xhr.send();
+}
+
+function fetchCostosDesglosadosFisico(operacionId, idFisico){
+  if (listaCostos) listaCostos.innerHTML = '<li class="list-group-item text-muted">Cargando…</li>';
+  const url = `${base_url}operaciones_maritimas_resumen/costos_desglosados_contenedor_fisico?operacion_id=${encodeURIComponent(operacionId)}&id_fisico=${encodeURIComponent(idFisico)}`;
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200) { renderCostosDesglosados([]); return; }
+    let r; try { r = JSON.parse(xhr.responseText); } catch { renderCostosDesglosados([]); return; }
+    if (r.status !== 'ok') { renderCostosDesglosados([]); return; }
+    renderCostosDesglosados(r.data);
+  };
+  xhr.send();
+}
