@@ -228,18 +228,22 @@ public function getCostosTotalesContenedor(int $operacionId, int $idFisico): flo
 public function getCostosDesglosadosContenedor(int $operacionId, int $idFisico): array
 {
     $sql = "
-      SELECT 
-        c.id_costo_contenedor,
-        c.tipo_movimiento_id,
-        c.monto,
-        c.comentario,
-        c.fecha_creacion
-      FROM contenedores_operacion co
-      JOIN costos_contenedor_operacion c
-        ON c.contenedor_operacion_id = co.id_contenedor
-      WHERE co.operacion_id = ?
-        AND co.id_fisico    = ?
-      ORDER BY c.fecha_creacion ASC
+    SELECT 
+    c.id_costo_contenedor,
+    c.tipo_movimiento_id,
+    tm.nombre             AS nombre_movimiento,
+    c.monto,
+    c.comentario,
+    c.fecha_creacion
+    FROM contenedores_operacion co
+    JOIN costos_contenedor_operacion c
+      ON c.contenedor_operacion_id = co.id_contenedor
+    LEFT JOIN tipos_movimiento tm
+      ON tm.id_tipo_movimiento = c.tipo_movimiento_id
+    WHERE co.operacion_id = ?
+      AND co.id_fisico    = ?
+    ORDER BY c.fecha_creacion ASC;
+
     ";
     $rows = $this->selectAll($sql, [$operacionId, $idFisico]);
     return is_array($rows) ? $rows : [];

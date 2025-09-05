@@ -454,64 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.feather) feather.replace();
 });
 </script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const ctx = document.getElementById('costosChart')?.getContext('2d');
-  if (!ctx) return;
-
-  // Ejemplo de datos (simula lo que sacarías de la BD)
-  const conceptos = ['Flete marítimo', 'Transbordo', 'Maniobras', 'Otros'];
-  const valores   = [12000, 8000, 3000, 1800];
-
-  // Colores (puedes elegir de Bootstrap o propios)
-  const colores = ['#0d6efd','#198754','#ffc107','#dc3545'];
-
-  // Crea el gráfico
-  const costosChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: conceptos,
-      datasets: [{
-        data: valores,
-        backgroundColor: colores,
-        borderWidth: 1,
-        borderColor: '#fff'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { display: false }, // usamos leyenda propia abajo
-        tooltip: {
-          callbacks: {
-            label: (ctx) => {
-              const label = ctx.label || '';
-              const value = ctx.raw || 0;
-              return `${label}: $${value.toLocaleString()}`;
-            }
-          }
-        }
-      },
-      cutout: '65%' // dona más delgada
-    }
-  });
-
-  // Leyenda personalizada debajo del gráfico
-  const leyenda = document.getElementById('costosLeyenda');
-  const total = valores.reduce((a,b) => a+b, 0);
-  conceptos.forEach((c, i) => {
-    const li = document.createElement('li');
-    const pct = ((valores[i]/total)*100).toFixed(1);
-    li.innerHTML = `
-      <span class="me-2 rounded-circle d-inline-block" style="width:12px;height:12px;background:${colores[i]}"></span>
-      ${c}: <strong>$${valores[i].toLocaleString()}</strong> (${pct}%)
-    `;
-    leyenda.appendChild(li);
-  });
-
-  if (window.feather) feather.replace();
-});
-</script>
+ 
 
 <script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/resumen.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/resumen_graficos.js"></script>

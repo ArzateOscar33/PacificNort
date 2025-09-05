@@ -27,6 +27,9 @@ function clearSugerenciasResumen() {
   boxSugsOpResumen.style.display = 'none';
   boxSugsOpResumen.innerHTML = '';
 }
+document.addEventListener('DOMContentLoaded', function(){
+  CostosChart.init('costosChart', 'costosLeyenda');
+});
 function limpiarDetalleUIResumen() {
   document.getElementById('nombreContenedorResumen').textContent = '—';
   // Marítimo
@@ -205,10 +208,12 @@ function consultarDetallesContenedorResumen() {
     const operacionId = operacionIdActivoResumen;
     fetchCostosTotalesFisico(operacionId, idFisico);
     fetchCostosDesglosadosFisico(operacionId, idFisico);
+    CostosChart.update({ tipo: 'F', operacionId: Number(operacionIdActivoResumen), idFisico: Number(idFisico) });
   } else {
     // Marítimo: de momento no mostramos costos por contenedor
     setTotalCostos('—');
     if (listaCostos) listaCostos.innerHTML = '<li class="list-group-item text-muted">No aplica (Marítimo)</li>';
+     CostosChart.update({ tipo: 'M', operacionId: Number(operacionIdActivoResumen) });
   }
 
   // ====> 1) Detalle del contenedor
