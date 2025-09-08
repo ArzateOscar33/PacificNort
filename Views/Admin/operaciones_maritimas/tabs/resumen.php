@@ -144,6 +144,26 @@
                  <!-- Costos -->
                  <div class="col-md-6" style="border:1px solid red;">
                      <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
+                     <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
+  <div class="d-flex flex-wrap align-items-end mb-2">
+    <div>
+      <label class="form-label small mb-1">Mostrar totales en</label>
+      <select id="costosResumenMonedaVista" class="form-control form-control-sm" style="width:140px;">
+        <option value="MXN">MXN (pesos)</option>
+        <option value="USD">USD (dólares)</option>
+      </select>
+    </div>
+    <div class="ms-2">
+      <label class="form-label small mb-1">Tipo de cambio</label>
+      <div class="input-group input-group-sm" style="width:160px;">
+        <span class="input-group-text">$</span>
+        <input type="number" step="0.0001" min="0" id="costosResumenTipoCambio" 
+               class="form-control mt-1" value="17.00">
+      </div>
+    </div>
+  </div>
+</div>
+
                      <div class="d-flex">
                          <canvas id="costosChart" class="w-50 h-50 mt-3 "></canvas>
                          <ul class="list-unstyled mt-3" id="costosLeyenda">
@@ -296,88 +316,9 @@
              }
          ]
      }];
-     /*
-     const selectOperacion = document.getElementById("selectOperacion");
-     const selectContenedor = document.getElementById("selectContenedor");
-     const contenido = document.getElementById("contenidoOperacion");
-     const trazabilidadTable = document.getElementById("tablaTrazabilidad");
-     let contenedoresActivos = [];
-     operaciones.forEach(op => {
-         const option = document.createElement("option");
-         option.value = op.id;
-         option.textContent = `${op.id} - ${op.cliente}`;
-         selectOperacion.appendChild(option);
-     });
-     selectOperacion.addEventListener("change", e => {
-         const op = operaciones.find(o => o.id === e.target.value);
-         if (!op) return;
-         document.getElementById("gananciaEstim").textContent = `$${op.ganancia.toLocaleString()}`;
-         contenedoresActivos = op.contenedores;
-         // cargar contenedores
-         selectContenedor.innerHTML = "";
-         contenedoresActivos.forEach((c, i) => {
-             const opt = document.createElement("option");
-             opt.value = i;
-             opt.textContent = c.id;
-             selectContenedor.appendChild(opt);
-         });
-         selectContenedor.dispatchEvent(new Event('change'));
-         contenido.style.display = 'block';
-     });
-     selectContenedor.addEventListener("change", e => {
-         const index = parseInt(e.target.value);
-         const cont = contenedoresActivos[index];
-         if (!cont) return;
-         document.getElementById("contenedorId").textContent = `Contenedor ${cont.id}`;
-         document.getElementById("buitos").textContent = cont.buitos;
-         document.getElementById("ausos").textContent = cont.ausos;
-         document.getElementById("fechaContenedor").textContent = cont.fecha;
-         trazabilidadTable.innerHTML = "";
-         cont.trazabilidad.forEach(row => {
-             trazabilidadTable.innerHTML +=
-                 `<tr><td>${row.fecha}</td><td>${row.evento}</td><td>${row.origen}</td><td>${row.destino}</td></tr>`;
-         });
-     });
-     */
-     new Chart(document.getElementById('avanceOperacionChart').getContext('2d'), {
-         type: 'line',
-         data: {
-             labels: ['Salida', 'En tránsito', 'Arribo'],
-             datasets: [{
-                 label: 'Avance',
-                 data: [30, 50, 80],
-                 borderColor: '#007bff',
-                 tension: 0.3,
-                 fill: false
-             }]
-         },
-         options: {
-             responsive: true,
-             scales: {
-                 y: {
-                     min: 0,
-                     max: 100,
-                     ticks: {
-                         callback: value => value + '%'
-                     }
-                 }
-             }
-         }
-     });
-     new Chart(document.getElementById('costosChart').getContext('2d'), {
-         type: 'doughnut',
-         data: {
-             labels: ['Transbordo', 'Flete Local', 'Carga a barco', 'Trabajo', 'Otros'],
-             datasets: [{
-                 data: [60, 40],
-                 backgroundColor: ['#1f77b4', '#aec7e8']
-             }]
-         },
-         options: {
-             responsive: true,
-             cutout: '70%'
-         }
-     });
+    
+ 
+ 
      feather.replace();
  </script>
 <script>

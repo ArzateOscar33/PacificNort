@@ -406,3 +406,12 @@ function fetchCostosDesglosadosFisico(operacionId, idFisico){
   };
   xhr.send();
 }
+const selMoneda = document.getElementById('costosResumenMonedaVista');
+const inpTC     = document.getElementById('costosResumenTipoCambio');
+
+selMoneda.addEventListener('change', () => {
+  CostosChart.setDisplayCurrency(selMoneda.value, Number(inpTC.value));
+});
+inpTC.addEventListener('input', () => {
+  CostosChart.setDisplayCurrency(selMoneda.value, Number(inpTC.value));
+});

@@ -233,6 +233,7 @@ public function getCostosDesglosadosContenedor(int $operacionId, int $idFisico):
     c.tipo_movimiento_id,
     tm.nombre             AS nombre_movimiento,
     c.monto,
+    tm.moneda  AS moneda,
     c.comentario,
     c.fecha_creacion
     FROM contenedores_operacion co
@@ -248,5 +249,39 @@ public function getCostosDesglosadosContenedor(int $operacionId, int $idFisico):
     $rows = $this->selectAll($sql, [$operacionId, $idFisico]);
     return is_array($rows) ? $rows : [];
 }
+public function getCostosTotalesOperacion(int $operacionId): float
+{
+    $sql = "
+        SELECT SUM(monto) AS total
+        FROM costos_operacion
+        WHERE operacion_id = ?
+          AND estatus = 1
+    ";
+    $row = $this->select($sql, [$operacionId]);
+    return isset($row['total']) ? (float)$row['total'] : 0.0;
+}
+public function getCostosDesglosadosOperacion(int $operacionId): array
+{
+    $sql = "
+        SELECT 
+            co.id_costo_operacion,
+            co.tipo_movimiento_id,
+            tm.nombre       AS nombre_movimiento,
+            co.monto,
+            tm.moneda  AS moneda,
+            co.comentario,
+            co.fecha_creacion
+        FROM costos_operacion co
+        LEFT JOIN tipos_movimiento tm
+               ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+        WHERE co.operacion_id = ?
+          AND co.estatus = 1
+        ORDER BY co.fecha_creacion ASC
+    ";
+    $rows = $this->selectAll($sql, [$operacionId]);
+    return is_array($rows) ? $rows : [];
+}
+
+
 
 }

@@ -289,6 +289,53 @@ public function costos_desglosados_contenedor_fisico()
         echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el desglose']);
     }
 }
+// costos totales por operación (marítimo)
+public function costos_totales_operacion()
+{
+    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+
+    if ($operacionId <= 0) {
+        echo json_encode(['status'=>'error','msg'=>'Parámetro operacion_id inválido']); return;
+    }
+
+    try {
+        $total = $this->model->getCostosTotalesOperacion($operacionId);
+        echo json_encode([
+            'status' => 'ok',
+            'data'   => [
+                'origen'       => 'operacion',
+                'operacion_id' => $operacionId,
+                'total'        => $total,
+                'total_fmt'    => number_format($total, 2),
+            ]
+        ]);
+    } catch (Throwable $e) {
+        error_log("ERR costos_totales_operacion: ".$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'No fue posible calcular el total']);
+    }
+}
+
+// costos desglosados por operación (marítimo)
+public function costos_desglosados_operacion()
+{
+    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+
+    if ($operacionId <= 0) {
+        echo json_encode(['status'=>'error','msg'=>'Parámetro operacion_id inválido']); return;
+    }
+
+    try {
+        $rows = $this->model->getCostosDesglosadosOperacion($operacionId);
+        echo json_encode([
+            'status' => 'ok',
+            'data'   => $rows
+        ]);
+    } catch (Throwable $e) {
+        error_log("ERR costos_desglosados_operacion: ".$e->getMessage());
+        echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el desglose']);
+    }
+}
+
 
 
 
