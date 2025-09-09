@@ -1,12 +1,12 @@
-<?php 
+<?php
 class Operaciones_maritimas_resumen extends Controller
-{ 
+{
     public function __construct()
     {
         parent::__construct();
         if (session_status() === PHP_SESSION_NONE) {
             @session_start();
-        } 
+        }
     }
 
     // GET /operaciones_maritimas_resumen/sugerencias?term=EN-
@@ -226,7 +226,7 @@ class Operaciones_maritimas_resumen extends Controller
         $idPivot     = (int)($_GET['contenedor_id'] ?? 0);  // co.id_contenedor (F) o cmo.id (M)
         $fm          = strtoupper(trim($_GET['tipo'] ?? '')); // 'F'|'M'
 
-        if ($operacionId <= 0 || $idPivot <= 0 || !in_array($fm, ['F','M'], true)) {
+        if ($operacionId <= 0 || $idPivot <= 0 || !in_array($fm, ['F', 'M'], true)) {
             echo json_encode([]);
             return;
         }
@@ -236,107 +236,264 @@ class Operaciones_maritimas_resumen extends Controller
             $rows  = $this->model->faltantesPorContenedor($operacionId, $idPivot, $fm, true, $busca);
             echo json_encode($rows, JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
-            error_log("FALTANTES_RESUMEN: ".$e->getMessage());
+            error_log("FALTANTES_RESUMEN: " . $e->getMessage());
             echo json_encode([]);
         }
     }
 
     //costos totales por contenedor
     public function costos_totales_contenedor_fisico()
-{
-    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-    $idFisico    = isset($_GET['id_fisico'])    ? (int)$_GET['id_fisico']    : 0;
+    {
+        $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+        $idFisico    = isset($_GET['id_fisico'])    ? (int)$_GET['id_fisico']    : 0;
 
-    if ($operacionId <= 0 || $idFisico <= 0) {
-        echo json_encode(['status'=>'error','msg'=>'Parámetros inválidos']); return;
+        if ($operacionId <= 0 || $idFisico <= 0) {
+            echo json_encode(['status' => 'error', 'msg' => 'Parámetros inválidos']);
+            return;
+        }
+
+        try {
+            $total = $this->model->getCostosTotalesContenedor($operacionId, $idFisico);
+            echo json_encode([
+                'status' => 'ok',
+                'data' => [
+                    'operacion_id' => $operacionId,
+                    'id_fisico' => $idFisico,
+                    'total' => $total,
+                    'total_fmt' => number_format($total, 2)
+                ]
+            ]);
+        } catch (Throwable $e) {
+            error_log("ERR costos_totales_contenedor_fisico: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible calcular el total']);
+        }
     }
 
+
+    public function costos_desglosados_contenedor_fisico()
+    {
+        $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+        $idFisico    = isset($_GET['id_fisico'])    ? (int)$_GET['id_fisico']    : 0;
+
+        if ($operacionId <= 0 || $idFisico <= 0) {
+            echo json_encode(['status' => 'error', 'msg' => 'Parámetros inválidos']);
+            return;
+        }
+
+        try {
+            $rows = $this->model->getCostosDesglosadosContenedor($operacionId, $idFisico);
+            echo json_encode([
+                'status' => 'ok',
+                'data' => $rows
+            ]);
+        } catch (Throwable $e) {
+            error_log("ERR costos_desglosados_contenedor_fisico: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible obtener el desglose']);
+        }
+    }
+    // costos totales por operación (marítimo)
+    public function costos_totales_operacion()
+    {
+        $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+
+        if ($operacionId <= 0) {
+            echo json_encode(['status' => 'error', 'msg' => 'Parámetro operacion_id inválido']);
+            return;
+        }
+
+        try {
+            $total = $this->model->getCostosTotalesOperacion($operacionId);
+            echo json_encode([
+                'status' => 'ok',
+                'data'   => [
+                    'origen'       => 'operacion',
+                    'operacion_id' => $operacionId,
+                    'total'        => $total,
+                    'total_fmt'    => number_format($total, 2),
+                ]
+            ]);
+        } catch (Throwable $e) {
+            error_log("ERR costos_totales_operacion: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible calcular el total']);
+        }
+    }
+
+    // costos desglosados por operación (marítimo)
+    public function costos_desglosados_operacion()
+    {
+        $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+
+        if ($operacionId <= 0) {
+            echo json_encode(['status' => 'error', 'msg' => 'Parámetro operacion_id inválido']);
+            return;
+        }
+
+        try {
+            $rows = $this->model->getCostosDesglosadosOperacion($operacionId);
+            echo json_encode([
+                'status' => 'ok',
+                'data'   => $rows
+            ]);
+        } catch (Throwable $e) {
+            error_log("ERR costos_desglosados_operacion: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible obtener el desglose']);
+        }
+    }
+
+    /** UNIFICADO
+     * GET /operaciones_maritimas_resumen/eventos_contenedor?operacion_id=48&tipo=Ferro&id_contenedor=579
+     * GET /operaciones_maritimas_resumen/eventos_contenedor?operacion_id=48&tipo=Maritimo&id_contenedor=52
+     */
+    
+    public function eventos_contenedor()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (empty($_SESSION['nombre_usuario'])) {
+            echo json_encode(['status' => 'warning', 'data' => [], 'message' => 'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $operacionId  = (int)($_GET['operacion_id'] ?? 0);
+        $tipoRaw      = trim($_GET['tipo'] ?? '');
+        $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
+
+        if ($operacionId <= 0 || $idContenedor <= 0 || $tipoRaw === '') {
+            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        // Normaliza tipo
+        $t = mb_strtoupper($tipoRaw, 'UTF-8');
+        if ($t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') $t = 'FERRO';
+        if ($t === 'M') $t = 'MARITIMO';
+
+        try {
+            $rows = $this->model->getEventosLogisticosPorContenedor($operacionId, $t, $idContenedor);
+            echo json_encode([
+                'status' => 'ok',
+                'data'   => is_array($rows) ? $rows : [],
+                'meta'   => [
+                    'operacion_id' => $operacionId,
+                    'tipo'         => $t,
+                    'id_contenedor' => $idContenedor,
+                    'total'        => is_array($rows) ? count($rows) : 0
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            error_log("ERR eventos_contenedor: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'No fue posible obtener los eventos'], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    // GET /operaciones_maritimas_resumen/eventos_progreso?operacion_id=48&tipo=F|M&id_contenedor=...
+public function eventos_progreso() {
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode(['status'=>'warning','data'=>[],'message'=>'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $operacionId  = (int)($_GET['operacion_id'] ?? 0);
+    $tipoRaw      = trim($_GET['tipo'] ?? '');
+    $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
+
+    if ($operacionId<=0 || $idContenedor<=0 || $tipoRaw==='') {
+        echo json_encode(['status'=>'error','data'=>[],'message'=>'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $t = mb_strtoupper($tipoRaw,'UTF-8');
+    if ($t==='FISICO'||$t==='FÍSICO'||$t==='F') $t='F';
+    if ($t==='MARITIMO'||$t==='MARÍTIMO'||$t==='M') $t='M';
+
     try {
-        $total = $this->model->getCostosTotalesContenedor($operacionId, $idFisico);
-        echo json_encode([
-            'status'=>'ok',
-            'data'=>[
-                'operacion_id'=>$operacionId,
-                'id_fisico'=>$idFisico,
-                'total'=>$total,
-                'total_fmt'=>number_format($total, 2)
-            ]
-        ]);
+        if ($t==='F') {
+            $data = $this->model->getEventosProgresoFisico($operacionId, $idContenedor);
+        } else {
+            $data = $this->model->getEventosProgresoMaritimo($operacionId, $idContenedor);
+        }
+        echo json_encode(['status'=>'ok','data'=>$data], JSON_UNESCAPED_UNICODE);
     } catch (Throwable $e) {
-        error_log("ERR costos_totales_contenedor_fisico: ".$e->getMessage());
-        echo json_encode(['status'=>'error','msg'=>'No fue posible calcular el total']);
+        error_log("ERR eventos_progreso: ".$e->getMessage());
+        echo json_encode(['status'=>'error','data'=>[],'message'=>'No fue posible obtener el progreso'], JSON_UNESCAPED_UNICODE);
     }
 }
 
 
-public function costos_desglosados_contenedor_fisico()
-{
-    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-    $idFisico    = isset($_GET['id_fisico'])    ? (int)$_GET['id_fisico']    : 0;
+    /** ESPECÍFICO (opcional)
+     * GET /operaciones_maritimas_resumen/eventos_contenedor_fisico?operacion_id=48&id_fisico=579
+     * (Aquí id_fisico es el mismo valor que tu front envía en id_contenedor cuando tipo=Ferro)
+     */ /*
+    public function eventos_contenedor_fisico()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        if (empty($_SESSION['nombre_usuario'])) {
+            echo json_encode(['status'=>'warning','data'=>[],'message'=>'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
 
-    if ($operacionId <= 0 || $idFisico <= 0) {
-        echo json_encode(['status'=>'error','msg'=>'Parámetros inválidos']); return;
-    }
+        $operacionId = (int)($_GET['operacion_id'] ?? 0);
+        $idFisico    = (int)($_GET['id_fisico'] ?? 0);
 
-    try {
-        $rows = $this->model->getCostosDesglosadosContenedor($operacionId, $idFisico);
-        echo json_encode([
-            'status'=>'ok',
-            'data'=>$rows
-        ]);
-    } catch (Throwable $e) {
-        error_log("ERR costos_desglosados_contenedor_fisico: ".$e->getMessage());
-        echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el desglose']);
-    }
-}
-// costos totales por operación (marítimo)
-public function costos_totales_operacion()
-{
-    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+        if ($operacionId <= 0 || $idFisico <= 0) {
+            echo json_encode(['status'=>'error','data'=>[],'message'=>'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
 
-    if ($operacionId <= 0) {
-        echo json_encode(['status'=>'error','msg'=>'Parámetro operacion_id inválido']); return;
-    }
+        try {
+            $rows = $this->model->getEventosLogisticosFisicoByFisico($operacionId, $idFisico);
+            echo json_encode([
+                'status'=>'ok',
+                'data'  => is_array($rows) ? $rows : [],
+                'meta'  => [
+                    'operacion_id'=>$operacionId,
+                    'id_fisico'   =>$idFisico,
+                    'total'       =>is_array($rows) ? count($rows) : 0
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            error_log("ERR eventos_contenedor_fisico: ".$e->getMessage());
+            echo json_encode(['status'=>'error','data'=>[],'message'=>'No fue posible obtener los eventos'], JSON_UNESCAPED_UNICODE);
+        }
+    }*/
 
-    try {
-        $total = $this->model->getCostosTotalesOperacion($operacionId);
-        echo json_encode([
-            'status' => 'ok',
-            'data'   => [
-                'origen'       => 'operacion',
-                'operacion_id' => $operacionId,
-                'total'        => $total,
-                'total_fmt'    => number_format($total, 2),
-            ]
-        ]);
-    } catch (Throwable $e) {
-        error_log("ERR costos_totales_operacion: ".$e->getMessage());
-        echo json_encode(['status'=>'error','msg'=>'No fue posible calcular el total']);
-    }
-}
+    /** ESPECÍFICO (opcional)
+     * GET /operaciones_maritimas_resumen/eventos_contenedor_maritimo?operacion_id=48&id_contenedor_maritimo=52
+     * (Aquí id_contenedor_maritimo es el mismo valor que tu front envía en id_contenedor cuando tipo=Maritimo)
+     */
+    /*
+    public function eventos_contenedor_maritimo()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        if (empty($_SESSION['nombre_usuario'])) {
+            echo json_encode(['status'=>'warning','data'=>[],'message'=>'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
 
-// costos desglosados por operación (marítimo)
-public function costos_desglosados_operacion()
-{
-    $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+        $operacionId         = (int)($_GET['operacion_id'] ?? 0);
+        $idContMaritimo      = (int)($_GET['id_contenedor_maritimo'] ?? 0);
 
-    if ($operacionId <= 0) {
-        echo json_encode(['status'=>'error','msg'=>'Parámetro operacion_id inválido']); return;
-    }
+        if ($operacionId <= 0 || $idContMaritimo <= 0) {
+            echo json_encode(['status'=>'error','data'=>[],'message'=>'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
 
-    try {
-        $rows = $this->model->getCostosDesglosadosOperacion($operacionId);
-        echo json_encode([
-            'status' => 'ok',
-            'data'   => $rows
-        ]);
-    } catch (Throwable $e) {
-        error_log("ERR costos_desglosados_operacion: ".$e->getMessage());
-        echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el desglose']);
-    }
-}
-
-
-
-
+        try {
+            $rows = $this->model->getEventosLogisticosMaritimoByMar($operacionId, $idContMaritimo);
+            echo json_encode([
+                'status'=>'ok',
+                'data'  => is_array($rows) ? $rows : [],
+                'meta'  => [
+                    'operacion_id'            => $operacionId,
+                    'id_contenedor_maritimo'  => $idContMaritimo,
+                    'total'                   => is_array($rows) ? count($rows) : 0
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            error_log("ERR eventos_contenedor_maritimo: ".$e->getMessage());
+            echo json_encode(['status'=>'error','data'=>[],'message'=>'No fue posible obtener los eventos'], JSON_UNESCAPED_UNICODE);
+        }
+    }*/
 }

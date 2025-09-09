@@ -216,3 +216,125 @@ CostosChart.onTotalChanged = (totalFmt) => {
   if ($badge) $badge.textContent = totalFmt || '—';
 };
 })(window);
+// ===== TimelineChart (línea horizontal con puntos por evento) =====
+(function (global){
+  let chart = null;
+  let $canvas = null;
+
+  function ensureChart(){
+    if (chart) return chart;
+    if (!$canvas) return null;
+    const ctx = $canvas.getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        label: 'Eventos',
+        data: [],
+        showLine: true,
+        tension: 0.35,
+        borderColor: 'rgba(13,110,253,0.5)',
+        borderWidth: 2,
+        fill: false,
+        segment: { borderDash: [4, 4] },
+        pointStyle: 'circle',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBorderWidth: 2,
+        pointBorderColor: 'rgba(13,110,253,0.9)',
+        pointBackgroundColor: 'rgba(13,110,253,0.15)'
+      }]},
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        layout: { padding: { top: 10, right: 8, bottom: 8, left: 8 } },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              callback: function(v){
+                const txt = this.getLabelForValue(v);
+                return String(txt).split('\n');
+              }
+            }
+          },
+          y: { display: false, min: -1, max: 1 }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => items[0].label.replace('\n', ' · '),
+              label: () => ''
+            }
+          }
+        }
+      }
+    });
+    return chart;
+  }
+
+  function setData(labels, data){
+    const ch = ensureChart();
+    if (!ch) return;
+    ch.data.labels = labels;
+    ch.data.datasets[0].data = data;
+    ch.update();
+  }
+
+  // --- utils ---
+  function fmtEtiqueta(fechaIso, nombreEvento){
+    // fechaIso: 'YYYY-MM-DD' o 'YYYY-MM-DD HH:MM:SS' (o null)
+    if (!fechaIso) return `${nombreEvento || '(sin nombre)'}`;
+    const s = String(fechaIso).trim();
+    const [Y, M, rest] = s.split('-');
+    if (!Y || !M || !rest) return `${s}\n${nombreEvento || '(sin nombre)'}`;
+    let D = rest, hhmm = '';
+    if (rest.includes(' ')) {
+      const [dd, hh] = rest.split(' ');
+      D = dd;
+      hhmm = (hh || '').slice(0,5); // HH:MM
+    }
+    const fecha = `${D}/${M}${hhmm ? ' ' + hhmm : ''}`;
+    return `${fecha}\n${nombreEvento || '(sin nombre)'}`;
+  }
+
+  function buildFromEventos(rows){
+    if (!Array.isArray(rows) || rows.length === 0){
+      return { labels: ['Sin eventos'], data: [0] };
+    }
+    // Si llegan desordenados, ordena (fechas nulas al final)
+    const sorted = rows.slice().sort((a,b)=>{
+      const fa = a.fecha ? 0 : 1;
+      const fb = b.fecha ? 0 : 1;
+      if (fa !== fb) return fa - fb;
+      // ambos con fecha, orden asc por fecha + id_evento
+      const da = a.fecha || '';
+      const db = b.fecha || '';
+      if (da < db) return -1;
+      if (da > db) return 1;
+      return (a.id_evento||0) - (b.id_evento||0);
+    });
+
+    const labels = sorted.map(r => fmtEtiqueta(r.fecha, r.nombre_evento));
+    const data   = new Array(labels.length).fill(0); // línea plana
+    return { labels, data };
+  }
+
+  const TimelineChart = {
+    init: function(canvasId){
+      $canvas = document.getElementById(canvasId);
+      if (!$canvas) { console.warn('[TimelineChart] canvas no encontrado'); return; }
+      ensureChart();
+      // estado inicial vacío
+      setData(['Seleccione un contenedor'], [0]);
+    },
+    setEventos: function(rows){
+      const { labels, data } = buildFromEventos(rows);
+      setData(labels, data);
+    }
+  };
+
+  global.TimelineChart = TimelineChart;
+})(window);

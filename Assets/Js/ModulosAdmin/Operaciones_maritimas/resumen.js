@@ -29,6 +29,7 @@ function clearSugerenciasResumen() {
 }
 document.addEventListener('DOMContentLoaded', function(){
   CostosChart.init('costosChart', 'costosLeyenda');
+  if (window.TimelineChart) TimelineChart.init('timelineChart');
 });
 function limpiarDetalleUIResumen() {
   document.getElementById('nombreContenedorResumen').textContent = '—';
@@ -128,6 +129,7 @@ function cargarContenedoresResumen(operacionIdResumen) {
     if (this.readyState !== 4) return;
 
     if (this.status === 200) {
+      console.log('Respuesta contenedores:', this.responseText);
       let resResumen; try { resResumen = JSON.parse(this.responseText); } catch { resResumen = null; }
       if (!resResumen || (resResumen.status && resResumen.status !== 'ok')) {
         setContenedoresEmptyResumen('No se pudieron cargar contenedores');
@@ -144,7 +146,6 @@ function cargarContenedoresResumen(operacionIdResumen) {
 function renderContenedoresResumen(resResumen) {
   selectContenedorResumen.innerHTML = "";
 
-  // Normaliza posibles formas de respuesta {contenedores:[...]} o {data:[...]}
   const dataResumen = Array.isArray(resResumen.contenedores) ? resResumen.contenedores
                     : Array.isArray(resResumen.data)         ? resResumen.data
                     : [];
@@ -153,21 +154,25 @@ function renderContenedoresResumen(resResumen) {
 
   dataResumen.forEach(cResumen => {
     const optionResumen = document.createElement("option");
-    // MUY IMPORTANTE: value = ID PIVOT (co.id_contenedor para F | cmo.id para M)
+    // value = ID PIVOT si viene; si no, usa id_contenedor (base)
     optionResumen.value = cResumen.id_pivot ?? cResumen.id_contenedor ?? '';
     optionResumen.textContent = `${cResumen.tipo_contenedor} · ${cResumen.numero_contenedor}`;
-    optionResumen.dataset.tipo   = (cResumen.tipo_contenedor || '').toUpperCase(); // "MARITIMO" | "FERRO" (o "M"/"F")
-    optionResumen.dataset.fm     = (cResumen.fm_tipo || '').toUpperCase();         // "M" | "F" si viene
-    optionResumen.dataset.numero = cResumen.numero_contenedor || '';
+
+    optionResumen.dataset.tipo    = (cResumen.tipo_contenedor || '').toUpperCase(); // "MARITIMO" | "FERRO"
+    optionResumen.dataset.fm      = (cResumen.fm_tipo || '').toUpperCase();         // "M" | "F" (si viene)
+    optionResumen.dataset.numero  = cResumen.numero_contenedor || '';
+    optionResumen.dataset.baseId  = cResumen.id_contenedor ?? ''; // <-- ID BASE (id_fisico | id_contenedor_maritimo)
+    optionResumen.dataset.pivotId = cResumen.id_pivot ?? '';      // <-- ID PIVOT (co.id_contenedor | cmo.id)
+
     selectContenedorResumen.appendChild(optionResumen);
   });
-  console.log('Contenedores cargados:', dataResumen);
 
   if (selectContenedorResumen.options.length > 0) {
     selectContenedorResumen.selectedIndex = 0;
     consultarDetallesContenedorResumen();
   }
 }
+
 
 // =========================
 // Detalle del contenedor
@@ -180,12 +185,13 @@ if (btnRefResumen) btnRefResumen.addEventListener('click', (e) => {
 });
 
 function consultarDetallesContenedorResumen() {
-  const optResumen = selectContenedorResumen.options[selectContenedorResumen.selectedIndex];
+   const optResumen = selectContenedorResumen.options[selectContenedorResumen.selectedIndex];
   if (!optResumen || !operacionIdActivoResumen) return;
 
-  const tipoUIResumen = (optResumen.dataset.tipo || '').toUpperCase();  // "MARITIMO" | "FERRO" | "M" | "F"
-  const tipoFMResumen = mapTipoToFMResumen(tipoUIResumen, optResumen.dataset.fm); // "M" | "F"
-  const idPivotResumen = optResumen.value;   // IMPORTANTE: pivot ID (co.id_contenedor | cmo.id)
+  const tipoUIResumen = (optResumen.dataset.tipo || '').toUpperCase();
+  const tipoFMResumen = mapTipoToFMResumen(tipoUIResumen, optResumen.dataset.fm); // 'M' | 'F'
+  const idPivotResumen = optResumen.value;                 // pivot (co.id_contenedor | cmo.id)
+  const idBaseResumen  = optResumen.dataset.baseId || '';  // base (id_fisico | id_contenedor_maritimo)
   const numeroResumen  = optResumen.dataset.numero || optResumen.textContent || '—';
 
   // Cabecera contenedor en “Detalle”
@@ -237,6 +243,13 @@ function consultarDetallesContenedorResumen() {
   // ====> 2) FALTANTES (nuevo endpoint sencillo)
   const etiquetaTextoResumen = `${esMaritimoResumen ? 'Contenedor' : 'Ferro'} ${numeroResumen}`;
   cargarFaltantesResumen(operacionIdActivoResumen, tipoFMResumen, idPivotResumen, etiquetaTextoResumen);
+  // Cargar progreso eventos (para la card)
+  fetchEventosProgresoResumen(operacionIdActivoResumen, tipoFMResumen, idPivotResumen);
+cargarEventosResumen(
+    operacionIdActivoResumen,
+    (tipoFMResumen === 'M' ? 'MARITIMO' : 'FERRO'),
+    idBaseResumen || idPivotResumen // fallback si por algo no vino baseId
+  );
 }
 
 function pintarDetalleContenedorResumen(tipoResumen, dataResumen) {
@@ -415,3 +428,119 @@ selMoneda.addEventListener('change', () => {
 inpTC.addEventListener('input', () => {
   CostosChart.setDisplayCurrency(selMoneda.value, Number(inpTC.value));
 });
+// ====== Eventos logísticos (tabla) ======
+const tbodyEventosResumen = document.getElementById('tablaEventosLogisticos');
+
+function setEventosLoadingResumen() {
+  if (!tbodyEventosResumen) return;
+  tbodyEventosResumen.innerHTML = `
+    <tr><td colspan="2" class="text-muted">Cargando eventos…</td></tr>
+  `;
+}
+
+function setEventosEmptyResumen() {
+  if (!tbodyEventosResumen) return;
+  tbodyEventosResumen.innerHTML = `
+    <tr><td colspan="2" class="text-muted">Sin eventos</td></tr>
+  `;
+}
+
+function fmtFechaResumen(isoLike){
+  if (!isoLike) return '—';
+  const s = String(isoLike).trim();
+  const [y,m,dRest] = s.split('-');
+  if (!y || !m || !dRest) return s;
+
+  let d = dRest, h='00:00';
+  if (dRest.includes(' ')) {
+    const [dd, hh] = dRest.split(' ');
+    d = dd; h = (hh || '00:00').slice(0,5);
+  }
+  return `${d}/${m}/${y}${h ? ' ' + h : ''}`;
+}
+
+function renderEventosResumen(rows){
+  if (!tbodyEventosResumen) return;
+  if (!Array.isArray(rows) || rows.length === 0) { setEventosEmptyResumen(); return; }
+
+  const frag = document.createDocumentFragment();
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const tdF = document.createElement('td');
+    const tdE = document.createElement('td');
+    tdF.textContent = fmtFechaResumen(r.fecha);
+    tdE.textContent = r.nombre_evento || '(sin nombre)';
+    tr.appendChild(tdF);
+    tr.appendChild(tdE);
+    frag.appendChild(tr);
+  });
+  tbodyEventosResumen.innerHTML = '';
+  tbodyEventosResumen.appendChild(frag);
+}
+
+function buildUrlEventosResumen(operacionId, tipoUi, idBase){
+  // Tu controlador normaliza: 'Ferro' / 'Maritimo'
+  const t = (tipoUi || '').toUpperCase();
+  const tipoParam = (t.startsWith('F')) ? 'Ferro' : 'Maritimo';
+  return `${base_url}operaciones_maritimas_resumen/eventos_contenedor`
+       + `?operacion_id=${encodeURIComponent(operacionId)}`
+       + `&tipo=${encodeURIComponent(tipoParam)}`
+       + `&id_contenedor=${encodeURIComponent(idBase)}`; // id_fisico o id_contenedor_maritimo
+}
+
+function cargarEventosResumen(operacionId, tipoUi, idBase){
+  if (!tbodyEventosResumen) return;
+  if (!operacionId || !tipoUi || !idBase) { setEventosEmptyResumen(); return; }
+
+  setEventosLoadingResumen();
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', buildUrlEventosResumen(operacionId, tipoUi, idBase), true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200) { setEventosEmptyResumen(); if (window.TimelineChart) TimelineChart.setEventos([]); return; }
+
+    let r; try { r = JSON.parse(xhr.responseText); } catch { setEventosEmptyResumen(); if (window.TimelineChart) TimelineChart.setEventos([]); return; }
+
+    if (r.status === 'ok' && Array.isArray(r.data)) {
+      renderEventosResumen(r.data);
+      if (window.TimelineChart) TimelineChart.setEventos(r.data);   // <— ACTUALIZA GRÁFICO AQUÍ
+    } else {
+      setEventosEmptyResumen();
+      if (window.TimelineChart) TimelineChart.setEventos([]);
+    }
+  };
+  xhr.send();
+}
+const badgeEventosResumen = document.getElementById('badgeEventosResumen');
+
+function setEventosBadgeResumen(completados, total){
+  if (!badgeEventosResumen) return;
+  badgeEventosResumen.textContent = `${Number(completados||0)} / ${Number(total||0)}`;
+}
+
+function buildUrlEventosProgresoResumen(operacionId, tipoUi, idBase){
+  // tipoUi: 'M' | 'F'
+  return `${base_url}operaciones_maritimas_resumen/eventos_progreso`
+       + `?operacion_id=${encodeURIComponent(operacionId)}`
+       + `&tipo=${encodeURIComponent(tipoUi)}`
+       + `&id_contenedor=${encodeURIComponent(idBase)}`;
+}
+
+function fetchEventosProgresoResumen(operacionId, tipoUi, idBase){
+  if (!operacionId || !tipoUi || !idBase){ setEventosBadgeResumen(0,0); return; }
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', buildUrlEventosProgresoResumen(operacionId, tipoUi, idBase), true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200){ setEventosBadgeResumen(0,0); return; }
+    let r; try { r = JSON.parse(xhr.responseText); } catch { setEventosBadgeResumen(0,0); return; }
+    if (r.status === 'ok' && r.data){
+      setEventosBadgeResumen(r.data.completados, r.data.total);
+    } else {
+      setEventosBadgeResumen(0,0);
+    }
+  };
+  xhr.send();
+}
+

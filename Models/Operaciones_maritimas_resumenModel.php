@@ -282,6 +282,128 @@ public function getCostosDesglosadosOperacion(int $operacionId): array
     return is_array($rows) ? $rows : [];
 }
 
+ 
+/** Eventos logísticos de un CONTENEDOR FÍSICO usando id_fisico + operacion_id */
+public function getEventosLogisticosFisicoByFisico(int $operacionId, int $idFisico): array
+{
+    $sql = "
+        SELECT 
+          el.id_evento,
+          el.operacion_id,
+          el.contenedor_operacion_id,
+          el.tipo_evento_id,
+          tel.nombre   AS nombre_evento,
+          el.fecha,
+          el.comentario,
+          el.estatus
+        FROM contenedores_operacion co
+        JOIN eventos_logisticos el
+          ON el.operacion_id = co.operacion_id
+         AND el.contenedor_operacion_id = co.id_contenedor
+        JOIN tipos_evento_logistico tel
+          ON tel.id_tipo_evento = el.tipo_evento_id
+        WHERE co.operacion_id = ?
+          AND co.id_fisico    = ?
+          AND el.estatus      = 1
+        ORDER BY (el.fecha IS NULL), el.fecha ASC, el.id_evento ASC
+    ";
+    return $this->selectAll($sql, [$operacionId, $idFisico]) ?: [];
+}
+
+/** Eventos logísticos de un CONTENEDOR MARÍTIMO usando id_contenedor_maritimo + operacion_id */
+public function getEventosLogisticosMaritimoByMar(int $operacionId, int $idContenedorMaritimo): array
+{
+    $sql = "
+        SELECT 
+          el.id_evento,
+          el.operacion_id,
+          el.cont_maritimo_operacion_id,
+          el.tipo_evento_id,
+          tel.nombre   AS nombre_evento,
+          el.fecha,
+          el.comentario,
+          el.estatus
+        FROM contenedores_maritimos_operacion cmo
+        JOIN eventos_logisticos el
+          ON el.operacion_id = cmo.operacion_id
+         AND el.cont_maritimo_operacion_id = cmo.id
+        JOIN tipos_evento_logistico tel
+          ON tel.id_tipo_evento = el.tipo_evento_id
+        WHERE cmo.operacion_id          = ?
+          AND cmo.contenedor_maritimo_id = ?
+          AND el.estatus                 = 1
+        ORDER BY (el.fecha IS NULL), el.fecha ASC, el.id_evento ASC
+    ";
+    return $this->selectAll($sql, [$operacionId, $idContenedorMaritimo]) ?: [];
+}
+
+/** Wrapper unificado para tu front: tipo 'Ferro' | 'Maritimo' + id_contenedor */
+public function getEventosLogisticosPorContenedor(int $operacionId, string $tipoContenedor, int $idContenedor): array
+{
+    $t = mb_strtoupper(trim($tipoContenedor), 'UTF-8');
+    if ($t === 'FERRO' || $t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') {
+        // id_contenedor = id_fisico
+        return $this->getEventosLogisticosFisicoByFisico($operacionId, $idContenedor);
+    }
+    // Marítimo: id_contenedor = id_contenedor_maritimo
+    return $this->getEventosLogisticosMaritimoByMar($operacionId, $idContenedor);
+}
 
 
+// FÍSICO: progreso de eventos (completados / totales)
+public function getEventosProgresoFisico(int $operacionId, int $idFisico): array {
+    // completados = COUNT DISTINCT de tipos ya registrados para ese contenedor físico
+    $sqlDone = "
+      SELECT COUNT(DISTINCT el.tipo_evento_id) AS completados
+      FROM contenedores_operacion co
+      JOIN eventos_logisticos el
+        ON el.operacion_id = co.operacion_id
+       AND el.contenedor_operacion_id = co.id_contenedor
+       AND el.estatus = 1
+      WHERE co.operacion_id = ?
+        AND co.id_fisico    = ?
+    ";
+    $rowDone = $this->select($sqlDone, [$operacionId, $idFisico]);
+    $completados = (int)($rowDone['completados'] ?? 0);
+
+    // totales = cuantos tipos aplican al contenedor físico
+    // Si NO tienes columna aplica_sobre/activo, reemplaza por: SELECT COUNT(*) FROM tipos_evento_logistico
+    $sqlTotal = "
+      SELECT COUNT(*) AS total
+      FROM tipos_evento_logistico tel
+      WHERE tel.estatus = 1
+        AND tel.id_tipo_operacion=2
+    ";
+    $rowTotal = $this->select($sqlTotal, []);
+    $total = (int)($rowTotal['total'] ?? 0);
+
+    return ['completados'=>$completados, 'total'=>$total, 'restantes'=>max($total-$completados,0)];
+}
+
+// MARÍTIMO: progreso de eventos (completados / totales)
+public function getEventosProgresoMaritimo(int $operacionId, int $contenedorMaritimoId): array {
+    $sqlDone = "
+      SELECT COUNT(DISTINCT el.tipo_evento_id) AS completados
+      FROM contenedores_maritimos_operacion cmo
+      JOIN eventos_logisticos el
+        ON el.operacion_id = cmo.operacion_id
+       AND el.cont_maritimo_operacion_id = cmo.id
+       AND el.estatus = 1
+      WHERE cmo.operacion_id          = ?
+        AND cmo.contenedor_maritimo_id = ?
+    ";
+    $rowDone = $this->select($sqlDone, [$operacionId, $contenedorMaritimoId]);
+    $completados = (int)($rowDone['completados'] ?? 0);
+
+    $sqlTotal = "
+      SELECT COUNT(*) AS total
+      FROM tipos_evento_logistico tel
+      WHERE tel.estatus = 1
+        AND tel.id_tipo_operacion=1
+    ";
+    $rowTotal = $this->select($sqlTotal, []);
+    $total = (int)($rowTotal['total'] ?? 0);
+
+    return ['completados'=>$completados, 'total'=>$total, 'restantes'=>max($total-$completados,0)];
+}
 }

@@ -121,7 +121,7 @@
                          <div
                              class="bg-info text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="check-circle" class="mb-1"></i>
-                             <h5 class="fw-bold">4 / 6</h5>
+                             <h5 class="fw-bold" id="badgeEventosResumen">0 / 0</h5>
                              <p class="mb-0">Eventos</p>
                          </div>
                      </div>
@@ -145,24 +145,25 @@
                  <div class="col-md-6" style="border:1px solid red;">
                      <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
                      <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
-  <div class="d-flex flex-wrap align-items-end mb-2">
-    <div>
-      <label class="form-label small mb-1">Mostrar totales en</label>
-      <select id="costosResumenMonedaVista" class="form-control form-control-sm" style="width:140px;">
-        <option value="MXN">MXN (pesos)</option>
-        <option value="USD">USD (dólares)</option>
-      </select>
-    </div>
-    <div class="ms-2">
-      <label class="form-label small mb-1">Tipo de cambio</label>
-      <div class="input-group input-group-sm" style="width:160px;">
-        <span class="input-group-text">$</span>
-        <input type="number" step="0.0001" min="0" id="costosResumenTipoCambio" 
-               class="form-control mt-1" value="17.00">
-      </div>
-    </div>
-  </div>
-</div>
+                         <div class="d-flex flex-wrap align-items-end mb-2">
+                             <div>
+                                 <label class="form-label small mb-1">Mostrar totales en</label>
+                                 <select id="costosResumenMonedaVista" class="form-control form-control-sm"
+                                     style="width:140px;">
+                                     <option value="MXN">MXN (pesos)</option>
+                                     <option value="USD">USD (dólares)</option>
+                                 </select>
+                             </div>
+                             <div class="ms-2">
+                                 <label class="form-label small mb-1">Tipo de cambio</label>
+                                 <div class="input-group input-group-sm" style="width:160px;">
+                                     <span class="input-group-text">$</span>
+                                     <input type="number" step="0.0001" min="0" id="costosResumenTipoCambio"
+                                         class="form-control mt-1" value="17.00">
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
 
                      <div class="d-flex">
                          <canvas id="costosChart" class="w-50 h-50 mt-3 "></canvas>
@@ -200,9 +201,9 @@
                              <!-- Lista de faltantes -->
                              <ul id="dfLista" class="list-group list-group-flush" style="display:none;"></ul>
                          </div>
-                         
+
                      </div>
-                     
+
                  </div>
 
                  <!-- Hidden helpers que poblará JS cuando selecciones operación/contenedor -->
@@ -222,35 +223,16 @@
                                          <th>Evento</th>
                                      </tr>
                                  </thead>
-                                 <tbody id="tablaTrazabilidad">
-                                     <tr>
-                                         <td>31/08/2025 09:10</td>
-                                         <td>Salida de origen</td>
-                                     </tr>
-                                     <tr>
-                                         <td>02/09/2025 13:45</td>
-                                         <td>Transbordo</td>
-                                     </tr>
-                                     <tr>
-                                         <td>06/09/2025 22:00</td>
-                                         <td>Arribo estimado</td>
-                                     </tr>
-                                     <tr>
-                                         <td>07/09/2025 08:00</td>
-                                         <td>Descarga programada</td>
-                                     </tr>
-                                     <tr>
-                                         <td>08/09/2025 12:30</td>
-                                         <td>Previo/Inspección</td>
-                                     </tr>
+                                 <tbody id="tablaEventosLogisticos">
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted py-4">
+                                                Seleccione un contenedor para ver su trazabilidad.
+                                            </td>
+                                        </tr>
                                  </tbody>
                              </table>
                          </div>
-                         <div class="text-end mt-2">
-                             <button class="btn btn-sm btn-outline-primary">
-                                 <i data-feather="more-horizontal" class="me-1"></i> Ver todos
-                             </button>
-                         </div>
+                   
                      </div>
                  </div>
 
@@ -262,139 +244,8 @@
 
  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
- <script>
-     const operaciones = [{
-         id: "FXEU237648",
-         cliente: "-",
-         destino: "GDL",
-         ganancia: 120000,
-         contenedores: [{
-                 id: "CMAU9166054",
-                 status: "En tránsito",
-                 fecha: "06/08/2025",
-                 buitos: 10,
-                 ausos: 10,
-                 trazabilidad: [{
-                         fecha: "08/08/2025",
-                         evento: "Carga a barco",
-                         origen: "Los Angeles",
-                         destino: "Lázaro"
-                     },
-                     {
-                         fecha: "07/08/2025",
-                         evento: "Entrega en puerto",
-                         origen: "David",
-                         destino: "Lázaro"
-                     },
-                     {
-                         fecha: "06/08/2025",
-                         evento: "Salida a ferrocarril",
-                         origen: "San Diego",
-                         destino: "David"
-                     }
-                 ]
-             },
-             {
-                 id: "MSCU1234567",
-                 status: "En tránsito",
-                 fecha: "06/08/2025",
-                 buitos: 12,
-                 ausos: 8,
-                 trazabilidad: [{
-                         fecha: "08/08/2025",
-                         evento: "Zarpado",
-                         origen: "Long Beach",
-                         destino: "Manzanillo"
-                     },
-                     {
-                         fecha: "07/08/2025",
-                         evento: "Inspección",
-                         origen: "Long Beach",
-                         destino: "Long Beach"
-                     }
-                 ]
-             }
-         ]
-     }];
-    
  
  
-     feather.replace();
- </script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const ctx = document.getElementById('timelineChart')?.getContext('2d');
-  if (!ctx) return;
-
-  // Etiquetas = tu secuencia de eventos (fecha + nombre con salto de línea)
-  const labels = [
-    '31/08 09:10\nSalida de origen',
-    '02/09 13:45\nTransbordo',
-    '06/09 22:00\nArribo estimado',
-    '07/09 08:00\nDescarga prog.',
-    '08/09 12:30\nPrevio/Inspección'
-  ];
-
-  // Todos los valores a 0 -> línea horizontal (timeline)
-  const values = new Array(labels.length).fill(0);
-
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Eventos',
-        data: values,
-        showLine: true,
-        tension: 0.35,
-        borderColor: 'rgba(13,110,253,0.5)',   // azul translúcido
-        borderWidth: 2,
-        fill: false,
-        segment: { borderDash: [4, 4] },       // línea punteada (opcional)
-        pointStyle: 'circle',
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        pointBorderWidth: 2,
-        pointBorderColor: 'rgba(13,110,253,0.9)',
-        pointBackgroundColor: 'rgba(13,110,253,0.15)'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      layout: { padding: { top: 10, right: 8, bottom: 8, left: 8 } },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            autoSkip: false,            // muestra todos los eventos
-            maxRotation: 0,
-            callback: function(v) {     // respeta saltos de línea con \n
-              const txt = this.getLabelForValue(v);
-              return txt.split('\n');
-            }
-          }
-        },
-        y: {                            // eje Y oculto (timeline plano)
-          display: false,
-          min: -1, max: 1
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: (items) => items[0].label.replace('\n', ' · '),
-            label: () => ''             // solo título en el tooltip
-          }
-        }
-      }
-    }
-  });
-
-  if (window.feather) feather.replace();
-});
-</script>
  
 
 <script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/resumen.js"></script>
