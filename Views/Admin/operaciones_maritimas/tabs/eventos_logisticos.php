@@ -145,14 +145,8 @@
               <label for="tipo_evento_id" class="form-label">Tipo de evento</label>
               <select id="tipoEventoId" name="tipoEventoId" class="form-control">
                 <option value="">Selecciona...</option>
-                <?php if (!empty($data['tipos_evento'])): ?>
-                <?php foreach ($data['tipos_evento'] as $op): ?>
-                <option value="<?= $op['id_tipo_evento'] ?>">
-                  <?= htmlspecialchars($op['nombre']) ?>
-                </option>
-                <?php echo $op['id_tipo_evento']?>
-                <?php endforeach; ?>
-                <?php endif; ?>
+                 
+            
               </select>
             </div>
 

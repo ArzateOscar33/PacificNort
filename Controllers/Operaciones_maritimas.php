@@ -43,8 +43,7 @@ class Operaciones_maritimas extends Controller
         // Catálogos del tab “Costos por Operación” 
         $data['tiposMovimiento'] = $this->costos_OperacionModel->obtenerTiposMovimientoActivos();
 
-        // Catálogos del tab “Detalles de Eventos Logísticos”
-        $data['tipos_evento'] = $this->eventosModel->listarTiposEvento();
+ 
 
          
 

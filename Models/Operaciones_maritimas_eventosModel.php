@@ -312,5 +312,20 @@ public function desactivar(int $idEvento): bool
             WHERE id_evento = ? AND estatus = 1";
     return $this->save($sql, [$idEvento]);
 }
+public function listarTiposEventoPorTipoOperacion(?int $tipoOperacionId): array
+{
+    $params = [];
+    $sql = "SELECT id_tipo_evento, nombre
+            FROM tipos_evento_logistico
+            WHERE estatus = 1";
 
+    if (!is_null($tipoOperacionId)) {
+        $sql .= " AND id_tipo_operacion = ?";
+        $params[] = $tipoOperacionId;
+    }
+
+    $sql .= " ORDER BY nombre ASC";
+    $rows = $this->selectAll($sql, $params);
+    return is_array($rows) ? $rows : [];
+}
 }

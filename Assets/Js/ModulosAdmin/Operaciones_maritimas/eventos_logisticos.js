@@ -222,7 +222,10 @@ function xhrGetDetallesLogisticos(url, cb) {
         input.value  = it.label;
         hiddenF.value = it.id; // co.id_contenedor o cmo.id
         if (fldContenedorTipoEventosLogisticos) {
-          fldContenedorTipoEventosLogisticos.value = (it.tipo || "").toUpperCase(); // 'FISICO' | 'MARITIMO'
+          const tipoUI = (it.tipo || "").toUpperCase();
+          fldContenedorTipoEventosLogisticos.value = tipoUI;
+          // <<< NUEVO: carga catálogo correcto
+          cargarTiposEventoPorContenedorUI(tipoUI);
         }
         list.style.display = "none";
       });
@@ -465,6 +468,9 @@ btnAgregarDetalles.addEventListener("click", () => {
   const btnSubmit = formDetalles.querySelector('button[type="submit"]');
   btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
+   setTiposEventoLoading(false); // pinta "Selecciona..."
+  fillTiposEventoOptions([]);   // vacía
+  selectTipoEvento.disabled = true;
 });
 
 
@@ -531,7 +537,10 @@ function editarEvento(id) {
     const btnSubmit = formDetalles.querySelector('button[type="submit"]');
     btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
     if (window.feather) feather.replace();
-
+    let tipoUI = "";
+    if (data.contenedor_operacion_id) tipoUI = "FISICO";
+    else if (data.cont_maritimo_operacion_id) tipoUI = "MARITIMO";
+    cargarTiposEventoPorContenedorUI(tipoUI, data.tipo_evento_id);
     // Mostrar modal
     new bootstrap.Modal(modalDetalles).show();
   };
@@ -597,3 +606,58 @@ buscarEventosLogisticos.addEventListener("input", function () {
     listarEventoLogistico();
   }, 300);
 });
+ 
+// ===== Tipos de evento (catálogo dinámico) =====
+const selectTipoEvento = document.getElementById("tipoEventoId");
+
+function setTiposEventoLoading(flag) {
+  if (!selectTipoEvento) return;
+  selectTipoEvento.disabled = !!flag;
+  selectTipoEvento.innerHTML = flag
+    ? '<option value="">Cargando...</option>'
+    : '<option value="">Selecciona...</option>';
+}
+
+function fillTiposEventoOptions(lista, preselectId = null) {
+  if (!selectTipoEvento) return;
+  let html = '<option value="">Selecciona...</option>';
+  if (Array.isArray(lista)) {
+    for (const r of lista) {
+      const id = r.id ?? r.id_tipo_evento;
+      const nom = r.nombre ?? '';
+      const sel = preselectId && String(preselectId) === String(id) ? ' selected' : '';
+      html += `<option value="${id}"${sel}>${nom}</option>`;
+    }
+  }
+  selectTipoEvento.innerHTML = html;
+  selectTipoEvento.disabled = false;
+}
+
+/**
+ * MARITIMO -> 1 (marítima)
+ * FISICO/FERRO -> 2 (terrestre)
+ * Ajusta si tus IDs reales difieren.
+ */
+function mapTipoUIToTipoOperacionId(tipoUI) {
+  const t = (tipoUI || '').toUpperCase();
+  if (t === 'FISICO' || t === 'FÍSICO' || t === 'FERRO' || t === 'TERRESTRE') return 2;
+  return 1; // default marítimo
+}
+
+/** Carga catálogo según tipo de contenedor (UI) */
+function cargarTiposEventoPorContenedorUI(tipoUI, preselectId = null) {
+  const tipoOperacionId = mapTipoUIToTipoOperacionId(tipoUI);
+  setTiposEventoLoading(true);
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "operaciones_maritimas_eventos/tipos_evento?tipo_operacion_id=" + encodeURIComponent(tipoOperacionId), true);
+  http.onreadystatechange = function(){
+    if (this.readyState !== 4) return;
+    if (this.status !== 200) { fillTiposEventoOptions([]); return; }
+    console.log(this.responseText);
+    let data;
+    try { data = JSON.parse(this.responseText); } catch { data = []; }
+    fillTiposEventoOptions(Array.isArray(data) ? data : [], preselectId);
+  };
+  http.send();
+}
+ 
