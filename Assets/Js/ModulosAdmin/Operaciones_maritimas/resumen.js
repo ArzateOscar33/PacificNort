@@ -7,12 +7,13 @@ const inpBuscarOpResumen                 = document.getElementById("buscarOperac
 const boxSugsOpResumen                   = document.getElementById("sugerenciasOperacionResumen");
 const btnRefResumen                      = document.getElementById("btnRefrescarResumen");
 
-// Estado (con sufijo Resumen)
+// Estado  
 let operacionIdActivoResumen             = null;
 let lastXHRContenedoresResumen           = null;
 let lastXHRSugerenciasResumen            = null;
 let lastXHRFaltantesResumen              = null;
 let debounceTimerResumen                 = null;
+let opLabelSeleccionadaResumen = null;
 
 // =========================
 // Helpers UI
@@ -22,6 +23,7 @@ function setContenedoresLoadingResumen() {
 }
 function setContenedoresEmptyResumen(msg = 'Sin contenedores') {
   selectContenedorResumen.innerHTML = `<option value="">${msg}</option>`;
+  setExportPdfEnabledResumen(false);
 }
 function clearSugerenciasResumen() {
   boxSugsOpResumen.style.display = 'none';
@@ -46,7 +48,64 @@ function limpiarDetalleUIResumen() {
 function setDetalleLoadingResumen() {
   document.getElementById('comentarioContenedor').textContent = 'Cargando…';
 }
+function resetOperacionSeleccionResumen(){
+  // 1) Estado
+  operacionIdActivoResumen = null;
+  try { lastXHRContenedoresResumen?.abort(); } catch(e){}
+  try { lastXHRSugerenciasResumen?.abort(); } catch(e){}
+  try { lastXHRFaltantesResumen?.abort(); } catch(e){}
 
+  // 2) UI de select de contenedores
+  setContenedoresEmptyResumen('-- Selecciona una Operación --');
+
+  // 3) Panel de detalle izq
+  limpiarDetalleUIResumen();
+  // Oculta ambos bloques tipo por neutralidad
+  document.getElementById('bloqueMaritimo')?.classList.add('d-none');
+  document.getElementById('bloqueFerro')?.classList.add('d-none');
+
+  // 4) Documentos faltantes
+  setDFHeaderResumen('Seleccione un contenedor…', 0);
+  toggleDFResumen(false, false, false);
+  dfListaResumen.innerHTML = '';
+
+  // 5) Eventos (tabla + badge + timeline)
+  setEventosEmptyResumen();
+  setEventosBadgeResumen(0, 0);
+  if (window.TimelineChart && typeof TimelineChart.setEventos === 'function') {
+    TimelineChart.setEventos([]);
+  }
+
+  // 6) Costos (badge + lista + gráfico)
+  setTotalCostos('—');
+  if (listaCostos) listaCostos.innerHTML = '<li class="list-group-item text-muted">Sin costos</li>';
+  if (window.CostosChart && typeof CostosChart.clear === 'function') {
+    CostosChart.clear();  // ver parche de CostosChart abajo
+  }
+
+  // 7) PDF deshabilitado
+  setExportPdfEnabledResumen(false);
+}
+
+// ---- Helpers de validación / estado (Resumen) ----
+const btnPdfResumen = document.getElementById('btnExportPdfResumen');
+
+function hasOperacionSeleccionadaResumen(){
+  // Operación seleccionada y al menos un contenedor cargado/seleccionado
+  const opt = selectContenedorResumen?.selectedOptions?.[0];
+  return !!operacionIdActivoResumen && !!opt && !!opt.value;
+}
+
+function setExportPdfEnabledResumen(enabled){
+  if (!btnPdfResumen) return;
+  btnPdfResumen.disabled = !enabled;
+  btnPdfResumen.classList.toggle('disabled', !enabled);
+}
+
+// Deshabilitado al inicio
+document.addEventListener('DOMContentLoaded', () => {
+  setExportPdfEnabledResumen(false);
+});
 // =========================
 // Sugerencias (autocomplete)
 // =========================
@@ -65,6 +124,19 @@ function renderSugerenciasResumen(itemsResumen) {
     boxSugsOpResumen.appendChild(aResumen);
   });
   boxSugsOpResumen.style.display = 'block';
+}
+function normStrResumen(s){
+  return String(s || '')
+    .trim()
+    .replace(/\s+/g, ' ')       // colapsa espacios
+    .toUpperCase();             // compara sin sensibilidad a mayúsculas
+}
+
+function isInputSyncedResumen(){
+  // true si el texto visible del input coincide con la última etiqueta elegida
+  const a = normStrResumen(inpBuscarOpResumen.value);
+  const b = normStrResumen(opLabelSeleccionadaResumen);
+  return !!a && a === b;
 }
 
 function doSearchSugerenciasResumen(termResumen) {
@@ -89,9 +161,39 @@ function doSearchSugerenciasResumen(termResumen) {
 inpBuscarOpResumen.addEventListener('input', function() {
   const termResumen = this.value.trim();
   clearTimeout(debounceTimerResumen);
-  if (termResumen.length < 2) { clearSugerenciasResumen(); return; }
+
+  // si quedó vacío → reset total
+  if (termResumen.length === 0) {
+    resetOperacionSeleccionResumen();
+    opLabelSeleccionadaResumen = null; // 👈 también olvidamos el label
+    clearSugerenciasResumen();
+    return;
+  }
+
+  // si el texto ya NO coincide con el label seleccionado → desincroniza (reset sin borrar el input)
+  if (operacionIdActivoResumen && !isInputSyncedResumen()) {
+    // no tocamos el valor del input, solo limpiamos los datos derivados
+    resetOperacionSeleccionResumen();
+    // importante: NO poner opLabelSeleccionadaResumen = null aquí,
+    // así si el usuario vuelve a escribir idéntico, igual seguiremos pidiendo sugerencias;
+    // la reselcción vendrá desde el clic en sugerencia.
+  }
+
+  if (termResumen.length < 2) { 
+    clearSugerenciasResumen(); 
+    return; 
+  }
   debounceTimerResumen = setTimeout(() => doSearchSugerenciasResumen(termResumen), 250);
 });
+
+inpBuscarOpResumen.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    inpBuscarOpResumen.value = '';
+    clearSugerenciasResumen();
+    resetOperacionSeleccionResumen();
+  }
+});
+
 
 document.addEventListener('click', (e) => {
   if (!boxSugsOpResumen.contains(e.target) && e.target !== inpBuscarOpResumen) {
@@ -100,14 +202,17 @@ document.addEventListener('click', (e) => {
 });
 inpBuscarOpResumen.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') clearSugerenciasResumen();
+  opLabelSeleccionadaResumen = null;
 });
 
 // Elegir operación de las sugerencias
 function seleccionarSugerenciaResumen(rowResumen) {
   inpBuscarOpResumen.value = rowResumen.label;
   operacionIdActivoResumen = String(rowResumen.id);
+  opLabelSeleccionadaResumen = rowResumen.label;
   cargarContenedoresResumen(operacionIdActivoResumen);
   clearSugerenciasResumen();
+  setExportPdfEnabledResumen(true);
 }
 
 // =========================
@@ -543,4 +648,6 @@ function fetchEventosProgresoResumen(operacionId, tipoUi, idBase){
   };
   xhr.send();
 }
+
+
 

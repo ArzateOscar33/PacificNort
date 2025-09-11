@@ -153,6 +153,27 @@ console.log('rows ejemplo', lastRows.slice(0,3));
       if (!$canvas) { console.warn('[CostosChart] Canvas no encontrado'); return; }
       ensureChart();
     },
+    clear: function(){
+  // deja el gráfico en estado neutro sin pedir endpoints
+  try {
+    // reusa internamente tu setChart
+    lastRows = [];
+    // Usa una porción pequeña para que no se vea raro
+    const ch = (typeof ensureChart === 'function') ? ensureChart() : null;
+    if (ch) {
+      ch.data.labels = ['Sin costos'];
+      ch.data.datasets[0].data = [1];
+      ch.data.datasets[0].backgroundColor = ['#bab0ab'];
+      ch.update();
+    }
+    if (typeof CostosChart.onTotalChanged === 'function') {
+      CostosChart.onTotalChanged('—');
+    }
+    // Limpia leyenda, si existe
+    const $legend = document.getElementById('costosLeyenda');
+    if ($legend) $legend.innerHTML = '';
+  } catch(e){ console.warn('[CostosChart.clear] noop', e); }
+},
 
     /**
      * @param {{tipo: 'F'|'M', operacionId: number, idFisico?: number}} opts

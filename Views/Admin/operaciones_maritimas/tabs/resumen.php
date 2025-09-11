@@ -1,4 +1,4 @@
- <div class="container mt-4 col-md-12">
+ <div class="container mt-4 col-md-12" id="informeOperacionResumen">
      <div class="card p-4 shadow-sm">
          <div class="d-flex justify-content-between align-items-center mb-3">
              <h3 class="fw-bold">Resumen de Operación</h3>
@@ -75,12 +75,10 @@
                          </div>
 
                          <div class="d-flex flex-wrap gap-2 mt-3">
-                             <button class="btn btn-sm btn-outline-warning">
+                             <button class="btn btn-sm btn-outline-warning" id="btnExportPdfResumen">
                                  <i data-feather="file" class="me-1"></i> PDF
                              </button>
-                             <button class="btn btn-sm btn-outline-success">
-                                 <i data-feather="file-text" class="me-1"></i> Excel
-                             </button>
+
                          </div>
                      </div>
                  </div>
@@ -242,3 +240,8 @@
 
 <script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/resumen.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/resumen_graficos.js"></script>
+<!-- Librerías requeridas para exportar a PDF (cargar después de Chart.js) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+ 
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/resumen_exportar.js"></script>

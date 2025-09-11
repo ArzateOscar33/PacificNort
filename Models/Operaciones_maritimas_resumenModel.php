@@ -117,7 +117,7 @@ class Operaciones_maritimas_resumenModel extends Query
     co.id_contenedor                     AS contenedor_operacion_id,
     co.bultos,
     co.comentarios                       AS comentarios_contenedor,
-    MAX(CASE WHEN el.tipo_evento_id = 8 AND el.estatus = 1 THEN el.fecha END) AS arribo_a_puerto
+    MAX(CASE WHEN el.tipo_evento_id = 12 AND el.estatus = 1 THEN el.fecha END) AS arribo_a_puerto
     FROM contenedores_operacion co
     JOIN operaciones o
       ON o.id_operacion = co.operacion_id
@@ -126,7 +126,7 @@ class Operaciones_maritimas_resumenModel extends Query
     LEFT JOIN eventos_logisticos el
       ON el.contenedor_operacion_id = co.id_contenedor
     -- Arribo a puerto
-    AND el.tipo_evento_id = 8
+    AND el.tipo_evento_id = 12
     AND el.estatus = 1
     WHERE co.operacion_id = ?
       AND co.id_fisico   = ?
