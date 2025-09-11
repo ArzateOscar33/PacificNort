@@ -63,47 +63,53 @@ class Operaciones_maritimas extends Controller
     // =================== API ===================
 
     // LISTAR (tabla principal)
-    public function listar()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
+public function listar()
+{
+    header('Content-Type: application/json; charset=UTF-8');
 
-        $filters = [
-            'subtipo_id' => (isset($_GET['subtipo_id']) && $_GET['subtipo_id'] !== '')
-                            ? (int)$_GET['subtipo_id']
-                            : ((isset($_GET['filtroSubtipo']) && $_GET['filtroSubtipo'] !== '')
-                               ? (int)$_GET['filtroSubtipo'] : 0),
-            'term'       => trim($_GET['term'] ?? '')
-        ];
+    // 1) Recolecta filtros de la vista (GET)
+    $filters = [
+        'subtipo_id'   => (isset($_GET['subtipo_id']) && $_GET['subtipo_id'] !== '')
+                          ? (int)$_GET['subtipo_id']
+                          : ((isset($_GET['filtroSubtipo']) && $_GET['filtroSubtipo'] !== '')
+                             ? (int)$_GET['filtroSubtipo'] : 0),
+        'term'         => trim($_GET['term'] ?? ''),
 
-        $page    = max(1, (int)($_GET['page'] ?? 1));
-        $perPage = (int)($_GET['per_page'] ?? 10);
-        $allowedPerPage = [10, 25, 50, 100];
-        if (!in_array($perPage, $allowedPerPage, true)) {
-            $perPage = 10;
-        }
+        // ⬇️ NUEVO: fechas desde tus inputs <input id="filtroFechaInicio"> y <input id="filtroFechaFin">
+        'fecha_inicio' => isset($_GET['filtroFechaInicio']) ? trim($_GET['filtroFechaInicio']) : '',
+        'fecha_fin'    => isset($_GET['filtroFechaFin'])    ? trim($_GET['filtroFechaFin'])    : '',
+        // Nota: el modelo filtra por DATE(o.eta). Si luego quieres ETD, ajusta en el modelo.
+    ];
 
-        try {
-            $result = $this->model->listarPaginado($filters, $page, $perPage);
+    // 2) Paginación
+    $page    = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = (int)($_GET['per_page'] ?? 10);
+    $allowedPerPage = [10, 25, 50, 100];
+    if (!in_array($perPage, $allowedPerPage, true)) { $perPage = 10; }
 
-            echo json_encode([
-                'status' => 'success',
-                'data'   => $result['rows'],
-                'meta'   => [
-                    'total'       => $result['total'],
-                    'page'        => $result['page'],
-                    'per_page'    => $result['per_page'],
-                    'total_pages' => $result['total_pages'],
-                ],
-            ], JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            echo json_encode([
-                'status' => 'error',
-                'msg'    => 'Error al listar operaciones',
-                'error'  => $e->getMessage(),
-            ], JSON_UNESCAPED_UNICODE);
-        }
-        die();
+    try {
+        // 3) Llama al modelo con los filtros (ya incluye fechas)
+        $result = $this->model->listarPaginado($filters, $page, $perPage);
+
+        echo json_encode([
+            'status' => 'success',
+            'data'   => $result['rows'],
+            'meta'   => [
+                'total'       => $result['total'],
+                'page'        => $result['page'],
+                'per_page'    => $result['per_page'],
+                'total_pages' => $result['total_pages'],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        echo json_encode([
+            'status' => 'error',
+            'msg'    => 'Error al listar operaciones',
+            'error'  => $e->getMessage(),
+        ], JSON_UNESCAPED_UNICODE);
     }
+    die();
+}
 
     // Autocomplete clientes
     public function buscar_clientes()

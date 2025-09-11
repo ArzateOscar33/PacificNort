@@ -35,6 +35,22 @@
                         <i data-feather="file" class="me-1"></i> PDF
                     </button>
                 </div>
+                <!-- Filtro: Rango de fechas -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i data-feather="calendar"></i>
+                        <span class="small text-muted">Rango:</span>
+                    </div>
+
+                    <!-- Fecha inicio -->
+                    <input type="date" id="filtroFechaInicio" name="filtroFechaInicio" class="form-control"
+                        style="max-width: 165px;" aria-label="Fecha inicio" />
+
+                    <!-- Fecha fin -->
+                    <input type="date" id="filtroFechaFin" name="filtroFechaFin" class="form-control"
+                        style="max-width: 165px;" aria-label="Fecha fin" />
+
+                </div>
                 <!-- NUEVO: “por página” alineado a la derecha -->
                 <div class="ms-auto d-flex align-items-center gap-2">
                     <label for="perPage" class="mb-0 small text-muted">Mostrar</label>
@@ -139,7 +155,7 @@
                         <div class="col-md-4">
                             <label class="form-label">Número de Operación</label>
                             <input type="text" id="numeroOperacion" name="numero_operacion" class="form-control"
-                                placeholder="JL-61"  >
+                                placeholder="JL-61">
                         </div>
 
                         <!-- Estado (Estatus en BD) -->
@@ -178,10 +194,9 @@
                         <!-- BL -->
                         <div class="col-md-3">
                             <label class="form-label">BL</label>
-                            <input type="text" id="numeroBL" name="numero_bl" class="form-control"
-                                      autocomplete="off" inputmode="latin" maxlength="40"
-       pattern="[A-Za-z0-9]+"
-       title="Solo letras y números, sin espacios ni caracteres especiales.">
+                            <input type="text" id="numeroBL" name="numero_bl" class="form-control" autocomplete="off"
+                                inputmode="latin" maxlength="40" pattern="[A-Za-z0-9]+"
+                                title="Solo letras y números, sin espacios ni caracteres especiales.">
                         </div>
 
                         <!-- Puerto de Arribo -->
@@ -338,13 +353,13 @@
 
                             </div>
                         </div>
-                            <!-- Notas -->
-                            <div class="col-md-12">
-                                <label class="form-label">Notas</label>
-                                <textarea id="notas" name="notas" class="form-control" rows="2"
-                                    placeholder="Observaciones generales"></textarea>
-                            </div>
+                        <!-- Notas -->
+                        <div class="col-md-12">
+                            <label class="form-label">Notas</label>
+                            <textarea id="notas" name="notas" class="form-control" rows="2"
+                                placeholder="Observaciones generales"></textarea>
                         </div>
+                    </div>
                 </form>
             </div>
 

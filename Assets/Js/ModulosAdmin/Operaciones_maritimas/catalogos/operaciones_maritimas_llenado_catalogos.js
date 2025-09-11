@@ -5,6 +5,8 @@ const selectSubtipo = document.getElementById("filtroSubtipo");
 const selectPerPage = document.getElementById("perPage");
 const ulPaginacion  = document.getElementById("paginacion");
 const metaResumen   = document.getElementById("metaResumen");
+const inpFechaIni = document.getElementById("filtroFechaInicio");
+const inpFechaFin = document.getElementById("filtroFechaFin");
 
  
 let currentPage = 1;
@@ -14,7 +16,7 @@ let debounceId     = null;
 
 
 
-// ====== Refs del modal (ya tienes varias) ======
+// ====== Refs del modal ======
 const modalEl         = document.getElementById('modalOperacionMaritima');
 const tituloModal     = document.getElementById('tituloModalOperacion');
 const inpIdOperacion  = document.getElementById('id_operacion');
@@ -259,11 +261,15 @@ function listar() {
 
   if (subtipo !== "") params.append("subtipo_id", subtipo);
   if (term !== "")    params.append("term", term);
-
+  const fi = (inpFechaIni?.value || "").trim();  // YYYY-MM-DD
+  const ff = (inpFechaFin?.value || "").trim();  // YYYY-MM-DD
+  if (fi !== "") params.append("filtroFechaInicio", fi);
+  if (ff !== "") params.append("filtroFechaFin", ff);
   // NUEVO: paginación
   params.append("page", String(currentPage));
   params.append("per_page", String(perPage));
 
+  
   const url = base_url + "Operaciones_maritimas/listar" + "?" + params.toString();
 
   // Abortamos petición en curso (si la hay)
@@ -905,6 +911,27 @@ function renderSugShippers(list){
   showSugShip();
 }
  
- 
+ function validarRangoFechas() {
+  const fi = (inpFechaIni?.value || "").trim();
+  const ff = (inpFechaFin?.value || "").trim();
+  if (fi && ff && fi > ff) {
+    // Corrige automáticamente: intercambia
+    if (inpFechaIni) inpFechaIni.value = ff;
+    if (inpFechaFin) inpFechaFin.value = fi;
+  }
+}
+
+inpFechaIni?.addEventListener("change", () => {
+  validarRangoFechas();
+  currentPage = 1;
+  listar();
+});
+
+inpFechaFin?.addEventListener("change", () => {
+  validarRangoFechas();
+  currentPage = 1;
+  listar();
+});
+
 
  

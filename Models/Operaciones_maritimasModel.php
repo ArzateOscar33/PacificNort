@@ -48,115 +48,135 @@ class Operaciones_maritimasModel extends Query
     /* =========================
        ===        LISTAR      ===
        ========================= */
-    public function listarPaginado(array $filters = [], int $page = 1, int $perPage = 10): array
-    {
-        // 1) Sanitiza paginación
-        $page    = max(1, (int)$page);
-        $perPage = max(1, (int)$perPage);
-        $offset  = ($page - 1) * $perPage;
+public function listarPaginado(array $filters = [], int $page = 1, int $perPage = 10): array
+{
+    // 1) Paginación
+    $page    = max(1, (int)$page);
+    $perPage = max(1, (int)$perPage);
+    $offset  = ($page - 1) * $perPage;
 
-        // 2) WHERE + ARGS (misma lógica que tu listar)
-        $where = "WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%'";
-          //SI QUEREMOS QUE NO SALGAN LAS OPERACIONES CANCELADAS QUITAMOS EL COMENTARIO DE ABAJO
-        /*$where = "WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%' 
-          AND (o.estatus_id IS NULL OR o.estatus_id <> 6)";*/
+    // 2) WHERE base
+    $where = "WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%'";
+    $args  = [];
 
-        $args  = [];
-
-        $subtipoId = isset($filters['filtroSubtipo']) ? (int)$filters['filtroSubtipo']
-                : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
-        if ($subtipoId > 0) {
-            $where .= " AND o.subtipo_operacion_id = ? ";
-            $args[] = $subtipoId;
-        }
-
-        if (!empty($filters['term'])) {
-            $needle = '%'.mb_strtolower($filters['term'],'UTF-8').'%';
-            $where .= " AND (
-                LOWER(o.numero_operacion) LIKE ?
-                OR LOWER(o.numero_bl)     LIKE ?
-                OR LOWER(p.nombre)        LIKE ?
-                OR LOWER(e.nombre)        LIKE ?
-                OR LOWER(c.nombre)        LIKE ?
-                OR LOWER(s.nombre)        LIKE ?
-                OR EXISTS (
-                    SELECT 1
-                    FROM contenedores_maritimos_operacion cmo2
-                    JOIN contenedores_maritimos cm2
-                    ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                    WHERE cmo2.operacion_id = o.id_operacion
-                    AND LOWER(cm2.numero_contenedor) LIKE ?
-                )
-            )";
-            // OJO: ahora son 7 needles
-            array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
-        }
-
-
-
-        // 3) TOTAL
-        $sqlCount = "
-            SELECT COUNT(DISTINCT o.id_operacion) AS total
-            FROM operaciones o
-            JOIN tipos_operacion tt       ON tt.id_tipo_operacion = o.tipo_operacion_id
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-            $where
-        ";
-        $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
-        $total    = (int)$rowCount['total'];
-
-        // 4) DATA (interpolando LIMIT/OFFSET como enteros)
-        $limit  = (int)$perPage;
-        $off    = (int)$offset;
-
-        $sqlData = "
-            SELECT
-                o.id_operacion,
-                o.numero_operacion,
-                st.nombre  AS subtipo,
-                o.numero_bl,
-                p.nombre   AS puerto_arribo,
-                n.nombre   AS naviera,
-                f.nombre   AS forwarder,
-                c.nombre   AS cliente,
-                o.etd, o.eta,
-                e.nombre   AS estatus,
-                GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                            ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
-            FROM operaciones o
-            JOIN tipos_operacion tt       ON tt.id_tipo_operacion = o.tipo_operacion_id
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-            LEFT JOIN navieras n          ON n.id_naviera = o.naviera_id
-            LEFT JOIN forwarders f        ON f.id_forwarder = o.forwarder_id
-            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-            LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
-            LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-            $where
-            GROUP BY o.id_operacion, o.numero_operacion, st.nombre, o.numero_bl,
-                    p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre
-            ORDER BY o.id_operacion DESC
-            LIMIT $limit OFFSET $off
-        ";
-
-        // Importante: aquí SOLO van los args de filtros (sin limit/offset)
-        $rows = $this->selectAll($sqlData, $args) ?: [];
-
-        // 5) Retorno para el controlador
-        return [
-            'rows'        => $rows,
-            'total'       => $total,
-            'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => max(1, (int)ceil($total / $perPage)),
-        ];
+    // --- (opcional) subtipo/term: tal cual ya lo tenías ---
+    $subtipoId = isset($filters['filtroSubtipo']) ? (int)$filters['filtroSubtipo']
+              : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
+    if ($subtipoId > 0) {
+        $where .= " AND o.subtipo_operacion_id = ? ";
+        $args[] = $subtipoId;
     }
+
+    if (!empty($filters['term'])) {
+        $needle = '%'.mb_strtolower($filters['term'],'UTF-8').'%';
+        $where .= " AND (
+            LOWER(o.numero_operacion) LIKE ?
+            OR LOWER(o.numero_bl)     LIKE ?
+            OR LOWER(p.nombre)        LIKE ?
+            OR LOWER(e.nombre)        LIKE ?
+            OR LOWER(c.nombre)        LIKE ?
+            OR LOWER(s.nombre)        LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM contenedores_maritimos_operacion cmo2
+                JOIN contenedores_maritimos cm2
+                  ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                WHERE cmo2.operacion_id = o.id_operacion
+                  AND LOWER(cm2.numero_contenedor) LIKE ?
+            )
+        )";
+        array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
+    }
+
+    // === SOLO ESTOS DOS FILTROS: fecha_inicio / fecha_fin sobre ETA ===
+    $fi = trim($filters['fecha_inicio'] ?? '');
+    $ff = trim($filters['fecha_fin'] ?? '');
+
+    // Valida formato YYYY-MM-DD
+    $isDate = static function(string $d): bool {
+        return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $d);
+    };
+    if ($fi !== '' && !$isDate($fi)) { $fi = ''; }
+    if ($ff !== '' && !$isDate($ff)) { $ff = ''; }
+
+    // Corrige orden si vienen invertidas
+    if ($fi !== '' && $ff !== '' && $fi > $ff) {
+        [$fi, $ff] = [$ff, $fi];
+    }
+
+    // Aplica a ETA (o.eta). Usa DATE() para ignorar horas si las hay.
+    if ($fi !== '' && $ff !== '') {
+        $where .= " AND DATE(o.eta) BETWEEN ? AND ? ";
+        array_push($args, $fi, $ff);
+    } elseif ($fi !== '') {
+        $where .= " AND DATE(o.eta) >= ? ";
+        $args[] = $fi;
+    } elseif ($ff !== '') {
+        $where .= " AND DATE(o.eta) <= ? ";
+        $args[] = $ff;
+    }
+
+    // 3) TOTAL
+    $sqlCount = "
+        SELECT COUNT(DISTINCT o.id_operacion) AS total
+        FROM operaciones o
+        JOIN tipos_operacion tt       ON tt.id_tipo_operacion = o.tipo_operacion_id
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+        $where
+    ";
+    $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
+    $total    = (int)$rowCount['total'];
+
+    // 4) DATA
+    $limit = (int)$perPage;
+    $off   = (int)$offset;
+
+    $sqlData = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            st.nombre  AS subtipo,
+            o.numero_bl,
+            p.nombre   AS puerto_arribo,
+            n.nombre   AS naviera,
+            f.nombre   AS forwarder,
+            c.nombre   AS cliente,
+            o.etd, o.eta,
+            e.nombre   AS estatus,
+            GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                         ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
+        FROM operaciones o
+        JOIN tipos_operacion tt       ON tt.id_tipo_operacion = o.tipo_operacion_id
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN navieras n          ON n.id_naviera = o.naviera_id
+        LEFT JOIN forwarders f        ON f.id_forwarder = o.forwarder_id
+        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
+        LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+        $where
+        GROUP BY o.id_operacion, o.numero_operacion, st.nombre, o.numero_bl,
+                 p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre
+        ORDER BY o.id_operacion DESC
+        LIMIT $limit OFFSET $off
+    ";
+    $rows = $this->selectAll($sqlData, $args) ?: [];
+
+    return [
+        'rows'        => $rows,
+        'total'       => $total,
+        'page'        => $page,
+        'per_page'    => $perPage,
+        'total_pages' => max(1, (int)ceil($total / $perPage)),
+    ];
+}
+
 
 
 
