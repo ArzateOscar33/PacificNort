@@ -16,7 +16,7 @@
          <div id="contenidoOperacion" style="display:block;">
              <div class="row g-3">
                  <!-- Contenedor Info -->
-                 <div class="col-md-4" style="border:1px solid red;">
+                 <div class="col-md-4"  >
                      <div class="mb-2">
                          <label for="selectContenedorResumen" class="form-label">Seleccionar Contenedor:</label>
                          <div class="d-flex gap-2">
@@ -87,7 +87,7 @@
 
                  <div class="row g-3 col-md-8">
                      <!-- Docs pendientes -->
-                     <div class="col-md-3">
+                     <div class="col-md-4">
                          <div
                              class="bg-warning text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="file-text" class="mb-1"></i>
@@ -97,27 +97,19 @@
                      </div>
 
                      <!-- Costos -->
-                     <div class="col-md-3">
+                     <div class="col-md-4">
                          <div
                              class="bg-danger text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="dollar-sign" class="mb-1"></i>
-                             <h5 class="fw-bold" id="badgeTotalCostos">$29,800</h5>
+                             <h5 class="fw-bold" id="badgeTotalCostos">$0</h5>
                              <p class="mb-0">Costos</p>
                          </div>
                      </div>
 
-                     <!-- Utilidad -->
-                     <div class="col-md-3">
-                         <div
-                             class="bg-success text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
-                             <i data-feather="trending-up" class="mb-1"></i>
-                             <h5 class="fw-bold">$6,200</h5>
-                             <p class="mb-0">Utilidad</p>
-                         </div>
-                     </div>
+              
 
                      <!-- Eventos completados -->
-                     <div class="col-md-3">
+                     <div class="col-md-4">
                          <div
                              class="bg-info text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="check-circle" class="mb-1"></i>
@@ -133,7 +125,7 @@
              <!-- Avance + Costos -->
              <div class="row mt-4 g-3">
                  <!-- Avance -->
-                 <div class="col-md-6" style="border: red solid 1px;">
+                 <div class="col-md-6"  >
                      <div class="col-md-12">
                          <h6 class="fw-bold mb-2"><i data-feather="clock" class="me-1"></i> Línea de tiempo</h6>
                          <canvas id="timelineChart" class="w-100 h-100"></canvas>
@@ -142,7 +134,7 @@
                  </div>
 
                  <!-- Costos -->
-                 <div class="col-md-6" style="border:1px solid red;">
+                 <div class="col-md-6"  >
                      <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
                      <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
                          <div class="d-flex flex-wrap align-items-end mb-2">
