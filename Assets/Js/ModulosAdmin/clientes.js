@@ -26,10 +26,10 @@ function renderTabla(data) {
     row.classList.add("text-center");
     row.innerHTML = `
       <td>${item.nombre}</td>
-      <td>${item.rfc}</td>
+      
       <td>${item.telefono}</td> 
       <td>${item.correo}</td>
-      <td>${item.direccion}</td> 
+        
       <td>
         <button class="btn btn-sm btn-info" onclick="editarCliente(${item.id_cliente})"><i class="fas fa-edit"></i> Editar</button>
         <button class="btn btn-sm btn-danger" onclick="eliminarCliente(${item.id_cliente})"><i class="fas fa-trash-alt"></i> Eliminar</button>
@@ -87,10 +87,10 @@ function editarCliente(id) {
       const data = JSON.parse(this.responseText);
       document.getElementById("id_cliente").value = data.id_cliente;   
       form.nombre.value = data.nombre || "";
-      form.rfc.value  = data.rfc || "";
+      //form.rfc.value  = data.rfc || "";
       form.correo.value    = data.correo || "";
       form.telefono.value  = data.telefono || "";
-      form.direccion.value = data.direccion || "";
+      //form.direccion.value = data.direccion || "";
       document.getElementById("modalRegistrarClienteLabel").textContent = "Editar Cliente";
       document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
@@ -159,7 +159,7 @@ inputBuscarCliente?.addEventListener("keyup", function () {
           const item = document.createElement("button");
           item.classList.add("list-group-item", "list-group-item-action");
           item.type = "button";
-          item.textContent = `${c.nombre} — ${c.rfc || c.correo || ''}`.trim();
+          //item.textContent = `${c.nombre} — ${c.rfc || c.correo || ''}`.trim();
           item.onclick = () => {
             inputBuscarCliente.value = c.nombre;
             sugerenciasCliente.innerHTML = "";

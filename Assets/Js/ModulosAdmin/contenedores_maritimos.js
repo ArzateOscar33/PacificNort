@@ -158,7 +158,7 @@ form?.addEventListener("submit", function (e) {
   const tipo              = (fldTipo?.value || "").trim();
   const observaciones     = (fldObs?.value || "").trim();
 
-  if (!numero_contenedor || !tipo) {
+  if (!numero_contenedor ) {
     Swal.fire("Campos requeridos", "Completa número de contenedor y tipo", "warning");
     return;
   }

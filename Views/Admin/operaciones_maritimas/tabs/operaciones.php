@@ -179,7 +179,9 @@
                         <div class="col-md-3">
                             <label class="form-label">BL</label>
                             <input type="text" id="numeroBL" name="numero_bl" class="form-control"
-                                placeholder="Ej. ABCD123456">
+                                      autocomplete="off" inputmode="latin" maxlength="40"
+       pattern="[A-Za-z0-9]+"
+       title="Solo letras y números, sin espacios ni caracteres especiales.">
                         </div>
 
                         <!-- Puerto de Arribo -->

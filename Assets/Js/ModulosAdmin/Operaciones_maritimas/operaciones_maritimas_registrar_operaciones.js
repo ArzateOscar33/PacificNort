@@ -3,8 +3,27 @@ const formOp   = document.getElementById('formOperacionMaritima');
 const btnSave  = document.getElementById('btnGuardarOperacion');
 //const modalEl  = document.getElementById('modalOperacionMaritima');
 const modal    = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+const inpBL = document.getElementById('numeroBL');
+ // ASCII estricto (A–Z, a–z, 0–9). Si quisieras permitir espacios: /[^A-Za-z0-9 ]/g
+const REGEX_ASCII_BL = /[^A-Za-z0-9]/g;
+function limpiarBL() {
+  if (!inpBL) return;
+  const antes  = inpBL.value || '';
+  const limpio = antes.replace(REGEX_ASCII_BL, '').toUpperCase(); // normaliza a MAYÚSCULAS (opcional)
+  if (limpio !== antes) inpBL.value = limpio;
+}
 
- 
+function validarBL() {
+  if (!inpBL) return true;
+  const v = (inpBL.value || '').trim();
+  // válido si no está vacío y no contiene caracteres fuera del rango permitido
+  const esValido = v.length > 0 && !REGEX_ASCII_BL.test(v);
+  // feedback visual con Bootstrap
+  inpBL.classList.toggle('is-invalid', !esValido);
+  // integra con validación HTML5
+  inpBL.setCustomValidity(esValido ? '' : 'Solo letras y números');
+  return esValido;
+}
 
 const btnNuevaOp      = document.getElementById('btnNuevaOperacion');
 
@@ -68,7 +87,16 @@ function resetRepeater(){
 function guardarOperacion(){
   if (!formOp || !btnSave) return;
 
-
+ // ✅ Valida BL antes de continuar
+  if (!validarBL()) {
+    if (window.Swal) {
+      Swal.fire('BL inválido', 'El BL solo debe contener letras y números.', 'warning');
+    } else {
+      alert('El BL solo debe contener letras y números.');
+    }
+    inpBL?.focus();
+    return;
+  }
 
   const fd = new FormData(formOp);
   const contenedores = collectContenedores();
@@ -218,3 +246,6 @@ document.getElementById('modalOperacionMaritima')?.addEventListener('shown.bs.mo
       soloVisibles: true
     });
   });
+// Filtra mientras escribe / pega y valida al salir
+inpBL?.addEventListener('input', limpiarBL);
+inpBL?.addEventListener('blur', () => { limpiarBL(); validarBL(); });

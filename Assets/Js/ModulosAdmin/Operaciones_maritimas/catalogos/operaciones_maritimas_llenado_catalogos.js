@@ -23,7 +23,7 @@ const inpNumeroOp     = document.getElementById('numeroOperacion');
 const selEstatus      = document.getElementById('estatusId');
 const inpETD          = document.getElementById('etd');
 const inpETA          = document.getElementById('eta');
-const inpBL           = document.getElementById('numeroBL');
+ 
 const selPuerto       = document.getElementById('puertoArribo');     // readonly/disabled
 const selNavieraEd    = document.getElementById('navieraId');
 const selForwarderEd  = document.getElementById('forwarderId');
@@ -799,7 +799,15 @@ function cargarOperacionParaEditar(id){
 
 
 function actualizarOperacion(){
-   
+     if (!validarBL()) {
+    if (window.Swal) {
+      Swal.fire('BL inválido', 'El BL solo debe contener letras y números.', 'warning');
+    } else {
+      alert('El BL solo debe contener letras y números.');
+    }
+    inpBL?.focus();
+    return;
+  }
   // Validaciones básicas
   if (!inpIdOperacion?.value){
     if (window.Swal) Swal.fire('Aviso', 'Falta el ID de la operación', 'warning');

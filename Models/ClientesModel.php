@@ -24,20 +24,20 @@ class ClientesModel extends Query
         return $this->select($sql, [$correo, $idCliente]);
     }
 
-    public function registrarCliente($nombre, $rfc, $telefono, $correo, $direccion)
+    public function registrarCliente($nombre, $telefono, $correo, )
     {
-        $sql = "INSERT INTO clientes (nombre, rfc, telefono, correo, direccion)
-                VALUES (?,?,?,?,?)";
-        return $this->insertar($sql, [$nombre, $rfc, $telefono, $correo, $direccion]);
+        $sql = "INSERT INTO clientes (nombre, telefono, correo)
+                VALUES (?,?,?)";
+        return $this->insertar($sql, [$nombre, $telefono, $correo]);
     }
 
     // OJO: actualizar en clientes y por id_cliente
-    public function actualizarCliente($nombre, $rfc, $telefono, $correo, $direccion, $id)
+    public function actualizarCliente($nombre, $telefono, $correo, $id)
     {
         $sql = "UPDATE clientes
-                SET nombre = ?, rfc = ?, telefono = ?, correo = ?, direccion = ?
+                SET nombre = ?,  telefono = ?, correo = ?
                 WHERE id_cliente = ?";
-        return $this->save($sql, [$nombre, $rfc, $telefono, $correo, $direccion, $id]);
+        return $this->save($sql, [$nombre, $telefono, $correo, $id]);
     }
 
     public function obtenerCliente($id)
@@ -54,20 +54,20 @@ class ClientesModel extends Query
     $needle = "%".mb_strtolower($termino, 'UTF-8')."%";
 
     $sql = "SELECT 
-                id_cliente, nombre, rfc, telefono, correo, direccion
+                id_cliente, nombre,  telefono, correo, 
             FROM clientes
             WHERE estatus = 1
               AND (
                     LOWER(nombre)    LIKE ?
-                 OR LOWER(rfc)       LIKE ?
+                 
                  OR LOWER(correo)    LIKE ?
                  OR REPLACE(telefono,' ','') LIKE REPLACE(?, ' ','')
-                 OR LOWER(direccion) LIKE ?
+                  
               )
             ORDER BY id_cliente DESC
             LIMIT 50";
 
-    return $this->selectAll($sql, [$needle, $needle, $needle, $needle, $needle]);
+    return $this->selectAll($sql, [$needle, $needle, $needle]);
 }
 
 }

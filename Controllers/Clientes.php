@@ -26,12 +26,11 @@ class Clientes extends Controller
     {
         $id         = $_POST['id_cliente'] ?? '';
         $nombre     = trim($_POST['nombre'] ?? '');
-        $rfc        = trim($_POST['rfc'] ?? '');
+        
         $correo     = trim($_POST['correo'] ?? '');
-        $telefono   = trim($_POST['telefono'] ?? '');
-        $direccion  = trim($_POST['direccion'] ?? '');
+        $telefono   = trim($_POST['telefono'] ?? ''); 
 
-        if ($nombre === '' || $rfc === '' || $correo === '' || $telefono === '' || $direccion === '') {
+        if ($nombre === ''  || $correo === '' || $telefono === ''  ) {
             echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
         }
         if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
@@ -43,7 +42,7 @@ class Clientes extends Controller
             if ($this->model->existeCorreo($correo)) {
                 echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un cliente con ese correo']); die();
             }
-            $nuevoId = $this->model->registrarCliente($nombre, $rfc, $telefono, $correo, $direccion);
+            $nuevoId = $this->model->registrarCliente($nombre,  $telefono, $correo);
             if (!$nuevoId) { echo json_encode(['status' => 'error', 'msg' => 'Error al registrar cliente']); die(); }
             echo json_encode(['status' => 'success', 'msg' => 'Cliente registrado correctamente']); die();
         } else {
@@ -51,7 +50,7 @@ class Clientes extends Controller
             if ($this->model->existeCorreoOtro($correo, $id)) {
                 echo json_encode(['status' => 'warning', 'msg' => 'Otro cliente ya usa ese correo']); die();
             }
-            $ok = $this->model->actualizarCliente($nombre, $rfc, $telefono, $correo, $direccion, $id);
+            $ok = $this->model->actualizarCliente($nombre, $telefono, $correo, $id);
             if (!$ok) { echo json_encode(['status' => 'error', 'msg' => 'Error al actualizar cliente']); die(); }
             echo json_encode(['status' => 'success', 'msg' => 'Cliente actualizado correctamente']); die();
         }

@@ -88,7 +88,7 @@
 
           <div class="mb-3">
             <label for="tipo" class="form-label">Tipo</label>
-            <input type="text" class="form-control" name="tipo" id="tipo" placeholder="Ej: 40HQ, 20STD" required>
+            <input type="text" class="form-control" name="tipo" id="tipo" placeholder="Ej: 40HQ, 20STD" >
           </div>
 
           <div class="mb-3">

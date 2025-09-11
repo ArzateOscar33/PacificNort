@@ -69,7 +69,7 @@ class Contenedores_maritimos extends Controller
         $tipo   = trim($_POST['tipo'] ?? '');
         $obs    = trim($_POST['observaciones'] ?? '');
 
-        if ($numero === '' || $tipo === '') {
+        if ($numero === '' ) {
             echo json_encode(['status'=>'warning','msg'=>'Número de contenedor y tipo son obligatorios']); die();
         }
 
@@ -101,7 +101,7 @@ class Contenedores_maritimos extends Controller
         $tipo   = trim($_POST['tipo'] ?? '');
         $obs    = trim($_POST['observaciones'] ?? '');
 
-        if ($id <= 0 || $numero === '' || $tipo === '') {
+        if ($id <= 0 || $numero === '' ) {
             echo json_encode(['status'=>'warning','msg'=>'Datos incompletos']); die();
         }
 

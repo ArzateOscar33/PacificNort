@@ -26,10 +26,9 @@
                             <thead class="table-primary text-center">
                                 <tr>
                                     <th>Nombre</th>
-                                    <th>RFC</th>
+                                     
                                     <th>Telefono</th>
-                                    <th>Correo</th>
-                                    <th>Direccion</th>
+                                    <th>Correo</th> 
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -67,14 +66,10 @@
                 <form action="#" method="POST" id="formClientes">
                 <input type="hidden" name="id_cliente" id="id_cliente" value="">
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label for="nombre" class="form-label">Nombre del Cliente</label>
                             <input type="text" class="form-control" name="nombre" id="nombre" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="rfc" class="form-label">RFC</label>
-                            <input type="text" class="form-control" name="rfc" id="rfc">
-                        </div>
+                        </div> 
                     </div>
 
                     <div class="row mb-3">
@@ -88,10 +83,7 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="direccion" class="form-label">Dirección</label>
-                        <textarea class="form-control" name="direccion" rows="2" id="direccion"></textarea>
-                    </div>
+                   
 
                
                     <!-- Footer -->
