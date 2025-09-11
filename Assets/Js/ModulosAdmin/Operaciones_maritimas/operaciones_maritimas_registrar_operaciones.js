@@ -192,4 +192,29 @@ selSubtipoModal?.addEventListener('change', () => {
 document.getElementById('modalOperacionMaritima')?.addEventListener('shown.bs.modal', () => {
   const isEdit = (document.getElementById('id_operacion')?.value || '').trim() !== '';
   if (isEdit && inpNumeroOp) inpNumeroOp.removeAttribute('readonly');
-});
+}); 
+// Excel
+  document.getElementById('btnExportarExcelOperaciones')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: 'tablaOperacionesMaritimasExportar',       // "#tablaEventos" o el elemento también funciona
+      formato: 'xlsx',
+      nombre: 'OperacionesMaritimas.xlsx',
+      columnasOcultas: [10],      // oculta columna ID
+      soloVisibles: true,
+      sheetName: 'Operaciones'
+    });
+  });
+
+  // PDF
+  document.getElementById('btnExportarPDFOperaciones')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#tablaOperacionesMaritimasExportar',
+      formato: 'pdf',
+      nombre: 'OperacionesMaritimas.pdf',
+      titulo: 'Operaciones Maritimas',
+      orientacion: 'landscape',  // o 'portrait'
+      formatoPagina: 'letter',   // o 'a4'
+      columnasOcultas: [10],
+      soloVisibles: true
+    });
+  });

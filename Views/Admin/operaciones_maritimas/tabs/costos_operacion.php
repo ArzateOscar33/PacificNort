@@ -42,6 +42,17 @@
                   <option>50</option>
                 </select>
               </div>
+              <div class="row">
+                  <div class="gap-2 col-md-12 d-flex align-items-center justify-content-end">
+                    <button class="btn btn-sm btn-outline-success" id="btnExportarExcelCostosOperacion">
+                        <i data-feather="file-text" class="me-1"></i> Excel
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFCostosOperacion">
+                        <i data-feather="file" class="me-1"></i> PDF
+                    </button>
+                </div>
+
+              </div>
             </div>
           </div>
 
@@ -119,7 +130,7 @@
 
       <!-- Tabla unificada (operación + contenedores) -->
       <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle">
+        <table class="table table-sm table-hover align-middle" id="tablaCostosOperacionExportar">
           <thead class="table-light">
             <tr>
               <th style="width:110px;">Fecha</th>

@@ -507,3 +507,28 @@ window.ccEliminarCostoContenedor = function(id){
     };
   });
 };
+// Excel
+  document.getElementById('btnExportarExcelCostosContenedor')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: 'tablaCostosContenedores',       // "#tablaEventos" o el elemento también funciona
+      formato: 'xlsx',
+      nombre: 'CostosContenedor.xlsx',
+      columnasOcultas: [6],      // oculta columna ID
+      soloVisibles: true,
+      sheetName: 'Costos Contenedor'
+    });
+  });
+
+  // PDF
+  document.getElementById('btnExportarPDFCostosContenedor')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#tablaCostosContenedores',
+      formato: 'pdf',
+      nombre: 'CostosContenedor.pdf',
+      titulo: 'Costos Contenedor',
+      orientacion: 'landscape',  // o 'portrait'
+      formatoPagina: 'letter',   // o 'a4'
+      columnasOcultas: [6],
+      soloVisibles: true
+    });
+  });

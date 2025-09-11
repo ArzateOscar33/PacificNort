@@ -19,6 +19,22 @@
       <label for="buscar" class="form-label">Buscar Cliente o Contenedor</label>
       <input type="text" id="buscar" class="form-control" placeholder="Buscar...">
     </div>
+      <div class="row mt-4">
+    <div class="col-md-12 d-flex  mt-1 align-items-space-between gap-3">
+      <div class="">
+        <button class="btn btn-sm btn-outline-success" id="btnExportarExcelContenedoresOperacion">
+          <i data-feather="file-text" class="me-1"></i> Excel
+        </button>
+      </div>
+      <div class="">
+        <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFContenedoresOperacion">
+          <i data-feather="file" class="me-1"></i> PDF
+        </button>
+      </div>
+    </div>
+
+ 
+    </div>
     <div class="ms-auto d-flex align-items-center gap-2">
       <label for="perPageCont" class="mb-0 small text-muted">Mostrar</label>
       <select id="perPageCont" class="form-control" style="width: 90px;">

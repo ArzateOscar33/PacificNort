@@ -27,7 +27,14 @@
 
                 <input id="buscarOperacion" class="form-control" style="max-width:260px;"
                     placeholder="Buscar por código, BL o contenedor">
-
+                <div class="col-md-2">
+                    <button class="btn btn-sm btn-outline-success" id="btnExportarExcelOperaciones">
+                        <i data-feather="file-text" class="me-1"></i> Excel
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFOperaciones">
+                        <i data-feather="file" class="me-1"></i> PDF
+                    </button>
+                </div>
                 <!-- NUEVO: “por página” alineado a la derecha -->
                 <div class="ms-auto d-flex align-items-center gap-2">
                     <label for="perPage" class="mb-0 small text-muted">Mostrar</label>
@@ -39,11 +46,12 @@
                     </select>
                     <span class="small text-muted">por página</span>
                 </div>
+
             </div>
 
             <!-- Tabla -->
             <div class="table-responsive">
-                <table class="table   table-hover align-middle">
+                <table class="table   table-hover align-middle" id="tablaOperacionesMaritimasExportar">
                     <thead class="table-primary">
                         <tr class="text-center">
                             <th style="width:140px;">Código</th>

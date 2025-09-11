@@ -591,6 +591,34 @@ window.addEventListener("DOMContentLoaded", () => {
   perPageCont = parseInt(selectPerPageCont?.value || "10", 10);
   listarContenedores();
 });
+
+
 /*if (payload.meta && typeof payload.meta.page === 'number') {
   currentPageCont = payload.meta.page; // mantener la UI en sincronía
 }*/
+
+// Excel
+  document.getElementById('btnExportarExcelContenedoresOperacion')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: 'tablaContenedores',       // "#tablaEventos" o el elemento también funciona
+      formato: 'xlsx',
+      nombre: 'ContenedoresEnOperacion.xlsx',
+      columnasOcultas: [8],      // oculta columna ID
+      soloVisibles: true,
+      sheetName: 'Contenedores En Operacion'
+    });
+  });
+
+  // PDF
+  document.getElementById('btnExportarPDFContenedoresOperacion')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#tablaContenedores',
+      formato: 'pdf',
+      nombre: 'ContenedoresEnOperacion.pdf',
+      titulo: 'Contenedores En Operacion',
+      orientacion: 'landscape',  // o 'portrait'
+      formatoPagina: 'letter',   // o 'a4'
+      columnasOcultas: [8],
+      soloVisibles: true
+    });
+  });

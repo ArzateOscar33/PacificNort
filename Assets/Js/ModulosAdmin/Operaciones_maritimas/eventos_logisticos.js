@@ -660,4 +660,29 @@ function cargarTiposEventoPorContenedorUI(tipoUI, preselectId = null) {
   };
   http.send();
 }
- 
+
+ // Excel
+  document.getElementById('btnExportarExcelEventosLogisticos')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: 'tablaDetallesLogisticos',       // "#tablaEventos" o el elemento también funciona
+      formato: 'xlsx',
+      nombre: 'DetallesLogisticos.xlsx',
+      columnasOcultas: [5],      // oculta columna ID
+      soloVisibles: true,
+      sheetName: 'Eventos Logisticos'
+    });
+  });
+
+  // PDF
+  document.getElementById('btnExportarPDFEventosLogisticos')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#tablaDetallesLogisticos',
+      formato: 'pdf',
+      nombre: 'EventosLogisticos.pdf',
+      titulo: 'Eventos Logisticos',
+      orientacion: 'landscape',  // o 'portrait'
+      formatoPagina: 'letter',   // o 'a4'
+      columnasOcultas: [5],
+      soloVisibles: true
+    });
+  });

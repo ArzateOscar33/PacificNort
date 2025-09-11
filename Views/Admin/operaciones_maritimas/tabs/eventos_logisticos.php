@@ -47,6 +47,17 @@
           <input id="buscarDetalles" class="form-control" placeholder="Buscar texto libre…">
         </div>
 
+                        <div class="col-md-2">
+                    <button class="btn btn-sm btn-outline-success" id="btnExportarExcelEventosLogisticos">
+                        <i data-feather="file-text" class="me-1"></i> Excel
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFEventosLogisticos">
+                        <i data-feather="file" class="me-1"></i> PDF
+                    </button>
+                </div>
+
+
+
         <!-- perPage (IDs existentes) -->
         <div class="col-12 d-flex align-items-center justify-content-end gap-2">
           <label for="detPerPage" class="mb-0 small text-muted">Mostrar</label>

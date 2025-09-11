@@ -36,6 +36,18 @@
           <option>50</option>
         </select>
       </div>
+      <div class="col-md-12 d-flex  mt-1 align-items-space-between gap-3">
+        <div class="">
+          <button class="btn btn-sm btn-outline-success" id="btnExportarExcelCostosContenedor">
+            <i data-feather="file-text" class="me-1"></i> Excel
+          </button>
+        </div>
+        <div class="">
+          <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFCostosContenedor">
+            <i data-feather="file" class="me-1"></i> PDF
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -61,12 +73,14 @@
       <nav class="d-flex justify-content-end" aria-label="Paginación de costos">
         <ul id="paginacionCostos" class="pagination pagination-sm mb-0"></ul>
       </nav>
+
     </div>
   </div>
 </div>
 
 <!-- Modal: Agregar Costo -->
-<div class="modal fade" id="modalAgregarCosto" tabindex="-1" aria-labelledby="modalAgregarCostoLabel" aria-hidden="true">
+<div class="modal fade" id="modalAgregarCosto" tabindex="-1" aria-labelledby="modalAgregarCostoLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-md">
     <div class="modal-content">
 
@@ -86,10 +100,10 @@
               <!-- Operación -->
               <label class="form-label">Operación</label>
               <input type="hidden" id="costosOperacionid" name="costosOperacionid">
-              <input type="text" id="costosOperacionNombre" name="costosOperacionNombre"
-                     class="form-control" placeholder="Escribe para buscar operación..." autocomplete="off">
+              <input type="text" id="costosOperacionNombre" name="costosOperacionNombre" class="form-control"
+                placeholder="Escribe para buscar operación..." autocomplete="off">
               <div id="costosSugerenciasOperaciones" class="list-group"
-                   style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                style="position:absolute; z-index:1061; width:100%; display:none;"></div>
             </div>
           </div>
 
@@ -99,9 +113,9 @@
               <label class="form-label">Contenedor Físico</label>
               <input type="hidden" id="costosContenedorContenedorId" name="costosContenedorContenedorId">
               <input type="text" id="costosContenedorContenedorNombre" name="costosContenedorContenedorNombre"
-                     class="form-control" placeholder="Escribe para buscar contenedor..." autocomplete="off">
+                class="form-control" placeholder="Escribe para buscar contenedor..." autocomplete="off">
               <div id="sugerenciasCostosContenedor" class="list-group"
-                   style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               <small class="text-muted">Sugerencia: escribe parte del número (ej. FXE...).</small>
             </div>
           </div>
@@ -115,22 +129,21 @@
 
           <div class="mb-3">
             <label for="costosContenedoresMonto" class="form-label">Monto</label>
-            <input type="number" id="costosContenedoresMonto" name="costosContenedoresMonto"
-                   class="form-control" required placeholder="Ej: 500">
+            <input type="number" id="costosContenedoresMonto" name="costosContenedoresMonto" class="form-control"
+              required placeholder="Ej: 500">
           </div>
 
           <div class="mb-3">
             <label for="costosContenedoresMoneda" class="form-label">Modneda</label>
-            <select id="costosContenedoresMoneda" name="costosContenedoresMoneda"
-                    class="form-control" >
+            <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control">
               <option value="">Seleccione</option>
             </select>
           </div>
 
           <div class="mb-3">
             <label for="costosContenedoresComentarios" class="form-label">Comentarios (opcional)</label>
-            <textarea id="costosContenedoresComentarios" name="costosContenedoresComentarios"
-                      rows="2" class="form-control"></textarea>
+            <textarea id="costosContenedoresComentarios" name="costosContenedoresComentarios" rows="2"
+              class="form-control"></textarea>
           </div>
         </div>
 
@@ -149,7 +162,6 @@
   </div>
 </div>
 
- 
 <script>
   feather.replace();
 </script>

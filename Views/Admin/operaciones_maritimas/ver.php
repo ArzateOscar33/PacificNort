@@ -102,6 +102,13 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
 </script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_contenedor_catalogos.js">
 </script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+ 
+<script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script>
+
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/exportarTablas.js">
+</script>
 
 

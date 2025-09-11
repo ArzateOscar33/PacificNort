@@ -714,3 +714,28 @@ document.getElementById("tbodyCostosOperacionCombined")?.addEventListener("click
 window.openModalEditarCostosOperacion = openModalEditarCostosOperacion;
 
 })(); 
+// Excel
+  document.getElementById('btnExportarExcelCostosOperacion')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: 'tablaCostosOperacionExportar',       // "#tablaEventos" o el elemento también funciona
+      formato: 'xlsx',
+      nombre: 'CostosOperacion.xlsx',
+      columnasOcultas: [7],      // oculta columna ID
+      soloVisibles: true,
+      sheetName: 'Costos Operacion'
+    });
+  });
+
+  // PDF
+  document.getElementById('btnExportarPDFCostosOperacion')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#tablaCostosOperacionExportar',
+      formato: 'pdf',
+      nombre: 'CostosOperacion.pdf',
+      titulo: 'Costos Operacion',
+      orientacion: 'landscape',  // o 'portrait'
+      formatoPagina: 'letter',   // o 'a4'
+      columnasOcultas: [7],
+      soloVisibles: true
+    });
+  });
