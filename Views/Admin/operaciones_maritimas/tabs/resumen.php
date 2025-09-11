@@ -89,7 +89,7 @@
                          <div
                              class="bg-warning text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="file-text" class="mb-1"></i>
-                             <h5 class="fw-bold" id="docsPendientesResumen">3</h5>
+                             <h5 class="fw-bold" id="docsPendientesResumen">0</h5>
                              <p class="mb-0">Docs pendientes</p>
                          </div>
                      </div>

@@ -25,6 +25,14 @@ console.log('rows ejemplo', lastRows.slice(0,3));
     // si quieres cambiar símbolos: 'US$'/'$'
     return '$ ' + Number(num).toLocaleString('es-MX',{minimumFractionDigits:2, maximumFractionDigits:2});
   }
+  function computePct(data){
+  const sum = data.reduce((a,b)=> a + Number(b||0), 0);
+  return {
+    sum,
+    pct: data.map(v => sum ? (Number(v||0) / sum * 100) : 0)
+  };
+}
+
 
   // Suma por nombre_movimiento con conversión a la moneda de display
   function agruparPorTipo(rows) {
@@ -55,20 +63,21 @@ console.log('rows ejemplo', lastRows.slice(0,3));
     return out;
   }
 
-  function renderLegend(labels, data, colors) {
-    if (!$legend) return;
-    $legend.innerHTML = '';
-    labels.forEach((label, i) => {
-      const li = document.createElement('li');
-      li.className = 'd-flex align-items-center mb-1';
-      li.innerHTML = `
-        <span style="display:inline-block;width:12px;height:12px;background:${colors[i]};border-radius:2px;margin-right:8px;"></span>
-        <span class="me-auto">${label}</span>
-        <strong>${fmtMoney(data[i])}</strong>
-      `;
-      $legend.appendChild(li);
-    });
-  }
+function renderLegend(labels, data, colors) {
+  if (!$legend) return;
+  const { pct } = computePct(data);
+  $legend.innerHTML = '';
+  labels.forEach((label, i) => {
+    const li = document.createElement('li');
+    li.className = 'd-flex align-items-center mb-1';
+    li.innerHTML = `
+      <span style="display:inline-block;width:12px;height:12px;background:${colors[i]};border-radius:2px;margin-right:8px;"></span>
+      <span class="me-auto">${label}</span>
+      <strong class="text-nowrap">${fmtMoney(data[i])}  (${pct[i].toFixed(1)}%)</strong>
+    `;
+    $legend.appendChild(li);
+  });
+}
 
   function ensureChart() {
     if (chart) return chart;
@@ -82,13 +91,17 @@ console.log('rows ejemplo', lastRows.slice(0,3));
         plugins: {
           legend: { display: false },
           tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const v = Number(ctx.parsed);
-                return `${ctx.label}: ${fmtMoney(v)}`;
-              }
-            }
+  callbacks: {
+    label: (ctx) => {
+      const v = Number(ctx.parsed) || 0;
+      const ds = ctx.chart.data.datasets?.[0]?.data || [];
+      const { sum } = computePct(ds);
+      const p = sum ? (v / sum * 100) : 0;
+      return `${ctx.label}: ${fmtMoney(v)} (${p.toFixed(1)}%)`;
+    }
+  }
           }
+
         },
         cutout: '55%'
       }
