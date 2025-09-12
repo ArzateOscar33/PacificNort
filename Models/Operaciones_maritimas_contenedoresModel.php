@@ -59,21 +59,25 @@ class Operaciones_maritimas_contenedoresModel extends Query
      *   'term' => 'texto a buscar en contenedor o cliente'
      * ]
      */
-    public function listar(array $filters = []): array
-    {
-        $args = [];
+public function listar(array $filters = []): array
+{
+    $args = [];
 
-        // Búsqueda libre
-        $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
-        $buscar = ($term !== '');
-        if ($buscar) {
-            $needle = "%{$term}%";
-        }
+    // Búsqueda libre
+    $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
+    $buscar = ($term !== '');
+    if ($buscar) {
+        $needle = "%{$term}%";
+    }
 
-        // Filtro por tipo
-        $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
+    // Filtro por tipo
+    $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
 
-        $sql = "
+    // Filtro de fechas (YYYY-MM-DD)
+    $dateFrom = isset($filters['date_from']) && $filters['date_from'] !== '' ? $filters['date_from'] : null;
+    $dateTo   = isset($filters['date_to'])   && $filters['date_to']   !== '' ? $filters['date_to']   : null;
+
+    $sql = "
     SELECT * FROM (
         /* ===== MARÍTIMO ===== */
         SELECT   
@@ -85,11 +89,12 @@ class Operaciones_maritimas_contenedoresModel extends Query
             NULL                                  AS peso,
             o.eta,
             o.etd,
+            CASE WHEN o.etd IS NOT NULL THEN o.etd ELSE o.eta END AS fecha_base,
             dl.arribo_sd,
             NULL                                  AS shipper,
             o.id_operacion,
-            o.numero_operacion                    AS operacion,   -- << NUEVO
-            o.numero_bl                           AS bl,          -- << OPCIONAL
+            o.numero_operacion                    AS operacion,
+            o.numero_bl                           AS bl,
             cm.id_contenedor_maritimo             AS contenedor_id
         FROM contenedores_maritimos_operacion cmo
         INNER JOIN contenedores_maritimos cm
@@ -107,7 +112,6 @@ class Operaciones_maritimas_contenedoresModel extends Query
 
         /* ===== TERRESTRE (FÍSICO) ===== */
         SELECT
-        
             'terrestre'                           AS tipo,
             co.id_contenedor                      AS row_id,
             cf.numero_ferro                       AS contenedor,
@@ -116,11 +120,12 @@ class Operaciones_maritimas_contenedoresModel extends Query
             co.peso                               AS peso,
             o.eta,
             o.etd,
+            CASE WHEN o.etd IS NOT NULL THEN o.etd ELSE o.eta END AS fecha_base,
             dl.arribo_sd,
             NULL                                  AS shipper,
             o.id_operacion,
-            o.numero_operacion                    AS operacion,   -- << NUEVO
-            o.numero_bl                           AS bl,          -- << OPCIONAL
+            o.numero_operacion                    AS operacion,
+            o.numero_bl                           AS bl,
             cf.id_fisico                          AS contenedor_id
         FROM contenedores_operacion co
         INNER JOIN contenedores_fisicos cf
@@ -139,49 +144,72 @@ class Operaciones_maritimas_contenedoresModel extends Query
     WHERE 1=1
     " . ($filtroTipo === 'maritimo' ? " AND x.tipo = 'maritimo' " : "") . "
     " . ($filtroTipo === 'terrestre' ? " AND x.tipo = 'terrestre' " : "") . "
-    ORDER BY x.eta DESC, x.contenedor ASC
+    " . (
+        // rango (usar IS NULL para que sea opcional)
+        " AND (" . ($dateFrom !== null ? "? IS NULL OR x.fecha_base >= ?" : "? IS NULL OR 1=1") . ") " .
+        " AND (" . ($dateTo   !== null ? "? IS NULL OR x.fecha_base <= ?" : "? IS NULL OR 1=1") . ") "
+    ) . "
+    ORDER BY x.fecha_base DESC, x.contenedor ASC
     ";
 
-        if ($buscar) {
-            // tramo marítimo
-            $args[] = $needle; // numero_contenedor
-            $args[] = $needle; // cliente
-            $args[] = $needle; // numero_operacion
-            // tramo terrestre
-            $args[] = $needle; // numero_ferro
-            $args[] = $needle; // cliente (cli2/cli)
-            $args[] = $needle; // numero_operacion
-        }
-
-        return $this->selectAll($sql, $args) ?: [];
+    if ($buscar) {
+        // tramo marítimo
+        $args[] = $needle; // numero_contenedor
+        $args[] = $needle; // cliente
+        $args[] = $needle; // numero_operacion
+        // tramo terrestre
+        $args[] = $needle; // numero_ferro
+        $args[] = $needle; // cliente (cli2/cli)
+        $args[] = $needle; // numero_operacion
     }
 
-    public function listarPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
-    {
-        $args = [];
-        $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
-        $buscar = ($term !== '');
-        $needle = $buscar ? "%{$term}%" : null;
+    // Args de fechas (coinciden con los placeholders ? IS NULL ...)
+    // En cada par ponemos primero el "NULL-check" y luego (si aplica) el valor real
+    $args[] = $dateFrom; if ($dateFrom !== null) $args[] = $dateFrom;
+    $args[] = $dateTo;   if ($dateTo   !== null) $args[] = $dateTo;
 
-        $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
+    return $this->selectAll($sql, $args) ?: [];
+}
 
-        // --- WHERE de búsqueda para cada tramo ---
-        $whereBusqMar = $buscar ? " AND (LOWER(cm.numero_contenedor) LIKE ? OR LOWER(cli.nombre) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
-        $whereBusqTer = $buscar ? " AND (LOWER(cf.numero_ferro) LIKE ? OR LOWER(COALESCE(cli2.nombre, cli.nombre, '')) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)" : "";
 
-        // --- Subquery base (sin orden ni limit) ---
-        $sub = "
+public function listarPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
+{
+    $argsBuscar = [];
+
+    // ---- Búsqueda libre ----
+    $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
+    $buscar = ($term !== '');
+    $needle = $buscar ? "%{$term}%" : null;
+
+    // ---- Filtro por tipo ----
+    $filtroTipo = isset($filters['tipo']) ? strtolower(trim($filters['tipo'])) : '';
+
+    // ---- Filtro de fechas (YYYY-MM-DD o YYYY-MM-DD HH:MM:SS) ----
+    $dateFrom = isset($filters['date_from']) && $filters['date_from'] !== '' ? $filters['date_from'] : null;
+    $dateTo   = isset($filters['date_to'])   && $filters['date_to']   !== '' ? $filters['date_to']   : null;
+
+    // WHERE de búsqueda para cada tramo
+    $whereBusqMar = $buscar
+        ? " AND (LOWER(cm.numero_contenedor) LIKE ? OR LOWER(cli.nombre) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)"
+        : "";
+    $whereBusqTer = $buscar
+        ? " AND (LOWER(cf.numero_ferro) LIKE ? OR LOWER(COALESCE(cli2.nombre, cli.nombre, '')) LIKE ? OR LOWER(o.numero_operacion) LIKE ?)"
+        : "";
+
+    // Subquery base: incluye fecha_base en ambos tramos
+    $sub = "
       SELECT * FROM (
         /* ===== MARÍTIMO ===== */
-        SELECT   
-            'maritimo'                            AS tipo, 
-            cmo.id                                 AS row_id, 
+        SELECT
+            'maritimo'                            AS tipo,
+            cmo.id                                 AS row_id,
             cm.numero_contenedor                  AS contenedor,
             COALESCE(cli.nombre,'')               AS cliente,
             NULL                                  AS bultos,
             NULL                                  AS peso,
             o.eta,
             o.etd,
+            CASE WHEN o.etd IS NOT NULL THEN o.etd ELSE o.eta END AS fecha_base,
             dl.arribo_sd,
             sp.nombre                             AS shipper,
             o.id_operacion,
@@ -191,14 +219,14 @@ class Operaciones_maritimas_contenedoresModel extends Query
         FROM contenedores_maritimos_operacion cmo
         INNER JOIN contenedores_maritimos cm  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         INNER JOIN operaciones o               ON o.id_operacion          = cmo.operacion_id
-        LEFT JOIN clientes cli                 ON cli.id_cliente          = o.cliente_id
-        LEFT JOIN detalles_logisticos dl       ON dl.operacion_id         = o.id_operacion
-        LEFT JOIN shippers sp                  ON sp.id_shipper           = o.shipper_id
+        LEFT  JOIN clientes cli                ON cli.id_cliente          = o.cliente_id
+        LEFT  JOIN detalles_logisticos dl      ON dl.operacion_id         = o.id_operacion
+        LEFT  JOIN shippers sp                 ON sp.id_shipper           = o.shipper_id
         WHERE 1=1 {$whereBusqMar}
 
         UNION ALL
 
-        /* ===== TERRESTRE ===== */
+        /* ===== TERRESTRE (FÍSICO) ===== */
         SELECT
             'terrestre'                           AS tipo,
             co.id_contenedor                      AS row_id,
@@ -208,6 +236,7 @@ class Operaciones_maritimas_contenedoresModel extends Query
             co.peso                               AS peso,
             o.eta,
             o.etd,
+            CASE WHEN o.etd IS NOT NULL THEN o.etd ELSE o.eta END AS fecha_base,
             dl.arribo_sd,
             sp2.nombre                            AS shipper,
             o.id_operacion,
@@ -215,55 +244,70 @@ class Operaciones_maritimas_contenedoresModel extends Query
             o.numero_bl                           AS bl,
             cf.id_fisico                          AS contenedor_id
         FROM contenedores_operacion co
-        INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
-        INNER JOIN operaciones o           ON o.id_operacion = co.operacion_id
-        LEFT  JOIN clientes cli            ON cli.id_cliente = o.cliente_id
+        INNER JOIN contenedores_fisicos cf ON cf.id_fisico   = co.id_fisico
+        INNER JOIN operaciones o           ON o.id_operacion  = co.operacion_id
+        LEFT  JOIN clientes cli            ON cli.id_cliente  = o.cliente_id
         LEFT  JOIN clientes cli2           ON cli2.id_cliente = co.cliente_id
         LEFT  JOIN detalles_logisticos dl  ON dl.operacion_id = o.id_operacion
-        LEFT  JOIN shippers sp2            ON sp2.id_shipper = o.shipper_id
+        LEFT  JOIN shippers sp2            ON sp2.id_shipper  = o.shipper_id
         WHERE 1=1 {$whereBusqTer}
       ) AS x
       WHERE 1=1
-      " . ($filtroTipo === 'maritimo' ? " AND x.tipo = 'maritimo' " : "") . "
-      " . ($filtroTipo === 'terrestre' ? " AND x.tipo = 'terrestre' " : "");
+    ";
 
-        // --- Args búsqueda (se duplican para ambos tramos si corresponde) ---
-        $argsBuscar = [];
-        if ($buscar) {
-            // marítimo
-            array_push($argsBuscar, $needle, $needle, $needle);
-            // terrestre
-            array_push($argsBuscar, $needle, $needle, $needle);
-        }
-
-        // --- TOTAL ---
-        $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
-        $row = $this->select($sqlCount, $argsBuscar);
-        $total = (int)($row['total'] ?? 0);
-
-        // --- Paginación ---
-        $per_page = max(1, min($per_page, 200));
-        $total_pages = max(1, (int)ceil($total / $per_page));
-        $page   = max(1, min($page, $total_pages));
-        $offset = ($page - 1) * $per_page;
-
-        // --- DATA ---
-        $sqlData = "{$sub} ORDER BY x.eta DESC, x.contenedor ASC
-                LIMIT {$per_page} OFFSET {$offset}";
-        $argsData = $argsBuscar;
-
-        $data = $this->selectAll($sqlData, $argsData) ?: [];
-
-        return [
-            'data' => $data,
-            'meta' => [
-                'total'       => $total,
-                'page'        => $page,
-                'per_page'    => $per_page,
-                'total_pages' => $total_pages,
-            ]
-        ];
+    // Args de búsqueda (duplicados por tramo si aplica)
+    if ($buscar) {
+        // marítimo
+        array_push($argsBuscar, $needle, $needle, $needle);
+        // terrestre
+        array_push($argsBuscar, $needle, $needle, $needle);
     }
+
+    // Filtro por tipo (se agrega al WHERE externo)
+    if ($filtroTipo === 'maritimo') {
+        $sub .= " AND x.tipo = 'maritimo' ";
+    } elseif ($filtroTipo === 'terrestre') {
+        $sub .= " AND x.tipo = 'terrestre' ";
+    }
+
+    // Filtros de rango de fechas sobre fecha_base
+    $argsDate = [];
+    if ($dateFrom !== null) {
+        $sub      .= " AND x.fecha_base >= ? ";
+        $argsDate[] = $dateFrom;
+    }
+    if ($dateTo !== null) {
+        $sub      .= " AND x.fecha_base <= ? ";
+        $argsDate[] = $dateTo;
+    }
+
+    // ---- TOTAL ----
+    $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
+    $row = $this->select($sqlCount, array_merge($argsBuscar, $argsDate));
+    $total = (int)($row['total'] ?? 0);
+
+    // ---- Paginación ----
+    $per_page = max(1, min($per_page, 200));
+    $total_pages = max(1, (int)ceil($total / $per_page));
+    $page   = max(1, min($page, $total_pages));
+    $offset = ($page - 1) * $per_page;
+
+    // ---- DATA ----
+    $sqlData = "{$sub} ORDER BY x.fecha_base DESC, x.contenedor ASC
+                LIMIT {$per_page} OFFSET {$offset}";
+    $data = $this->selectAll($sqlData, array_merge($argsBuscar, $argsDate)) ?: [];
+
+    return [
+        'data' => $data,
+        'meta' => [
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $per_page,
+            'total_pages' => $total_pages,
+        ]
+    ];
+}
+
 
     /** Busca un contenedor físico por su número (case-insensitive). */
     public function findContenedorFisicoByNumero(string $numero_ferro)

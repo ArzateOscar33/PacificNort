@@ -6,6 +6,10 @@ console.log(window.CAT_OPERACIONES?.[0]);
 const tablaContenedores       = document.querySelector("#tablaContenedores tbody");
 const selectTipoContenedores  = document.getElementById("filtro_tipo");
 const inputBuscarContenedores = document.getElementById("buscar");
+// Fechas 
+const inpFechaDesdeCont = document.getElementById('fechaDesdeContenedoresEnOperacion');    
+const inpFechaHastaCont = document.getElementById('fechaHastaContenedoresEnOperacion');    
+
 
 let currentListXHRContenedores = null;
 
@@ -64,13 +68,29 @@ function renderTablaCont(data){
 
   feather.replace();
 }
+[inpFechaDesdeCont, inpFechaHastaCont].forEach(el => {
+  el?.addEventListener('change', () => {
+    // Si usuario invierte fechas, corrige en cliente
+    if (inpFechaDesdeCont.value && inpFechaHastaCont.value &&
+        inpFechaDesdeCont.value > inpFechaHastaCont.value) {
+      const tmp = inpFechaDesdeCont.value;
+      inpFechaDesdeCont.value = inpFechaHastaCont.value;
+      inpFechaHastaCont.value = tmp;
+    }
+    currentPageCont = 1;
+    listarContenedores();
+  });
+});
 
 // Listar
 function listarContenedores() {
   const params = new URLSearchParams();
   const tipo   = (selectTipoContenedores?.value || "").trim();
   const term   = (inputBuscarContenedores?.value || "").trim();
-
+  const df = inpFechaDesdeCont?.value || '';
+  const dt = inpFechaHastaCont?.value || '';
+  if (df) params.append("date_from", df);         
+  if (dt) params.append("date_to", dt);
   if (tipo !== "") params.append("tipo", tipo); 
   if (term !== "") params.append("term", term);
   params.append("page", String(currentPageCont));

@@ -6,46 +6,56 @@
     </button>
   </div>
 
-  <div class="row mb-4">
-    <div class="col-md-4">
-      <label for="filtro_tipo" class="form-label">Tipo de Contenedor</label>
-      <select id="filtro_tipo" class="form-control">
-        <option value="">Todos</option>
-        <option value="maritimo">Marítimo</option>
-        <option value="terrestre">Terrestre</option>
-      </select>
+<div class="row g-3 align-items-end mb-4">
+  <div class="col-12 col-md-2">
+    <label for="filtro_tipo" class="form-label">Tipo de Contenedor</label>
+    <select id="filtro_tipo" class="form-control">
+      <option value="">Todos</option>
+      <option value="maritimo">Marítimo</option>
+      <option value="terrestre">Terrestre</option>
+    </select>
+  </div>
+
+  <div class="col-12 col-md-3">
+    <label for="buscar" class="form-label">Buscar Cliente o Contenedor</label>
+    <input type="text" id="buscar" class="form-control" placeholder="Buscar...">
+  </div>
+
+  <div class="col-12 col-md-4">
+    <label class="form-label d-flex justify-content-between">
+      <span>Rango de fechas</span>
+    </label>
+    <div class="d-flex gap-2 flex-wrap">
+      <input type="date" id="fechaDesdeContenedoresEnOperacion" class="form-control w-50" aria-label="Desde">
+      <input type="date" id="fechaHastaContenedoresEnOperacion" class="form-control w-50" aria-label="Hasta">
     </div>
-    <div class="col-md-4">
-      <label for="buscar" class="form-label">Buscar Cliente o Contenedor</label>
-      <input type="text" id="buscar" class="form-control" placeholder="Buscar...">
-    </div>
-      <div class="row mt-4">
-    <div class="col-md-12 d-flex  mt-1 align-items-space-between gap-3">
-      <div class="">
+  </div>
+
+  <!-- Acciones y per-page: columna independiente, apila en móvil -->
+  <div class="col-12 col-md-3">
+    <div class="d-flex flex-wrap justify-content-between justify-content-md-end align-items-center gap-2">
+      <div class="btn-group" role="group" aria-label="Exportaciones">
         <button class="btn btn-sm btn-outline-success" id="btnExportarExcelContenedoresOperacion">
           <i data-feather="file-text" class="me-1"></i> Excel
         </button>
-      </div>
-      <div class="">
         <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFContenedoresOperacion">
           <i data-feather="file" class="me-1"></i> PDF
         </button>
       </div>
-    </div>
 
- 
-    </div>
-    <div class="ms-auto d-flex align-items-center gap-2">
-      <label for="perPageCont" class="mb-0 small text-muted">Mostrar</label>
-      <select id="perPageCont" class="form-control" style="width: 90px;">
-        <option value="10" selected>10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-      </select>
-      <span class="small text-muted">por página</span>
+      <div class="d-flex align-items-center ms-md-2">
+        <label for="perPageCont" class="mb-0 small text-muted me-2">Mostrar</label>
+        <select id="perPageCont" class="form-control" style="width: 90px;">
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
     </div>
   </div>
+</div>
+
 
   <div class="table-responsive">
     <table class="table table-bordered align-middle" id="tablaContenedores">
@@ -58,7 +68,7 @@
           <th>Cliente</th>
           <th>Bultos</th>
           <th>ETA</th>
-          <th>ETD</th> 
+          <th>ETD</th>
           <th>Shipper</th>
           <th>Acciones</th>
         </tr>
@@ -79,7 +89,7 @@
       </nav>
     </div>
   </div>
-  </div>
+</div>
 
 <!-- Modal: Agregar Contenedor a la Operación -->
 <div class="modal fade" id="modalAgregarContenedor" tabindex="-1" aria-labelledby="modalAgregarContenedorLabel"

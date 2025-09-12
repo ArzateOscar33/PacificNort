@@ -561,7 +561,7 @@ function fmtFechaResumen(isoLike){
     const [dd, hh] = dRest.split(' ');
     d = dd; h = (hh || '00:00').slice(0,5);
   }
-  return `${d}/${m}/${y}${h ? ' ' + h : ''}`;
+  return `${d}/${m}/${y}${h ? ' '  : ''}`;
 }
 
 function renderEventosResumen(rows){

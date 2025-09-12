@@ -170,32 +170,55 @@ class Operaciones_maritimas_contenedores extends Controller
     /* ===========================================================
      *  Listar (paginado)
      * =========================================================== */
-    public function listar()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
+/* ===========================================================
+ *  Listar (paginado) con búsqueda, tipo y rango de fechas
+ *  - date_from / date_to vienen como YYYY-MM-DD (o con hora)
+ *  - si date_to viene sin hora, se extiende a 23:59:59
+ * =========================================================== */
+public function listar()
+{
+    header('Content-Type: application/json; charset=UTF-8');
 
-        $filters = [
-            'tipo' => isset($_GET['tipo']) ? trim(strtolower($_GET['tipo'])) : '',
-            'term' => isset($_GET['term']) ? trim($_GET['term']) : ''
-        ];
+    // Acepta tanto ?term= como ?q= para ser tolerante con el front
+    $term = isset($_GET['term']) ? trim((string)$_GET['term'])
+           : (isset($_GET['q'])   ? trim((string)$_GET['q'])   : '');
 
-        $page     = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $per_page = isset($_GET['per_page']) ? max(1, (int)$_GET['per_page']) : 10;
+    // Normaliza fechas (si vienen vacías, quedan en null)
+    $date_from = isset($_GET['date_from']) && $_GET['date_from'] !== '' ? trim((string)$_GET['date_from']) : null;
+    $date_to   = isset($_GET['date_to'])   && $_GET['date_to']   !== '' ? trim((string)$_GET['date_to'])   : null;
 
-        try {
-            $res = $this->model->listarPaginado($filters, $page, $per_page);
-            echo json_encode([
-                'status' => 'success',
-                'data'   => $res['data'],
-                'meta'   => $res['meta'],
-            ]);
-        } catch (\Throwable $e) {
-            echo json_encode([
-                'status' => 'error',
-                'msg'    => 'Excepción: ' . $e->getMessage()
-            ]);
-        }
+    // Si date_to viene solo con fecha (sin tiempo), lo extendemos a fin de día
+    if ($date_to !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to)) {
+        $date_to .= ' 23:59:59';
     }
+
+    $filters = [
+        'tipo'      => isset($_GET['tipo']) ? trim(strtolower((string)$_GET['tipo'])) : '',
+        'term'      => $term,
+        'date_from' => $date_from,
+        'date_to'   => $date_to,
+    ];
+
+    // Paginación segura
+    $page     = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $per_page = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 10;
+    $per_page = max(1, min($per_page, 200));
+
+    try {
+        $res = $this->model->listarPaginado($filters, $page, $per_page);
+        echo json_encode([
+            'status' => 'success',
+            'data'   => $res['data'],
+            'meta'   => $res['meta'],
+        ]);
+    } catch (\Throwable $e) {
+        echo json_encode([
+            'status' => 'error',
+            'msg'    => 'Excepción: ' . $e->getMessage()
+        ]);
+    }
+}
+
 
     /* ===========================================================
      *  DETALLE PARA EDITAR

@@ -5,7 +5,7 @@ const USER = "root";
 const PASS = "";
 const DB = "p_nort";
 const CHARSET = "charset=utf8";
-const TITLE = "Pacific Nort Agencia Aduanal";
+const TITLE = "PacificNort Agencia Aduanal";
 const MONEDA = "USD";
 //const CLIENT_ID = "";
 const USER_SMTP = "sistemas@pacificnort.com";
