@@ -517,3 +517,372 @@ function cargarPuntualidadSemana(weeks = 8){
 document.addEventListener('DOMContentLoaded', function () {
   cargarPuntualidadSemana(8);
 });
+// === Costos mensuales ===
+const selCostosMoneda = document.getElementById('costosDashboard');              // <select MXN/USD>
+const inputCostosFx   = document.getElementById('costosDashboardTipoCambio');    // <input tipo cambio>
+let chartCostosRef = null;
+function nfForCurrency(curr) {
+  return new Intl.NumberFormat(curr === 'USD' ? 'en-US' : 'es-MX', {
+    style: 'currency', currency: curr, maximumFractionDigits: 0
+  });
+}
+function cargarCostosMensuales(months = 12) {
+  const currency = (selCostosMoneda?.value === 'USD') ? 'USD' : 'MXN';
+  let fx = parseFloat(inputCostosFx?.value);
+  if (!isFinite(fx) || fx <= 0) fx = 17; // fallback por si dejan vacío
+
+  const url = base_url + `dashboard/costos_mensuales?months=${months}&currency=${encodeURIComponent(currency)}&fx=${encodeURIComponent(fx)}`;
+
+  xhrGET(url, (res) => {
+    if (res?.status !== 'ok' || !Array.isArray(res.data)) {
+      console.warn('[costos_mensuales] respuesta no OK:', res);
+      renderCostosMensuales([], currency);
+      return;
+    }
+    renderCostosMensuales(res.data, currency);
+  }, (err) => {
+    console.error('[costos_mensuales]', err);
+    renderCostosMensuales([], currency);
+  });
+}
+// Debounce simple para no spamear el endpoint al teclear el tipo de cambio
+function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+const debouncedReloadCostos = debounce(() => cargarCostosMensuales(12), 350);
+
+if (selCostosMoneda)  selCostosMoneda.addEventListener('change', () => cargarCostosMensuales(12));
+if (inputCostosFx)    inputCostosFx.addEventListener('input',  debouncedReloadCostos);
+document.addEventListener('DOMContentLoaded', function () {
+  cargarCostosMensuales(12);
+});
+// Promedio móvil simple k-periodos
+function sma(series, k = 3) {
+  const out = new Array(series.length).fill(null);
+  let sum = 0;
+  for (let i = 0; i < series.length; i++) {
+    sum += (Number(series[i]) || 0);
+    if (i >= k) sum -= (Number(series[i - k]) || 0);
+    if (i >= k - 1) out[i] = sum / k;
+  }
+  return out;
+}
+
+function renderCostosMensuales(rows, currency) {
+  const canvas = document.getElementById('chartCostos');
+  if (!canvas) return;
+
+  const labels = Array.isArray(rows) ? rows.map(r => String(r.anio_mes)) : [];
+  const data   = Array.isArray(rows) ? rows.map(r => Number(r.total || r.total_mxn || 0)) : [];
+  const nf     = nfForCurrency(currency);
+
+  // Línea de tendencia (SMA-3)
+  const trend3 = sma(data, 3);
+
+  // Autoscale cómodo para barras
+  const maxVal = data.reduce((m, v) => Math.max(m, v || 0), 0);
+  const suggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.2) : 5;
+
+  if (chartCostosRef) { chartCostosRef.destroy(); chartCostosRef = null; }
+
+  chartCostosRef = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `Total mensual (${currency})`,
+          data,
+          backgroundColor: '#1b2256',
+          borderWidth: 0,
+          borderRadius: 6,
+          yAxisID: 'y'
+        },
+        {
+          label: `Tendencia 3M (${currency})`,
+          type: 'line',
+          data: trend3,
+          borderColor: '#0ea5a3',
+          pointBackgroundColor: '#0ea5a3',
+          pointRadius: 2,
+          tension: 0.3,
+          yAxisID: 'y' // misma escala (misma moneda)
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,  
+      aspectRatio:1.2,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label: (item) => ` ${nf.format(Number(item.raw || 0))}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { maxRotation: 0, autoSkip: true }, grid: { display: false } },
+        y: {
+          beginAtZero: true,
+          suggestedMax,
+          ticks: { callback: (v) => nf.format(Number(v)) },
+          grid: { drawBorder: false }
+        }
+      }
+    }
+  });
+}
+
+
+/* =========================
+   TIMELINE (ETD → ETA)
+   ========================= */
+
+ 
+
+// Colores por estado
+function colorEstado(st) {
+  switch (String(st || '').toLowerCase()) {
+    case 'proxima':    return '#f59e0b'; // ámbar
+    case 'vencida':    return '#ef4444'; // rojo
+    case 'entregada':  return '#9ca3af'; // gris
+    default:           return '#1b2256'; // azul pacific (en_curso)
+  }
+}
+ 
+
+/* =========================
+   TIMELINE (ETD → ETA)
+   ========================= */
+
+ 
+
+// Colores por estado
+function colorEstado(st) {
+  switch (String(st || '').toLowerCase()) {
+    case 'proxima':    return '#f59e0b'; // ámbar
+    case 'vencida':    return '#ef4444'; // rojo
+    case 'entregada':  return '#9ca3af'; // gris
+    default:           return '#1b2256'; // azul pacific (en_curso)
+  }
+}
+/* =========================
+   TIMELINE (ETD → ETA)
+   ========================= */
+
+// Refs
+const timelineBox = document.getElementById('timelineOperaciones');
+
+// Helpers
+const MS_DAY = 24 * 60 * 60 * 1000;
+const parseISO = (s) => (s ? new Date(s + 'T00:00:00') : null);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const fmtShort = (d) => new Intl.DateTimeFormat('es-MX',{ day:'2-digit', month:'short' }).format(d).replace('.','');
+const fmtFull  = (d) => new Intl.DateTimeFormat('es-MX',{ day:'2-digit', month:'long', year:'numeric' }).format(d);
+function colorEstado(st) {
+  switch ((st || '').toLowerCase()) {
+    case 'proxima':   return '#f59e0b'; // ámbar
+    case 'vencida':   return '#ef4444'; // rojo
+    case 'entregada': return '#9ca3af'; // gris
+    default:          return '#1b2256'; // en_curso
+  }
+}
+
+// Si el backend no manda estado/deltas, los calculamos aquí
+function derivarEstadoYMetricas(row) {
+  const hoy   = new Date(); hoy.setHours(0,0,0,0);
+  const etd   = parseISO(row.etd);
+  const eta   = parseISO(row.eta);
+  const real  = parseISO(row.arribo_sd); // arribo real si existe
+
+  let estado = 'en_curso';
+  let dias_a_eta = null;
+  let dias_retraso = 0;
+
+  if (eta) dias_a_eta = Math.ceil((eta - hoy) / MS_DAY);
+
+  if (real) {
+    // Si hay arribo real: entregada. Retraso = real - eta (negativo = anticipó)
+    estado = 'entregada';
+    if (eta) dias_retraso = Math.round((real - eta) / MS_DAY);
+  } else if (eta && hoy > eta) {
+    estado = 'vencida';
+    dias_retraso = Math.round((hoy - eta) / MS_DAY);
+  } else if (eta && dias_a_eta !== null && dias_a_eta <= 7) {
+    estado = 'proxima';
+  } else {
+    estado = 'en_curso';
+  }
+
+  return { estado, dias_a_eta, dias_retraso, etd, eta, real };
+}
+
+// Dibuja la timeline
+function renderTimelineOperaciones(rows, days) {
+  if (!timelineBox) return;
+
+  timelineBox.innerHTML = '';
+  timelineBox.style.position = 'relative';
+  timelineBox.style.overflow = 'auto';
+  const visibleH = timelineBox.clientHeight || 240;
+
+  const now = new Date(); now.setHours(0,0,0,0);
+  const minDate = new Date(now.getTime() - 14 * MS_DAY);
+  const maxDate = new Date(now.getTime() + (days || 30) * MS_DAY);
+  const rangeMs = Math.max(1, maxDate - minDate);
+
+  // Contenedor interno
+  const rowHeight = 26, rowGap = 8;
+  const rowsCount = Array.isArray(rows) ? rows.length : 0;
+  const innerH = Math.max(visibleH, rowsCount * (rowHeight + rowGap) + 32);
+  const inner = document.createElement('div');
+  inner.style.position = 'relative';
+  inner.style.height = innerH + 'px';
+  inner.style.width = '100%';
+  inner.style.fontSize = '12px';
+  timelineBox.appendChild(inner);
+
+  // Línea "hoy"
+  const todayPct = clamp((now - minDate) / rangeMs * 100, 0, 100);
+  const todayLine = document.createElement('div');
+  todayLine.style.position = 'absolute';
+  todayLine.style.left = todayPct + '%';
+  todayLine.style.top = '0';
+  todayLine.style.bottom = '0';
+  todayLine.style.width = '2px';
+  todayLine.style.background = '#0ea5a3';
+  todayLine.style.opacity = '0.8';
+  inner.appendChild(todayLine);
+
+  const todayLabel = document.createElement('div');
+  todayLabel.textContent = 'HOY';
+  todayLabel.style.position = 'absolute';
+  todayLabel.style.left = `calc(${todayPct}% + 4px)`;
+  todayLabel.style.top = '4px';
+  todayLabel.style.color = '#0ea5a3';
+  todayLabel.style.fontWeight = '600';
+  inner.appendChild(todayLabel);
+
+  // Regla semanal
+  for (let d = new Date(minDate); d <= maxDate; d = new Date(d.getTime() + 7*MS_DAY)) {
+    const p = clamp((d - minDate) / rangeMs * 100, 0, 100);
+    const v = document.createElement('div');
+    v.style.position = 'absolute';
+    v.style.left = p + '%';
+    v.style.top = '0';
+    v.style.bottom = '0';
+    v.style.width = '1px';
+    v.style.background = 'rgba(148,163,184,.25)';
+    inner.appendChild(v);
+
+    const lbl = document.createElement('div');
+    lbl.textContent = fmtShort(d);
+    lbl.style.position = 'absolute';
+    lbl.style.left = `calc(${p}% + 4px)`;
+    lbl.style.bottom = '4px';
+    lbl.style.color = '#64748b';
+    inner.appendChild(lbl);
+  }
+
+  // Sin datos
+  if (!rowsCount) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted';
+    empty.style.position = 'absolute';
+    empty.style.left = '50%';
+    empty.style.top = '50%';
+    empty.style.transform = 'translate(-50%, -50%)';
+    empty.textContent = 'Sin operaciones en la ventana';
+    inner.appendChild(empty);
+    return;
+  }
+
+  // Barras
+  rows.forEach((r, idx) => {
+    const { estado, dias_a_eta, dias_retraso, etd, eta, real } = derivarEstadoYMetricas(r);
+
+    const start = etd || minDate;
+    const end   = eta || start;
+    if (end < minDate || start > maxDate) return;
+
+    const leftPct  = clamp((start - minDate) / rangeMs * 100, 0, 100);
+    const rightPct = clamp((end   - minDate) / rangeMs * 100, 0, 100);
+    const widthPct = Math.max(0.8, rightPct - leftPct);
+
+    const top = 24 + idx * (rowHeight + rowGap);
+    const bar = document.createElement('div');
+    bar.style.position = 'absolute';
+    bar.style.left = leftPct + '%';
+    bar.style.top = top + 'px';
+    bar.style.width = widthPct + '%';
+    bar.style.height = rowHeight + 'px';
+    bar.style.borderRadius = '8px';
+    bar.style.background = colorEstado(estado);
+    bar.style.opacity = estado === 'entregada' ? '.55' : '.9';
+    bar.style.boxShadow = '0 2px 8px rgba(0,0,0,.07)';
+    bar.style.cursor = 'pointer';
+
+    const idText = r.numero_operacion ? `#${r.numero_operacion}` : `#${r.id_operacion}`;
+    const subt   = r.subtipo_prefijo || r.subtipo_nombre || '';
+    const etaTxt = r.eta ? fmtFull(parseISO(r.eta)) : '—';
+    const etdTxt = r.etd ? fmtFull(parseISO(r.etd)) : '—';
+    const arrTxt = r.arribo_sd ? fmtFull(parseISO(r.arribo_sd)) : '—';
+
+    let extraLinea = '';
+    if (estado === 'entregada') {
+      const sgn = dias_retraso > 0 ? 'Retraso' : (dias_retraso < 0 ? 'Anticipo' : 'A tiempo');
+      extraLinea = `${sgn}: ${Math.abs(dias_retraso)} día(s)`;
+    } else if (typeof dias_a_eta === 'number') {
+      extraLinea = (dias_a_eta >= 0) ? `Faltan: ${dias_a_eta} día(s)` : `Vencido: ${Math.abs(dias_a_eta)} día(s)`;
+    }
+
+    bar.title =
+      `Op ${idText}\n` +
+      `ETD (plan): ${etdTxt}\n` +
+      `ETA (plan): ${etaTxt}\n` + 
+      `Estado: ${estado}\n` +
+      extraLinea;
+
+    const lbl = document.createElement('div');
+    lbl.textContent = `${subt} · ${idText}`;
+    lbl.style.color = '#fff';
+    lbl.style.fontWeight = '600';
+    lbl.style.fontSize = '12px';
+    lbl.style.padding = '4px 8px';
+    lbl.style.whiteSpace = 'nowrap';
+    lbl.style.overflow = 'hidden';
+    lbl.style.textOverflow = 'ellipsis';
+    bar.appendChild(lbl);
+
+    inner.appendChild(bar);
+  });
+}
+
+// Cargar desde el endpoint
+function cargarTimelineOperaciones(days = 30, limit = 50) {
+  xhrGET(
+    base_url + `dashboard/timeline?days=${days}&limit=${limit}`,
+    (res) => {
+      if (res?.status !== 'ok' || !Array.isArray(res.data)) {
+        console.warn('[timeline] respuesta no OK:', res);
+        renderTimelineOperaciones([], days);
+        return;
+      }
+      renderTimelineOperaciones(res.data, res.meta?.days || days);
+    },
+    (err) => {
+      console.error('[timeline]', err);
+      renderTimelineOperaciones([], days);
+    }
+  );
+}
+
+// Debounce para resize
+function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+const onResizeTimeline = debounce(()=> { cargarTimelineOperaciones(30, 50); }, 200);
+window.addEventListener('resize', onResizeTimeline);
+
+// Init
+document.addEventListener('DOMContentLoaded', function () {
+  cargarTimelineOperaciones(30, 50);
+});

@@ -111,6 +111,32 @@ public function puntualidad_semana()
     die();
 }
 
+public function costos_mensuales() {
+  $meses = isset($_GET['months']) ? max(1, (int)$_GET['months']) : 12;
+  $moneda = ($_GET['currency'] ?? 'MXN') === 'USD' ? 'USD' : 'MXN';
+  $fx = (float)($_GET['fx'] ?? 17.00); // viene del input del usuario (MXN por USD)
+
+  $rows = $this->model->costosPorMesMoneda($meses, $moneda, $fx);
+  echo json_encode(['status'=>'ok', 'meta'=>['months'=>$meses,'currency'=>$moneda,'fx'=>$fx], 'data'=>$rows], JSON_UNESCAPED_UNICODE);
+  die();
+}
+public function timeline()
+{
+    $dias   = isset($_GET['days'])  ? max(1, (int)$_GET['days'])  : 60;
+    $limite = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 50;
+
+    $rows = $this->model->timelineETD_ETA($dias);
+    $rows = is_array($rows) ? array_slice($rows, 0, $limite) : [];
+
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode([
+        'status' => 'ok',
+        'meta'   => ['days' => $dias, 'limit' => $limite, 'count' => count($rows)],
+        'data'   => $rows
+    ], JSON_UNESCAPED_UNICODE);
+    die();
+}
+
 
 
 

@@ -115,64 +115,94 @@ public function chartPuntualidadEntregasSemana(int $semanas = 8): array
     return $this->selectAll($sql, [$semanas]);
 }
 
-public function chartCostosPorSemanaSubtipo(int $semanas = 8, string $moneda = 'MXN', float $tc = 17.0): array
+public function costosPorMesMoneda(int $meses = 12, string $monedaDestino = 'MXN', float $tcUsdMxn = 17.00): array
 {
-    // Nota: si tu tabla de movimientos se llama distinto, ajusta "tipos_movimiento"
+    // $monedaDestino: 'MXN' o 'USD'
+    // $tcUsdMxn: tipo de cambio elegido por el usuario (MXN por 1 USD)
     $sql = "
-      WITH costos_unificados AS (
-        -- Costos a nivel OPERACIÓN
+      SELECT
+        DATE_FORMAT(mes, '%Y-%m') AS anio_mes,
+        ROUND(SUM(monto_conv), 2) AS total
+      FROM (
+        -- Costos a nivel operación
         SELECT
-          DATE_FORMAT(DATE_SUB(co.fecha_creacion, INTERVAL WEEKDAY(co.fecha_creacion) DAY), '%Y-%m-%d') AS week_start,
-          o.subtipo_id,
-          so.prefijo_codigo,
-          so.nombre,
+          DATE_FORMAT(coo.fecha_creacion, '%Y-%m-01') AS mes,
           CASE
-            WHEN ? = 'MXN' THEN CASE WHEN tm.moneda = 'DLLS'  THEN co.monto * ? ELSE co.monto END
-            ELSE                CASE WHEN tm.moneda = 'PESOS' THEN co.monto / ? ELSE co.monto END
+            WHEN ? = 'MXN' THEN
+              CASE WHEN tm.moneda = 'DLLS'  THEN coo.monto * ?  ELSE coo.monto END
+            ELSE
+              CASE WHEN tm.moneda = 'PESOS' THEN coo.monto / ?  ELSE coo.monto END
           END AS monto_conv
-        FROM costos_operacion co
-        JOIN operaciones o         ON o.id_operacion = co.operacion_id
-        JOIN subtipos_operacion so ON so.id_subtipo  = o.subtipo_id
-        JOIN tipos_movimiento tm   ON tm.id_tipo_movimiento = co.tipo_movimiento_id
-        WHERE co.estatus = 1
-          AND co.fecha_creacion >= DATE_SUB(CURDATE(), INTERVAL ? WEEK)
+        FROM costos_operacion coo
+        JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = coo.tipo_movimiento_id
+        WHERE coo.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
+          -- AND coo.estatus = 1  -- si tienes estatus y quieres filtrar
 
         UNION ALL
 
-        -- Costos a nivel CONTENEDOR
+        -- Costos a nivel contenedor
         SELECT
-          DATE_FORMAT(DATE_SUB(cco.fecha_creacion, INTERVAL WEEKDAY(cco.fecha_creacion) DAY), '%Y-%m-%d') AS week_start,
-          o.subtipo_id,
-          so.prefijo_codigo,
-          so.nombre,
+          DATE_FORMAT(cco.fecha_creacion, '%Y-%m-01') AS mes,
           CASE
-            WHEN ? = 'MXN' THEN CASE WHEN tm.moneda = 'DLLS'  THEN cco.monto * ? ELSE cco.monto END
-            ELSE                CASE WHEN tm.moneda = 'PESOS' THEN cco.monto / ? ELSE cco.monto END
+            WHEN ? = 'MXN' THEN
+              CASE WHEN tm.moneda = 'DLLS'  THEN cco.monto * ?  ELSE cco.monto END
+            ELSE
+              CASE WHEN tm.moneda = 'PESOS' THEN cco.monto / ?  ELSE cco.monto END
           END AS monto_conv
         FROM costos_contenedor_operacion cco
-        JOIN contenedores_operacion coo ON coo.id_contenedor = cco.contenedor_operacion_id
-        JOIN operaciones o              ON o.id_operacion    = coo.operacion_id
-        JOIN subtipos_operacion so      ON so.id_subtipo     = o.subtipo_id
-        JOIN tipos_movimiento tm        ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-        WHERE cco.fecha_creacion >= DATE_SUB(CURDATE(), INTERVAL ? WEEK)
-      )
-      SELECT
-        week_start,
-        subtipo_id,
-        prefijo_codigo,
-        nombre,
-        ROUND(SUM(monto_conv), 2) AS total
-      FROM costos_unificados
-      GROUP BY week_start, subtipo_id, prefijo_codigo, nombre
-      ORDER BY week_start ASC, nombre ASC;
+        JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+        WHERE cco.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
+      ) t
+      GROUP BY anio_mes
+      ORDER BY anio_mes ASC
     ";
 
-    // Parámetros en el orden en el que se usan en la consulta
+    // orden de parámetros: moneda, tc, tc, meses, moneda, tc, tc, meses
     return $this->selectAll($sql, [
-      $moneda, $tc, $tc, $semanas,
-      $moneda, $tc, $tc, $semanas
+      $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses,
+      $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses
     ]);
 }
+// Devuelve operaciones activas con su ventana ETD→ETA y llegada real (arribo_sd si existe)
+// $dias: ventana alrededor de hoy para limitar el resultado (ej. 60 días)
+public function timelineETD_ETA(int $dias = 60): array
+{
+    $sql = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            o.etd,
+            o.eta,
+            d.arribo_sd,
+            COALESCE(d.arribo_sd, o.eta) AS llegada_real,
+            o.estatus_id,
+            s.nombre          AS estatus_nombre,
+            st.prefijo_codigo AS subtipo_prefijo,
+            st.nombre         AS subtipo_nombre
+        FROM operaciones o
+        LEFT JOIN detalles_logisticos   d  ON d.operacion_id = o.id_operacion
+        LEFT JOIN subtipos_operacion    st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN estatus               s  ON s.id_estatus = o.estatus_id
+        WHERE o.estatus_id IN (1,5,9)
+          AND o.etd IS NOT NULL
+          AND (o.eta IS NOT NULL OR d.arribo_sd IS NOT NULL)
+          AND (
+                o.etd BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                           AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+             OR COALESCE(d.arribo_sd, o.eta) BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                                                AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+          )
+        ORDER BY o.etd ASC
+    ";
+
+    // OJO: hay 4 ? en este WHERE (dos para o.etd y dos para COALESCE(...))
+    // Si usas solo 3, fallará. Aquí pasamos los 4.
+    return $this->selectAll($sql, [$dias, $dias, $dias, $dias]) ?: [];
+}
+
+
+
+
 
 
 
