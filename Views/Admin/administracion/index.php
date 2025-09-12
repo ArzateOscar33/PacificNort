@@ -1,220 +1,199 @@
-<?php include_once 'Views/Template/admin_header.php'; ?> 
- 
-            <!-- Container fluid  --> 
-            <div class="container-fluid"> 
-                <!-- Start First Cards --> 
-                <div class="card-group">
-                    <div class="card border-right">
-                        <div class="card-body">
-                            <div class="d-flex d-lg-flex d-md-block align-items-center">
-                                <div>
-                                    <div class="d-inline-flex align-items-center">
-                                        <h2 class="text-dark mb-1 font-weight-medium">236</h2>
-                                        <span
-                                            class="badge bg-primary font-12 text-white font-weight-medium badge-pill ml-2 d-lg-block d-md-none">+18.33%</span>
-                                    </div>
-                                    <h6 class="text-muted font-weight-normal mb-0 w-100 text-truncate">Nuevos Clientes</h6>
-                                </div>
-                                <div class="ml-auto mt-md-3 mt-lg-0">
-                                    <span class="opacity-7 text-muted"><i data-feather="user-plus"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card border-right">
-                        <div class="card-body">
-                            <div class="d-flex d-lg-flex d-md-block align-items-center">
-                                <div>
-                                    <h2 class="text-dark mb-1 w-100 text-truncate font-weight-medium"><sup
-                                            class="set-doller">$</sup>18,306</h2>
-                                    <h6 class="text-muted font-weight-normal mb-0 w-100 text-truncate">Ganancias del Mes
-                                    </h6>
-                                </div>
-                                <div class="ml-auto mt-md-3 mt-lg-0">
-                                    <span class="opacity-7 text-muted"><i data-feather="dollar-sign"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card border-right">
-                        <div class="card-body">
-                            <div class="d-flex d-lg-flex d-md-block align-items-center">
-                                <div>
-                                    <div class="d-inline-flex align-items-center">
-                                        <h2 class="text-dark mb-1 font-weight-medium">1538</h2>
-                                        <span
-                                            class="badge bg-danger font-12 text-white font-weight-medium badge-pill ml-2 d-md-none d-lg-block">-18.33%</span>
-                                    </div>
-                                    <h6 class="text-muted font-weight-normal mb-0 w-100 text-truncate">Nuevos Proyectos</h6>
-                                </div>
-                                <div class="ml-auto mt-md-3 mt-lg-0">
-                                    <span class="opacity-7 text-muted"><i data-feather="file-plus"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex d-lg-flex d-md-block align-items-center">
-                                <div>
-                                    <h2 class="text-dark mb-1 font-weight-medium">864</h2>
-                                    <h6 class="text-muted font-weight-normal mb-0 w-100 text-truncate">Proyectos</h6>
-                                </div>
-                                <div class="ml-auto mt-md-3 mt-lg-0">
-                                    <span class="opacity-7 text-muted"><i data-feather="globe"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> 
-                <!-- End First Cards --> 
-                <!-- Start Sales Charts Section --> 
-                <div class="row">
-                    <div class="col-lg-4 col-md-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4 class="card-title">Ventas Totales</h4>
-                                <div id="campaign-v2" class="mt-2" style="height:283px; width:100%;"></div>
-                                <ul class="list-style-none mb-0">
-                                    <li>
-                                        <i class="fas fa-circle text-primary font-10 mr-2"></i>
-                                        <span class="text-muted">Ventas Directas</span>
-                                        <span class="text-dark float-right font-weight-medium">$2346</span>
-                                    </li>
-                                    <li class="mt-3">
-                                        <i class="fas fa-circle text-danger font-10 mr-2"></i>
-                                        <span class="text-muted">Ventas</span>
-                                        <span class="text-dark float-right font-weight-medium">$2108</span>
-                                    </li>
-                                    <li class="mt-3">
-                                        <i class="fas fa-circle text-cyan font-10 mr-2"></i>
-                                        <span class="text-muted">Ventas por Afiliados</span>
-                                        <span class="text-dark float-right font-weight-medium">$1204</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4 class="card-title">Ingresos Netos</h4>
-                                <div class="net-income mt-4 position-relative" style="height:294px;"></div>
-                                <ul class="list-inline text-center mt-5 mb-2">
-                                    <li class="list-inline-item text-muted font-italic">Ventas para este mes</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4 class="card-title mb-4">Ganancias por Ubicación</h4>
-                                <div class="" style="height:180px">
-                                    <div id="visitbylocate" style="height:100%"></div>
-                                </div>
-                                <div class="row mb-3 align-items-center mt-1 mt-5">
-                                    <div class="col-4 text-right">
-                                        <span class="text-muted font-14">India</span>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="progress" style="height: 5px;">
-                                            <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"
-                                                aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-right">
-                                        <span class="mb-0 font-14 text-dark font-weight-medium">28%</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3 align-items-center">
-                                    <div class="col-4 text-right">
-                                        <span class="text-muted font-14">UK</span>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="progress" style="height: 5px;">
-                                            <div class="progress-bar bg-danger" role="progressbar" style="width: 74%"
-                                                aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-right">
-                                        <span class="mb-0 font-14 text-dark font-weight-medium">21%</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3 align-items-center">
-                                    <div class="col-4 text-right">
-                                        <span class="text-muted font-14">USA</span>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="progress" style="height: 5px;">
-                                            <div class="progress-bar bg-cyan" role="progressbar" style="width: 60%"
-                                                aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-right">
-                                        <span class="mb-0 font-14 text-dark font-weight-medium">18%</span>
-                                    </div>
-                                </div>
-                                <div class="row align-items-center">
-                                    <div class="col-4 text-right">
-                                        <span class="text-muted font-14">China</span>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="progress" style="height: 5px;">
-                                            <div class="progress-bar bg-success" role="progressbar" style="width: 50%"
-                                                aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-right">
-                                        <span class="mb-0 font-14 text-dark font-weight-medium">12%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<?php include_once 'Views/Template/admin_header.php'; ?>
+
+<style>
+  /* Mini tema PacificNort */
+  .kpi-card {
+    border: 0; border-radius: 1rem; color: #fff;
+    box-shadow: 0 8px 24px rgba(0,0,0,.06);
+    transition: transform .12s ease, box-shadow .12s ease, filter .2s ease;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.10); }
+  .kpi-icon { opacity: .9; width: 40px; height: 40px; }
+  .kpi-value { line-height: 1; font-weight: 800; letter-spacing: .3px; }
+  .subtle { opacity:.9; }
+
+  /* Colores */
+  .bg-pacific { background: linear-gradient(135deg,#1b2256,#2b4b9b); }
+  .bg-emerald { background: linear-gradient(135deg,#0ea5a3,#22c55e); }
+  .bg-sunset  { background: linear-gradient(135deg,#f59e0b,#ef4444); }
+  .bg-indigo  { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .bg-royal   { background: linear-gradient(135deg,#06b6d4,#3b82f6); } /* NUEVO */
+
+  /* Grid 5 columnas responsive */
+  .kpi-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(5, minmax(180px, 1fr));
+  }
+  @media (max-width: 1400px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 768px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px)  { .kpi-grid { grid-template-columns: 1fr; } }
+
+  .card-soft { border: 0; border-radius: 1rem; box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+  .section-title { font-weight: 700; letter-spacing:.2px; }
+  .legend-dot { display:inline-block; width:.75rem; height:.75rem; border-radius:50%; margin-right:.4rem; }
+   
+</style>
+
+
+<div class="container-fluid">
+
+    <!-- Encabezado / Hero -->
+    <div class="mb-3">
+        <h3 class="mb-1 fw-bold">Dashboard Principal</h3>
+        <div class="text-muted">Visión global de operaciones, contenedores, eventos, clientes y costos.</div>
+    </div>
+
+    <!-- KPIs en color (5 en la misma fila) -->
+    <div class="kpi-grid mb-4">
+        <div class="kpi-card bg-pacific p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Operaciones activas</div>
+                    <div id="kpiOpsActivas" class="display-6 kpi-value">0</div>
                 </div>
-               
-                <!-- End Sales Charts Section --> 
-                <!-- Start Location and Earnings Charts Section --> 
-                <div class="row">
-                    <div class="col-md-6 col-lg-8">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-start">
-                                    <h4 class="card-title mb-0">Estadisticas </h4>
-                                    <div class="ml-auto">
-                                        <div class="dropdown sub-dropdown">
-                                            <button class="btn btn-link text-muted dropdown-toggle" type="button"
-                                                id="dd1" data-toggle="dropdown" aria-haspopup="true"
-                                                aria-expanded="false">
-                                                <i data-feather="more-vertical"></i>
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dd1">
-                                                <a class="dropdown-item" href="#">Ingreso</a>
-                                                <a class="dropdown-item" href="#">Actualizar</a>
-                                                <a class="dropdown-item" href="#">Borrar</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pl-4 mb-5">
-                                    <div class="stats ct-charts position-relative" style="height: 315px;"></div>
-                                </div>
-                                <ul class="list-inline text-center mt-4 mb-0">
-                                    <li class="list-inline-item text-muted font-italic">Ganancias de Este mes</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
- 
-                </div>
- 
-                <!-- End Location and Earnings Charts Section --> 
-                
+                <i data-feather="anchor" class="kpi-icon"></i>
             </div>
-            <!-- ============================================================== -->
-            <!-- End Container fluid  -->
+            <div class="small subtle mt-2" id="kpiOpsDetalle">Marítimas y terrestres</div>
+        </div>
+
+        <div class="kpi-card bg-emerald p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Contenedores activos</div>
+                    <div id="kpiContActivos" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="package" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2" id="kpiContDetalle">Marítimos / Ferro</div>
+        </div>
+
+        <div class="kpi-card bg-sunset p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Eventos (hechos/total)</div>
+                    <div class="kpi-value">
+                        <span id="kpiEventosHechos" class="h2">0</span>/<span id="kpiEventosTotal" class="h2">0</span>
+                    </div>
+                    <div class="small subtle">Avance: <span id="kpiEventosPct">0%</span></div>
+                </div>
+                <i data-feather="check-circle" class="kpi-icon"></i>
+            </div>
+        </div>
+
+        <div class="kpi-card bg-indigo p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Clientes activos</div>
+                    <div id="kpiClientesActivos" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="users" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2">Con operaciones en curso</div>
+        </div>
+
+        <!-- NUEVO color para diferenciar Ops próximas a ETA -->
+        <div class="kpi-card bg-royal p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Ops próximas a ETA (≤ 7 días)</div>
+                    <div id="kpiOpsProxETA" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="clock" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2">Ventana de llegada inmediata</div>
+        </div>
+    </div>
+
+    <!-- Gráficos principales -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="section-title mb-0">Operaciones por subtipo</h5>
+                        <i data-feather="pie-chart"></i>
+                    </div>
+                    <canvas id="chartOpsPorSubtipo" height="50" aria-label="Distribución por subtipo"
+                        role="img"></canvas>
+                    <div class="small text-muted mt-2" id="legendOpsPorSubtipo"> 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="section-title mb-0">Eventos cumplidos por semana</h5>
+                        <i data-feather="bar-chart-2"></i>
+                    </div>
+                    <canvas id="chartEventosSemana" height="150" aria-label="Eventos por semana" role="img"></canvas>
+                    <div class="small text-muted mt-2">Tendencia semanal global.</div>
+                </div>
+            </div>
+        </div>
+<div class="col-lg-6">
+    <div class="card card-soft h-100">
+        <div class="card-body">
+            <div class="d-flex justify-content-end align-items-center mb-2"> 
+                <label class="form-label small mb-1">Mostrar totales en</label>
+                <select id="costosDashboard" class="form-control form-control-sm" style="width:140px;">
+                    <option value="MXN">MXN (pesos)</option>
+                    <option value="USD">USD (dólares)</option>
+                </select> 
+                <div class="input-group input-group-sm" style="width:160px;">
+                    <span class="input-group-text">$</span>
+                    <input type="number" step="0.0001" min="0" id="costosDashboardTipoCambio" class="form-control mt-1" value="17.00"> 
+                </div>
+            </div>
+            <canvas id="chartCostos" height="240" aria-label="Costos" role="img"></canvas>
+            <div class="small text-muted mt-2">Conversión automática según tipo de cambio configurado.</div>
+        </div>
+    </div>
+</div>
+
+<div class="col-lg-6">
+    <div class="card card-soft h-100">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="section-title mb-0">Línea de tiempo (ETD → ETA)</h5>
+                <i data-feather="clock"></i>
+            </div>
+            <div id="timelineOperaciones" style="height:240px;"></div>
+            <div class="small text-muted mt-2">Muestra ventanas próximas y demoras.</div>
+        </div>
+    </div>
+</div>
+</div>
+
+    <!-- Alertas / pendientes -->
+    <div class="card card-soft mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="section-title mb-0">Alertas / Pendientes</h5>
+                <button id="btnRefrescarAlertas" class="btn btn-sm btn-outline-secondary">
+                    <i data-feather="refresh-ccw"></i> Actualizar
+                </button>
+            </div>
+            <ul id="listaAlertas" class="list-group list-group-flush">
+                <!-- Rellenar dinámicamente -->
+            </ul>
+            <div id="alertasVacio" class="text-muted small mt-2" style="display:none;">
+                No hay alertas por ahora 🎉
+            </div>
+        </div>
+    </div>
+
+</div>
+
 <?php include_once 'Views/Template/admin_footer.php'; ?>
 
-
-    <script src="<?php echo BASE_URL; ?>/dist/js/pages/dashboards/dashboard1.min.js"></script>
+<script>
+  // Asegura iconos Feather
+  if (window.feather) feather.replace();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/Js/ModulosAdmin/dashboardprincipal.js"></script>
