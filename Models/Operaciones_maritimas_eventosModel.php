@@ -1,6 +1,7 @@
 <?php
 class Operaciones_maritimas_eventosModel extends Query
 {
+     private const TIPOS_ENTREGA = [6, 10]; // 6=Entrega Cargado (Terrestre), 10=Entrega (Marítimo)
     public function listar()
     {
         $sql = "
@@ -328,4 +329,19 @@ public function listarTiposEventoPorTipoOperacion(?int $tipoOperacionId): array
     $rows = $this->selectAll($sql, $params);
     return is_array($rows) ? $rows : [];
 }
+ public function existeEventoEntregaOperacion(int $operacionId): bool
+    {
+        if ($operacionId <= 0) return false;
+
+        $in = implode(',', array_map('intval', self::TIPOS_ENTREGA));
+        $sql = "SELECT 1
+                  FROM eventos_logisticos
+                 WHERE operacion_id = ?
+                   AND estatus = 1
+                   AND tipo_evento_id IN ($in)
+                 LIMIT 1";
+        $row = $this->select($sql, [$operacionId]);
+        return !empty($row);
+    }
+
 }

@@ -52,13 +52,18 @@
         background: linear-gradient(135deg, #06b6d4, #3b82f6);
     }
 
+    .bg-rose {
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        /* rojo/alarma */
+    }
+
     /* NUEVO */
 
     /* Grid 5 columnas responsive */
     .kpi-grid {
         display: grid;
         gap: 1rem;
-        grid-template-columns: repeat(5, minmax(180px, 1fr));
+        grid-template-columns: repeat(6, minmax(180px, 1fr));
     }
 
     @media (max-width: 1400px) {
@@ -82,6 +87,12 @@
     @media (max-width: 500px) {
         .kpi-grid {
             grid-template-columns: 1fr;
+        }
+    }
+
+    @media (min-width: 1400px) {
+        .kpi-grid {
+            grid-template-columns: repeat(6, 1fr) !important;
         }
     }
 
@@ -172,6 +183,16 @@
             </div>
             <div class="small subtle mt-2">Ventana de llegada inmediata</div>
         </div>
+        <div class="kpi-card bg-rose p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Alertas</div>
+                    <div id="kpiAlertas" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="alert-triangle" class="kpi-icon"></i>
+            </div>
+            <div id="kpiAlertasDetalle" class="small subtle mt-2">—</div>
+        </div>
     </div>
 
     <!-- Gráficos principales -->
@@ -199,7 +220,7 @@
                         <i data-feather="bar-chart-2"></i>
                     </div>
                     <canvas id="chartEventosSemana" height="150" aria-label="Eventos por semana" role="img"></canvas>
-                   <div class="small text-muted mt-2">Barras: entregas a tiempo/tarde · Línea: % de puntualidad.</div>
+                    <div class="small text-muted mt-2">Barras: entregas a tiempo/tarde · Línea: % de puntualidad.</div>
 
                 </div>
             </div>

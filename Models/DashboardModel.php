@@ -37,12 +37,12 @@ class DashboardModel extends Query
     public function kpiEventosHechosTotal(): array
     {
         $sql = "
-      SELECT
-        SUM(CASE WHEN e.estatus = 1 THEN 1 ELSE 0 END) AS hechos,
-        COUNT(*) AS total
-      FROM eventos_logisticos e
-      JOIN operaciones o ON o.id_operacion = e.operacion_id
-      WHERE o.estatus_id IN (1,5,9)
+SELECT
+  SUM(CASE WHEN e.estatus = 1 THEN 1 ELSE 0 END)                           AS hechos,
+  SUM(CASE WHEN e.estatus IN (0,1) THEN 1 ELSE 0 END)                       AS total -- 👈 ajusta IN(...)
+FROM eventos_logisticos e
+JOIN operaciones o ON o.id_operacion = e.operacion_id
+WHERE o.estatus_id IN (1,5,9);
     ";
         $row = $this->select($sql);
         return [
@@ -201,8 +201,58 @@ public function timelineETD_ETA(int $dias = 60): array
 }
 
 
+ public function alertasFinalizadaSinEntrega(int $estatusFinalizadaId, int $limit = 20): array
+    {
+        $limit = max(1, (int)$limit);
 
+        $sql = "
+          SELECT 
+            o.id_operacion,
+            o.numero_operacion,
+            o.eta,
+            o.etd,
+            c.nombre AS cliente
+          FROM operaciones o
+          LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+          WHERE o.estatus_id = ?
+            AND NOT EXISTS (
+              SELECT 1
+              FROM eventos_logisticos e
+              WHERE e.operacion_id = o.id_operacion
+                AND e.estatus = 1
+                AND e.tipo_evento_id IN (6,10) -- Entrega (ajusta si tus IDs son otros)
+            )
+          ORDER BY COALESCE(o.eta, o.etd) DESC
+          LIMIT {$limit}";
 
+        $rows = $this->selectAll($sql, [$estatusFinalizadaId]);
+        return is_array($rows) ? $rows : [];
+    }
+
+public function alertasEtaProximasOVencidas(int $window = 7, int $past = 7, int $limit = 50): array
+{
+    $limit  = max(1, (int)$limit);
+    $window = max(0, (int)$window);
+    $past   = max(0, (int)$past);
+
+    $sql = "
+      SELECT
+        o.id_operacion,
+        o.numero_operacion,
+        c.nombre AS cliente,
+        DATE(o.eta) AS eta_fecha,
+        DATEDIFF(DATE(o.eta), CURDATE()) AS dias_restantes
+      FROM operaciones o
+      LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+      WHERE o.estatus_id IN (1,5,9)         -- activas
+        AND o.eta IS NOT NULL
+        AND DATEDIFF(DATE(o.eta), CURDATE()) BETWEEN -? AND ?
+      ORDER BY dias_restantes ASC, o.eta ASC
+      LIMIT {$limit}";
+
+    $rows = $this->selectAll($sql, [$past, $window]);
+    return is_array($rows) ? $rows : [];
+}
 
 
 

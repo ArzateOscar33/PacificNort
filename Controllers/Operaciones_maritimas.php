@@ -311,7 +311,17 @@ public function listar()
             // LOG: operación actualizada
             $desc = "Operación actualizada (num='{$payload['numero_operacion']}', estatus_id={$payload['estatus_id']})";
             $this->logOp($payload['id_operacion'], 'actualizacion', $desc);
-
+            // ¿Se finalizó sin entrega?
+            $opId      = (int)$payload['id_operacion'];
+            $nuevoEst  = (int)$payload['estatus_id'];
+            $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
+            $warning = null;
+            if ($nuevoEst === 7 /* id Finalizada */) {
+                $hayEntrega = $this->eventosModel->existeEventoEntregaOperacion($opId);
+                if (!$hayEntrega) {
+                    $warning = 'La operación fue marcada como FINALIZADA pero no existe evento de ENTREGA. Captúralo para cerrar correctamente.';
+                }
+            }
             // Devolver la operación actualizada
             $actualizada = $this->model->obtenerOperacion($payload['id_operacion']);
 

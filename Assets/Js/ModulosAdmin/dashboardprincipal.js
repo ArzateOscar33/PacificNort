@@ -95,7 +95,7 @@ function renderAlertas(items) {
         ${iconoPorTipo(a.tipo)}
         ${escapeHtml(a.mensaje || "")}
       </span>
-      <span class="badge rounded-pill ${badgePorPrioridad(a.prioridad)}">${
+      <span class="badge rounded-pill text-white ${badgePorPrioridad(a.prioridad)}">${
       a.prioridad || "media"
     }</span>
     `;
@@ -885,4 +885,60 @@ window.addEventListener('resize', onResizeTimeline);
 // Init
 document.addEventListener('DOMContentLoaded', function () {
   cargarTimelineOperaciones(30, 50);
+});
+function cargarAlertas() {
+  xhrGET(base_url + "dashboard/alertas?limit=20",
+    (res) => {
+      if (res?.status !== "ok") { console.warn("alertas no OK", res); return; }
+      renderAlertas(res.data);
+    },
+    (err) => console.error("[alertas]", err)
+  );
+}
+document.addEventListener("DOMContentLoaded", function () {
+  cargarKPIs();
+  cargarOpsPorSubtipo();
+  cargarPuntualidadSemana(8);
+  cargarTimelineOperaciones(30, 50);
+  cargarAlertas(); // ⬅️
+});
+// ====== Refs nuevas ======
+const elKpiAlertas = document.getElementById('kpiAlertas');
+const elKpiAlertasDetalle = document.getElementById('kpiAlertasDetalle');
+
+// ====== Cargar KPI: Alertas ======
+function cargarKPIAlertas(limit = 500) {
+  xhrGET(
+    base_url + 'dashboard/alertas?limit=' + limit,
+    (res) => {
+      if (res?.status !== 'ok' || !Array.isArray(res.data)) {
+        setText(elKpiAlertas, '0');
+        if (elKpiAlertasDetalle) elKpiAlertasDetalle.textContent = 'Sin alertas';
+        if (window.feather) feather.replace();
+        return;
+      }
+      const total = res.data.length;
+      const altas = res.data.filter(a => (a.prioridad || '').toLowerCase() === 'alta').length;
+      const medias = res.data.filter(a => (a.prioridad || '').toLowerCase() === 'media').length;
+
+      setText(elKpiAlertas, total.toLocaleString('es-MX'));
+      if (elKpiAlertasDetalle) {
+        elKpiAlertasDetalle.textContent = total > 0
+          ? `Alta: ${altas} · Media: ${medias}`
+          : 'Sin alertas';
+      }
+      if (window.feather) feather.replace();
+    },
+    (err) => {
+      console.error('[kpi alertas]', err);
+      setText(elKpiAlertas, '0');
+      if (elKpiAlertasDetalle) elKpiAlertasDetalle.textContent = 'Error al cargar';
+      if (window.feather) feather.replace();
+    }
+  );
+}
+
+// Llamarlo en tu init junto a los demás
+document.addEventListener('DOMContentLoaded', function () {
+  cargarKPIAlertas(); // por defecto limit=500
 });

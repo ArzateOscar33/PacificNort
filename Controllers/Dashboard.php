@@ -1,6 +1,7 @@
 <?php
 class Dashboard extends Controller
 {
+    const EST_FINALIZADA = 7; 
     public function __construct()
     {
         parent::__construct();
@@ -134,6 +135,70 @@ public function timeline()
         'meta'   => ['days' => $dias, 'limit' => $limite, 'count' => count($rows)],
         'data'   => $rows
     ], JSON_UNESCAPED_UNICODE);
+    die();
+}
+ public function alertas()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    // Parámetros
+    $limit     = isset($_GET['limit'])      ? max(1,(int)$_GET['limit'])      : 20;
+    $etaWindow = isset($_GET['eta_window']) ? max(0,(int)$_GET['eta_window']) : 7;  // próximos N días
+    $etaPast   = isset($_GET['eta_past'])   ? max(0,(int)$_GET['eta_past'])   : 7;  // vencidas N días atrás
+
+    // 1) Finalizada sin evento de entrega (estatus_id=7)
+    $rowsFinalSinEntrega = $this->model->alertasFinalizadaSinEntrega(self::EST_FINALIZADA, $limit);
+    $data1 = array_map(function($r){
+        $op  = !empty($r['numero_operacion']) ? $r['numero_operacion'] : ('#'.$r['id_operacion']);
+        $cli = $r['cliente'] ?? '—';
+        $eta = $r['eta'] ?: ($r['etd'] ?: '—');
+        return [
+            'tipo'      => 'evento',
+            'mensaje'   => "Op {$op} ({$cli}) finalizada sin evento de entrega. ETA/ETD: {$eta}",
+            'prioridad' => 'media',
+            'op_id'     => (int)$r['id_operacion'],
+        ];
+    }, $rowsFinalSinEntrega ?: []);
+
+    // 2) ETA próxima / vencida (activas)
+    $rowsEta = $this->model->alertasEtaProximasOVencidas($etaWindow, $etaPast, $limit);
+    $data2 = array_map(function($r){
+        $op   = !empty($r['numero_operacion']) ? $r['numero_operacion'] : ('#'.$r['id_operacion']);
+        $cli  = $r['cliente'] ?? '—';
+        $eta  = $r['eta_fecha'] ?: '—';
+        $dias = (int)($r['dias_restantes'] ?? 0);
+
+        if ($dias < 0) {
+            $msg  = "Op {$op} ({$cli}) — ETA vencida hace ".abs($dias)." día(s) (ETA: {$eta})";
+            $prio = 'alta';
+        } elseif ($dias <= 2) {
+            $msg  = $dias === 0
+                ? "Op {$op} ({$cli}) — ETA HOY (ETA: {$eta})"
+                : "Op {$op} ({$cli}) — ETA en {$dias} día(s) (ETA: {$eta})";
+            $prio = 'alta';
+        } else {
+            $msg  = "Op {$op} ({$cli}) — ETA en {$dias} día(s) (ETA: {$eta})";
+            $prio = 'media';
+        }
+
+        return [
+            'tipo'      => 'eta',
+            'mensaje'   => $msg,
+            'prioridad' => $prio,
+            'op_id'     => (int)$r['id_operacion'],
+        ];
+    }, $rowsEta ?: []);
+
+    // Mezcla y ordena (alta primero)
+    $data = array_merge($data2, $data1);
+    usort($data, function($a, $b){
+        $rank = ['alta'=>0,'media'=>1,'baja'=>2];
+        $ra = $rank[$a['prioridad']] ?? 9;
+        $rb = $rank[$b['prioridad']] ?? 9;
+        return $ra <=> $rb;
+    });
+
+    echo json_encode(['status'=>'ok','data'=>$data], JSON_UNESCAPED_UNICODE);
     die();
 }
 
