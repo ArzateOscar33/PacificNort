@@ -323,17 +323,23 @@ public function obtenerTiposMovimientoActivos(): array
  */
 public function insertarCostoOperacion(array $d): int
 {
+    $operacionId = (int)($d['operacion_id'] ?? 0);
+    $tipoMovId   = (int)($d['tipo_movimiento_id'] ?? 0);
+    $monto       = (float)($d['monto'] ?? 0);
+    $comentario  = (string)($d['comentario'] ?? '');
+
+    // 🔒 Bloqueo por estatus de la operación
+    if (!$this->operacionActiva($operacionId)) {
+        return 0; // o lanza excepción si prefieres
+    }
+
     $sql = "INSERT INTO costos_operacion
             (operacion_id, tipo_movimiento_id, monto, comentario, estatus, fecha_creacion)
             VALUES (?, ?, ?, ?, 1, NOW())";
 
-    return (int)$this->insertar($sql, [
-        (int)($d['operacion_id'] ?? 0),
-        (int)($d['tipo_movimiento_id'] ?? 0),
-        (float)($d['monto'] ?? 0),
-        (string)($d['comentario'] ?? '')
-    ]);
+    return (int)$this->insertar($sql, [$operacionId, $tipoMovId, $monto, $comentario]);
 }
+
 
 /**
  * Actualiza campos de un costo de operación.
@@ -341,7 +347,12 @@ public function insertarCostoOperacion(array $d): int
  */
 public function actualizarCostoOperacion(int $id, array $d): bool
 {
-    // Construcción dinámica SOLO de los campos permitidos
+    // Verificar operación del costo
+    $opId = $this->getOperacionIdPorCostoOp($id);
+    if (!$opId || !$this->operacionActiva($opId)) {
+        return false;
+    }
+
     $sets   = [];
     $params = [];
 
@@ -359,6 +370,7 @@ public function actualizarCostoOperacion(int $id, array $d): bool
 
     return $this->save($sql, $params) === 1;
 }
+
 
 /**
  * Obtiene un costo de operación (join para traer número de operación y la moneda del tipo).
@@ -396,6 +408,24 @@ public function reactivarCostoOperacion(int $id): bool
 {
     $sql = "UPDATE costos_operacion SET estatus = 1 WHERE id_costo_operacion = ? LIMIT 1";
     return $this->save($sql, [$id]) === 1;
+}
+/** Operación con estatus activo (1,5,9) */
+private function operacionActiva(int $operacionId): bool
+{
+    if ($operacionId <= 0) return false;
+    $row = $this->select("SELECT estatus_id FROM operaciones WHERE id_operacion = ? LIMIT 1", [$operacionId]);
+    if (!$row) return false;
+    return in_array((int)$row['estatus_id'], [1,5,9], true);
+}
+
+/** Operacion_id para un costo de operación */
+private function getOperacionIdPorCostoOp(int $costoOperacionId): ?int
+{
+    $row = $this->select(
+        "SELECT operacion_id FROM costos_operacion WHERE id_costo_operacion = ? LIMIT 1",
+        [$costoOperacionId]
+    );
+    return $row ? (int)$row['operacion_id'] : null;
 }
 
 

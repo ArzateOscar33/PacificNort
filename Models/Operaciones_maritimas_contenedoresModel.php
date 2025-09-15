@@ -14,7 +14,7 @@ class Operaciones_maritimas_contenedoresModel extends Query
                 COALESCE(c.nombre,'') AS cliente
             FROM operaciones o
             LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
-            WHERE o.estatus_id <> 6
+            WHERE  o.estatus_id IN (1,5,9)
             ORDER BY o.id_operacion DESC
             LIMIT 1000";
         return $this->selectAll($sql) ?: [];
@@ -223,6 +223,7 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
         LEFT  JOIN detalles_logisticos dl      ON dl.operacion_id         = o.id_operacion
         LEFT  JOIN shippers sp                 ON sp.id_shipper           = o.shipper_id
         WHERE 1=1 {$whereBusqMar}
+        AND o.estatus_id IN (1,5,9) 
 
         UNION ALL
 
@@ -251,6 +252,7 @@ public function listarPaginado(array $filters = [], int $page = 1, int $per_page
         LEFT  JOIN detalles_logisticos dl  ON dl.operacion_id = o.id_operacion
         LEFT  JOIN shippers sp2            ON sp2.id_shipper  = o.shipper_id
         WHERE 1=1 {$whereBusqTer}
+        AND o.estatus_id IN (1,5,9)
       ) AS x
       WHERE 1=1
     ";

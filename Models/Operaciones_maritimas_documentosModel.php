@@ -11,7 +11,7 @@ class Operaciones_maritimas_documentosModel extends Query
                 COUNT(co.id_contenedor) AS contenedores
             FROM operaciones o
             JOIN contenedores_operacion co ON co.operacion_id = o.id_operacion
-            WHERE LOWER(o.numero_operacion) LIKE ?
+            WHERE LOWER(o.numero_operacion) LIKE ? AND o.estatus_id IN (1,5,9)
             GROUP BY o.id_operacion, o.numero_operacion
             ORDER BY o.id_operacion DESC
             LIMIT 20

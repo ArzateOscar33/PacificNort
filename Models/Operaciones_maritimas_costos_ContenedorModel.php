@@ -148,48 +148,51 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
      * @param int $limit
      * Devuelve: id_operacion, numero_operacion, cliente_id, cliente
      */
-    public function buscarOperaciones(string $term, int $limit = 8): array
-    {
-        $term = trim($term);
-        $params = [];
-        $where  = "";
+public function buscarOperaciones(string $term, int $limit = 8): array
+{
+    $term   = trim($term);
+    $params = [];
+    $where  = "";
 
-        if ($term !== "") {
-            $where = " AND (o.numero_operacion LIKE ? OR cte.nombre LIKE ?)";
-            $like  = "%{$term}%";
-            $params[] = $like;
-            $params[] = $like;
-        }
-
-        // Solo operaciones que tengan al menos un contenedor_físico ligado vía contenedores_operacion
-        $limit = max(1, min(20, $limit));
-        $sql = "
-            SELECT DISTINCT
-                o.id_operacion,
-                o.numero_operacion,
-                cte.id_cliente  AS cliente_id,
-                cte.nombre      AS cliente
-            FROM operaciones o
-            LEFT JOIN clientes cte ON cte.id_cliente = o.cliente_id
-            WHERE EXISTS (
-                SELECT 1
-                FROM contenedores_operacion co
-                INNER JOIN contenedores_fisicos cf
-                        ON cf.id_fisico = co.id_fisico
-                WHERE co.operacion_id = o.id_operacion
-            )
-            {$where}
-            ORDER BY o.numero_operacion DESC, o.id_operacion DESC
-            LIMIT {$limit}
-        ";
-
-        try {
-            $rows = $this->selectAll($sql, $params);
-            return is_array($rows) ? $rows : [];
-        } catch (\Throwable $e) {
-            return [];
-        }
+    if ($term !== "") {
+        $where = " AND (o.numero_operacion LIKE ? OR cte.nombre LIKE ?)";
+        $like  = "%{$term}%";
+        $params[] = $like;
+        $params[] = $like;
     }
+
+    // Límite de seguridad
+    $limit = max(1, min(20, $limit));
+
+    $sql = "
+        SELECT DISTINCT
+            o.id_operacion,
+            o.numero_operacion,
+            cte.id_cliente  AS cliente_id,
+            cte.nombre      AS cliente
+        FROM operaciones o
+        LEFT JOIN clientes cte ON cte.id_cliente = o.cliente_id
+        WHERE o.estatus_id IN (1,5,9)   -- 👈 filtro operaciones activas
+          AND EXISTS (
+              SELECT 1
+              FROM contenedores_operacion co
+              INNER JOIN contenedores_fisicos cf
+                      ON cf.id_fisico = co.id_fisico
+              WHERE co.operacion_id = o.id_operacion
+          )
+          {$where}
+        ORDER BY o.numero_operacion DESC, o.id_operacion DESC
+        LIMIT {$limit}
+    ";
+
+    try {
+        $rows = $this->selectAll($sql, $params);
+        return is_array($rows) ? $rows : [];
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
+
 
 
     /**
@@ -207,7 +210,7 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
         if ($operacionId <= 0) return [];
 
         $term = trim($term);
-        $where = "WHERE co.operacion_id = ?";
+        $where = "WHERE co.operacion_id = ?  ";
         $params = [$operacionId];
 
         if ($term !== "") {
@@ -233,26 +236,47 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
             return [];
         }
     }
+
+    private function operacionActivaPorContenedorOpId(int $contenedor_operacion_id): bool
+{
+    $sql = "SELECT o.estatus_id
+            FROM contenedores_operacion co
+            INNER JOIN operaciones o ON o.id_operacion = co.operacion_id
+            WHERE co.id_contenedor = ?
+            LIMIT 1";
+    $row = $this->select($sql, [$contenedor_operacion_id]);
+    if (!$row) return false;
+    $estatus = (int)$row['estatus_id'];
+    return in_array($estatus, [1,5,9], true);
+}
+
     // ================================
     //   INSERT: costos_contenedor_operacion
     // ================================
-    public function insertarCostoContenedor(
-        int $contenedor_operacion_id,
-        int $tipo_movimiento_id,
-        float $monto,
-        ?string $comentario = null
-    ) {
-        $sql = "INSERT INTO costos_contenedor_operacion
-                (contenedor_operacion_id, tipo_movimiento_id, monto, comentario, fecha_creacion)
-                VALUES (?, ?, ?, ?, NOW())";
-        $params = [
-            $contenedor_operacion_id,
-            $tipo_movimiento_id,
-            $monto,
-            ($comentario !== null && $comentario !== '') ? $comentario : null
-        ];
-        return $this->insertar($sql, $params); // devuelve el ID insertado o false
+public function insertarCostoContenedor(
+    int $contenedor_operacion_id,
+    int $tipo_movimiento_id,
+    float $monto,
+    ?string $comentario = null
+) {
+    // 🔒 Bloqueo: no permitir costos en operaciones no activas
+    if (!$this->operacionActivaPorContenedorOpId($contenedor_operacion_id)) {
+        // puedes lanzar excepción o devolver false; aquí devuelvo false
+        return false;
     }
+
+    $sql = "INSERT INTO costos_contenedor_operacion
+            (contenedor_operacion_id, tipo_movimiento_id, monto, comentario, fecha_creacion)
+            VALUES (?, ?, ?, ?, NOW())";
+    $params = [
+        $contenedor_operacion_id,
+        $tipo_movimiento_id,
+        $monto,
+        ($comentario !== null && $comentario !== '') ? $comentario : null
+    ];
+    return $this->insertar($sql, $params);
+}
+
 
     // ================================
     //   SELECT helpers (SQL puros)
@@ -312,20 +336,31 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
         $row = $this->select($sql, [$nombre]);
         return isset($row['id_tipo_operacion']) ? (int)$row['id_tipo_operacion'] : null;
     }
-    public function actualizarCostoContenedor(  int $id,  int $contenedor_operacion_id,  int $tipo_movimiento_id, float $monto,  ?string $comentario = null
-    ) {
-        $sql = "UPDATE costos_contenedor_operacion
-                SET contenedor_operacion_id = ?, tipo_movimiento_id = ?, monto = ?, comentario = ?
-                WHERE id_costo_contenedor = ?";
-        $params = [
-            $contenedor_operacion_id,
-            $tipo_movimiento_id,
-            $monto,
-            ($comentario !== null && $comentario !== '') ? $comentario : null,
-            $id
-        ];
-        return $this->save($sql, $params); // true/false
+public function actualizarCostoContenedor(
+    int $id,
+    int $contenedor_operacion_id,
+    int $tipo_movimiento_id,
+    float $monto,
+    ?string $comentario = null
+) {
+    // 🔒 Bloqueo: no permitir editar para mover costo a una operación NO activa
+    if (!$this->operacionActivaPorContenedorOpId($contenedor_operacion_id)) {
+        return false;
     }
+
+    $sql = "UPDATE costos_contenedor_operacion
+            SET contenedor_operacion_id = ?, tipo_movimiento_id = ?, monto = ?, comentario = ?
+            WHERE id_costo_contenedor = ?";
+    $params = [
+        $contenedor_operacion_id,
+        $tipo_movimiento_id,
+        $monto,
+        ($comentario !== null && $comentario !== '') ? $comentario : null,
+        $id
+    ];
+    return $this->save($sql, $params);
+}
+
     public function eliminarCostoContenedor(int $id): bool
     {
         // Borrado duro
