@@ -46,7 +46,8 @@ inputBuscarCostosContenedor?.addEventListener("keyup", (e) => {
     listarCostosContenedor(1);
   }
 });
-
+const selNaturaleza = document.getElementById("filtroNaturalezaCostoContenedor");
+selNaturaleza?.addEventListener("change", () => listarCostosContenedor(1));
 selMonedaCostosContenedor?.addEventListener("change", () => listarCostosContenedor(1));
 selTipoCostoContenedor?.addEventListener("change",   () => listarCostosContenedor(1));
 

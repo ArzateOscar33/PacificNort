@@ -22,6 +22,14 @@
       </select>
     </div>
     <div class="col-md-4">
+  <label for="filtroNaturalezaCostoContenedor" class="form-label">Naturaleza</label>
+  <select id="filtroNaturalezaCostoContenedor" class="form-control">
+    <option value="">Todos</option>
+    <option value="GASTO">Gasto</option>
+    <option value="ABONO">Abono</option>
+  </select>
+</div>
+    <div class="col-md-4">
       <label for="filtro_tipo" class="form-label">Tipo de Costo</label>
       <select id="filtroTipoCostoContenedor" name="filtroTipoCostoContenedor" class="form-control">
         <!-- Se llena desde JS -->

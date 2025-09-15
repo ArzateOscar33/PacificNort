@@ -67,11 +67,12 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================
 function listarCostosContenedor(page = 1){
   currentPageCostosContenedor = page;
+  const naturaleza = (document.getElementById("filtroNaturalezaCostoContenedor")?.value || "").toUpperCase();
 
   const buscar  = (inputBuscarCostosContenedor?.value || "").trim();
   const moneda  = normalizeMonedaCostosContenedor(selMonedaCostosContenedor?.value || "");
   const tipoId  = parseInt(selTipoCostoContenedor?.value || "0", 10) || 0;
-
+ 
   // Cancelar XHR en vuelo
   if (currentXHRCostosContenedor && currentXHRCostosContenedor.readyState !== 4) {
     currentXHRCostosContenedor.abort();
@@ -79,13 +80,15 @@ function listarCostosContenedor(page = 1){
 
   renderCargandoCostosContenedor();
 
-  const params = new URLSearchParams({
-    page:    String(currentPageCostosContenedor),
-    perPage: String(perPageCostosContenedor),
-    buscar,
-    moneda,    // 'PESOS' | 'DLLS' | ''
-    tipo: String(tipoId) // id_tipo_movimiento
-  });
+const params = new URLSearchParams({
+  page:    String(currentPageCostosContenedor),
+  perPage: String(perPageCostosContenedor),
+  buscar,
+  moneda,
+  tipo: String(tipoId),
+  naturaleza
+});
+
 
   const url = `${base_url}Operaciones_maritimas_costos_Contenedor/listarPaginado?${params.toString()}`;
   currentXHRCostosContenedor = new XMLHttpRequest();
@@ -155,24 +158,27 @@ function renderTablaCostosContenedor(rows){
     return;
   }
 
-  rows.forEach(r => {
+   rows.forEach(r => {
+    const nat = String(r.tipo || '').toUpperCase(); // 'GASTO'|'ABONO'
+    const sign = (nat === 'ABONO') ? '+' : '−';
+    const cls  = (nat === 'ABONO') ? 'text-success' : 'text-danger';
+    const montoFmt = moneyWithSymbolCostosContenedor(r.monto, r.moneda);
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${ccSafe(r.numero_operacion)}</td>
       <td>${ccSafe(r.contenedor)}</td>
-      <td>${ccSafe(r.concepto)}</td>
-      <td>${moneyWithSymbolCostosContenedor(r.monto, r.moneda)}</td>
+      <td>
+        ${ccSafe(r.concepto)}
+        <span class="badge ${nat==='ABONO'?'bg-success-subtle text-success':'bg-danger-subtle text-danger'} ms-1">
+          ${nat}
+        </span>
+      </td>
+      <td class="${cls} fw-semibold">${sign} ${montoFmt}</td>
       <td>${prettyMonedaCostosContenedor(r.moneda)}</td>
       <td>${ccSafe(r.comentario)}</td>
       <td class="text-nowrap">
-        <button class="btn btn-sm btn-outline-secondary me-1" title="Editar"
-                onclick="ccEditarCostoContenedor(${r.id_costo_contenedor})">
-          <i data-feather="edit"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-danger" title="Eliminar"
-                onclick="ccEliminarCostoContenedor(${r.id_costo_contenedor})">
-          <i data-feather="x"></i>
-        </button>
+        ...
       </td>
     `;
     tbodyCostosContenedor.appendChild(tr);
@@ -272,7 +278,7 @@ const costosContenedorBtnSubmit       = document.getElementById("btnSubmitCostoC
 // ------- Catálogo: tipos (solo TERRESTRE + GASTO) -------
 // ACEPTA callback opcional que se ejecuta cuando termina de poblar el select
 function costosContenedorCargarTiposMovimiento(done){
-  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?solo_gastos=1&categoria=Terrestre`;
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?categoria=Terrestre`;
   const xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
   xhr.send();
@@ -285,23 +291,24 @@ function costosContenedorCargarTiposMovimiento(done){
 
     if (!costosContenedorSelTipo) return;
     costosContenedorSelTipo.innerHTML = `<option value="">Seleccione un tipo</option>`;
-    // limpia el mapa
     for (const k in costosContenedorTiposMap) delete costosContenedorTiposMap[k];
 
     data.forEach(t => {
       if (!t) return;
       const opt = document.createElement("option");
       opt.value = t.id_tipo_movimiento;
-      opt.textContent = t.nombre;
+      opt.textContent = `${t.nombre} (${t.tipo})`; // GASTO / ABONO
       const mon = (String(t.moneda || "").toUpperCase() === "DLLS") ? "DLLS" : "PESOS";
       opt.dataset.moneda = mon;
-      costosContenedorTiposMap[String(t.id_tipo_movimiento)] = mon; // ← guarda en mapa
+
+      costosContenedorTiposMap[String(t.id_tipo_movimiento)] = mon;
       costosContenedorSelTipo.appendChild(opt);
     });
 
-    if (typeof done === "function") done();   // ← callback opcional
+    if (typeof done === "function") done();
   };
 }
+
 
 
 

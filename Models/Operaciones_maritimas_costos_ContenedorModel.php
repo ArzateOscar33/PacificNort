@@ -6,7 +6,7 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
         $page    = max(1, $page);
         $perPage = max(1, min(200, $perPage));
         $offset  = ($page - 1) * $perPage;
-
+        $naturaleza = strtoupper(trim($f['naturaleza'] ?? ''));
         $buscar = trim($f['buscar'] ?? '');
         $moneda = trim($f['moneda'] ?? '');             // 'PESOS' | 'DLLS' | ''
         $tipoId = (int)($f['tipo_movimiento_id'] ?? 0); // id_tipo_movimiento
@@ -27,6 +27,10 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
             $where[] = "cco.tipo_movimiento_id = ?";
             $params[] = $tipoId;
         }
+        if ($naturaleza === 'GASTO' || $naturaleza === 'ABONO') {
+        $where[] = "UPPER(tm.tipo) = ?";
+        $params[] = $naturaleza;
+        }
 
         $sql = "SELECT
         cco.id_costo_contenedor,
@@ -36,6 +40,7 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
         tm.id_tipo_movimiento,
         tm.nombre                 AS concepto,
         tm.moneda,
+        UPPER(tm.tipo)            AS tipo,
         cco.monto,
         cco.comentario,
         cco.fecha_creacion
@@ -68,7 +73,7 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
         $buscar = trim($f['buscar'] ?? '');
         $moneda = trim($f['moneda'] ?? '');
         $tipoId = (int)($f['tipo_movimiento_id'] ?? 0);
-
+        $naturaleza = strtoupper(trim($f['naturaleza'] ?? ''));
         $where  = [];
         $params = [];
 
@@ -85,7 +90,10 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
             $where[] = "cco.tipo_movimiento_id = ?";
             $params[] = $tipoId;
         }
-
+        if ($naturaleza === 'GASTO' || $naturaleza === 'ABONO') {
+            $where[] = "UPPER(tm.tipo) = ?";
+            $params[] = $naturaleza;
+        }
         $sql = "SELECT COUNT(*) AS total
                 FROM costos_contenedor_operacion cco
                 LEFT JOIN contenedores_operacion  co  ON co.id_contenedor   = cco.contenedor_operacion_id
@@ -111,30 +119,25 @@ class Operaciones_maritimas_costos_ContenedorModel extends Query
      * Catálogo de tipos de costo (tipos_movimiento) activos.
      * Devuelve: id_tipo_movimiento, nombre, moneda, estatus
      */
-    public function catalogoTiposMovimiento(bool $soloGastos = true, ?int $categoriaId = null): array
-    {
-        $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.moneda, tm.estatus
-                FROM tipos_movimiento tm
-                WHERE tm.estatus = 1";
-        $params = [];
+public function catalogoTiposMovimiento(?string $tipo = null, ?int $categoriaId = null): array
+{
+    $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.moneda, tm.estatus, UPPER(tm.tipo) AS tipo
+            FROM tipos_movimiento tm
+            WHERE tm.estatus = 1";
+    $params = [];
 
-        if ($soloGastos) {
-            $sql .= " AND UPPER(tm.tipo) = 'GASTO'";
-        }
-        if (!is_null($categoriaId) && $categoriaId > 0) {
-            $sql .= " AND tm.tipo_operacion_id = ?";
-            $params[] = $categoriaId;
-        }
-
-        $sql .= " ORDER BY tm.nombre ASC";
-
-        try {
-            $rows = $this->selectAll($sql, $params);
-            return is_array($rows) ? $rows : [];
-        } catch (\Throwable $e) {
-            return [];
-        }
+    if ($tipo && in_array(strtoupper($tipo), ['GASTO','ABONO'], true)) {
+        $sql .= " AND UPPER(tm.tipo) = ?";
+        $params[] = strtoupper($tipo);
     }
+    if (!is_null($categoriaId) && $categoriaId > 0) {
+        $sql .= " AND tm.tipo_operacion_id = ?";
+        $params[] = $categoriaId;
+    }
+    $sql .= " ORDER BY tm.nombre ASC";
+    return $this->selectAll($sql, $params) ?: [];
+}
+
 
     public function getTipoOperacionIdPorNombre(string $nombre): ?int
     {
@@ -293,6 +296,7 @@ public function insertarCostoContenedor(
                     tm.nombre                 AS concepto,
                     tm.moneda,
                     tm.tipo_operacion_id,
+                    UPPER(tm.tipo) AS tipo,
                     cco.monto,
                     cco.comentario,
                     cco.fecha_creacion
@@ -370,4 +374,36 @@ public function actualizarCostoContenedor(
         return (bool)$this->save($sql, [$id]);
     
     }
+    public function totalesPorAlcance(?int $operacionId = null, ?int $contenedorOperacionId = null): array
+{
+    $where = [];
+    $params = [];
+    if ($operacionId) {
+        $where[] = "co.operacion_id = ?";
+        $params[] = $operacionId;
+    }
+    if ($contenedorOperacionId) {
+        $where[] = "cco.contenedor_operacion_id = ?";
+        $params[] = $contenedorOperacionId;
+    }
+    $whereSql = $where ? "WHERE ".implode(" AND ", $where) : "";
+
+    $sql = "
+      SELECT
+        tm.moneda,
+        SUM(CASE WHEN UPPER(tm.tipo)='GASTO'  THEN cco.monto ELSE 0 END) AS total_gastos,
+        SUM(CASE WHEN UPPER(tm.tipo)='ABONO'  THEN cco.monto ELSE 0 END) AS total_abonos,
+        SUM(CASE WHEN UPPER(tm.tipo)='ABONO'  THEN cco.monto
+                 WHEN UPPER(tm.tipo)='GASTO'  THEN -cco.monto
+                 ELSE 0 END) AS balance
+      FROM costos_contenedor_operacion cco
+      INNER JOIN contenedores_operacion co ON co.id_contenedor = cco.contenedor_operacion_id
+      INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+      {$whereSql}
+      GROUP BY tm.moneda
+      ORDER BY tm.moneda
+    ";
+    return $this->selectAll($sql, $params) ?: [];
+}
+
 }
