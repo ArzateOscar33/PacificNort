@@ -579,58 +579,26 @@ public function previewCodigoSubtipo(int $subtipoId): ?array {
   ];
 }
 
-/**
- * Calcula y fija el código de manera **atómica** (con candado) SIN tabla de folios.
- */
-/*
-public function generarCodigoAtomic(int $subtipoId): ?string {
-  try {
-    $this->save("START TRANSACTION", []);
+ 
+private function nextConsecutivoSeguro(int $subtipoId, int $anio): int
+{
+    // Requiere UNIQUE (subtipo_id, anio)
+    $ok = $this->save(
+        "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
+         VALUES (?, ?, 1)
+         ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
+        [$subtipoId, $anio]
+    );
+    if ($ok === false) return 0;
 
-    $lockKey = "folio_marit_" . (int)$subtipoId;
-    $got = $this->select("SELECT GET_LOCK(?, 5) AS ok", [$lockKey]);
-    if ((int)($got['ok'] ?? 0) !== 1) { $this->save("ROLLBACK", []); return null; }
-
-    // Solo desde la BD
-    $pref = $this->getPrefijoSubtipo($subtipoId);
-    if (!$pref) {
-      $this->select("SELECT RELEASE_LOCK(?)", [$lockKey]);
-      $this->save("ROLLBACK", []);
-      return null;
-    }
-
-    $row = $this->select("
-      SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion,'-',-1) AS UNSIGNED)), 0) AS maxn
-      FROM operaciones
-      WHERE tipo_operacion_id = 1 AND subtipo_operacion_id = ?
-      FOR UPDATE
-    ", [$subtipoId]);
-
-    $next = (int)($row['maxn'] ?? 0) + 1;
-    $codigo = $pref . '-' . $this->lpadNumero($next);
-
-    $this->select("SELECT RELEASE_LOCK(?)", [$lockKey]);
-    $this->save("COMMIT", []);
-    return $codigo;
-
-  } catch (\Throwable $e) {
-    try { $this->select("SELECT RELEASE_LOCK(?)", ["folio_marit_" . (int)$subtipoId]); } catch (\Throwable $e2) {}
-    $this->save("ROLLBACK", []);
-    return null;
-  }
+    // Debe ser la misma conexión que hizo el save()
+    $row = $this->select("SELECT LAST_INSERT_ID() AS n");
+    return (int)($row['n'] ?? 0);
 }
-*/
-private function nextConsecutivoSeguro(int $subtipoId, int $anio): int {
-  // Patrón atómico con LAST_INSERT_ID: serializa el incremento por (subtipo, año)
-  $sql = "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
-          VALUES (?, ?, 1)
-          ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)";
-  $ok = $this->save($sql, [$subtipoId, $anio]);
-  if ($ok === false) return 0;
 
-  $row = $this->select("SELECT LAST_INSERT_ID() AS n");
-  return (int)($row['n'] ?? 0);
-}
+
+
+
 
 private function lpadNumeroN(int $n): string {
   // Si quieres siempre 2 dígitos mínimo (LC-01..LC-99, luego 100 sin pad extra):

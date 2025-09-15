@@ -85,75 +85,96 @@ function resetRepeater(){
 
 // ---- Guardar (POST) ----
 function guardarOperacion(){
-  if (!formOp || !btnSave) return;
+  return new Promise((resolve) => {   // ⬅️ devuelve Promise
+    if (!formOp || !btnSave) { resolve(false); return; }
 
- // ✅ Valida BL antes de continuar
-  if (!validarBL()) {
-    if (window.Swal) {
-      Swal.fire('BL inválido', 'El BL solo debe contener letras y números.', 'warning');
-    } else {
-      alert('El BL solo debe contener letras y números.');
+    // (ya validaste BL afuera, pero dejarlo no estorba)
+    if (!validarBL()) {
+      Swal?.fire('BL inválido', 'El BL solo debe contener letras y números.', 'warning');
+      inpBL?.focus();
+      resolve(false);
+      return;
     }
-    inpBL?.focus();
-    return;
-  }
 
-  const fd = new FormData(formOp);
-  const contenedores = collectContenedores();
-  fd.append('contenedores', JSON.stringify(contenedores));
+    const fd = new FormData(formOp);
+    fd.append('contenedores', JSON.stringify(collectContenedores()));
+    if (inpNumeroOp?.hasAttribute('readonly')) fd.set('numero_operacion', '');
 
-  // 🔴 CLAVE: si está en modo auto (readonly), fuerza vacío para que lo genere el backend
-  if (inpNumeroOp?.hasAttribute('readonly')) {
-    fd.set('numero_operacion', ''); // el backend asigna el definitivo
-  }
+    const x = new XMLHttpRequest();
+    x.open('POST', base_url + 'Operaciones_maritimas/registrar', true);
+    x.timeout = 20000; // 20s
+    x.onerror = x.onabort = x.ontimeout = () => {
+      Swal?.fire('Error de red','No se pudo registrar la operación.','error');
+      resolve(false);
+    };
 
-  const x = new XMLHttpRequest();
-  x.open('POST', base_url + 'Operaciones_maritimas/registrar', true);
-
-  // ...tu UX de spinner...
-
-  x.onreadystatechange = function(){
-    if (x.readyState === 4){
-      // ...tu restauración de botón...
+    x.onreadystatechange = function(){
+      if (x.readyState !== 4) return;
 
       let res = null;
       try { res = JSON.parse(x.responseText); } catch(e){}
-      console.log(this.responseText);
+
       if (x.status !== 200 || !res){
-        Swal?.fire('Error','No se pudo registrar la operación.','error') ?? alert('No se pudo registrar la operación.');
+        Swal?.fire('Error','No se pudo registrar la operación.','error');
+        resolve(false);
         return;
       }
- 
+
       if (res.status === 'success'){
-        // Muestra el folio final (devuelto por el backend)
-        const cod = res.numero_operacion ? ` (${res.numero_operacion})` : '';
-        Swal?.fire('¡Éxito!', (res.msg || 'Operación creada.') + cod, 'success');
+        const folioFinal = res.numero_operacion || '';
+        if (inpNumeroOp){
+          inpNumeroOp.value = folioFinal;
+          inpNumeroOp.setAttribute('readonly','readonly');
+        }
+        const help = document.getElementById('folioHelp');
+        if (help){
+          help.classList.remove('text-muted');
+          help.classList.add('text-success');
+          help.textContent = `Folio definitivo asignado: ${folioFinal}`;
+        }
+        Swal?.fire('¡Éxito!', `Operación creada (${folioFinal})`, 'success');
         modal?.hide();
         formOp.reset();
         resetRepeater?.();
-        if (typeof listar === 'function') listar();
+        listar?.();
+        resolve(true);
       } else if (res.status === 'warning'){
-        Swal?.fire('Atención', res.msg || 'Revisa los datos.', 'warning') ?? alert(res.msg || 'Revisa los datos.');
+        Swal?.fire('Atención', res.msg || 'Revisa los datos.', 'warning');
+        resolve(false);
       } else {
-        Swal?.fire('Error', res.msg || 'No se pudo registrar.', 'error') ?? alert(res.msg || 'No se pudo registrar.');
+        Swal?.fire('Error', res.msg || 'No se pudo registrar.', 'error');
+        resolve(false);
       }
-    }
-  };
+    };
 
-  x.send(fd);
+    x.send(fd);
+  });
 }
+
 
 // ---- Wire-up ----
 
 btnGuardarOp?.addEventListener('click', (e) => {
   e.preventDefault();
+  if (btnGuardarOp.disabled) return;
+
   const id = (document.getElementById('id_operacion')?.value || '').trim();
-  if (id) {
-    actualizarOperacion();           // edición
-  } else if (typeof guardarOperacion === 'function') {
-    guardarOperacion();              // alta (definida en el otro archivo)
-  }
+
+  // ✅ valida antes (lo mínimo imprescindible)
+  if (!validarBL()) { inpBL?.focus(); return; }
+  if (!validarCamposObligatorios()) { return; }
+  if (!validarClienteSeleccionado()) { return; }
+
+  btnGuardarOp.disabled = true;
+
+  const done = () => { btnGuardarOp.disabled = false; };
+
+  // Usa las versiones *promisificadas* (abajo)
+  const p = id ? actualizarOperacion() : guardarOperacion();
+  p.finally(done); // Siempre se re-habilita pase lo que pase
 });
+
+
 modalEl?.addEventListener('shown.bs.modal', () => {
   if (typeof validarCamposObligatorios === 'function') {
     if (validarCamposObligatorios()) btnSave?.removeAttribute('disabled');
@@ -180,10 +201,16 @@ function prefillNumeroPorSubtipo() {
   x.onreadystatechange = function(){
     if (x.readyState === 4 && x.status === 200){
       let d = {}; try { d = JSON.parse(x.responseText); } catch(e){}
-      if (d && d.codigo && inpNumeroOp){
-        inpNumeroOp.value = d.codigo;
-        inpNumeroOp.setAttribute('readonly','readonly'); // modo auto
-      }
+if (d && d.codigo && inpNumeroOp){
+  inpNumeroOp.value = d.codigo;                 // Folio preliminar
+  inpNumeroOp.setAttribute('readonly','readonly');
+  const help = document.getElementById('folioHelp');
+  if (help){
+    help.classList.remove('text-success');
+    help.classList.add('text-muted');
+    help.textContent = `Folio preliminar: ${d.codigo}. El definitivo se asigna al guardar.`;
+  }
+}
     }
   };
   x.send();
@@ -219,8 +246,13 @@ selSubtipoModal?.addEventListener('change', () => {
 // Al cargar en edición, asegúrate de quitar readonly (tu función cargarOperacionParaEditar ya setea valores)
 document.getElementById('modalOperacionMaritima')?.addEventListener('shown.bs.modal', () => {
   const isEdit = (document.getElementById('id_operacion')?.value || '').trim() !== '';
-  if (isEdit && inpNumeroOp) inpNumeroOp.removeAttribute('readonly');
-}); 
+  // En edición NO tocamos inpNumeroOp; debe quedar readonly
+  if (!isEdit && inpNumeroOp) {
+    // Solo en creación seguimos dejando readonly (modo auto) hasta guardar
+    inpNumeroOp.setAttribute('readonly','readonly');
+  }
+});
+
 // Excel
   document.getElementById('btnExportarExcelOperaciones')?.addEventListener('click', () => {
     ExportarTablas.exportar({

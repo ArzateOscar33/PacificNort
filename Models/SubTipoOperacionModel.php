@@ -59,10 +59,41 @@ class SubTipoOperacionModel extends Query
 
 public function registrarSubTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo = null)
 {
-    $sql = "INSERT INTO subtipos_operacion 
-            (tipo_operacion_id, clave, nombre, puerto_arribo_default_id, prefijo_codigo, estatus) 
-            VALUES (?,?,?,?,?,1)";
-    return $this->insertar($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo]);
+    try {
+        // Inicia transacción (usa tu método de Query)
+        $this->save("START TRANSACTION", []);
+
+        // Inserta subtipo
+        $sql = "INSERT INTO subtipos_operacion 
+                (tipo_operacion_id, clave, nombre, puerto_arribo_default_id, prefijo_codigo, estatus) 
+                VALUES (?,?,?,?,?,1)";
+        $newId = (int)$this->insertar($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo]);
+
+        if ($newId <= 0) {
+            $this->save("ROLLBACK", []);
+            return 0;
+        }
+
+        // Siembra/asegura secuencia para el año actual (requiere UNIQUE (subtipo_id, anio))
+        $anio = (int)date('Y');
+        $ok = $this->save(
+            "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
+             VALUES (?, ?, 0)
+             ON DUPLICATE KEY UPDATE valor = valor",
+            [$newId, $anio]
+        );
+        if ($ok === false) {
+            $this->save("ROLLBACK", []);
+            return 0;
+        }
+
+        $this->save("COMMIT", []);
+        return $newId;
+
+    } catch (\Throwable $e) {
+        $this->save("ROLLBACK", []);
+        return 0;
+    }
 }
 
 public function getSubtipoOperacion($id)

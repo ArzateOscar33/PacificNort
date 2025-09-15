@@ -142,6 +142,12 @@ document.getElementById('btnNuevaOperacion')?.addEventListener('click', (e) => {
 // ========== 3) Al cerrar el modal: deja listo para la próxima “Nueva Operación” ==========
 modalEl?.addEventListener('hidden.bs.modal', () => {
   resetModalOperacion('create');
+  const help = document.getElementById('folioHelp');
+if (help){
+  help.classList.remove('text-success');
+  help.classList.add('text-muted');
+  help.textContent = 'Folio preliminar pendiente…';
+}
 });
 
 
@@ -738,6 +744,13 @@ tabla?.addEventListener('click', (e) => {
   const id = parseInt(btn.getAttribute('data-id') || '0', 10);
   if (!id) return;
   cargarOperacionParaEditar(id);
+  
+const help = document.getElementById('folioHelp');
+if (help){
+  help.classList.remove('text-muted');
+  help.classList.add('text-success');
+  help.textContent = `Folio actual: ${op.numero_operacion}`;
+}
 });
 
 function cargarOperacionParaEditar(id){
@@ -786,7 +799,14 @@ function cargarOperacionParaEditar(id){
       setSelectValue(selNavieraEd,   op.naviera_id);
       setSelectValue(selForwarderEd, op.forwarder_id);
       if (selPuerto) setSelectValue(selPuerto, op.puerto_arribo_id_prefill);
-
+if (selSubtipoEd) {
+  selSubtipoEd.setAttribute('disabled', 'disabled');   // Subtipo no editable
+  selSubtipoEd.classList.add('bg-light');              // (opcional) visual
+}
+if (inpNumeroOp) {
+  inpNumeroOp.setAttribute('readonly', 'readonly');    // Número no editable
+  inpNumeroOp.classList.add('bg-light');               // (opcional) visual
+}
       // OJO: aquí había un typo (contenores). Debe ser contenedores.
       if (Array.isArray(payload.contenedores) && payload.contenedores.length){
         repeater.innerHTML = '';
@@ -805,79 +825,73 @@ function cargarOperacionParaEditar(id){
 
 
 function actualizarOperacion(){
-     if (!validarBL()) {
-    if (window.Swal) {
-      Swal.fire('BL inválido', 'El BL solo debe contener letras y números.', 'warning');
-    } else {
-      alert('El BL solo debe contener letras y números.');
+  return new Promise((resolve) => {   // ⬅️ devuelve Promise
+    if (!validarBL()) {
+      Swal?.fire('BL inválido', 'El BL solo debe contener letras y números.', 'warning');
+      inpBL?.focus();
+      resolve(false);
+      return;
     }
-    inpBL?.focus();
-    return;
-  }
-  // Validaciones básicas
-  if (!inpIdOperacion?.value){
-    if (window.Swal) Swal.fire('Aviso', 'Falta el ID de la operación', 'warning');
-    return;
-  }
-  if (!selSubtipoEd?.value){
-    if (window.Swal) Swal.fire('Aviso', 'Selecciona el subtipo', 'warning');
-    return;
-  }
-  if (!selEstatus?.value){
-    if (window.Swal) Swal.fire('Aviso', 'Selecciona el estatus', 'warning');
-    return;
-  }
-  if (!inpNumeroOp?.value.trim()){
-    if (window.Swal) Swal.fire('Aviso', 'Ingresa el número de operación', 'warning');
-    return;
-  }
-  const txtNotas = document.getElementById('notas');
-  const fd = new FormData();
-  fd.append('id_operacion',         inpIdOperacion.value);
-  fd.append('subtipo_operacion_id', selSubtipoEd.value);
-  fd.append('numero_operacion',     inpNumeroOp.value.trim());
-  fd.append('estatus_id',           selEstatus.value);
-  fd.append('etd',                  inpETD?.value || '');
-  fd.append('eta',                  inpETA?.value || '');
-  fd.append('numero_bl',            inpBL?.value || '');
-  fd.append('cliente_id',           hidCliente?.value || '');
-  fd.append('naviera_id',           selNavieraEd?.value || '');
-  fd.append('forwarder_id',         selForwarderEd?.value || '');
-  fd.append('shipper_id', selShipper?.value || '');
-  fd.append('notas', (txtNotas?.value || '').trim());
+    if (!inpIdOperacion?.value){
+      Swal?.fire('Aviso', 'Falta el ID de la operación', 'warning');
+      resolve(false);
+      return;
+    }
+    if (!selSubtipoEd?.value){ Swal?.fire('Aviso','Selecciona el subtipo','warning'); resolve(false); return; }
+    if (!selEstatus?.value){   Swal?.fire('Aviso','Selecciona el estatus','warning'); resolve(false); return; }
+    if (!inpNumeroOp?.value.trim()){ Swal?.fire('Aviso','Ingresa el número de operación','warning'); resolve(false); return; }
 
-  // (Por ahora NO enviamos contenedores porque tu modelo actualizarOperacion() actual no los procesa)
-  // Si luego agregas ese manejo, aquí puedes serializarlos:
-  // fd.append('contenedores_json', JSON.stringify(getContenedoresSeleccionados()));
+    const txtNotas = document.getElementById('notas');
+    const fd = new FormData();
+    fd.append('id_operacion',         inpIdOperacion.value);
+    fd.append('subtipo_operacion_id', selSubtipoEd.value);
+    fd.append('numero_operacion',     inpNumeroOp.value.trim());
+    fd.append('estatus_id',           selEstatus.value);
+    fd.append('etd',                  inpETD?.value || '');
+    fd.append('eta',                  inpETA?.value || '');
+    fd.append('numero_bl',            inpBL?.value || '');
+    fd.append('cliente_id',           hidCliente?.value || '');
+    fd.append('naviera_id',           selNavieraEd?.value || '');
+    fd.append('forwarder_id',         selForwarderEd?.value || '');
+    fd.append('shipper_id',           selShipper?.value || '');
+    fd.append('notas', (txtNotas?.value || '').trim());
 
-  const x = new XMLHttpRequest();
-  x.open('POST', base_url + 'Operaciones_maritimas/actualizar', true);
-  x.send(fd);
-  x.onreadystatechange = function(){
-    if (x.readyState === 4){
+    const x = new XMLHttpRequest();
+    x.open('POST', base_url + 'Operaciones_maritimas/actualizar', true);
+    x.timeout = 20000;
+    x.onerror = x.onabort = x.ontimeout = () => {
+      Swal?.fire('Error de red','No se pudo actualizar la operación','error');
+      resolve(false);
+    };
+
+    x.onreadystatechange = function(){
+      if (x.readyState !== 4) return;
+
       if (x.status !== 200){
         console.error('actualizar error:', x.responseText);
-        if (window.Swal) Swal.fire('Error', 'No se pudo actualizar la operación', 'error');
+        Swal?.fire('Error', 'No se pudo actualizar la operación', 'error');
+        resolve(false);
         return;
       }
-      console.log(this.responseText);
       let payload = {};
-      try { payload = JSON.parse(x.responseText); } catch(e){ payload = {}; }
+      try { payload = JSON.parse(x.responseText); } catch(e){}
 
       if (payload.status !== 'success'){
-        if (window.Swal) Swal.fire('Error', payload.msg || 'Error al actualizar', 'error');
+        Swal?.fire('Error', payload.msg || 'Error al actualizar', 'error');
+        resolve(false);
         return;
       }
 
-      // OK: alerta, cerrar modal, recargar la tabla (manteniendo página/filtros)
-      if (window.Swal) Swal.fire('Operación actualizada', '', 'success');
-      if (modalInstance) modalInstance.hide();
+      Swal?.fire('Operación actualizada', '', 'success');
+      modalInstance?.hide();
+      listar?.();
+      resolve(true);
+    };
 
-      // repintar la tabla con la misma página/estado actual
-      listar();
-    }
-  };
-} 
+    x.send(fd);
+  });
+}
+
 
 
 const inpShipperNom = document.getElementById('shipperNombre');
