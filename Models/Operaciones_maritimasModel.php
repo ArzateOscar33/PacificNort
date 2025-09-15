@@ -195,13 +195,12 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
 {
     try {
         // =====================================================
-        // 0) Generar número de operación si viene vacío (ATÓMICO)
-        //    Lo hacemos ANTES de la transacción principal para
-        //    evitar anidar transacciones. El método interno usa
-        //    GET_LOCK + MAX(...) y resuelve concurrencia.
+        // A) Generar número de operación si viene vacío
+        //    Usamos secuencia atómica (tabla secuencias_operacion)
+        //    para evitar carreras al mismo tiempo.
         // =====================================================
         if (empty($op['numero_operacion'])) {
-            $codigo = $this->generarCodigoAtomic((int)$op['subtipo_operacion_id']);
+            $codigo = $this->generarCodigoPorSecuencia((int)$op['subtipo_operacion_id']); // <- NUEVO
             if (!$codigo) {
                 return ['status' => 'error', 'msg' => 'No se pudo generar el folio'];
             }
@@ -209,11 +208,11 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
         }
 
         // =====================================================
-        // 1) Transacción principal de inserción
+        // B) Transacción principal de inserción
         // =====================================================
         $this->save("START TRANSACTION", []);
 
-        // 1.1) Validaciones de subtipo y flags (como ya tenías)
+        // B.1) Validaciones de subtipo y requisitos
         $st = $this->getSubtipo((int)$op['subtipo_operacion_id']);
         if (!$st) {
             $this->save("ROLLBACK", []);
@@ -228,13 +227,13 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
             return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
         }
 
-        // 1.2) Insert principal en operaciones
+        // B.2) Insert en operaciones (con código ya único)
         $sqlOp = "INSERT INTO operaciones
             (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
              cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
         $paramsOp = [
-            $op['numero_operacion'],
+            trim($op['numero_operacion']),
             (int)$op['tipo_operacion_id'],
             (int)$op['subtipo_operacion_id'],
             $op['etd'] ?? null,
@@ -247,26 +246,29 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
             !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null,
             $op['notas'] ?? null,
         ];
-
         $opId = (int)$this->insertar($sqlOp, $paramsOp);
         if ($opId <= 0) {
+            // Si falló (p.ej. por UNIQUE de numero_operacion), revertimos todo
             $this->save("ROLLBACK", []);
             return ['status' => 'error', 'msg' => 'No se pudo guardar la operación'];
         }
 
-        // 1.3) Contenedores (alta en catálogo si hace falta + relación)
+        // B.3) Contenedores (alta en catálogo si hace falta + relación)
         if (!empty($contenedores)) {
             $vistos = [];
             foreach ($contenedores as $c) {
                 $cid  = isset($c['id']) ? (int)$c['id'] : 0;
                 $cnum = trim($c['numero'] ?? '');
 
+                // Ignora vacíos
                 if ($cid <= 0 && $cnum === '') continue;
 
+                // Evita duplicar la misma fila en la misma operación
                 $key = $cid > 0 ? 'id:' . $cid : 'num:' . mb_strtolower($cnum, 'UTF-8');
                 if (isset($vistos[$key])) continue;
                 $vistos[$key] = true;
 
+                // Si no viene id, intenta encontrar o crear
                 if ($cid <= 0) {
                     $found = $this->findContenedorByNumero($cnum);
                     if ($found) $cid = (int)$found['id_contenedor_maritimo'];
@@ -278,6 +280,7 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
                     }
                 }
 
+                // Relación con operación
                 $linkId = $this->linkContenedorOperacion($opId, $cid);
                 if ($linkId <= 0) {
                     $this->save("ROLLBACK", []);
@@ -286,21 +289,21 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
             }
         }
 
-        // 1.4) Bitácora
+        // B.4) Bitácora
         $logId = $this->crearLog($opId, $usuarioId, 'creacion', 'Operación creada');
         if ($logId <= 0) {
             $this->save("ROLLBACK", []);
             return ['status' => 'error', 'msg' => 'No se pudo registrar la bitácora de creación'];
         }
 
-        // 1.5) Commit
+        // B.5) Commit
         $this->save("COMMIT", []);
 
         return [
             'status'           => 'success',
             'msg'              => 'Operación creada',
             'id_operacion'     => $opId,
-            'numero_operacion' => $op['numero_operacion'], // <- útil para mostrar al usuario
+            'numero_operacion' => $op['numero_operacion'],
         ];
 
     } catch (\Throwable $ex) {
@@ -482,7 +485,7 @@ public function actualizarOperacion(array $d): bool
 {
     $sql = "UPDATE operaciones
             SET
-              numero_operacion     = ?,
+              
               subtipo_operacion_id = ?,
               etd                  = ?,
               eta                  = ?,
@@ -496,7 +499,7 @@ public function actualizarOperacion(array $d): bool
             WHERE id_operacion = ?
             LIMIT 1";
     $args = [
-      trim($d['numero_operacion'] ?? ''),
+       
       (int)($d['subtipo_operacion_id'] ?? 0),
       !empty($d['etd']) ? $d['etd'] : null,
       !empty($d['eta']) ? $d['eta'] : null,
@@ -579,6 +582,7 @@ public function previewCodigoSubtipo(int $subtipoId): ?array {
 /**
  * Calcula y fija el código de manera **atómica** (con candado) SIN tabla de folios.
  */
+/*
 public function generarCodigoAtomic(int $subtipoId): ?string {
   try {
     $this->save("START TRANSACTION", []);
@@ -614,6 +618,35 @@ public function generarCodigoAtomic(int $subtipoId): ?string {
     $this->save("ROLLBACK", []);
     return null;
   }
+}
+*/
+private function nextConsecutivoSeguro(int $subtipoId, int $anio): int {
+  // Patrón atómico con LAST_INSERT_ID: serializa el incremento por (subtipo, año)
+  $sql = "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
+          VALUES (?, ?, 1)
+          ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)";
+  $ok = $this->save($sql, [$subtipoId, $anio]);
+  if ($ok === false) return 0;
+
+  $row = $this->select("SELECT LAST_INSERT_ID() AS n");
+  return (int)($row['n'] ?? 0);
+}
+
+private function lpadNumeroN(int $n): string {
+  // Si quieres siempre 2 dígitos mínimo (LC-01..LC-99, luego 100 sin pad extra):
+  return str_pad((string)$n, ($n < 100 ? 2 : strlen((string)$n)), '0', STR_PAD_LEFT);
+}
+
+/** Nuevo generador: por secuencia (sin locks manuales) */
+public function generarCodigoPorSecuencia(int $subtipoId): ?string {
+  $pref = $this->getPrefijoSubtipo($subtipoId); // ya lo tienes
+  if (!$pref) return null;
+
+  $anio = (int)date('Y');
+  $consec = $this->nextConsecutivoSeguro($subtipoId, $anio);
+  if ($consec <= 0) return null;
+
+  return $pref . '-' . $this->lpadNumeroN($consec);
 }
 
 
