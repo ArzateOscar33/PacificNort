@@ -67,26 +67,38 @@ public function listarPaginado(array $filters = [], int $page = 1, int $perPage 
         $args[] = $subtipoId;
     }
 
-    if (!empty($filters['term'])) {
-        $needle = '%'.mb_strtolower($filters['term'],'UTF-8').'%';
-        $where .= " AND (
-            LOWER(o.numero_operacion) LIKE ?
-            OR LOWER(o.numero_bl)     LIKE ?
-            OR LOWER(p.nombre)        LIKE ?
-            OR LOWER(e.nombre)        LIKE ?
-            OR LOWER(c.nombre)        LIKE ?
-            OR LOWER(s.nombre)        LIKE ?
-            OR EXISTS (
-                SELECT 1
-                FROM contenedores_maritimos_operacion cmo2
-                JOIN contenedores_maritimos cm2
-                  ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                WHERE cmo2.operacion_id = o.id_operacion
-                  AND LOWER(cm2.numero_contenedor) LIKE ?
-            )
-        )";
-        array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
-    }
+    // --- búsqueda multi-término (coma) ---
+    $raw = trim($filters['term'] ?? '');
+    if ($raw !== '') {
+        // separa por coma, limpia y limita a 5 tokens
+        $terms = array_values(array_filter(array_map(
+            fn($t) => mb_strtolower(trim($t), 'UTF-8'),
+            explode(',', $raw)
+        ), fn($t) => $t !== ''));
+        $terms = array_slice($terms, 0, 5);
+
+        foreach ($terms as $t) {
+            $needle = '%'.$t.'%';
+            $where .= " AND (
+                LOWER(o.numero_operacion) LIKE ?
+                OR LOWER(o.numero_bl)     LIKE ?
+                OR LOWER(p.nombre)        LIKE ?
+                OR LOWER(e.nombre)        LIKE ?
+                OR LOWER(c.nombre)        LIKE ?
+                OR LOWER(s.nombre)        LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedores_maritimos_operacion cmo2
+                    JOIN contenedores_maritimos cm2
+                    ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                    WHERE cmo2.operacion_id = o.id_operacion
+                    AND LOWER(cm2.numero_contenedor) LIKE ?
+                )
+            )";
+            array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
+        }
+}
+
 
     // === SOLO ESTOS DOS FILTROS: fecha_inicio / fecha_fin sobre ETA ===
     $fi = trim($filters['fecha_inicio'] ?? '');
