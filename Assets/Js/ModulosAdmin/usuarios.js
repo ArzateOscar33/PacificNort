@@ -153,15 +153,8 @@ function mostrarPuesto() {
 // Al cargar, el puesto está oculto
 document.addEventListener("DOMContentLoaded", ocultarPuesto);
 
-// Cambiar de departamento -> cargar puestos
-selDepto.addEventListener("change", function () {
-  const depId = this.value;
-
-  // Si limpian el departamento, ocultamos el puesto
-  if (!depId) {
-    ocultarPuesto();
-    return;
-  }
+ function cargarPuestosPorDepto(deptoId, puestoSeleccionado = "") {
+  if (!deptoId) { ocultarPuesto(); return; }
 
   // Estado de carga
   selPuesto.innerHTML = '<option value="">Cargando...</option>';
@@ -170,20 +163,14 @@ selDepto.addEventListener("change", function () {
   selPuesto.disabled = true;
 
   const http = new XMLHttpRequest();
-  http.open(
-    "GET",
-    base_url + "Usuarios/puestosPorDepartamento/" + encodeURIComponent(depId),
-    true
-  );
+  http.open("GET", base_url + "Usuarios/puestosPorDepartamento/" + encodeURIComponent(deptoId), true);
   http.send();
 
   http.onreadystatechange = function () {
     if (http.readyState === 4) {
       if (http.status === 200) {
         let data = [];
-        try {
-          data = JSON.parse(http.responseText);
-        } catch (e) {
+        try { data = JSON.parse(http.responseText); } catch (e) {
           console.error("JSON inválido:", http.responseText);
           Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
           ocultarPuesto();
@@ -191,16 +178,21 @@ selDepto.addEventListener("change", function () {
         }
 
         if (Array.isArray(data) && data.length > 0) {
-          // Rellenar puestos
-          selPuesto.innerHTML =
-            '<option value="">Seleccione un puesto</option>';
+          selPuesto.innerHTML = '<option value="">Seleccione un puesto</option>';
           data.forEach((p) => {
             const opt = document.createElement("option");
-            opt.value = p.id_puesto; // ajusta si tu columna se llama distinto
-            opt.textContent = p.nombre; // ajusta si tu columna se llama distinto
+            opt.value = p.id_puesto;
+            opt.textContent = p.nombre;
             selPuesto.appendChild(opt);
           });
+
+          // 👇 Aquí preseleccionamos el puesto si viene uno
+          if (puestoSeleccionado) {
+            selPuesto.value = String(puestoSeleccionado);
+          }
+
           mostrarPuesto();
+          selPuesto.disabled = false;
         } else {
           ocultarPuesto();
           Swal.fire("Aviso", "No hay puestos en este departamento", "info");
@@ -211,7 +203,13 @@ selDepto.addEventListener("change", function () {
       }
     }
   };
+}
+
+// Listener simple que usa el helper
+selDepto.addEventListener("change", function () {
+  cargarPuestosPorDepto(this.value, "");
 });
+
 function editarUsuario(id) {
   const http = new XMLHttpRequest();
   http.open("GET", base_url + "Usuarios/editar/" + id, true);
@@ -219,50 +217,51 @@ function editarUsuario(id) {
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let data;
-      try {
-        data = JSON.parse(this.responseText);
-      } catch (e) {
+      try { data = JSON.parse(this.responseText); } catch (e) {
         Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
         return;
       }
 
-      // set campos...
+      // Campos base
       document.getElementById("id_usuario").value = data.id_usuario;
-      form.nombre.value = data.nombre || "";
+      form.nombre.value   = data.nombre || "";
       form.apellido.value = data.apellido || "";
-      form.correo.value = data.correo || "";
+      form.correo.value   = data.correo || "";
       form.telefono.value = data.telefono || "";
-      document.querySelector('select[name="active"]').value =
-        typeof data.estatus !== "undefined" ? data.estatus : 1;
 
-      // IMPORTANTÍSIMO: evitar autocompletar del navegador
+      // Estado
+      document.querySelector('select[name="active"]').value =
+        (typeof data.estatus !== "undefined") ? String(data.estatus) : "1";
+
+      // Password (oculto por defecto)
       inputNuevaClave.value = "";
-      inputConfirma.value = "";
-      // En edición NO cambiar contraseña por defecto
+      inputConfirma.value   = "";
       chkCambiarClave.checked = false;
       chkCambiarClave.dispatchEvent(new Event("change"));
 
-      // ...cargar depto/puesto/rol como ya tenías...
+      // 👇 Departamento y Puesto (preselección correcta)
+      const deptoId = data.departamento_id ? String(data.departamento_id) : "";
+      const puestoId = data.puesto_id ? String(data.puesto_id) : "";
 
-      document.getElementById("modalRegistrarUsuarioLabel").textContent =
-        "Editar Usuario";
-      const btn = document.querySelector(
-        '#modalRegistrarUsuario button[type="submit"]'
-      );
-      if (btn)
-        btn.innerHTML =
-          '<i data-feather="check-circle" class="me-1"></i> Actualizar';
-      // mostrar bloque "cambiar contraseña"
-      document
-        .getElementById("wrapToggleCambiarClave")
-        .classList.remove("d-none");
-      chkCambiarClave.checked = false; // por defecto no se cambia
-      chkCambiarClave.dispatchEvent(new Event("change"));
+      selDepto.value = deptoId || "";        // marca el departamento
+      cargarPuestosPorDepto(deptoId, puestoId); // carga puestos y preselecciona
+
+      // 👇 Rol (si hoy manejas un único rol)
+      const selRol = document.getElementById("rol_id");
+      selRol.value = data.rol_id ? String(data.rol_id) : "";
+
+      // UI modal
+      document.getElementById("modalRegistrarUsuarioLabel").textContent = "Editar Usuario";
+      const btn = document.querySelector('#modalRegistrarUsuario button[type="submit"]');
+      if (btn) btn.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+
+      document.getElementById("wrapToggleCambiarClave").classList.remove("d-none");
       feather.replace();
       modal.show();
     }
   };
 }
+
 window.editarUsuario = editarUsuario;
 
 // expón para onclick en la tabla
