@@ -159,24 +159,14 @@ public function actualizarTipoOperacion($id_tipo_operacion, $clave, $nombre, $pu
     }
     return $this->select($sql, $params);
 }
-    /*
 
-
-
-
-
-    public function getTipoOperacion($id)
-    {
-        $sql = "SELECT id_tipo_operacion, nombre_operacion FROM tipos_operacion WHERE id_tipo_operacion = ? AND estatus = 1";
-        return $this->select($sql, [$id]);
-    }
-
-    public function actualizarTipoOperacion($id, $nombre)
-    {
-        $sql = "UPDATE tipos_operacion SET nombre_operacion = ? WHERE id_tipo_operacion = ?";
-        return $this->save($sql, [$nombre, $id]);
-    }
-
-
-    */
+public function getTipoOperacionByNombreLike($like) {
+    $sql = "SELECT id_tipo_operacion, nombre_operacion 
+            FROM tipos_operacion 
+            WHERE estatus = 1 AND nombre_operacion LIKE ?
+            ORDER BY id_tipo_operacion ASC
+            LIMIT 1";
+    return $this->select($sql, [$like]); // p.ej. 'Marit%'
+}
+ 
 }

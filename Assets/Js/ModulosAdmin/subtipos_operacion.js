@@ -33,7 +33,7 @@ function renderTabla(data) {
       <td>${item.clave}</td>
       <td>${item.nombre}</td>
       <td>${item.prefijo}</td>
-      <td>${item.puerto}</td>  
+      <td>${item.puerto || 'No Requiere Puerto'}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="editar(${item.id_subtipo})"><i class="fas fa-edit"></i> Editar</button>
         <button class="btn btn-sm btn-danger" onclick="eliminar(${item.id_subtipo})"><i class="fas fa-trash-alt"></i> Eliminar</button>
@@ -201,4 +201,41 @@ document.addEventListener("click", function (e) {
     sugerenciasEl.innerHTML = "";
     sugerenciasEl.style.display = "none";
   }
-});
+}); 
+function tipoRequierePuertoFront() {
+  const opt = selTipoOp.options[selTipoOp.selectedIndex];
+  return (opt?.dataset?.requierePuerto === '1');
+}
+
+function refrescarPuertoRequerido() {
+  const requiere = tipoRequierePuertoFront();
+  selPuerto.disabled = !requiere;
+  selPuerto.required = requiere;
+  if (!requiere) selPuerto.value = '';
+  if (lblPuerto) lblPuerto.textContent = 'Puerto' + (requiere ? ' *' : ' (no aplica)');
+}
+const selTipoOp  = document.getElementById('tipo_operacion_id');
+const selPuerto  = document.getElementById('puerto_id');
+const lblPuerto  = document.querySelector('label[for="puerto_id"]');
+
+function tipoRequierePuertoFront() {
+  const opt = selTipoOp.options[selTipoOp.selectedIndex];
+  return (opt?.dataset?.requierePuerto === '1');
+}
+
+function refrescarPuertoRequerido() {
+  const requiere = tipoRequierePuertoFront();
+  selPuerto.disabled = !requiere;
+  selPuerto.required = requiere;
+  if (!requiere) selPuerto.value = '';
+  if (lblPuerto) lblPuerto.textContent = 'Puerto' + (requiere ? ' *' : ' (no aplica)');
+}
+
+// Al cargar y cuando cambie
+document.addEventListener('DOMContentLoaded', refrescarPuertoRequerido);
+selTipoOp.addEventListener('change', refrescarPuertoRequerido);
+
+// En editar(), después de setear valores del form, llama:
+/// ...
+refrescarPuertoRequerido();
+/// ...

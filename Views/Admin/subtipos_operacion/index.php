@@ -70,13 +70,17 @@
                     <input type="hidden" id="id" name="id">
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Tipo de Operacion</label>
-                         <select name="tipo_operacion_id" id="tipo_operacion_id" class="form-control" required>
-                        <!-- Opciones dinámicas -->
-                        <?php foreach (($data['tipos_operacion'] ?? []) as $op): ?>
-                        <option value="<?= $op['id_tipo_operacion'] ?>"> <?= htmlspecialchars($op['nombre_operacion']) ?></option>
-                        <?php endforeach; ?>
+<select name="tipo_operacion_id" id="tipo_operacion_id" class="form-control" required>
+  <?php foreach (($data['tipos_operacion'] ?? []) as $op): 
+        $requierePuerto = ((int)$op['id_tipo_operacion'] === (int)$data['id_tipo_maritimo']); ?>
+    <option 
+      value="<?= $op['id_tipo_operacion'] ?>" 
+      data-requiere-puerto="<?= $requierePuerto ? 1 : 0 ?>">
+      <?= htmlspecialchars($op['nombre_operacion']) ?>
+    </option>
+  <?php endforeach; ?>
+</select>
 
-                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Clave</label>
@@ -94,12 +98,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Puerto </label>
-                         <select name="puerto_id" id="puerto_id" class="form-control" required>
-                        <!-- Opciones dinámicas -->
-                        <?php foreach (($data['puertos'] ?? []) as $puerto): ?>
-                        <option value="<?= $puerto['id_puerto'] ?>"> <?= htmlspecialchars($puerto['nombre']) ?></option>
-                        <?php endforeach; ?>
-                        </select>
+<select name="puerto_id" id="puerto_id" class="form-control">
+  <option value="">— Selecciona puerto —</option>
+  <?php foreach (($data['puertos'] ?? []) as $puerto): ?>
+    <option value="<?= $puerto['id_puerto'] ?>"><?= htmlspecialchars($puerto['nombre']) ?></option>
+  <?php endforeach; ?>
+</select>
+
                     </div>
 
                     <!-- Pie del modal -->
