@@ -129,6 +129,7 @@ public function listarCostosCombinadosPaginado(int $page, int $perPage, array $f
             o.numero_operacion          AS numero_operacion,
             tm.id_tipo_movimiento       AS tipo_movimiento_id,
             tm.nombre                   AS concepto,
+            LOWER(tm.tipo)              AS naturaleza, 
             UPPER(tm.moneda)            AS moneda,
             co.monto                    AS monto,
             co.comentario               AS comentario,
@@ -148,6 +149,7 @@ public function listarCostosCombinadosPaginado(int $page, int $perPage, array $f
             o.numero_operacion          AS numero_operacion,
             tm.id_tipo_movimiento       AS tipo_movimiento_id,
             tm.nombre                   AS concepto,
+            LOWER(tm.tipo)              AS naturaleza,
             UPPER(tm.moneda)            AS moneda,
             cco.monto                   AS monto,
             cco.comentario              AS comentario,
@@ -193,38 +195,112 @@ public function totalesCostosCombinados(array $f = []): array
             'total_operacion'    => 0.0,
             'total_contenedores' => 0.0,
             'total_general'      => 0.0,
+            // opcional:
+            'total_abonos_operacion'    => 0.0,
+            'total_abonos_contenedores' => 0.0,
         ];
     }
-
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // Total de costos a NIVEL OPERACIÓN
-    $whereOp  = "co.operacion_id = ?";
-    $paramsOp = [$operacionId];
-    if ($soloActivos) {
-        $whereOp .= " AND co.estatus = 1";
-    }
-    $sqlOp = "SELECT COALESCE(SUM(co.monto), 0) AS total
-              FROM costos_operacion co
-              WHERE {$whereOp}";
-    $rowOp = $this->select($sqlOp, $paramsOp);
-    $totalOp = (float)($rowOp['total'] ?? 0);
+    // ---- COSTOS (gasto) a NIVEL OPERACIÓN
+    $sqlOpGasto = "SELECT COALESCE(SUM(co.monto),0) AS total
+                   FROM costos_operacion co
+                   INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+                   WHERE co.operacion_id = ? " . ($soloActivos ? "AND co.estatus=1 " : "") . " AND tm.tipo='gasto'";
+    $rowOpG = $this->select($sqlOpGasto, [$operacionId]);
+    $totalOp = (float)($rowOpG['total'] ?? 0);
 
-    // Total de costos por CONTENEDOR ligados a la operación
-    $sqlCon = "SELECT COALESCE(SUM(cco.monto), 0) AS total
-               FROM costos_contenedor_operacion cco
-               INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
-               WHERE x.operacion_id = ?";
-    // Si más adelante agregas estatus en costos_contenedor_operacion, filtra aquí también.
-    $rowCon = $this->select($sqlCon, [$operacionId]);
-    $totalCon = (float)($rowCon['total'] ?? 0);
+    // ---- COSTOS (gasto) por CONTENEDOR ligados a la operación
+    $sqlConGasto = "SELECT COALESCE(SUM(cco.monto),0) AS total
+                    FROM costos_contenedor_operacion cco
+                    INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
+                    INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+                    WHERE x.operacion_id = ? AND tm.tipo='gasto'";
+    $rowConG = $this->select($sqlConGasto, [$operacionId]);
+    $totalCon = (float)($rowConG['total'] ?? 0);
+
+    // ---- (OPCIONAL) ABONOS planos
+    $sqlOpAbono = "SELECT COALESCE(SUM(co.monto),0) AS total
+                   FROM costos_operacion co
+                   INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+                   WHERE co.operacion_id = ? " . ($soloActivos ? "AND co.estatus=1 " : "") . " AND tm.tipo='abono'";
+    $rowOpA = $this->select($sqlOpAbono, [$operacionId]);
+    $totalAbOp = (float)($rowOpA['total'] ?? 0);
+
+    $sqlConAbono = "SELECT COALESCE(SUM(cco.monto),0) AS total
+                    FROM costos_contenedor_operacion cco
+                    INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
+                    INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+                    WHERE x.operacion_id = ? AND tm.tipo='abono'";
+    $rowConA = $this->select($sqlConAbono, [$operacionId]);
+    $totalAbCon = (float)($rowConA['total'] ?? 0);
 
     return [
-        'total_operacion'    => $totalOp,
-        'total_contenedores' => $totalCon,
+        'total_operacion'    => $totalOp,            // solo gastos
+        'total_contenedores' => $totalCon,           // solo gastos
         'total_general'      => $totalOp + $totalCon,
+        // opcional: te puede servir si lo quieres en el payload
+        'total_abonos_operacion'    => $totalAbOp,
+        'total_abonos_contenedores' => $totalAbCon,
     ];
 }
+public function abonosCombinadosDetallado(array $f = []): array
+{
+    $operacionId = (int)($f['operacion_id'] ?? 0);
+    if ($operacionId <= 0) {
+        return [
+            'operacion'    => ['PESOS' => 0.0, 'DLLS' => 0.0],
+            'contenedores' => ['PESOS' => 0.0, 'DLLS' => 0.0],
+        ];
+    }
+    $soloActivos = (bool)($f['solo_activos'] ?? true);
+
+    // --- Operación por moneda (solo abonos)
+    $sqlOp = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(co.monto),0) AS total
+              FROM costos_operacion co
+              INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+              WHERE co.operacion_id = ? " . ($soloActivos ? "AND co.estatus=1 " : "") . " AND tm.tipo='abono'
+              GROUP BY UPPER(tm.moneda)";
+    $rowsOp = $this->selectAll($sqlOp, [$operacionId]) ?: [];
+    $op = ['PESOS'=>0.0, 'DLLS'=>0.0];
+    foreach ($rowsOp as $r) {
+        $m = strtoupper((string)($r['moneda'] ?? ''));
+        $t = (float)($r['total'] ?? 0);
+        if ($m === 'PESOS') $op['PESOS'] += $t;
+        if ($m === 'DLLS')  $op['DLLS']  += $t;
+    }
+
+    // --- Contenedores por moneda (solo abonos)
+    $sqlCon = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(cco.monto),0) AS total
+               FROM costos_contenedor_operacion cco
+               INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
+               INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+               WHERE x.operacion_id = ? AND tm.tipo='abono'
+               GROUP BY UPPER(tm.moneda)";
+    $rowsCon = $this->selectAll($sqlCon, [$operacionId]) ?: [];
+    $con = ['PESOS'=>0.0, 'DLLS'=>0.0];
+    foreach ($rowsCon as $r) {
+        $m = strtoupper((string)($r['moneda'] ?? ''));
+        $t = (float)($r['total'] ?? 0);
+        if ($m === 'PESOS') $con['PESOS'] += $t;
+        if ($m === 'DLLS')  $con['DLLS']  += $t;
+    }
+
+    return [
+        'operacion'    => $op,
+        'contenedores' => $con,
+    ];
+}
+// En tu Model:
+public function obtenerTipoMovimiento(int $id): ?array {
+  $sql = "SELECT id_tipo_movimiento, UPPER(moneda) AS moneda, LOWER(tipo) AS tipo, nombre
+          FROM tipos_movimiento
+          WHERE id_tipo_movimiento = ? AND estatus = 1
+          LIMIT 1";
+  $row = $this->select($sql, [$id]);
+  return $row ?: null;
+}
+
 public function buscarOperacionesPorTerm(string $term): array
     {
         // Ajusta los nombres de tablas/columnas si en tu esquema difieren
@@ -246,7 +322,7 @@ public function buscarOperacionesPorTerm(string $term): array
         }
     }
 
-    public function totalesCostosCombinadosDetallado(array $f = []): array
+public function totalesCostosCombinadosDetallado(array $f = []): array
 {
     $operacionId = (int)($f['operacion_id'] ?? 0);
     if ($operacionId <= 0) {
@@ -258,14 +334,13 @@ public function buscarOperacionesPorTerm(string $term): array
 
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // --- Operación por moneda ---
+    // --- Operación por moneda (SOLO GASTOS) ---
     $sqlOp = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(co.monto),0) AS total
               FROM costos_operacion co
-              LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
-              WHERE co.operacion_id = ?" . ($soloActivos ? " AND co.estatus = 1" : "") . "
+              INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+              WHERE co.operacion_id = ? " . ($soloActivos ? "AND co.estatus = 1 " : "") . " AND tm.tipo='gasto'
               GROUP BY UPPER(tm.moneda)";
     $rowsOp = $this->selectAll($sqlOp, [$operacionId]) ?: [];
-
     $op = ['PESOS'=>0.0, 'DLLS'=>0.0];
     foreach ($rowsOp as $r) {
         $m = strtoupper((string)($r['moneda'] ?? ''));
@@ -274,15 +349,14 @@ public function buscarOperacionesPorTerm(string $term): array
         if ($m === 'DLLS')  $op['DLLS']  += $t;
     }
 
-    // --- Contenedores por moneda ---
+    // --- Contenedores por moneda (SOLO GASTOS) ---
     $sqlCon = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(cco.monto),0) AS total
                FROM costos_contenedor_operacion cco
-               LEFT JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
-               LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-               WHERE x.operacion_id = ?
+               INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
+               INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+               WHERE x.operacion_id = ? AND tm.tipo='gasto'
                GROUP BY UPPER(tm.moneda)";
     $rowsCon = $this->selectAll($sqlCon, [$operacionId]) ?: [];
-
     $con = ['PESOS'=>0.0, 'DLLS'=>0.0];
     foreach ($rowsCon as $r) {
         $m = strtoupper((string)($r['moneda'] ?? ''));
@@ -296,6 +370,7 @@ public function buscarOperacionesPorTerm(string $term): array
         'contenedores' => $con,
     ];
 }
+
 
 public function obtenerTiposMovimientoActivos(): array
 {

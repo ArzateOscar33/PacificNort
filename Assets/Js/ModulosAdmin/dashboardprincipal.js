@@ -566,65 +566,80 @@ function sma(series, k = 3) {
   return out;
 }
 
-function renderCostosMensuales(rows, currency) {
+ 
+
+function renderCostosVsAbonosMensuales(rows, currency) {
   const canvas = document.getElementById('chartCostos');
   if (!canvas) return;
 
   const labels = Array.isArray(rows) ? rows.map(r => String(r.anio_mes)) : [];
-  const data   = Array.isArray(rows) ? rows.map(r => Number(r.total || r.total_mxn || 0)) : [];
-  const nf     = nfForCurrency(currency);
+  const gastos = Array.isArray(rows) ? rows.map(r => -Math.abs(Number(r.gastos||0))) : []; // negativos
+  const abonos = Array.isArray(rows) ? rows.map(r =>  Math.abs(Number(r.abonos||0))) : []; // positivos
+  const balance = abonos.map((v, i) => v + (gastos[i] || 0)); // abonos + (-gastos)
+  const nf = nfForCurrency(currency);
 
-  // Línea de tendencia (SMA-3)
-  const trend3 = sma(data, 3);
-
-  // Autoscale cómodo para barras
-  const maxVal = data.reduce((m, v) => Math.max(m, v || 0), 0);
-  const suggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.2) : 5;
+  const maxAbs = Math.max(...[...gastos, ...abonos, ...balance].map(v => Math.abs(v)), 0);
+  const suggestedMax = maxAbs > 0 ? Math.ceil(maxAbs * 1.2) : 5;
 
   if (chartCostosRef) { chartCostosRef.destroy(); chartCostosRef = null; }
 
   chartCostosRef = new Chart(canvas, {
-    type: 'bar',
     data: {
       labels,
       datasets: [
         {
-          label: `Total mensual (${currency})`,
-          data,
-          backgroundColor: '#1b2256',
+          type: 'bar',
+          label: `Abonos (${currency})`,
+          data: abonos,
+          backgroundColor: '#59a14f',    // verde sobrio
           borderWidth: 0,
           borderRadius: 6,
+          stack: 'monto',
           yAxisID: 'y'
         },
         {
-          label: `Tendencia 3M (${currency})`,
+          type: 'bar',
+          label: `Gastos (${currency})`,
+          data: gastos,
+          backgroundColor: '#e15759',    // rojo sobrio
+          borderWidth: 0,
+          borderRadius: 6,
+          stack: 'monto',
+          yAxisID: 'y'
+        },
+        {
           type: 'line',
-          data: trend3,
-          borderColor: '#0ea5a3',
+          label: `Balance (${currency})`,
+          data: balance,
+          borderColor: '#0ea5a3',        // tu teal
           pointBackgroundColor: '#0ea5a3',
           pointRadius: 2,
           tension: 0.3,
-          yAxisID: 'y' // misma escala (misma moneda)
+          yAxisID: 'y'
         }
       ]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,  
-      aspectRatio:1.2,
+      maintainAspectRatio: true,
+      aspectRatio: 1.2,
       plugins: {
         legend: { display: true },
         tooltip: {
           callbacks: {
-            label: (item) => ` ${nf.format(Number(item.raw || 0))}`
+            label: (item) => {
+              const v = Number(item.raw || 0);
+              return ` ${nf.format(v)}`;
+            }
           }
         }
       },
       scales: {
-        x: { ticks: { maxRotation: 0, autoSkip: true }, grid: { display: false } },
+        x: { stacked: true, ticks: { maxRotation: 0, autoSkip: true }, grid: { display: false } },
         y: {
-          beginAtZero: true,
-          suggestedMax,
+          stacked: true,
+          suggestedMin: -suggestedMax,
+          suggestedMax:  suggestedMax,
           ticks: { callback: (v) => nf.format(Number(v)) },
           grid: { drawBorder: false }
         }
@@ -632,6 +647,26 @@ function renderCostosMensuales(rows, currency) {
     }
   });
 }
+async function loadCostosVsAbonos() {
+  const moneda = document.getElementById('costosDashboard').value || 'MXN';
+  const tc     = Number(document.getElementById('costosDashboardTipoCambio').value || 17);
+  const url    = `${base_url}dashboard/costos_vs_abonos_mensual?meses=12&moneda=${encodeURIComponent(moneda)}&tc=${encodeURIComponent(tc)}`;
+
+  const res = await fetch(url);
+  if (!res.ok) return;
+  const json = await res.json();
+  if (json.status !== 'ok') return;
+  renderCostosVsAbonosMensuales(json.data, moneda);
+}
+
+// inicial
+document.addEventListener('DOMContentLoaded', () => {
+  loadCostosVsAbonos();
+});
+
+// reactivo
+document.getElementById('costosDashboard').addEventListener('change', loadCostosVsAbonos);
+document.getElementById('costosDashboardTipoCambio').addEventListener('input', loadCostosVsAbonos);
 
 
 /* =========================

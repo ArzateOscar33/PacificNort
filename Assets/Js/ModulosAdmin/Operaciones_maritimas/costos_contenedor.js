@@ -47,7 +47,7 @@ function prettyMonedaCostosContenedor(m){
 function moneyWithSymbolCostosContenedor(monto, moneda){
   const n = Number(monto);
   if (Number.isNaN(n)) return monto;
-  const symbol = (String(moneda).toUpperCase() === "DLLS") ? "US$" : "$";
+  const symbol = (String(moneda).toUpperCase() === "DLLS") ? "$" : "$";
   return `${symbol}${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -160,7 +160,7 @@ function renderTablaCostosContenedor(rows){
 
    rows.forEach(r => {
     const nat = String(r.tipo || '').toUpperCase(); // 'GASTO'|'ABONO'
-    const sign = (nat === 'ABONO') ? '+' : '−';
+    const sign = (nat === 'ABONO') ? '+' : '';
     const cls  = (nat === 'ABONO') ? 'text-success' : 'text-danger';
     const montoFmt = moneyWithSymbolCostosContenedor(r.monto, r.moneda);
 
@@ -178,7 +178,14 @@ function renderTablaCostosContenedor(rows){
       <td>${prettyMonedaCostosContenedor(r.moneda)}</td>
       <td>${ccSafe(r.comentario)}</td>
       <td class="text-nowrap">
-        ...
+        <button class="btn btn-sm btn-outline-secondary me-1" title="Editar"
+                onclick="ccEditarCostoContenedor(${r.id_costo_contenedor})">
+          <i data-feather="edit"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger" title="Eliminar"
+                onclick="ccEliminarCostoContenedor(${r.id_costo_contenedor})">
+          <i data-feather="x"></i>
+        </button>
       </td>
     `;
     tbodyCostosContenedor.appendChild(tr);

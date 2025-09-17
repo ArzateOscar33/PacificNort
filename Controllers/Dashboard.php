@@ -201,6 +201,18 @@ public function timeline()
     echo json_encode(['status'=>'ok','data'=>$data], JSON_UNESCAPED_UNICODE);
     die();
 }
+public function costos_vs_abonos_mensual() {
+  $meses   = isset($_GET['meses']) ? (int)$_GET['meses'] : 12;
+  $moneda  = isset($_GET['moneda']) ? strtoupper($_GET['moneda']) : 'MXN';
+  $tc      = isset($_GET['tc']) ? (float)$_GET['tc'] : 17.00;
+
+  try {
+    $rows = $this->model->costosVsAbonosPorMes($meses, $moneda, $tc);
+    echo json_encode(['status'=>'ok','data'=>$rows]);
+  } catch (Throwable $e) {
+    echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el dataset']);
+  }
+}
 
 
 

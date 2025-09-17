@@ -115,54 +115,60 @@ public function chartPuntualidadEntregasSemana(int $semanas = 8): array
     return $this->selectAll($sql, [$semanas]);
 }
 
-public function costosPorMesMoneda(int $meses = 12, string $monedaDestino = 'MXN', float $tcUsdMxn = 17.00): array
-{
-    // $monedaDestino: 'MXN' o 'USD'
-    // $tcUsdMxn: tipo de cambio elegido por el usuario (MXN por 1 USD)
-    $sql = "
+ public function costosVsAbonosPorMes(
+  int $meses = 12, 
+  string $monedaDestino = 'MXN', 
+  float $tcUsdMxn = 17.00
+): array {
+  // $monedaDestino: 'MXN' | 'USD'
+  // $tcUsdMxn: MXN por 1 USD
+  $sql = "
+    SELECT
+      DATE_FORMAT(mes, '%Y-%m') AS anio_mes,
+      ROUND(SUM(CASE WHEN tipo = 'GASTO' THEN monto_conv ELSE 0 END), 2)  AS gastos,
+      ROUND(SUM(CASE WHEN tipo = 'ABONO' THEN monto_conv ELSE 0 END), 2)  AS abonos
+    FROM (
+      -- --------- Operación ----------
       SELECT
-        DATE_FORMAT(mes, '%Y-%m') AS anio_mes,
-        ROUND(SUM(monto_conv), 2) AS total
-      FROM (
-        -- Costos a nivel operación
-        SELECT
-          DATE_FORMAT(coo.fecha_creacion, '%Y-%m-01') AS mes,
-          CASE
-            WHEN ? = 'MXN' THEN
-              CASE WHEN tm.moneda = 'DLLS'  THEN coo.monto * ?  ELSE coo.monto END
-            ELSE
-              CASE WHEN tm.moneda = 'PESOS' THEN coo.monto / ?  ELSE coo.monto END
-          END AS monto_conv
-        FROM costos_operacion coo
-        JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = coo.tipo_movimiento_id
-        WHERE coo.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
-          -- AND coo.estatus = 1  -- si tienes estatus y quieres filtrar
+        DATE_FORMAT(coo.fecha_creacion, '%Y-%m-01') AS mes,
+        tm.tipo AS tipo,  -- 'GASTO' | 'ABONO'
+        CASE
+          WHEN ? = 'MXN' THEN
+            CASE WHEN tm.moneda = 'DLLS'  THEN coo.monto * ? ELSE coo.monto END
+          ELSE
+            CASE WHEN tm.moneda = 'PESOS' THEN coo.monto / ? ELSE coo.monto END
+        END AS monto_conv
+      FROM costos_operacion coo
+      JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = coo.tipo_movimiento_id
+      WHERE coo.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
+        AND coo.estatus = 1
 
-        UNION ALL
+      UNION ALL
 
-        -- Costos a nivel contenedor
-        SELECT
-          DATE_FORMAT(cco.fecha_creacion, '%Y-%m-01') AS mes,
-          CASE
-            WHEN ? = 'MXN' THEN
-              CASE WHEN tm.moneda = 'DLLS'  THEN cco.monto * ?  ELSE cco.monto END
-            ELSE
-              CASE WHEN tm.moneda = 'PESOS' THEN cco.monto / ?  ELSE cco.monto END
-          END AS monto_conv
-        FROM costos_contenedor_operacion cco
-        JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-        WHERE cco.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
-      ) t
-      GROUP BY anio_mes
-      ORDER BY anio_mes ASC
-    ";
+      -- --------- Contenedor ---------
+      SELECT
+        DATE_FORMAT(cco.fecha_creacion, '%Y-%m-01') AS mes,
+        tm.tipo AS tipo,
+        CASE
+          WHEN ? = 'MXN' THEN
+            CASE WHEN tm.moneda = 'DLLS'  THEN cco.monto * ? ELSE cco.monto END
+          ELSE
+            CASE WHEN tm.moneda = 'PESOS' THEN cco.monto / ? ELSE cco.monto END
+        END AS monto_conv
+      FROM costos_contenedor_operacion cco
+      JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
+      WHERE cco.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
+    ) t
+    GROUP BY anio_mes
+    ORDER BY anio_mes ASC
+  ";
 
-    // orden de parámetros: moneda, tc, tc, meses, moneda, tc, tc, meses
-    return $this->selectAll($sql, [
-      $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses,
-      $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses
-    ]);
+  return $this->selectAll($sql, [
+    $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses,
+    $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses
+  ]);
 }
+
 // Devuelve operaciones activas con su ventana ETD→ETA y llegada real (arribo_sd si existe)
 // $dias: ventana alrededor de hoy para limitar el resultado (ej. 60 días)
 public function timelineETD_ETA(int $dias = 60): array

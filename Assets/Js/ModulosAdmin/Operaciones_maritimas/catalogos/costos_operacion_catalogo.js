@@ -40,6 +40,7 @@
 
   // Cache para conversiones de totales
   let totalesDetalleCacheCostosOperacion = null;
+  let abonosDetalleCacheCostosOperacion  = null;
 
   // ---------- Helpers ----------
   const safeCostosOperacion = (v)=> (v === undefined || v === null) ? "" : v;
@@ -78,19 +79,31 @@
   }
 
   // ---------- Render: tabla ----------
-  function renderTablaCostosOperacion(rows){
-    if (!tbodyCostosOperacionCombined) return;
-    tbodyCostosOperacionCombined.innerHTML = "";
-    if (!Array.isArray(rows) || rows.length===0){ renderVacioCostosOperacion(); return; }
+function renderTablaCostosOperacion(rows){
+  if (!tbodyCostosOperacionCombined) return;
+  tbodyCostosOperacionCombined.innerHTML = "";
+  if (!Array.isArray(rows) || rows.length===0){ renderVacioCostosOperacion(); return; }
 
-    rows.forEach(r=>{
+  rows.forEach(r=>{
     const tr = document.createElement("tr");
     const origen = String(r.origen||"").toUpperCase();
-    const badge  = (origen==="CONTENEDOR")
-        ? `<span class="badge bg-info-subtle text-info">CONTENEDOR</span>`
-        : `<span class="badge bg-primary-subtle text-primary">OPERACIÓN</span>`;
+    const badgeOrigen  = (origen==="CONTENEDOR")
+      ? `<span class="badge bg-info-subtle text-info">CONTENEDOR</span>`
+      : `<span class="badge bg-primary-subtle text-primary">OPERACIÓN</span>`;
 
-    // data-* para usar al editar
+    // NUEVO: naturaleza (gasto|abono)
+    const nat = String(r.naturaleza || "").toUpperCase(); // "GASTO" | "ABONO"
+    const isAbono = (nat === "ABONO");
+    const montoFmt = moneyCostosOperacion(r.monto || 0);
+    const montoCls = isAbono ? "text-success fw-semibold" : "text-danger fw-semibold";
+    const montoConSigno = `${isAbono ? "+" : " "} ${montoFmt}`;
+
+    // (opcional) badge pequeño junto al concepto
+    const badgeNat = nat
+      ? `<span class="badge ${isAbono ? 'bg-success-subtle text-success':'bg-danger-subtle text-danger'} ms-1"> ${nat}</span>`
+      : "";
+
+    // data-* actuales (por si editas desde dataset)
     tr.dataset.origen = origen;
     tr.dataset.rowId  = r.row_id || "";
     tr.dataset.opId   = r.operacion_id || "";
@@ -100,31 +113,30 @@
     tr.dataset.monto  = r.monto || "";
     tr.dataset.coment = r.comentario || "";
 
-    // botones: solo habilitamos Editar para origen OPERACION (contenedor queda deshabilitado por ahora)
-    const canEdit = origen === "OPERACION";
+     
     tr.innerHTML = `
-        <td>${fmtFechaCostosOperacion(r.fecha)}</td>
-        <td>${badge}</td>
-        <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : ""}</td>
-        <td>${safeCostosOperacion(r.concepto||"")}</td>
-        <td>${prettyMonedaCostosOperacion(r.moneda||"")}</td>
-        <td class="text-end">${moneyCostosOperacion(r.monto||0)}</td>
-        <td>${safeCostosOperacion(r.comentario||"")}</td>
-        <td class="text-center">
+      <td>${fmtFechaCostosOperacion(r.fecha)}</td>
+      <td>${badgeOrigen}</td>
+      <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : ""}</td>
+      <td>${safeCostosOperacion(r.concepto||"")}${badgeNat}</td>
+      <td>${prettyMonedaCostosOperacion(r.moneda||"")}</td>
+      <td class="text-end ${montoCls}">${montoConSigno}</td>
+      <td>${safeCostosOperacion(r.comentario||"")}</td>
+      <td class="text-center">
         <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Editar" ${canEdit?"":"disabled"}>
+          <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Editar" ${origen==="OPERACION"?"":"disabled"}>
             <i data-feather="edit-2"></i>
-            </button>
-            <button class="btn btn-outline-danger btnEliminarCostoOperacion" title="Eliminar" ${canEdit?"":"disabled"}>
+          </button>
+          <button class="btn btn-outline-danger btnEliminarCostoOperacion" title="Eliminar" ${origen==="OPERACION"?"":"disabled"}>
             <i data-feather="trash-2"></i>
-            </button>
+          </button>
         </div>
-        </td>`;
+      </td>`;
     tbodyCostosOperacionCombined.appendChild(tr);
-    });
-    window.feather?.replace?.();
+  });
+  window.feather?.replace?.();
+}
 
-  }
 
   // ---------- Render: totales con conversión ----------
   function renderTotalesCostosOperacion(totales, totalesDetalle){
@@ -172,6 +184,41 @@
     if (costosOperacionTotalContenedores) costosOperacionTotalContenedores.textContent = formatMoneyGenericCostosOperacion(totalConConv, symbol);
     if (costosOperacionTotalGeneral)      costosOperacionTotalGeneral.textContent      = formatMoneyGenericCostosOperacion(totalGenConv, symbol);
   }
+  function computeViewTotalsCostosOperacion(detCostos, detAbonos){
+  // detCostos: {operacion:{PESOS,DLLS}, contenedores:{PESOS,DLLS}}
+  // detAbonos: {operacion:{PESOS,DLLS}, contenedores:{PESOS,DLLS}}
+  const vista = (costosOperacionMonedaVistaSel?.value || "MXN").toUpperCase();
+  let tc = parseFloat(costosOperacionTipoCambioInp?.value || "0"); if (!Number.isFinite(tc) || tc<=0) tc = 1;
+
+  const c = detCostos || {operacion:{PESOS:0,DLLS:0}, contenedores:{PESOS:0,DLLS:0}};
+  const a = detAbonos || {operacion:{PESOS:0,DLLS:0}, contenedores:{PESOS:0,DLLS:0}};
+
+  const opPesosC  = Number(c.operacion?.PESOS||0),  opDllsC  = Number(c.operacion?.DLLS||0);
+  const conPesosC = Number(c.contenedores?.PESOS||0), conDllsC = Number(c.contenedores?.DLLS||0);
+
+  const opPesosA  = Number(a.operacion?.PESOS||0),  opDllsA  = Number(a.operacion?.DLLS||0);
+  const conPesosA = Number(a.contenedores?.PESOS||0), conDllsA = Number(a.contenedores?.DLLS||0);
+
+  let opCost=0, contCost=0, opAbono=0, contAbono=0, symbol="$";
+
+  if (vista === "MXN"){
+    symbol = "$";
+    opCost     = opPesosC  + (opDllsC  * tc);
+    contCost   = conPesosC + (conDllsC * tc);
+    opAbono    = opPesosA  + (opDllsA  * tc);
+    contAbono  = conPesosA + (conDllsA * tc);
+  } else {
+    symbol = "US$";
+    opCost     = opDllsC  + (opPesosC  / tc);
+    contCost   = conDllsC + (conPesosC / tc);
+    opAbono    = opDllsA  + (opPesosA  / tc);
+    contAbono  = conDllsA + (conPesosA / tc);
+  }
+
+  const fmt = (n) => symbol + " " + Number(n).toLocaleString("es-MX",{minimumFractionDigits:2, maximumFractionDigits:2});
+  return { opCost, contCost, opAbono, contAbono, fmt };
+}
+
 
   // ---------- Render: paginación + meta ----------
   function renderPaginacionCostosOperacion(meta){
@@ -252,6 +299,7 @@
     currentXHRCostosOperacion.open("GET", url, true);
     currentXHRCostosOperacion.send();
     currentXHRCostosOperacion.onreadystatechange = function(){
+      
       if (this.readyState!==4) return;
       if (this.status!==200){ console.error(this.responseText); renderErrorCostosOperacion("No se pudo cargar la información."); return; }
 
@@ -272,6 +320,14 @@
       renderPaginacionCostosOperacion(meta);
       renderMetaCostosOperacion(meta);
       renderTotalesCostosOperacion(totales, totalesDetalle);
+    const abonosDetalle   = payload.abonos_detalle || { operacion:{PESOS:0,DLLS:0}, contenedores:{PESOS:0,DLLS:0} };
+
+abonosDetalleCacheCostosOperacion = abonosDetalle; // cacheamos
+const { opCost, contCost, opAbono, contAbono, fmt } =
+  computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
+
+renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
+    
     };
   }
 
@@ -298,12 +354,19 @@
   costosOperacionFiltroOrigen?.addEventListener("change",   ()=>listarCostosOperacion(1));
 
   // Recalcular tarjetas al cambiar vista de moneda o tipo de cambio
-  costosOperacionMonedaVistaSel?.addEventListener("change", ()=>{
-    renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
-  });
-  costosOperacionTipoCambioInp?.addEventListener("input", ()=>{
-    renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
-  });
+costosOperacionMonedaVistaSel?.addEventListener("change", ()=>{
+  renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
+  const { opCost, contCost, opAbono, contAbono, fmt } =
+    computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
+  renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
+});
+
+costosOperacionTipoCambioInp?.addEventListener("input", ()=>{
+  renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
+  const { opCost, contCost, opAbono, contAbono, fmt } =
+    computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
+  renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
+});
 
   // ---------- Autocomplete de Operación ----------
   function buscarOperacionesSugerenciasCostosOperacion(term){
@@ -739,3 +802,45 @@ window.openModalEditarCostosOperacion = openModalEditarCostosOperacion;
       soloVisibles: true
     });
   });
+  // Llama esto cuando refresques los totales
+function renderCostosAbonosCards({ 
+  opCost = 0, opAbono = 0, 
+  contCost = 0, contAbono = 0, 
+  fmt = (n) => `$ ${Number(n).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})}`
+} = {}) {
+  // Operación
+  const opBalance = (opAbono - opCost);
+  document.getElementById('costosOperacionTotalOperacion').textContent = fmt(opCost);
+  document.getElementById('costosOperacionAbonosOperacion').textContent = fmt(opAbono);
+  setBadgeValue('costosOperacionBalanceOperacion', opBalance, fmt);
+
+  // Contenedores
+  const contBalance = (contAbono - contCost);
+  document.getElementById('costosOperacionTotalContenedores').textContent = fmt(contCost);
+  document.getElementById('costosOperacionAbonosContenedores').textContent = fmt(contAbono);
+  setBadgeValue('costosOperacionBalanceContenedores', contBalance, fmt);
+
+  // General
+  const totalAbonos = opAbono + contAbono;
+  const totalCostos = opCost + contCost;
+  const totalBalance = totalAbonos - totalCostos;
+
+  document.getElementById('costosOperacionTotalGeneral').textContent = fmt(totalBalance);
+  document.getElementById('costosOperacionTotalAbonosGeneral').textContent = fmt(totalAbonos);
+  document.getElementById('costosOperacionTotalCostosGeneral').textContent = fmt(totalCostos);
+}
+
+// Badge con color dinámico (verde si >0, gris si 0, rojo si <0)
+function setBadgeValue(id, val, fmt){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = fmt(val);
+  el.classList.remove('bg-light','text-dark','bg-danger','bg-success','bg-secondary');
+  if (val > 0) {
+    el.classList.add('bg-success');
+  } else if (val < 0) {
+    el.classList.add('bg-danger');
+  } else {
+    el.classList.add('bg-secondary');
+  }
+}

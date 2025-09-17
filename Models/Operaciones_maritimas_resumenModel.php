@@ -220,6 +220,7 @@ public function getCostosTotalesContenedor(int $operacionId, int $idFisico): flo
         ON c.contenedor_operacion_id = co.id_contenedor
       WHERE co.operacion_id = ?
         AND co.id_fisico    = ?
+        AND tm.tipo = 'GASTO'
     ";
     $row = $this->select($sql, [$operacionId, $idFisico]);
     return isset($row['total']) ? (float)$row['total'] : 0.0;
@@ -243,6 +244,7 @@ public function getCostosDesglosadosContenedor(int $operacionId, int $idFisico):
       ON tm.id_tipo_movimiento = c.tipo_movimiento_id
     WHERE co.operacion_id = ?
       AND co.id_fisico    = ?
+      AND tm.tipo = 'GASTO' 
     ORDER BY c.fecha_creacion ASC;
 
     ";
@@ -256,6 +258,7 @@ public function getCostosTotalesOperacion(int $operacionId): float
         FROM costos_operacion
         WHERE operacion_id = ?
           AND estatus = 1
+          AND tm.tipo = 'GASTO' 
     ";
     $row = $this->select($sql, [$operacionId]);
     return isset($row['total']) ? (float)$row['total'] : 0.0;
@@ -276,6 +279,7 @@ public function getCostosDesglosadosOperacion(int $operacionId): array
                ON tm.id_tipo_movimiento = co.tipo_movimiento_id
         WHERE co.operacion_id = ?
           AND co.estatus = 1
+          AND tm.tipo = 'GASTO'
         ORDER BY co.fecha_creacion ASC
     ";
     $rows = $this->selectAll($sql, [$operacionId]);

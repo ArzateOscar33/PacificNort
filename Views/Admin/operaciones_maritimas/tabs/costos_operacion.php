@@ -94,39 +94,84 @@
         </div>
 
       </div>
-      <!-- Totales -->
-      <div class="row g-3 mb-4" id="costosOperacionCards">
-        <div class="col-12 col-md-4">
-          <div class="bg-primary text-white p-3 rounded shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center">
-              <h6 class="mb-0 text-uppercase small">Total operación</h6>
-              <i data-feather="dollar-sign"></i>
-            </div>
-            <div class="mt-2 h3 mb-0" id="costosOperacionTotalOperacion">$ 0.00</div>
-            <small class="opacity-75">Costos registrados a la operación</small>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="bg-info text-dark p-3 rounded shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center">
-              <h6 class="mb-0 text-uppercase small">Total contenedores</h6>
-              <i data-feather="box"></i>
-            </div>
-            <div class="mt-2 h3 mb-0" id="costosOperacionTotalContenedores">$ 0.00</div>
-            <small class="text-dark-50">Suma de costos por contenedor</small>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="bg-success text-white p-3 rounded shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center">
-              <h6 class="mb-0 text-uppercase small">Total general</h6>
-              <i data-feather="trending-up"></i>
-            </div>
-            <div class="mt-2 h3 mb-0" id="costosOperacionTotalGeneral">$ 0.00</div>
-            <small class="opacity-75">Operación + contenedores</small>
-          </div>
-        </div>
+<!-- Totales -->
+<div class="row g-3 mb-4" id="costosOperacionCards">
+  <!-- 1) Operación -->
+  <div class="col-12 col-md-4">
+    <div class="bg-primary text-white p-3 rounded shadow-sm h-100">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 text-uppercase small">Total operación</h6>
+        <i data-feather="dollar-sign"></i>
       </div>
+
+      <!-- Monto principal: Costos de la Operación -->
+      <div class="mt-2 h3 mb-1" id="costosOperacionTotalOperacion">$ 0.00</div>
+      <small class="opacity-75 d-block mb-2">Costos registrados a la operación</small>
+
+      <!-- Abonos y Balance (líneas secundarias) -->
+      <div class="d-flex justify-content-between small">
+        <span class="opacity-75">Abonos</span>
+        <strong id="costosOperacionAbonosOperacion">$ 0.00</strong>
+      </div>
+      <div class="d-flex justify-content-between small">
+        <span class="opacity-75">Balance</span>
+        <span>
+          <span id="costosOperacionBalanceOperacion" class="badge bg-light text-dark">$ 0.00</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2) Contenedores -->
+  <div class="col-12 col-md-4">
+    <div class="bg-info text-dark p-3 rounded shadow-sm h-100">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 text-uppercase small">Total contenedores</h6>
+        <i data-feather="box"></i>
+      </div>
+
+      <!-- Monto principal: Costos por Contenedores -->
+      <div class="mt-2 h3 mb-1" id="costosOperacionTotalContenedores">$ 0.00</div>
+      <small class="text-dark-50 d-block mb-2">Suma de costos por contenedor</small>
+
+      <!-- Abonos y Balance -->
+      <div class="d-flex justify-content-between small">
+        <span class="text-dark-50">Abonos</span>
+        <strong id="costosOperacionAbonosContenedores">$ 0.00</strong>
+      </div>
+      <div class="d-flex justify-content-between small">
+        <span class="text-dark-50">Balance</span>
+        <span>
+          <span id="costosOperacionBalanceContenedores" class="badge bg-dark-subtle">$ 0.00</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3) Total General -->
+  <div class="col-12 col-md-4">
+    <div class="bg-success text-white p-3 rounded shadow-sm h-100">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 text-uppercase small">Total general</h6>
+        <i data-feather="trending-up"></i>
+      </div>
+
+      <!-- Monto principal: Balance Neto (Abonos - Costos) -->
+      <div class="mt-2 h3 mb-1" id="costosOperacionTotalGeneral">$ 0.00</div>
+      <small class="opacity-75 d-block mb-2">Ganancia neta</small>
+
+      <!-- Subdesglose: Abonos y Costos totales -->
+      <div class="d-flex justify-content-between small">
+        <span class="opacity-75">Abonos totales</span>
+        <strong id="costosOperacionTotalAbonosGeneral">$ 0.00</strong>
+      </div>
+      <div class="d-flex justify-content-between small">
+        <span class="opacity-75">Costos totales</span>
+        <strong id="costosOperacionTotalCostosGeneral">$ 0.00</strong>
+      </div>
+    </div>
+  </div>
+</div>
 
       <!-- Tabla unificada (operación + contenedores) -->
       <div class="table-responsive">

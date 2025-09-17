@@ -59,8 +59,9 @@ class Operaciones_maritimas_costos_operacion extends Controller
             'tipo_movimiento_id' => $tipoId,
             'origen'             => $origen,
             'solo_activos'       => $soloActivos,
+            
         ];
-
+        $abonosDetalle = $this->model->abonosCombinadosDetallado($filtros);
         try {
             $totales        = $this->model->totalesCostosCombinados($filtros);
             $totalesDetalle = $this->model->totalesCostosCombinadosDetallado($filtros);
@@ -89,6 +90,10 @@ class Operaciones_maritimas_costos_operacion extends Controller
                     'operacion'    => ['PESOS' => 0.0, 'DLLS' => 0.0],
                     'contenedores' => ['PESOS' => 0.0, 'DLLS' => 0.0],
                 ],
+                  'abonos_detalle' => is_array($abonosDetalle) ? $abonosDetalle : [
+    'operacion'    => ['PESOS' => 0.0, 'DLLS' => 0.0],
+    'contenedores' => ['PESOS' => 0.0, 'DLLS' => 0.0],
+  ],
                 'data'    => is_array($rows) ? $rows : []
             ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
@@ -122,80 +127,90 @@ class Operaciones_maritimas_costos_operacion extends Controller
         }
     }
 
-    public function guardar()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
+public function guardar()
+{
+  header('Content-Type: application/json; charset=UTF-8');
 
-        try {
-            $rowId        = (int)($_POST['row_id'] ?? 0);                // si >0 => actualizar
-            $operacionId  = (int)($_POST['operacion_id'] ?? 0);
-            $tipoId       = (int)($_POST['tipo_movimiento_id'] ?? 0);
-            $monto        = (float)($_POST['monto'] ?? 0);
-            $moneda       = strtoupper(trim((string)($_POST['moneda'] ?? '')));
-            $comentario   = trim((string)($_POST['comentario'] ?? ''));
+  try {
+    $rowId        = (int)($_POST['row_id'] ?? 0);
+    $operacionId  = (int)($_POST['operacion_id'] ?? 0);
+    $tipoId       = (int)($_POST['tipo_movimiento_id'] ?? 0);
+    $monto        = (float)($_POST['monto'] ?? 0);
+    // $moneda ya NO lo tomamos del POST; lo derivamos del catálogo:
+    $comentario   = trim((string)($_POST['comentario'] ?? ''));
 
-            if ($operacionId <= 0 && $rowId <= 0) { echo json_encode(['status'=>'warning','message'=>'Falta operación']); return; }
-            if ($tipoId      <= 0) { echo json_encode(['status'=>'warning','message'=>'Selecciona un tipo de costo']); return; }
-            if ($monto       <= 0) { echo json_encode(['status'=>'warning','message'=>'Monto inválido']); return; }
-            if ($moneda !== 'PESOS' && $moneda !== 'DLLS'){
-                echo json_encode(['status'=>'warning','message'=>'Moneda inválida']); return;
-            }
+    if ($operacionId <= 0 && $rowId <= 0) { echo json_encode(['status'=>'warning','message'=>'Falta operación']); return; }
+    if ($tipoId      <= 0) { echo json_encode(['status'=>'warning','message'=>'Selecciona un tipo de movimiento']); return; }
+    if ($monto       <= 0) { echo json_encode(['status'=>'warning','message'=>'Monto inválido']); return; }
 
-            if ($rowId > 0){
-                // === ACTUALIZAR ===
-                $prev = $this->model->obtenerCostoOperacion($rowId); // snapshot para log
-                $opIdForLog = $operacionId > 0 ? $operacionId : (int)($prev['operacion_id'] ?? 0);
+    // 🟢 Consulta el tipo de movimiento para obtener moneda y si es gasto|abono:
+    $tm = $this->model->obtenerTipoMovimiento($tipoId);
+    if (!$tm) { echo json_encode(['status'=>'warning','message'=>'Tipo de movimiento inválido']); return; }
 
-                $ok = $this->model->actualizarCostoOperacion($rowId, [
-                    'tipo_movimiento_id' => $tipoId,
-                    'monto'              => $monto,
-                    'moneda'             => $moneda,
-                    'comentario'         => $comentario,
-                ]);
-                if (!$ok){ echo json_encode(['status'=>'error','message'=>'No se actualizó el registro']); return; }
-
-                // LOG
-                $desc = $this->makeDesc('Costo de operación actualizado', [
-                    'costo_id'  => $rowId,
-                    'tipo_id'   => $tipoId,
-                    'monto'     => $monto,
-                    'moneda'    => $moneda,
-                    'coment'    => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
-                ]);
-                $this->logOp($opIdForLog, 'actualizacion', $desc);
-
-                echo json_encode(['status'=>'success','message'=>'Actualizado']); return;
-
-            } else {
-                // === CREAR ===
-                if ($operacionId <= 0){ echo json_encode(['status'=>'warning','message'=>'Falta operación']); return; }
-
-                $newId = $this->model->insertarCostoOperacion([
-                    'operacion_id'       => $operacionId,
-                    'tipo_movimiento_id' => $tipoId,
-                    'monto'              => $monto,
-                    'moneda'             => $moneda,
-                    'comentario'         => $comentario,
-                ]);
-                if ($newId <= 0){ echo json_encode(['status'=>'error','message'=>'No se creó el registro']); return; }
-
-                // LOG
-                $desc = $this->makeDesc('Costo de operación creado', [
-                    'costo_id'  => $newId,
-                    'tipo_id'   => $tipoId,
-                    'monto'     => $monto,
-                    'moneda'    => $moneda,
-                    'coment'    => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
-                ]);
-                $this->logOp($operacionId, 'creacion', $desc);
-
-                echo json_encode(['status'=>'success','message'=>'Creado','id'=>$newId]); return;
-            }
-        } catch (\Throwable $e) {
-            http_response_code(500);
-            echo json_encode(['status'=>'error','message'=>'Error al guardar: '.$e->getMessage()]);
-        }
+    $monedaCat = strtoupper((string)($tm['moneda'] ?? ''));
+    $tipoDinero = strtolower((string)($tm['tipo'] ?? '')); // 'gasto' | 'abono'
+    if ($monedaCat !== 'PESOS' && $monedaCat !== 'DLLS') {
+      echo json_encode(['status'=>'warning','message'=>'Moneda del tipo de movimiento inválida']); return;
     }
+
+    if ($rowId > 0){
+      // === ACTUALIZAR ===
+      $prev = $this->model->obtenerCostoOperacion($rowId);
+      $opIdForLog = $operacionId > 0 ? $operacionId : (int)($prev['operacion_id'] ?? 0);
+
+      $ok = $this->model->actualizarCostoOperacion($rowId, [
+        'tipo_movimiento_id' => $tipoId,
+        'monto'              => $monto,
+        // OJO: en tu modelo no se actualiza 'moneda' porque se deriva del tipo; no se guarda aquí
+        'comentario'         => $comentario,
+      ]);
+      if (!$ok){ echo json_encode(['status'=>'error','message'=>'No se actualizó el registro']); return; }
+
+      // LOG (usa “Movimiento” y agrega si fue gasto/abono)
+      $desc = $this->makeDesc('Movimiento de operación actualizado', [
+        'costo_id'   => $rowId,
+        'tipo_id'    => $tipoId,
+        'tipo'       => $tipoDinero,     // gasto|abono
+        'monto'      => $monto,
+        'moneda'     => $monedaCat,
+        'coment'     => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
+      ]);
+      $this->logOp($opIdForLog, 'actualizacion', $desc);
+
+      echo json_encode(['status'=>'success','message'=>'Actualizado']); return;
+
+    } else {
+      // === CREAR ===
+      if ($operacionId <= 0){ echo json_encode(['status'=>'warning','message'=>'Falta operación']); return; }
+
+      $newId = $this->model->insertarCostoOperacion([
+        'operacion_id'       => $operacionId,
+        'tipo_movimiento_id' => $tipoId,
+        'monto'              => $monto,
+        // moneda no se guarda en esa tabla; la infieres siempre de tipos_movimiento
+        'comentario'         => $comentario,
+      ]);
+      if ($newId <= 0){ echo json_encode(['status'=>'error','message'=>'No se creó el registro']); return; }
+
+      // LOG (usa “Movimiento” y agrega si fue gasto/abono)
+      $desc = $this->makeDesc('Movimiento de operación creado', [
+        'costo_id'   => $newId,
+        'tipo_id'    => $tipoId,
+        'tipo'       => $tipoDinero,
+        'monto'      => $monto,
+        'moneda'     => $monedaCat,
+        'coment'     => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
+      ]);
+      $this->logOp($operacionId, 'creacion', $desc);
+
+      echo json_encode(['status'=>'success','message'=>'Creado','id'=>$newId]); return;
+    }
+  } catch (\Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['status'=>'error','message'=>'Error al guardar: '.$e->getMessage()]);
+  }
+}
+
 
     // (Opcional) para prefilling exacto desde BD si no quieres usar dataset del <tr>
     public function obtenerUno()
