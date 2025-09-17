@@ -159,7 +159,7 @@ function renderTablaCostosContenedor(rows){
   }
 
    rows.forEach(r => {
-    const nat = String(r.tipo || '').toUpperCase(); // 'GASTO'|'ABONO'
+    const nat = String(r.tipo || r.naturaleza || '').toUpperCase();
     const sign = (nat === 'ABONO') ? '+' : '';
     const cls  = (nat === 'ABONO') ? 'text-success' : 'text-danger';
     const montoFmt = moneyWithSymbolCostosContenedor(r.monto, r.moneda);

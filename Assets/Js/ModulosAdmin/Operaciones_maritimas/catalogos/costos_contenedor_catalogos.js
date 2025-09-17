@@ -3,7 +3,7 @@
 //   Catálogo para filtro: Tipos de movimiento
 // ============================================
 function cargarTiposMovimientoFiltroCostosContenedor(){
-  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?solo_gastos=1&categoria=Terrestre`;
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?&categoria=Terrestre`;
 
   const http = new XMLHttpRequest();
   http.open("GET", url, true);
@@ -163,7 +163,7 @@ ccBtnNuevo?.addEventListener("click", () => {
 function ccCargarTiposMovimiento() {
   if (ccXHR_Tipos && ccXHR_Tipos.readyState !== 4) ccXHR_Tipos.abort();
 
-  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?solo_gastos=1&categoria=Terrestre`; 
+  const url = `${base_url}Operaciones_maritimas_costos_Contenedor/catalogoTiposMovimiento?categoria=Terrestre`;
   ccXHR_Tipos = new XMLHttpRequest();
   ccXHR_Tipos.open("GET", url, true);
   ccXHR_Tipos.send();
@@ -175,33 +175,38 @@ function ccCargarTiposMovimiento() {
     try { data = JSON.parse(this.responseText); }
     catch { console.error("JSON inválido (tipos):", this.responseText); return; }
 
-    // Llena select y cache
     if (ccSelTipoCosto) ccSelTipoCosto.innerHTML = `<option value="">Seleccione un tipo</option>`;
     for (const k in ccTiposCache) delete ccTiposCache[k];
 
     (data || []).forEach((t) => {
       if (!t) return;
-      const id  = parseInt(t.id_tipo_movimiento ?? t.id, 10);
-      const est = String(t.estatus ?? "1");
-      const mon = String(t.moneda ?? "").toUpperCase();
+      const id   = parseInt(t.id_tipo_movimiento ?? t.id, 10);
+      const est  = String(t.estatus ?? "1");
+      const mon  = String(t.moneda ?? "").toUpperCase();
+      const tipo = String(t.tipo ?? t.naturaleza ?? "").toUpperCase(); // <-- aquí
+
       if (!id || est === "0") return;
 
       ccTiposCache[id] = {
         id_tipo_movimiento: id,
         nombre: String(t.nombre ?? ""),
         moneda: (mon === "DLLS" ? "DLLS" : "PESOS"),
+        tipo,             // <-- guarda el tipo
         estatus: est
       };
 
       if (ccSelTipoCosto) {
         const opt = document.createElement("option");
         opt.value = String(id);
-        opt.textContent = ccTiposCache[id].nombre;
+        opt.textContent = `${ccTiposCache[id].nombre}${tipo ? ` (${tipo})` : ""}`; // <-- muestra (GASTO/ABONO)
+        opt.dataset.moneda = ccTiposCache[id].moneda;
+        opt.dataset.tipo   = tipo;
         ccSelTipoCosto.appendChild(opt);
       }
     });
   };
 }
+
 
 // Al cambiar el tipo → auto-moneda (cc* - REEMPLAZAR ESTE LISTENER)
 ccSelTipoCosto?.addEventListener("change", () => {

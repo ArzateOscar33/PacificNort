@@ -194,13 +194,23 @@ public function catalogoTiposMovimiento()
                 'coment'      => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
             ]);
             $this->logOp($opId, 'creacion', $desc);
-
-            echo json_encode([
+            if(strtoupper($tm['tipo'] ?? '') === 'ABONO') {
+                echo json_encode([
+                'status' => 'success',
+                'msg'    => 'Abono registrado correctamente',
+                'id'     => (int)$newId,
+                'data'   => $row
+            ], JSON_UNESCAPED_UNICODE);
+            }
+            else {
+                echo json_encode([
                 'status' => 'success',
                 'msg'    => 'Costo registrado correctamente',
                 'id'     => (int)$newId,
                 'data'   => $row
             ], JSON_UNESCAPED_UNICODE);
+        }
+
 
         } catch (\Throwable $e) {
             http_response_code(500);
@@ -250,7 +260,7 @@ public function catalogoTiposMovimiento()
 
             $tm = $this->model->obtenerTipoMovimiento($tipoMovId);
             if (!$tm || (int)($tm['estatus'] ?? 0) !== 1) { echo json_encode(['status'=>'warning','msg'=>'El tipo de costo no existe o está inactivo']); return; }
-            if (strtoupper($tm['tipo'] ?? '') !== 'GASTO') { echo json_encode(['status'=>'warning','msg'=>'El tipo de costo debe ser GASTO']); return; }
+            if (strtoupper($tm['tipo'] ?? '') !== 'GASTO') { echo json_encode(['status'=>'success','msg'=>'Abono Actualizado']); return; }
 
             $idTerrestre = $this->model->obtenerTipoOperacionIdPorNombre('Terrestre');
             if ($idTerrestre && (int)($tm['tipo_operacion_id'] ?? 0) !== (int)$idTerrestre) {
