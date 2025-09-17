@@ -129,6 +129,42 @@ function resetModalOperacion(mode = 'create'){
     else btnGuardarOp?.setAttribute('disabled','disabled');
   }
 om_setContenedoresReadonly(false);
+
+  // ---------- AÑADIR AL FINAL DE resetModalOperacion ----------
+  // Puerto SIEMPRE bloqueado (regla)
+  if (selPuerto) {
+    selPuerto.setAttribute('disabled','disabled');
+    selPuerto.classList.add('bg-light');
+  }
+
+  if (mode === 'edit') {
+    // Bloqueos propios de edición
+    if (selSubtipoEd) {
+      selSubtipoEd.setAttribute('disabled','disabled');
+      selSubtipoEd.classList.add('bg-light');
+    }
+    if (inpNumeroOp) {
+      inpNumeroOp.setAttribute('readonly','readonly');
+      inpNumeroOp.classList.add('bg-light');
+    }
+    om_setContenedoresReadonly(true);
+    // Si bloqueas algo más en edición, hazlo aquí…
+  } else {
+    // Modo CREAR: todo desbloqueado excepto puerto
+    if (selSubtipoEd) {
+      selSubtipoEd.removeAttribute('disabled');
+      selSubtipoEd.classList.remove('bg-light');
+    }
+    if (inpNumeroOp) {
+      // Sigue en auto (readonly) como ya tienes, pero quitamos “visual” si no lo quieres
+      inpNumeroOp.setAttribute('readonly','readonly');
+      inpNumeroOp.classList.remove('bg-light');
+    }
+    if (selNavieraEd)   selNavieraEd.removeAttribute('disabled');
+    if (selForwarderEd) selForwarderEd.removeAttribute('disabled');
+    om_setContenedoresReadonly(false);
+  }
+
 }
 
 // ========== 2) Al pulsar “Nueva Operación”: limpiar SIEMPRE antes de mostrar ==========

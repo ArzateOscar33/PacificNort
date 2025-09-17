@@ -117,7 +117,7 @@ function renderTablaCostosOperacion(rows){
     tr.innerHTML = `
       <td>${fmtFechaCostosOperacion(r.fecha)}</td>
       <td>${badgeOrigen}</td>
-      <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : ""}</td>
+      <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : "Pertenece a Operacion"}</td>
       <td>${safeCostosOperacion(r.concepto||"")}${badgeNat}</td>
       <td>${prettyMonedaCostosOperacion(r.moneda||"")}</td>
       <td class="text-end ${montoCls}">${montoConSigno}</td>
