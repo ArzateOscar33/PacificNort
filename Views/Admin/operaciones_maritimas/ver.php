@@ -53,7 +53,7 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
             <?php include 'tabs/operaciones.php'; ?>
         </div>
         <div class="tab-pane fade" id="contenedores" role="tabpanel" aria-labelledby="contenedores-tab">
-            <?php include 'tabs/contenedores.php'; ?>
+            <?php include 'tabs/ferros.php'; ?>
         </div>
         <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
             <?php include 'tabs/costos.php'; ?>
@@ -96,8 +96,8 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
 </script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/operaciones_maritimas_registrar_operaciones.js">
 </script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/contenedores_operacion.js">
-</script>
+<!--<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/contenedores_operacion.js">
+</script> -->
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/costos_contenedor.js">
 </script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_contenedor_catalogos.js">

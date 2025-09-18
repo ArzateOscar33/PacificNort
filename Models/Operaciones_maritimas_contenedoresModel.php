@@ -366,9 +366,9 @@ public function existsContenedorFisicoOperacion(int $operacion_id, int $id_fisic
         ?int $bultos = null,
         ?float $peso = null
     ) {
-        $sql = "INSERT INTO contenedores_operacion (operacion_id, id_fisico, cliente_id, bultos, peso)
+        $sql = "INSERT INTO contenedores_operacion (operacion_id, id_fisico, cliente_id, bultos, )
                 VALUES (?, ?, ?, ?, ?)";
-        $datos = [$operacion_id, $id_fisico, $cliente_id, $bultos, $peso];
+        $datos = [$operacion_id, $id_fisico, $cliente_id, $bultos, ];
         return $this->insertar($sql, $datos);
     }
 
