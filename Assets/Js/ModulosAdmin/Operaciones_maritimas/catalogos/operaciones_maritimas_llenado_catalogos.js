@@ -850,6 +850,8 @@ if (inpNumeroOp) {
           const row = addRow();
           row.querySelector('.contenedor-id').value    = c.id_contenedor_maritimo || '';
           row.querySelector('.contenedor-input').value = c.numero_contenedor || '';
+          const inpBul = row.querySelector('.contenedor-bultos');
+          if (inpBul) inpBul.value = (c.bultos ?? '')
         });
       }
       om_setContenedoresReadonly(true);
@@ -891,6 +893,7 @@ function actualizarOperacion(){
     fd.append('forwarder_id',         selForwarderEd?.value || '');
     fd.append('shipper_id',           selShipper?.value || '');
     fd.append('notas', (txtNotas?.value || '').trim());
+    fd.append('contenedores', JSON.stringify(collectContenedores())); 
 
     const x = new XMLHttpRequest();
     x.open('POST', base_url + 'Operaciones_maritimas/actualizar', true);
@@ -984,4 +987,11 @@ inpFechaFin?.addEventListener("change", () => {
 });
 
 
- 
+ repeater?.addEventListener('input', (e) => {
+  const el = e.target.closest('.contenedor-bultos');
+  if (!el) return;
+  const val = el.value.trim();
+  if (val !== '' && (!/^\d+$/.test(val) || Number(val) < 0)) {
+    el.value = '';
+  }
+});

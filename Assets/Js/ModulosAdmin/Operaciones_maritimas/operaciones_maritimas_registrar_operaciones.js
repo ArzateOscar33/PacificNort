@@ -4,7 +4,7 @@ const btnSave  = document.getElementById('btnGuardarOperacion');
 //const modalEl  = document.getElementById('modalOperacionMaritima');
 const modal    = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
 const inpBL = document.getElementById('numeroBL');
- // ASCII estricto (A–Z, a–z, 0–9). Si quisieras permitir espacios: /[^A-Za-z0-9 ]/g
+ // ASCII estricto (A–Z, a–z, 0–9).
 const REGEX_ASCII_BL = /[^A-Za-z0-9]/g;
 function limpiarBL() {
   if (!inpBL) return;
@@ -68,7 +68,8 @@ function collectContenedores(){
   repeater.querySelectorAll('.contenedor-item').forEach(item => {
     const id  = valStr(item.querySelector('.contenedor-id')?.value || '');
     const num = valStr(item.querySelector('.contenedor-input')?.value || '');
-    if (id !== '' || num !== '') out.push({ id: id || 0, numero: num });
+    const bultosV = (item.querySelector('.contenedor-bultos')?.value || '').trim();
+    if (id !== '' || num !== '') out.push({ id: id || 0, numero: num , bultos: bultosV === '' ? null : Number(bultosV)});
   });
   return out;
 }

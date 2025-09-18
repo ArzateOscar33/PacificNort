@@ -156,7 +156,7 @@
                             <label class="form-label">Número de Operación</label>
                             <input type="text" id="numeroOperacion" name="numero_operacion" class="form-control"
                                 placeholder="JL-61">
-                                <small id="folioHelp" class="text-muted d-block mt-1">Folio Preliminar</small>
+                            <small id="folioHelp" class="text-muted d-block mt-1">Folio Preliminar</small>
                         </div>
 
                         <!-- Estado (Estatus en BD) -->
@@ -288,29 +288,39 @@
 
                             <div id="contenedoresRepeater" class="vstack gap-2">
                                 <!-- Item inicial -->
-                                <div class="contenedor-item position-relative">
-                                    <input type="hidden" name="contenedores_maritimos_ids[]"
-                                        name="contenedores_maritimos_ids[]" class="contenedor-id">
-                                    <input type="text" class="form-control contenedor-input"
-                                        placeholder="Ej. MSKU1234567">
-                                    <div class="list-group sugerencias-contenedor"
-                                        style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                                <div class="contenedor-item position-relative border rounded p-2">
+                                    <input type="hidden" class="contenedor-id">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Contenedor marítimo</label>
+                                            <input type="text" class="form-control contenedor-input"
+                                                placeholder="Ej. MSKU1234567">
+                                            <div class="list-group sugerencias-contenedor"
+                                                style="position:absolute; z-index:1055; width:100%; display:none;">
+                                            </div>
+                                        </div>
 
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Plantilla oculta -->
                             <template id="contenedorTemplate">
-                                <div class="contenedor-item position-relative">
-                                    <input type="hidden" name="contenedores_maritimos_ids[]" class="contenedor-id">
-                                    <input type="text" class="form-control contenedor-input"
-                                        placeholder="Ej. MSKU1234567">
-                                    <div class="list-group sugerencias-contenedor"
-                                        style="position:absolute; z-index:1055; width:100%; display:none;"></div>
-                                    <div class="mt-1 d-flex gap-2">
-
-                                        <small class="text-muted flex-grow-1">Escribe para buscar. Si no existe, podrás
-                                            registrarlo.</small>
+                                <div class="contenedor-item position-relative border rounded p-2">
+                                    <input type="hidden" class="contenedor-id">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Contenedor marítimo</label>
+                                            <input type="text" class="form-control contenedor-input"
+                                                placeholder="Ej. MSKU1234567">
+                                            <div class="list-group sugerencias-contenedor"
+                                                style="position:absolute; z-index:1055; width:100%; display:none;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Bultos</label>
+                                            <input type="number" min="0" step="1" class="form-control contenedor-bultos"
+                                                placeholder="0">
+                                        </div>
                                     </div>
                                 </div>
                             </template>
@@ -320,21 +330,22 @@
 
                             <div id="" class="vstack gap-2">
                                 <!-- Item inicial -->
-                                <div class="col-md-6 ">
+                                <div class="row">
+                                    <div class="col-md-6 ">
+                                        <label class="form-label">Shipper</label>
+                                        <select id="shipperId" name="shipper_id" class="form-control">
+                                            <option value="">Seleccione...</option>
+                                            <?php if (!empty($data['shippers'])): ?>
+                                            <?php foreach ($data['shippers'] as $s): ?>
+                                            <option value="<?= (int)$s['id_shipper']; ?>">
+                                                <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                            </option>
+                                            <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                    </div>
 
-                                    <label class="form-label">Shipper</label>
-                                    <select id="shipperId" name="shipper_id" class="form-control">
-                                        <option value="">Seleccione...</option>
-                                        <?php if (!empty($data['shippers'])): ?>
-                                        <?php foreach ($data['shippers'] as $s): ?>
-                                        <option value="<?= (int)$s['id_shipper']; ?>">
-                                            <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </select>
                                 </div>
-
                                 <!-- Plantilla oculta -->
                                 <template id="contenedorTemplate">
                                     <div class="contenedor-item position-relative">

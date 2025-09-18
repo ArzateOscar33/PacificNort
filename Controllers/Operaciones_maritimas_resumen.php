@@ -420,7 +420,5 @@ public function eventos_progreso() {
         echo json_encode(['status'=>'error','data'=>[],'message'=>'No fue posible obtener el progreso'], JSON_UNESCAPED_UNICODE);
     }
 }
-
-
-    
+ 
 }

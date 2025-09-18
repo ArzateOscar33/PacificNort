@@ -31,12 +31,15 @@ class Operaciones_maritimasModel extends Query
         return (int)$this->insertar($sql, [$numero]);
     }
 
-    public function linkContenedorOperacion(int $opId, int $contenedorId): int
-    {
-        $sql = "INSERT INTO contenedores_maritimos_operacion (operacion_id, contenedor_maritimo_id)
-                VALUES (?, ?)";
-        return (int)$this->insertar($sql, [$opId, $contenedorId]);
-    }
+public function linkContenedorOperacion(int $opId, int $contenedorId, $bultos = null): int
+{
+    $sql = "INSERT INTO contenedores_maritimos_operacion (operacion_id, contenedor_maritimo_id, bultos)
+            VALUES (?, ?, ?)";
+    // Si tu columna es INT, deja tal cual; si es DECIMAL puedes castear a float:
+    $valBultos = ($bultos === '' || $bultos === null) ? null : (is_numeric($bultos) ? $bultos : null);
+    return (int)$this->insertar($sql, [$opId, $contenedorId, $valBultos]);
+}
+
 
     public function crearLog(int $opId, int $usuarioId, string $accion, string $descripcion = ''): int
     {
@@ -271,6 +274,7 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
             foreach ($contenedores as $c) {
                 $cid  = isset($c['id']) ? (int)$c['id'] : 0;
                 $cnum = trim($c['numero'] ?? '');
+                $cbul = $c['bultos'] ?? null;
 
                 // Ignora vacíos
                 if ($cid <= 0 && $cnum === '') continue;
@@ -293,7 +297,7 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
                 }
 
                 // Relación con operación
-                $linkId = $this->linkContenedorOperacion($opId, $cid);
+                $linkId = $this->linkContenedorOperacion($opId, $cid, $cbul);
                 if ($linkId <= 0) {
                     $this->save("ROLLBACK", []);
                     return ['status' => 'error', 'msg' => 'No se pudo relacionar contenedor con la operación'];
@@ -341,15 +345,19 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
         return $row ?: null;
     }
 
-    public function getContenedoresByOperacion(int $opId): array
-    {
-        $sql = "SELECT cm.id_contenedor_maritimo, cm.numero_contenedor
-                FROM contenedores_maritimos_operacion cmo
-                INNER JOIN contenedores_maritimos cm
-                    ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-                WHERE cmo.operacion_id = ?";
-        return $this->selectAll($sql, [$opId]) ?: [];
-    }
+public function getContenedoresByOperacion(int $opId): array
+{
+    $sql = "SELECT
+                cm.id_contenedor_maritimo,
+                cm.numero_contenedor,
+                cmo.bultos        
+            FROM contenedores_maritimos_operacion cmo
+            INNER JOIN contenedores_maritimos cm
+                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+            WHERE cmo.operacion_id = ?";
+    return $this->selectAll($sql, [$opId]) ?: [];
+}
+
 
     /* =========================
        ===  BAJA LÓGICA      ===
@@ -536,7 +544,8 @@ public function obtenerContenedoresOperacion(int $operacionId): array
     $sql = "
         SELECT 
             cm.id_contenedor_maritimo,
-            cm.numero_contenedor
+            cm.numero_contenedor,
+            cmo.bultos         -- ✅ NUEVO
         FROM contenedores_maritimos_operacion cmo
         JOIN contenedores_maritimos cm
           ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
@@ -545,6 +554,7 @@ public function obtenerContenedoresOperacion(int $operacionId): array
     ";
     return $this->selectAll($sql, [$operacionId]) ?: [];
 }
+
 
 public function buscarShippers(string $term): array {
   $like = '%'.mb_strtolower($term, 'UTF-8').'%';
@@ -629,5 +639,14 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string {
   return $pref . '-' . $this->lpadNumeroN($consec);
 }
 
+public function actualizarBultos(int $operacionId, int $contenedorMaritimoId, $bultos): bool
+{
+    $sql = "UPDATE contenedores_maritimos_operacion
+            SET bultos = ?
+            WHERE operacion_id = ? AND contenedor_maritimo_id = ?
+            LIMIT 1";
+    $valBultos = ($bultos === '' || $bultos === null) ? null : (is_numeric($bultos) ? $bultos : null);
+    return $this->save($sql, [$valBultos, $operacionId, $contenedorMaritimoId]) !== false;
+}
 
 }

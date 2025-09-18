@@ -322,6 +322,25 @@ public function listar()
                     $warning = 'La operación fue marcada como FINALIZADA pero no existe evento de ENTREGA. Captúralo para cerrar correctamente.';
                 }
             }
+                        $contenedores = [];
+            if (!empty($_POST['contenedores'])) {
+                $tmp = json_decode($_POST['contenedores'], true);
+                if (is_array($tmp)) $contenedores = $tmp;
+            }
+
+            if (!empty($contenedores)) {
+                // Recorremos solo los que tengan id de contenedor (id_contenedor_maritimo)
+                foreach ($contenedores as $c) {
+                    $cid = isset($c['id']) ? (int)$c['id'] : 0;          // id_contenedor_maritimo
+                    // Permitimos null/'' para limpiar, o numérico
+                    $bul = $c['bultos'] ?? null;
+
+                    if ($cid > 0) {
+                        // Ignora si no cambias contenedor; solo actualiza bultos de la relación existente
+                        $this->model->actualizarBultos((int)$payload['id_operacion'], $cid, $bul);
+                    }
+                }
+            }
             // Devolver la operación actualizada
             $actualizada = $this->model->obtenerOperacion($payload['id_operacion']);
 
