@@ -2,15 +2,7 @@
 
 class Operaciones_terrestres extends Controller
 {
-    public function __construct()
-    {
-        parent::__construct();
-        session_start();
-        if (empty($_SESSION['nombre_usuario'])) {
-            header("Location: " . BASE_URL);
-            exit;
-        }
-    }
+   
 
     /** Vista principal del módulo Ferros en Operación */
     public function index()
@@ -155,13 +147,17 @@ public function suma_bultos_operacion()
     echo json_encode(['status'=>'success','total_asignados'=>$total], JSON_UNESCAPED_UNICODE);
     exit;
 }
+    public function __construct()
+    {
+        parent::__construct();
+        session_start();
+        // Verifica si el usuario tiene sesión
+        if (empty($_SESSION['nombre_usuario'])) {
+            header("Location: " . BASE_URL);
+            exit;
+        }
+    }
 
-
-}
-
-
-
-/*
     // Vista principal con tabs
     public function ver($id)
     {
@@ -237,7 +233,11 @@ public function suma_bultos_operacion()
         $data['title'] = 'Detalles Logísticos';
         $this->views->getView('admin/operaciones_terrestres/tabs/detalles_logisticos', "detalles_logisticos", $data);
     }
-        */
+
+}
+
+
+ 
  
     
 ?>
