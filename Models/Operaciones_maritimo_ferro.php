@@ -1,5 +1,5 @@
 <?php
-class Operaciones_terrestresModel extends Query
+class Operaciones_maritimo_ferro extends Query
 {
     /** Catálogo de ferros/cajas activos */
     public function catalogoFerros(): array

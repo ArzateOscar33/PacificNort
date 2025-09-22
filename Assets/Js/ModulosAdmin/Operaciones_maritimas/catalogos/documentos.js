@@ -1,50 +1,43 @@
+// =============== Gestión de Documentos SOLO POR OPERACIÓN ===============
 (function(){
   "use strict";
-  if (!document.getElementById("documentosRoot")) return; // ← no ejecutes nada fuera de la vista
-  // … el resto de tu JS …
-})();
-// =============== Gestión de Documentos (LISTAR) ===============
-(function(){
-  "use strict";
-  if (!document.getElementById("documentosRoot")) return;
+  const root = document.getElementById("documentosRoot");
+  if (!root) return;
 
   const docBaseDocumentos = base_url + "operaciones_maritimas_documentos/";
 
-  // Refs vista (con sufijo)
-  const opIdInputDocumentos       = document.getElementById("documentosFiltroOpId");
-  const opNombreInputDocumentos   = document.getElementById("documentosFiltroOpNombre");
-  const opSugBoxDocumentos        = document.getElementById("documentosFiltroOpSugerencias");
-  const opMetaDocumentos          = document.getElementById("documentosFiltroOpMeta");
+  // -------- Refs (solo operación) --------
+  const opIdInput       = document.getElementById("documentosFiltroOpId");
+  const opNombreInput   = document.getElementById("documentosFiltroOpNombre");
+  const opSugBox        = document.getElementById("documentosFiltroOpSugerencias");
+  const opMeta          = document.getElementById("documentosFiltroOpMeta");
 
-  const contIdInputDocumentos     = document.getElementById("documentosFiltroContendorId");
-  const contNombreInputDocumentos = document.getElementById("documentosFiltroContendorNombre");
-  const contSugBoxDocumentos      = document.getElementById("documentosFiltroContenedorSugerencias");
+  const tbody           = document.getElementById("tablaDocumentos");
+  const listaSubidos    = document.getElementById("listaDocumentos");
+  const listaFaltantes  = document.getElementById("listaFaltantesDocumentos");
+  const btnNotificar    = document.getElementById("btnNotificarFaltantes");
 
-  const tbodyDocumentos           = document.getElementById("tablaDocumentos");
-  const listaSubidosDocumentos    = document.getElementById("listaDocumentos");
-  const listaFaltantesDocumentos = document.getElementById("listaFaltantesDocumentos");
-  const btnNotificarFaltantes = document.getElementById("btnNotificarFaltantes");
-
-  // Helpers con sufijo
-  const clearDocumentos = el => { if (el) el.innerHTML = ""; };
-  const showDocumentos  = (el, v)=> { if (el) el.style.display = v ? "block" : "none"; };
-  const liEmptyDocumentos = cols => `<tr><td colspan="${cols}" class="text-center text-muted py-3">Sin resultados</td></tr>`;
-  const safeDocumentos  = v => (v==null ? "" : String(v));
-  const fmtFechaDocumentos = val => {
+  // -------- Helpers --------
+  const clear = el => { if (el) el.innerHTML = ""; };
+  const show  = (el, v)=> { if (el) el.style.display = v ? "block" : "none"; };
+  const TD_EMPTY = (cols)=> `<tr><td colspan="${cols}" class="text-center text-muted py-3">Sin resultados</td></tr>`;
+  const safe = v => (v==null ? "" : String(v));
+  const fmtFecha = val => {
     if (!val) return "";
     const d = new Date(String(val).replace(" ", "T"));
-    return isNaN(d) ? safeDocumentos(val) : d.toLocaleString();
+    return isNaN(d) ? safe(val) : d.toLocaleString();
   };
+  const escAttr = s => String(s ?? '').replace(/&/g,'&amp;')
+                                      .replace(/"/g,'&quot;')
+                                      .replace(/</g,'&lt;')
+                                      .replace(/>/g,'&gt;')
+                                      .replace(/'/g,'&#39;');
 
-  // Autocomplete operaciones (usa rutas del controlador correcto)
-  opNombreInputDocumentos?.addEventListener("keyup", function(){
+  // -------- Autocomplete de Operación --------
+  opNombreInput?.addEventListener("keyup", function(){
     const term = this.value.trim();
-    contIdInputDocumentos.value = "";
-    contNombreInputDocumentos.value = "";
-    clearDocumentos(contSugBoxDocumentos); showDocumentos(contSugBoxDocumentos, false);
-
-    clearDocumentos(opSugBoxDocumentos);
-    if (term === "") { showDocumentos(opSugBoxDocumentos, false); return; }
+    clear(opSugBox);
+    if (term === "") { show(opSugBox, false); return; }
 
     const http = new XMLHttpRequest();
     http.open("GET", docBaseDocumentos + "buscarOperaciones?term=" + encodeURIComponent(term), true);
@@ -54,420 +47,295 @@
       if (this.status !== 200) { console.warn("Error buscarOperaciones:", this.status, this.responseText); return; }
       let data = [];
       try { data = JSON.parse(this.responseText) || []; } catch {}
-      if (data.length === 0) { showDocumentos(opSugBoxDocumentos, false); return; }
+
+      if (!Array.isArray(data) || data.length === 0) { show(opSugBox, false); return; }
 
       data.slice(0, 10).forEach(o=>{
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "list-group-item list-group-item-action";
-        btn.textContent = `${o.label} — ${o.contenedores} contenedores`;
-        btn.onclick = ()=> seleccionarOperacionDocumentos(o.id, o.label);
-        opSugBoxDocumentos.appendChild(btn);
+        // intenta mostrar cliente si viene en la respuesta; de lo contrario solo la etiqueta
+        btn.textContent = o.cliente ? `${o.label} — ${o.cliente}` : `${o.label}`;
+        btn.onclick = ()=> seleccionarOperacion(o.id, o.label, o.cliente);
+        opSugBox.appendChild(btn);
       });
-      showDocumentos(opSugBoxDocumentos, true);
+      show(opSugBox, true);
     };
   });
 
-  function seleccionarOperacionDocumentos(id, label){
-    opIdInputDocumentos.value     = String(id);
-    opNombreInputDocumentos.value = label;
-    clearDocumentos(opSugBoxDocumentos); showDocumentos(opSugBoxDocumentos, false);
+  function seleccionarOperacion(id, label, cliente){
+    opIdInput.value     = String(id);
+    opNombreInput.value = label;
+    clear(opSugBox); show(opSugBox, false);
 
-    // cargar contenedores mixto
-    const http = new XMLHttpRequest();
-    http.open("GET", docBaseDocumentos + "contenedoresPorOperacion/" + encodeURIComponent(id), true);
-    http.send();
-    http.onreadystatechange = function(){
-      if (this.readyState !== 4) return;
-      if (this.status !== 200) { console.warn("Error contenedoresPorOperacion:", this.status, this.responseText); return; }
-
-      let conts = [];
-      try { conts = JSON.parse(this.responseText) || []; } catch {}
-      opMetaDocumentos.textContent = `Operación ${label} — ${conts.length} contenedores (Físicos y Marítimos)`;
-      renderSugerenciasContenedorDocumentos(conts);
-      listarDocumentos(); // sigue abajo
-      renderFaltantesDocumentos([]);
-if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = 'none';
-    };
+    opMeta.textContent = cliente ? `Operación ${label} — ${cliente}` : `Operación ${label}`;
+    listarDocumentos();
+    cargarFaltantes(id);
   }
 
-  function renderSugerenciasContenedorDocumentos(arr){
-    clearDocumentos(contSugBoxDocumentos);
-    if (!arr || arr.length === 0) { showDocumentos(contSugBoxDocumentos, false); return; }
-    arr.forEach(c=>{
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action";
-      const badge = c.tipo === "M" ? "Marítimo" : "Físico";
-      btn.textContent = `[${badge}] ${c.label} — ${c.cliente || "Sin cliente"}`;
-      btn.onclick = ()=>{
-        contIdInputDocumentos.value         = String(c.id);
-        contIdInputDocumentos.dataset.tipo  = c.tipo;
-        contNombreInputDocumentos.value     = c.label;
-        showDocumentos(contSugBoxDocumentos, false);
-        listarDocumentos();
-      };
-      contSugBoxDocumentos.appendChild(btn);
-    });
-    showDocumentos(contSugBoxDocumentos, true);
-    renderFaltantesDocumentos([]);
-if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = 'none';
-  }
-
-  contNombreInputDocumentos?.addEventListener("input", function(){
-    const term = this.value.trim().toLowerCase();
-    const items = Array.from(contSugBoxDocumentos?.children || []);
-    let visible = 0;
-    items.forEach(li=>{
-      const ok = li.textContent.toLowerCase().includes(term);
-      li.style.display = ok ? "" : "none";
-      if (ok) visible++;
-    });
-    showDocumentos(contSugBoxDocumentos, visible > 0);
+  // Cerrar sugerencias con clic fuera
+  document.addEventListener("click", (e)=>{
+    if (opSugBox && !opSugBox.contains(e.target) && !opNombreInput.contains(e.target)) {
+      show(opSugBox, false);
+    }
   });
 
-  document.addEventListener("click", function(e){
-    if (opSugBoxDocumentos   && !opSugBoxDocumentos.contains(e.target)   && !opNombreInputDocumentos.contains(e.target))   showDocumentos(opSugBoxDocumentos, false);
-    if (contSugBoxDocumentos && !contSugBoxDocumentos.contains(e.target) && !contNombreInputDocumentos.contains(e.target)) showDocumentos(contSugBoxDocumentos, false);
-  });
-
-  // LISTAR
+  // -------- Listado --------
   function listarDocumentos(){
-    const opId  = opIdInputDocumentos.value.trim();
-    const contId= contIdInputDocumentos.value.trim();
-    const tipo  = contIdInputDocumentos.dataset.tipo || "";
-
-    if (!opId) {
-      tbodyDocumentos.innerHTML = liEmptyDocumentos(9);
-      listaSubidosDocumentos.innerHTML = "";
+    const opId = (opIdInput.value || "").trim();
+    if (!opId){
+      tbody.innerHTML = TD_EMPTY(8);
+      if (listaSubidos) listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
+      renderFaltantes([]); // limpia
+      if (btnNotificar) btnNotificar.style.display = 'none';
       return;
     }
 
-    let url = docBaseDocumentos + "listar?operacion_id=" + encodeURIComponent(opId);
-    if (contId) {
-      url += "&contenedor_id=" + encodeURIComponent(contId);
-      if (tipo) url += "&tipo=" + encodeURIComponent(tipo);
-    }
-
+    const url = docBaseDocumentos + "listar?operacion_id=" + encodeURIComponent(opId);
     const http = new XMLHttpRequest();
     http.open("GET", url, true);
     http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
       if (this.status !== 200) { console.warn("Error listar:", this.status, this.responseText); return; }
-      let data = [];
-      try { data = JSON.parse(this.responseText) || []; } catch {}
+      let rows = [];
+      try { rows = JSON.parse(this.responseText) || []; } catch {}
 
-      renderTablaDocumentos(data);
-      renderSubidosDocumentos(data);
-      cargarFaltantes(opId, contId, tipo);
-      feather.replace();
+      renderTabla(rows);
+      renderSubidos(rows);
+      cargarFaltantes(opId);
+      if (window.feather) feather.replace();
     };
   }
 
-  function renderTablaDocumentos(rows){
+  function renderTabla(rows){
     if (!Array.isArray(rows) || rows.length === 0) {
-      tbodyDocumentos.innerHTML = liEmptyDocumentos(9);
+      tbody.innerHTML = TD_EMPTY(8);
       return;
     }
-    // Escape de atributo simple
-const escAttrDocumentos = s => String(s ?? '').replace(/&/g,'&amp;')
-                                             .replace(/"/g,'&quot;')
-                                             .replace(/</g,'&lt;')
-                                             .replace(/>/g,'&gt;')
-                                             .replace(/'/g,'&#39;');
-
-const html = rows.map(r=>`
-  <tr>
-    <td>${safeDocumentos(r.numero_operacion)}</td>
-    <td>${safeDocumentos(r.contenedor)}</td>
-    <td>${safeDocumentos(r.cliente)}</td>
-    <td class="text-uppercase">${safeDocumentos(r.tipo_nombre)}</td>
-    <td>${safeDocumentos(r.nombre_archivo)}</td>
-    <td>${fmtFechaDocumentos(r.fecha_subida)}</td>
-    <td>${safeDocumentos(r.subido_por)}</td>
-    <td>
-      <button class="btn btn-sm btn-outline-primary"
-              title="Ver"
-              data-nombre="${escAttrDocumentos(r.nombre_archivo)}"
-              data-mime="${escAttrDocumentos(r.mime_type || '')}"
-              onclick="documentosVerDocumento(${r.id_documento}, this)">
-        <i data-feather="eye"></i>
-      </button>
-    </td>
-    <td>
-      <button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="documentosEliminarDocumento(${r.id_documento})">
-        <i data-feather="trash-2"></i>
-      </button>
-    </td>
-  </tr>
-`).join("");
-
-    tbodyDocumentos.innerHTML = html;
+    const html = rows.map(r=>`
+      <tr>
+        <td>${safe(r.numero_operacion)}</td>
+        <td>${safe(r.cliente)}</td>
+        <td class="text-uppercase">${safe(r.tipo_nombre || r.tipo_documento || r.tipo)}</td>
+        <td>${safe(r.nombre_archivo || r.nombre_original)}</td>
+        <td>${fmtFecha(r.fecha_subida || r.fecha)}</td>
+        <td>${safe(r.subido_por)}</td>
+        <td>
+          ${r.url_archivo
+              ? `<a href="${escAttr(r.url_archivo)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                   Ver/Descargar
+                 </a>`
+              : `<button class="btn btn-sm btn-outline-primary"
+                         title="Ver"
+                         data-nombre="${escAttr(r.nombre_archivo || r.nombre_original || '')}"
+                         data-mime="${escAttr(r.mime_type || '')}"
+                         onclick="documentosVerDocumento(${r.id_documento || r.id}, this)">
+                   <i data-feather="eye"></i>
+                 </button>`}
+        </td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-danger"
+                  title="Eliminar"
+                  onclick="documentosEliminarDocumento(${r.id_documento || r.id})">
+            <i data-feather="trash-2"></i>
+          </button>
+        </td>
+      </tr>
+    `).join("");
+    tbody.innerHTML = html;
   }
 
-function renderSubidosDocumentos(rows){
-  if (!listaSubidosDocumentos) return;
-  if (!Array.isArray(rows) || rows.length === 0) {
-    listaSubidosDocumentos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
-    return;
-  }
-  listaSubidosDocumentos.innerHTML = rows.map(r=>{
-    const fecha = fmtFechaDocumentos(r.fecha_subida);
-    const tipo  = r.tipo_nombre || r.tipo_clave || '';   // <-- 🔁 aquí
-    return `<li class="list-group-item">${safeDocumentos(tipo).toUpperCase()} — ${safeDocumentos(r.nombre_archivo)} <span class="text-muted">(${fecha})</span></li>`;
-  }).join("");
-}
-
- 
-
-
-  // Evita colisión con otros módulos:
-  window.documentosVerDocumento = function(id){
-    Swal.fire("Por implementar", "Ver documento ID " + id, "info");
-  };
-window.documentosEliminarDocumento = function(id){
-  Swal.fire({
-    title: '¿Eliminar documento?',
-    text: 'Esta acción no se puede deshacer.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (!result.isConfirmed) return;
-
-    const http = new XMLHttpRequest();
-    http.open("POST", docBaseDocumentos + "eliminar/" + encodeURIComponent(id), true);
-    http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-    http.send();
-
-    http.onreadystatechange = function(){
-      if (this.readyState !== 4) return;
-      let res = {};
-      try { res = JSON.parse(this.responseText) || {}; } catch {}
-
-      Swal.fire(
-        res.status === 'success' ? 'Eliminado' : 'Aviso',
-        res.msg || '(sin mensaje)',
-        res.status || 'info'
-      );
-
-      if (res.status === 'success' && window.documentosRefrescarListado) {
-        window.documentosRefrescarListado();
-      }
-    };
-  });
-};
-
-
- // Exporta la función interna para poder llamarla desde otros handlers
-window.listarDocumentosDocumentos = listarDocumentos;
-window.documentosRefrescarListado = () => {
-  if (window.listarDocumentosDocumentos) window.listarDocumentosDocumentos();
-};
-
-
-// En la IIFE LISTAR (o en un bloque <script> después):
-window.documentosVerDocumento = function(id, btn){
-  const url     = base_url + "operaciones_maritimas_documentos/ver/" + encodeURIComponent(id);
-  const iframe  = document.getElementById('previewFrameDocumentos');
-  const aDown   = document.getElementById('previewDownloadLinkDocumentos');
-  const msg     = document.getElementById('previewUnavailableDocumentos');
-  const titleEl = document.getElementById('previewTitleDocumentos');
-
-  const nombre  = (btn?.dataset?.nombre || '').trim();
-  const mime    = (btn?.dataset?.mime   || '').trim();
-
-  // Título del modal
-  if (titleEl) titleEl.textContent = nombre ? `Vista previa — ${nombre}` : 'Vista previa';
-
-  // Decide si es previsualizable (pdf, imágenes, txt, csv)
-  const esPreview = (m, file) => {
-    const ext = (file.split('.').pop() || '').toLowerCase();
-    const extsOK  = ['pdf','jpg','jpeg','png','gif','webp','txt','csv'];
-    const mimesOK = ['application/pdf','image/jpeg','image/png','image/gif','image/webp','text/plain','text/csv'];
-    if (m && mimesOK.includes(m.toLowerCase())) return true;
-    if (extsOK.includes(ext)) return true;
-    return false;
-  };
-
-  const previewable = esPreview(mime, nombre);
-
-  // Link de descarga siempre listo
-  if (aDown) aDown.href = url + "?dl=1";
-
-  // Mostrar/hide
-  if (previewable) {
-    if (msg)    msg.style.display = 'none';
-    if (iframe) { iframe.style.display = 'block'; iframe.src = url; }
-  } else {
-    if (iframe) { iframe.style.display = 'none'; iframe.src = 'about:blank'; }
-    if (msg)    msg.style.display = 'block';
+  function renderSubidos(rows){
+    if (!listaSubidos) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
+      return;
+    }
+    listaSubidos.innerHTML = rows.map(r=>{
+      const fecha = fmtFecha(r.fecha_subida || r.fecha);
+      const tipo  = r.tipo_nombre || r.tipo_documento || r.tipo || '';
+      const nombre= r.nombre_archivo || r.nombre_original || '';
+      return `<li class="list-group-item">${safe(tipo).toUpperCase()} — ${safe(nombre)} <span class="text-muted">(${fecha})</span></li>`;
+    }).join("");
   }
 
-  // Abre modal
-  const modalEl = document.getElementById('modalPreviewDocumentoDocumentos');
-  const m = new bootstrap.Modal(modalEl);
-  m.show();
-
-  // Limpia iframe al cerrar
-  modalEl.addEventListener('hidden.bs.modal', function _cleanup(){
-    if (iframe) iframe.src = 'about:blank';
-    modalEl.removeEventListener('hidden.bs.modal', _cleanup);
-  }, {once:true});
-};
-
-
-function renderFaltantesDocumentos(items){
-  if (!listaFaltantesDocumentos) return;
-
-  if (!Array.isArray(items) || items.length === 0) {
-    listaFaltantesDocumentos.innerHTML = '<li class="list-group-item text-muted">Sin faltantes</li>';
-    if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = 'none';
+  // -------- Faltantes (por OPERACIÓN) --------
+  function renderFaltantes(items){
+    if (!listaFaltantes) return;
+    if (!Array.isArray(items) || items.length === 0) {
+      listaFaltantes.innerHTML = '<li class="list-group-item text-muted">Sin faltantes</li>';
+      if (btnNotificar) btnNotificar.style.display = 'none';
+      if (window.feather) feather.replace();
+      return;
+    }
+    listaFaltantes.innerHTML = items.map(it=>{
+      const nom  = (it.nombre ?? '').toString();
+      const clave= (it.clave  ?? '').toString();
+      return `<li class="list-group-item"><strong>${nom}</strong> ${clave ? `<span class="text-muted">(${clave})</span>` : ''}</li>`;
+    }).join('');
+    if (btnNotificar) btnNotificar.style.display = '';
     if (window.feather) feather.replace();
-    return;
   }
 
-  listaFaltantesDocumentos.innerHTML = items.map(it=>{
-    const nom  = (it.nombre ?? '').toString();
-    const clave= (it.clave  ?? '').toString();
-    return `<li class="list-group-item">
-              <strong>${nom}</strong> ${clave ? `<span class="text-muted">(${clave})</span>` : ''}
-            </li>`;
-  }).join('');
-  if (btnNotificarFaltantes) btnNotificarFaltantes.style.display = '';
-  if (window.feather) feather.replace();
-}
-
-function cargarFaltantes(opId, contId, tipo){
-  // si falta alguno, limpiar/ocultar
-  if (!opId || !contId || !tipo) {
-    renderFaltantesDocumentos([]);
-    return;
-  }
-  const http = new XMLHttpRequest();
-  http.open("GET",
-    docBaseDocumentos + "faltantes?operacion_id="+encodeURIComponent(opId)
-                      + "&contenedor_id="+encodeURIComponent(contId)
-                      + "&tipo="+encodeURIComponent(tipo),
-    true
-  );
-  http.onreadystatechange = function(){
-    if (this.readyState !== 4) return;
-    let data = [];
-    try { data = JSON.parse(this.responseText) || []; } catch {}
-    renderFaltantesDocumentos(data);
-  };
-  http.send();
-}
-btnNotificarFaltantes?.addEventListener("click", function(){
-  const opId   = opIdInputDocumentos.value.trim();
-  const contId = contIdInputDocumentos.value.trim();
-  const tipo   = (contIdInputDocumentos.dataset.tipo || '').trim();
-
-  if (!opId)  { Swal.fire('Aviso','Selecciona una operación','info'); return; }
-  if (!contId || !tipo) { Swal.fire('Aviso','Selecciona un contenedor','info'); return; }
-
-  Swal.fire({
-    title: 'Enviar correo al cliente',
-    text: 'Se enviará un correo con la lista de documentos faltantes.',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Enviar',
-    cancelButtonText: 'Cancelar'
-  }).then((r)=>{
-    if (!r.isConfirmed) return;
-
-    const fd = new FormData();
-    fd.append('operacion_id', opId);
-    fd.append('contenedor_id', contId);
-    fd.append('tipo', tipo);
-
+  function cargarFaltantes(opId){
+    if (!opId) { renderFaltantes([]); return; }
     const http = new XMLHttpRequest();
-    http.open("POST", docBaseDocumentos + "notificarFaltantes", true);
+    http.open("GET", docBaseDocumentos + "faltantes?operacion_id=" + encodeURIComponent(opId), true);
+    http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
-      console.log(this.responseText);
-      let j = {};
-      try { j = JSON.parse(this.responseText) || {}; } catch {}
-      Swal.fire(j.status === 'success' ? 'Enviado' : 'Aviso', j.msg || '(sin mensaje)', j.status || 'info');
+      let data = [];
+      try { data = JSON.parse(this.responseText) || []; } catch {}
+      renderFaltantes(data);
     };
-    http.send(fd);
-  });
-});
+  }
 
+  btnNotificar?.addEventListener("click", function(){
+    const opId = (opIdInput.value || "").trim();
+    if (!opId) { Swal.fire('Aviso','Selecciona una operación','info'); return; }
+
+    Swal.fire({
+      title: 'Enviar correo al cliente',
+      text: 'Se enviará un correo con la lista de documentos faltantes de la operación.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar',
+      cancelButtonText: 'Cancelar'
+    }).then((r)=>{
+      if (!r.isConfirmed) return;
+
+      const fd = new FormData();
+      fd.append('operacion_id', opId);
+
+      const http = new XMLHttpRequest();
+      http.open("POST", docBaseDocumentos + "notificarFaltantes", true);
+      http.onreadystatechange = function(){
+        if (this.readyState !== 4) return;
+        let j = {};
+        try { j = JSON.parse(this.responseText) || {}; } catch {}
+        Swal.fire(j.status === 'success' ? 'Enviado' : 'Aviso', j.msg || '(sin mensaje)', j.status || 'info');
+      };
+      http.send(fd);
+    });
+  });
+
+  // Exponer refresco para otras acciones (eliminar, subir)
+  window.listarDocumentosDocumentos = listarDocumentos;
+  window.documentosRefrescarListado = ()=> listarDocumentos();
+
+  // -------- Ver / Eliminar (global) --------
+  window.documentosVerDocumento = function(id, btn){
+    const url     = base_url + "operaciones_maritimas_documentos/ver/" + encodeURIComponent(id);
+    const iframe  = document.getElementById('previewFrameDocumentos');
+    const aDown   = document.getElementById('previewDownloadLinkDocumentos');
+    const msg     = document.getElementById('previewUnavailableDocumentos');
+    const titleEl = document.getElementById('previewTitleDocumentos');
+
+    const nombre  = (btn?.dataset?.nombre || '').trim();
+    const mime    = (btn?.dataset?.mime   || '').trim();
+
+    if (titleEl) titleEl.textContent = nombre ? `Vista previa — ${nombre}` : 'Vista previa';
+
+    const esPreview = (m, file) => {
+      const ext = (file.split('.').pop() || '').toLowerCase();
+      const extsOK  = ['pdf','jpg','jpeg','png','gif','webp','txt','csv'];
+      const mimesOK = ['application/pdf','image/jpeg','image/png','image/gif','image/webp','text/plain','text/csv'];
+      if (m && mimesOK.includes(m.toLowerCase())) return true;
+      return extsOK.includes(ext);
+    };
+    const previewable = esPreview(mime, nombre);
+
+    if (aDown) aDown.href = url + "?dl=1";
+
+    if (previewable) {
+      if (msg)    msg.style.display = 'none';
+      if (iframe) { iframe.style.display = 'block'; iframe.src = url; }
+    } else {
+      if (iframe) { iframe.style.display = 'none'; iframe.src = 'about:blank'; }
+      if (msg)    msg.style.display = 'block';
+    }
+
+    const modalEl = document.getElementById('modalPreviewDocumentoDocumentos');
+    const m = new bootstrap.Modal(modalEl);
+    m.show();
+
+    modalEl.addEventListener('hidden.bs.modal', function _cleanup(){
+      if (iframe) iframe.src = 'about:blank';
+      modalEl.removeEventListener('hidden.bs.modal', _cleanup);
+    }, {once:true});
+  };
+
+  window.documentosEliminarDocumento = function(id){
+    Swal.fire({
+      title: '¿Eliminar documento?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      const http = new XMLHttpRequest();
+      http.open("POST", docBaseDocumentos + "eliminar/" + encodeURIComponent(id), true);
+      http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+      http.send();
+
+      http.onreadystatechange = function(){
+        if (this.readyState !== 4) return;
+        let res = {};
+        try { res = JSON.parse(this.responseText) || {}; } catch {}
+
+        Swal.fire(
+          res.status === 'success' ? 'Eliminado' : 'Aviso',
+          res.msg || '(sin mensaje)',
+          res.status || 'info'
+        );
+
+        if (res.status === 'success') listarDocumentos();
+      };
+    });
+  };
+
+  // Si ya hay operación seteada al cargar, listar
+  if ((opIdInput.value || "").trim()) listarDocumentos();
 })();
-;
-// ================== MODAL: Agregar Documento (Documentos) ==================
+
+// ================== MODAL: Agregar Documento (solo operación) ==================
 (function(){
   "use strict";
   const docBaseDocumentos = base_url + "operaciones_maritimas_documentos/";
+  const modalEl = document.getElementById("modalAgregarDocumentoDocumentos");
+  const form    = document.getElementById("formAgregarDocumentoDocumentos");
 
-  // Refs del modal
-  const modalElDocumentos      = document.getElementById("modalAgregarDocumentoDocumentos");
-  const formDocumentos         = document.getElementById("formAgregarDocumentoDocumentos");
+  const mdOpId     = document.getElementById("modalDocumentosOpId");
+  const mdOpNombre = document.getElementById("modalDocumentosOpNombre");
+  const mdOpSug    = document.getElementById("modalDocumentosOpSugerencias");
+  const mdOpMeta   = document.getElementById("modalDocumentosOpMeta");
+  const selTipo    = document.getElementById("tipo_documentoDocumentos");
 
-  const mdOpIdDocumentos       = document.getElementById("modalDocumentosOpId");
-  const mdOpNombreDocumentos   = document.getElementById("modalDocumentosOpNombre");
-  const mdOpSugDocumentos      = document.getElementById("modalDocumentosOpSugerencias");
-  const mdOpMetaDocumentos     = document.getElementById("modalDocumentosOpMeta");
+  const vwOpId     = document.getElementById("documentosFiltroOpId");
+  const vwOpNombre = document.getElementById("documentosFiltroOpNombre");
 
-  const mdContIdDocumentos     = document.getElementById("modalDocumentosContId");
-  const mdContTipoDocumentos   = document.getElementById("modalDocumentosContTipo"); // 'F' o 'M'
-  const mdContNombreDocumentos = document.getElementById("modalDocumentosContNombre");
-  const mdContSugDocumentos    = document.getElementById("modalDocumentosContSugerencias");
+  const clear = el => { if(el) el.innerHTML=""; };
+  const show  = (el, v)=> { if(el) el.style.display = v ? "block" : "none"; };
+  const safe  = v => (v==null ? "" : String(v));
 
-  // Refs de los filtros de la vista (para prellenar)
-  const vwOpIdDocumentos       = document.getElementById("documentosFiltroOpId");
-  const vwOpNombreDocumentos   = document.getElementById("documentosFiltroOpNombre");
-  const vwContIdDocumentos     = document.getElementById("documentosFiltroContendorId");
-  const vwContNombreDocumentos = document.getElementById("documentosFiltroContendorNombre");
+  // Al abrir, prellenar operación desde la vista y cargar tipos
+  modalEl?.addEventListener("show.bs.modal", ()=>{
+    mdOpId.value     = safe(vwOpId?.value);
+    mdOpNombre.value = safe(vwOpNombre?.value);
+    mdOpMeta.textContent = mdOpNombre.value ? `Operación ${mdOpNombre.value}` : "";
 
-  // Helpers
-  function clearDocumentos(el){ if(el) el.innerHTML=""; }
-  function showDocumentos(el, show){ if(el) el.style.display = show ? "block" : "none"; }
-  function safeDocumentos(v){ return (v==null) ? "" : String(v); }
+    cargarTipos(); // tipos válidos para operación
+  });
 
-  // Al abrir modal: prefill desde filtros de la vista
-  modalElDocumentos?.addEventListener("show.bs.modal", ()=>{
-    mdOpIdDocumentos.value       = safeDocumentos(vwOpIdDocumentos?.value);
-    mdOpNombreDocumentos.value   = safeDocumentos(vwOpNombreDocumentos?.value);
-
-    mdContIdDocumentos.value     = safeDocumentos(vwContIdDocumentos?.value);
-    mdContNombreDocumentos.value = safeDocumentos(vwContNombreDocumentos?.value);
-
-    const tipoVista = vwContIdDocumentos?.dataset?.tipo || "";
-    mdContTipoDocumentos.value = tipoVista;
-
-    if (mdOpIdDocumentos.value) {
-      cargarContenedoresModalDocumentos(mdOpIdDocumentos.value, mdOpNombreDocumentos.value);
-      if (mdContTipoDocumentos.value) {
-      cargarTiposDocumentosParaModalDocumentos(mdContTipoDocumentos.value);
-    } else {
-      const sel = document.getElementById('tipo_documentoDocumentos');
-      if (sel) sel.innerHTML = '<option value="">-- Selecciona tipo --</option>';
-    }
-  } else {
-    clearDocumentos(mdOpSugDocumentos);  showDocumentos(mdOpSugDocumentos,false);
-    clearDocumentos(mdContSugDocumentos);showDocumentos(mdContSugDocumentos,false);
-    const sel = document.getElementById('tipo_documentoDocumentos');
-    if (sel) sel.innerHTML = '<option value="">-- Selecciona tipo --</option>';
-    mdOpMetaDocumentos.textContent = "";
-  }
-});
-  // Autocomplete Operación
-  mdOpNombreDocumentos?.addEventListener("keyup", function(){
+  // Autocomplete de operación en modal
+  mdOpNombre?.addEventListener("keyup", function(){
     const term = this.value.trim();
-
-    // Reset contenedor al cambiar operación
-    mdContIdDocumentos.value = "";
-    mdContNombreDocumentos.value = "";
-    mdContTipoDocumentos.value = "";
-    clearDocumentos(mdContSugDocumentos); showDocumentos(mdContSugDocumentos,false);
-
-    clearDocumentos(mdOpSugDocumentos);
-    if (term === "") { showDocumentos(mdOpSugDocumentos,false); return; }
+    clear(mdOpSug);
+    if (term === "") { show(mdOpSug,false); return; }
 
     const http = new XMLHttpRequest();
     http.open("GET", docBaseDocumentos + "buscarOperaciones?term=" + encodeURIComponent(term), true);
@@ -478,151 +346,87 @@ btnNotificarFaltantes?.addEventListener("click", function(){
       let data = [];
       try { data = JSON.parse(this.responseText) || []; } catch {}
 
-      if (data.length === 0) { showDocumentos(mdOpSugDocumentos,false); return; }
+      if (!Array.isArray(data) || data.length === 0) { show(mdOpSug,false); return; }
 
       data.slice(0,10).forEach(o=>{
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "list-group-item list-group-item-action";
-        btn.textContent = `${o.label} — ${o.contenedores} contenedores`;
-        btn.onclick = ()=> seleccionarOperacionModalDocumentos(o.id, o.label);
-        mdOpSugDocumentos.appendChild(btn);
+        btn.textContent = o.cliente ? `${o.label} — ${o.cliente}` : `${o.label}`;
+        btn.onclick = ()=> seleccionarOperacionModal(o.id, o.label, o.cliente);
+        mdOpSug.appendChild(btn);
       });
-      showDocumentos(mdOpSugDocumentos,true);
+      show(mdOpSug,true);
     };
   });
 
-  function seleccionarOperacionModalDocumentos(id, label){
-    mdOpIdDocumentos.value     = String(id);
-    mdOpNombreDocumentos.value = label;
-    clearDocumentos(mdOpSugDocumentos); showDocumentos(mdOpSugDocumentos,false);
-
-    mdContIdDocumentos.value = "";
-    mdContNombreDocumentos.value = "";
-    mdContTipoDocumentos.value = "";
-    clearDocumentos(mdContSugDocumentos); showDocumentos(mdContSugDocumentos,false);
-
-    const sel = document.getElementById('tipo_documentoDocumentos');
-    if (sel) sel.innerHTML = '<option value="">-- Selecciona tipo --</option>';
-    cargarContenedoresModalDocumentos(id, label);
+  function seleccionarOperacionModal(id, label, cliente){
+    mdOpId.value     = String(id);
+    mdOpNombre.value = label;
+    mdOpMeta.textContent = cliente ? `Operación ${label} — ${cliente}` : `Operación ${label}`;
+    clear(mdOpSug); show(mdOpSug,false);
   }
 
-  function cargarContenedoresModalDocumentos(opId, label){
-    const http = new XMLHttpRequest();
-    http.open("GET", docBaseDocumentos + "contenedoresPorOperacion/" + encodeURIComponent(opId), true);
-    http.send();
-    http.onreadystatechange = function(){
-      if (this.readyState !== 4) return;
-      if (this.status !== 200) { console.warn("contenedoresPorOperacion (modal):", this.status, this.responseText); return; }
-      let conts = [];
-      try { conts = JSON.parse(this.responseText) || []; } catch {}
-      mdOpMetaDocumentos.textContent = `Operación ${label} — ${conts.length} contenedores (Físicos y Marítimos)`;
-      renderContenedoresModalDocumentos(conts);
-    };
-  }
-
-  // Autocomplete Contenedor
-  function renderContenedoresModalDocumentos(arr){
-    clearDocumentos(mdContSugDocumentos);
-    if (!arr || arr.length === 0) { showDocumentos(mdContSugDocumentos,false); return; }
-    arr.forEach(c=>{
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action";
-      const badge = c.tipo === "M" ? "Marítimo" : "Físico";
-      btn.textContent = `[${badge}] ${c.label} — ${c.cliente || "Sin cliente"}`;
-      btn.onclick = ()=>{
-        mdContIdDocumentos.value     = String(c.id);
-        mdContTipoDocumentos.value   = c.tipo; // 'F' o 'M'
-        mdContNombreDocumentos.value = c.label;
-        showDocumentos(mdContSugDocumentos,false);
-        const sel = document.getElementById('tipo_documentoDocumentos');
-        if (sel) sel.innerHTML = '<option value="">Cargando…</option>';
-         
-        cargarTiposDocumentosParaModalDocumentos(c.tipo);
-      };
-      mdContSugDocumentos.appendChild(btn);
-    });
-    showDocumentos(mdContSugDocumentos,true);
-  }
-
-  // Filtro en vivo de contenedores del modal
-  mdContNombreDocumentos?.addEventListener("input", function(){
-    const term = this.value.trim().toLowerCase();
-    const items = Array.from(mdContSugDocumentos?.children || []);
-    let visible = 0;
-    items.forEach(li=>{
-      const ok = li.textContent.toLowerCase().includes(term);
-      li.style.display = ok ? "" : "none";
-      if (ok) visible++;
-    });
-    showDocumentos(mdContSugDocumentos, visible>0);
+  // Cerrar sugerencias con clic fuera
+  document.addEventListener("click", (e)=>{
+    if (mdOpSug && !mdOpSug.contains(e.target) && !mdOpNombre.contains(e.target)) show(mdOpSug,false);
   });
 
-  // Cerrar sugerencias con click fuera
-  document.addEventListener("click", function(e){
-    if (mdOpSugDocumentos   && !mdOpSugDocumentos.contains(e.target)   && !mdOpNombreDocumentos.contains(e.target))   showDocumentos(mdOpSugDocumentos,false);
-    if (mdContSugDocumentos && !mdContSugDocumentos.contains(e.target) && !mdContNombreDocumentos.contains(e.target)) showDocumentos(mdContSugDocumentos,false);
-  });
-
-  // Validación mínima al enviar
-// Dentro de la IIFE del modal:
-formDocumentos?.addEventListener("submit", function(e){
-  e.preventDefault();
-
-  const fd = new FormData(formDocumentos); 
-
-  const http = new XMLHttpRequest();
-  http.open("POST", docBaseDocumentos + "registrar", true);
-  http.send(fd);
-  http.onreadystatechange = function(){
-    if (this.readyState !== 4) return;
-    let res = {};
-    try { res = JSON.parse(this.responseText) || {}; } catch {}
-
-    Swal.fire(res.status === 'success' ? 'Éxito' : 'Aviso', res.msg || '(sin mensaje)', res.status || 'info');
-
-    if (res.status === 'success') {
-    const inst = bootstrap.Modal.getInstance(modalElDocumentos);
-    if (inst) inst.hide();
-    formDocumentos.reset();
-    if (window.documentosRefrescarListado) window.documentosRefrescarListado(); 
-    if (window.feather) feather.replace();
-    }
-  };
-});
-
-
-function cargarTiposDocumentosParaModalDocumentos(tipoFM){
-    const sel = document.getElementById('tipo_documentoDocumentos');
-    if (!sel) return;
-    sel.disabled = true;
-    sel.innerHTML = '<option value="">Cargando…</option>';
+  // Cargar tipos de documento para operación
+  function cargarTipos(){
+    if (!selTipo) return;
+    selTipo.disabled = true;
+    selTipo.innerHTML = '<option value="">Cargando…</option>';
 
     const http = new XMLHttpRequest();
-    http.open('GET', docBaseDocumentos + 'tipos?contenedor_tipo=' + encodeURIComponent(tipoFM), true);
+    // Endpoint sin F/M: debe responder los tipos válidos a nivel operación
+    http.open('GET', docBaseDocumentos + 'tipos', true);
     http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
       if (this.status !== 200) {
-        sel.innerHTML = '<option value="">(Error al cargar tipos)</option>';
-        sel.disabled = false;
+        selTipo.innerHTML = '<option value="">(Error al cargar tipos)</option>';
+        selTipo.disabled = false;
         return;
       }
       let data = [];
       try { data = JSON.parse(this.responseText) || []; } catch {}
 
       if (!Array.isArray(data) || data.length === 0) {
-        sel.innerHTML = '<option value="">(Sin tipos disponibles)</option>';
-        sel.disabled = false;
+        selTipo.innerHTML = '<option value="">(Sin tipos disponibles)</option>';
+        selTipo.disabled = false;
         return;
       }
-
-      sel.innerHTML = '<option value="">-- Selecciona tipo --</option>' +
+      selTipo.innerHTML = '<option value="">-- Selecciona tipo --</option>' +
         data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-      sel.disabled = false;
+      selTipo.disabled = false;
     };
   }
 
-})();
+  // Enviar formulario (solo operacion_id, tipo_documento_id, archivo)
+  form?.addEventListener("submit", function(e){
+    e.preventDefault();
+    if (!mdOpId.value) { Swal.fire('Aviso','Selecciona una operación','info'); return; }
+    if (!selTipo?.value) { Swal.fire('Aviso','Selecciona el tipo de documento','info'); return; }
 
+    const fd = new FormData(form);
+    const http = new XMLHttpRequest();
+    http.open("POST", docBaseDocumentos + "registrar", true);
+    http.send(fd);
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      let res = {};
+      try { res = JSON.parse(this.responseText) || {}; } catch {}
+
+      Swal.fire(res.status === 'success' ? 'Éxito' : 'Aviso', res.msg || '(sin mensaje)', res.status || 'info');
+
+      if (res.status === 'success') {
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        inst?.hide();
+        form.reset();
+        if (window.documentosRefrescarListado) window.documentosRefrescarListado();
+        if (window.feather) feather.replace();
+      }
+    };
+  });
+})();

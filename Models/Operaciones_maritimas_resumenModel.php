@@ -1,36 +1,39 @@
 <?php
 class Operaciones_maritimas_resumenModel extends Query
 {
-  public function buscarOperacionesConContenedores(string $term): array
-  {
-    // Normaliza el término
-    $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
+public function buscarOperacionesConContenedores(string $term): array
+{
+  // Normaliza el término
+  $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
 
-    $sql = "
-      /* SUGERENCIAS sin duplicados, prioriza prefijo en numero_operacion */
-      SELECT 
-        o.id_operacion     AS id,
-        o.numero_operacion AS numero,
-        cl.nombre          AS cliente,
-        CONCAT(o.numero_operacion, ' — ', cl.nombre) AS label
-      FROM operaciones o
-      JOIN clientes cl ON cl.id_cliente = o.cliente_id
-      WHERE 
+  $sql = "
+    /* SUGERENCIAS sin duplicados, solo MARÍTIMO (tipo_operacion_id = 1) */
+    SELECT 
+      o.id_operacion     AS id,
+      o.numero_operacion AS numero,
+      cl.nombre          AS cliente,
+      CONCAT(o.numero_operacion, ' — ', cl.nombre) AS label
+    FROM operaciones o
+    JOIN clientes cl ON cl.id_cliente = o.cliente_id
+    WHERE 
+      o.tipo_operacion_id = 1
+      AND (
         LOWER(o.numero_operacion) LIKE CONCAT('%', LOWER(?), '%')
         OR LOWER(cl.nombre)       LIKE CONCAT('%', LOWER(?), '%')
-      ORDER BY 
-        CASE 
-          WHEN LOWER(o.numero_operacion) LIKE CONCAT(LOWER(?), '%') THEN 1  -- prefijo primero
-          ELSE 2
-        END,
-        o.numero_operacion
-      LIMIT 10;
+      )
+    ORDER BY 
+      CASE 
+        WHEN LOWER(o.numero_operacion) LIKE CONCAT(LOWER(?), '%') THEN 1  -- prefijo primero
+        ELSE 2
+      END,
+      o.numero_operacion
+    LIMIT 10;
+  ";
 
-      ";
+  // Importante: el orden correcto es (contains, contains, prefix)
+  return $this->selectAll($sql, [$needle, $needle, $term]);
+}
 
-    // Nota: tres parámetros en total: (prefijo, contains, contains)
-    return $this->selectAll($sql, [$term, $needle, $needle]);
-  }
 
   public function getContenedoresPorOperacion($id)
   {

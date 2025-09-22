@@ -4,7 +4,8 @@
       <h5 class="mb-0">
         <i data-feather="file-text" class="me-1"></i> Eventos Logísticos
       </h5>
-      <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos" id="btnAbrirModalDetalles">
+      <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos"
+        id="btnAbrirModalDetalles">
         <i data-feather="plus-circle" class="me-1"></i> Añadir / Editar Evento
       </button>
     </div>
@@ -18,39 +19,46 @@
           <label for="eventosFiltroOpNombre" class="form-label mb-1">Operación</label>
           <div class="position-relative">
             <input type="hidden" id="eventosFiltroOpId">
-            <input type="text" id="eventosFiltroOpNombre" class="form-control" placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
-            <div id="eventosFiltroOpSugerencias" class="list-group" style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+            <input type="text" id="eventosFiltroOpNombre" class="form-control"
+              placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
+            <div id="eventosFiltroOpSugerencias" class="list-group"
+              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
           <div class="form-text" id="eventosFiltroOpMeta"></div>
         </div>
 
-        <!-- Contenedor MARÍTIMO con sugerencias -->
-        <div class="col-md-4">
-          <label for="eventosFiltroContenedorNombre" class="form-label mb-1">Contenedor marítimo</label>
+        <!-- Contenedor FÍSICO (Caja/Ferro) con sugerencias -->
+        <div class=" col-md-4">
+          <label for="eventosFiltroContenedorNombre" class="form-label mb-1">Contenedor físico (Caja/Ferro)</label>
           <div class="position-relative">
-            <!-- Guardaremos el contenedor_maritimos_operacion.id (o equivalente) -->
+            <!-- Aquí guardamos el contenedor_operacion_id para filtrar -->
             <input type="hidden" id="eventosFiltroContenedorId">
-            <input type="text" id="eventosFiltroContenedorNombre" class="form-control" placeholder="Escribe para buscar (ej. EMCU…, MSKU…, TEXU…)" autocomplete="off">
-            <div id="eventosFiltroContenedorSugerencias" class="list-group" style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+            <input type="text" id="eventosFiltroContenedorNombre" class="form-control"
+              placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
+            <div id="eventosFiltroContenedorSugerencias" class="list-group"
+              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
+
         </div>
 
         <!-- Buscador libre -->
-        <div class="col-md-2">
+        <div class=" col-md-2">
           <label for="buscarDetalles" class="form-label mb-1">Buscar</label>
           <input id="buscarDetalles" class="form-control" placeholder="Buscar texto libre…">
         </div>
 
-        <div class="col-md-2 d-flex gap-2">
-          <button class="btn btn-sm btn-outline-success w-100" id="btnExportarExcelEventosLogisticos">
-            <i data-feather="file-text" class="me-1"></i> Excel
-          </button>
-          <button class="btn btn-sm btn-outline-warning w-100" id="btnExportarPDFEventosLogisticos">
-            <i data-feather="file" class="me-1"></i> PDF
-          </button>
-        </div>
+                        <div class="col-md-2">
+                    <button class="btn btn-sm btn-outline-success" id="btnExportarExcelEventosLogisticos">
+                        <i data-feather="file-text" class="me-1"></i> Excel
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFEventosLogisticos">
+                        <i data-feather="file" class="me-1"></i> PDF
+                    </button>
+                </div>
 
-        <!-- perPage -->
+
+
+        <!-- perPage (IDs existentes) -->
         <div class="col-12 d-flex align-items-center justify-content-end gap-2">
           <label for="detPerPage" class="mb-0 small text-muted">Mostrar</label>
           <select id="detPerPage" class="form-control" style="width: 90px;">
@@ -63,20 +71,22 @@
         </div>
       </div>
 
-      <!-- Tabla de eventos -->
+      <!-- Tabla de eventos (por fila) -->
       <div class="table-responsive">
         <table class="table table-hover align-middle" id="tablaDetallesLogisticos">
           <thead class="table-primary">
             <tr class="text-center">
               <th>Evento</th>
               <th>Fecha</th>
-              <th>Operación</th>
-              <th>Contenedor marítimo</th>
+              <th>Operación</th> 
+              <th>Contenedor</th> 
               <th>Comentarios</th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="tbodyDetallesLogisticos"></tbody>
+          <tbody id="tbodyDetallesLogisticos">
+            <!-- filas dinámicas -->
+          </tbody>
         </table>
 
         <!-- Paginación + resumen -->
@@ -85,7 +95,9 @@
             <span id="detMetaResumen">Mostrando 0–0 de 0</span>
           </div>
           <nav aria-label="Paginación de detalles">
-            <ul id="paginacionDetalles" class="pagination pagination-sm mb-0"></ul>
+            <ul id="paginacionDetalles" class="pagination pagination-sm mb-0">
+              <!-- Se llena desde JS -->
+            </ul>
           </nav>
         </div>
       </div>
@@ -109,50 +121,56 @@
       <form id="formEventosLogisticos" autocomplete="off">
         <div class="modal-body">
           <input type="hidden" id="idEvento" name="idEvento" value="">
-          <!-- Si tu JS lo necesita aún, puedes dejarlo fijo en M -->
-          <input type="hidden" id="eventoContenedorTipo" value="M">
-
+          <input type="hidden" id="eventoContenedorTipo">
           <div class="row g-3 mb-2">
             <!-- Operación con sugerencias -->
             <div class="col-md-6">
               <label for="eventoOperacionNombre" class="form-label">Operación</label>
               <div class="position-relative">
                 <input type="hidden" id="eventoOperacionId" name="eventoOperacionId">
-                <input type="text" id="eventoOperacionNombre" class="form-control" placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off" required>
-                <div id="eventoOperacionSugerencias" class="list-group" style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                <input type="text" id="eventoOperacionNombre" class="form-control"
+                  placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off" required>
+                <div id="eventoOperacionSugerencias" class="list-group"
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               </div>
               <div class="form-text" id="eventoOperacionMeta"></div>
             </div>
 
-            <!-- Contenedor MARÍTIMO con sugerencias -->
+            <!-- Contenedor físico (Caja/Ferro) con sugerencias -->
             <div class="col-md-6">
-              <label for="eventoContenedorNombre" class="form-label">Contenedor marítimo</label>
+              <label for="eventoContenedorNombre" class="form-label">Contenedor físico (Caja/Ferro)</label>
               <div class="position-relative">
-                <!-- Guardaremos el id de contenedor_maritimos_operacion -->
+                <!-- Guardaremos directamente el contenedor_operacion_id -->
                 <input type="hidden" id="eventoContenedorOperacionId" name="eventoContenedorOperacionId">
-                <input type="text" id="eventoContenedorNombre" class="form-control" placeholder="Escribe para buscar (ej. EMCU…, MSKU…, TEXU…)" autocomplete="off">
-                <div id="eventoContenedorSugerencias" class="list-group" style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                <input type="text" id="eventoContenedorNombre" class="form-control"
+                  placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
+                <div id="eventoContenedorSugerencias" class="list-group"
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               </div>
-              <div class="form-text">Se listan los contenedores marítimos de la operación seleccionada.</div>
+              <div class="form-text">Se listan los contenedores físicos de la operación seleccionada.</div>
             </div>
           </div>
 
           <div class="row g-3">
             <div class="col-md-4">
-              <label for="tipoEventoId" class="form-label">Tipo de evento</label>
-              <select id="tipoEventoId" name="tipoEventoId" class="form-control" required>
+              <label for="tipo_evento_id" class="form-label">Tipo de evento</label>
+              <select id="tipoEventoId" name="tipoEventoId" class="form-control">
                 <option value="">Selecciona...</option>
+                 
+            
               </select>
             </div>
 
             <div class="col-md-4">
-              <label for="fechaEventoLogistico" class="form-label">Fecha</label>
-              <input type="date" class="form-control" id="fechaEventoLogistico" name="fechaEventoLogistico" required>
+              <label for="fecha_evento" class="form-label">Fecha</label>
+              <input type="date" class="form-control" id="fechaEventoLogistico"
+                name="fechaEventoLogistico" required>
             </div>
 
             <div class="col-md-4">
-              <label for="comentarioEventoLogistico" class="form-label">Comentarios</label>
-              <input type="text" id="comentarioEventoLogistico" name="comentarioEventoLogistico" class="form-control" placeholder="Opcional">
+              <label for="comentarios" class="form-label">Comentarios</label>
+              <input type="text" id="comentarioEventoLogistico" name="comentarioEventoLogistico"
+                class="form-control" placeholder="Opcional">
             </div>
           </div>
         </div>
@@ -162,7 +180,7 @@
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
               <i data-feather="x-circle" class="me-1"></i> Cancelar
             </button>
-            <button type="submit" id="btnSubmitEventoLogistico" class="btn btn-primary">
+            <button type="submit" id="btnSubmitEventoLogistico" class="btn btn-primary" id="btnGuardarDetalles">
               <i data-feather="save" class="me-1"></i> Guardar
             </button>
           </div>
@@ -173,5 +191,7 @@
   </div>
 </div>
 
-<script>feather.replace();</script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/eventos_logisticos.js"></script>
+<script>
+  feather.replace();
+</script>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/eventos_logisticos.js"></script>

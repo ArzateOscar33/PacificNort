@@ -13,17 +13,8 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
         <li class="nav-item">
             <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="activity"></i> Operaciones</a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false"><i data-feather="codesandbox"></i>Contenedores En Operacion</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" id="costos-tab"
-            data-bs-toggle="tab"
-            href="#costos"
-            role="tab"
-            aria-controls="costos"
-            aria-selected="false"><i data-feather="dollar-sign"></i>Costos Contenedor</a>
-        </li>
+ 
+
         <li class="nav-item">
             <a class="nav-link" id="costos_operacion-tab"
             data-bs-toggle="tab"

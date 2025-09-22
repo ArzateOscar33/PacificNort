@@ -12,69 +12,46 @@ public function contarCostosCombinados(array $f = []): int
 
     $buscar      = trim((string)($f['buscar'] ?? ''));
     $moneda      = strtoupper(trim((string)($f['moneda'] ?? ''))); // 'PESOS'|'DLLS'|''
-    $tipoId      = (int)($f['tipo_movimiento_id'] ?? 0);
+    $tipoId      = (int)($f['tipo_movimiento_id'] ?? ($f['tipo'] ?? 0));
     $origen      = strtoupper(trim((string)($f['origen'] ?? ''))); // ''|'OPERACION'|'CONTENEDOR'
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // Filtros por parte
-    $wOp  = ["coo.operacion_id = ?"];  $pOp  = [$operacionId];
-    $wCon = ["o.id_operacion   = ?"];  $pCon = [$operacionId];
+    // Si pidieran explícitamente contenedores, devuelve 0
+    if ($origen === 'CONTENEDOR') return 0;
+
+    $w  = ["co.operacion_id = ?"];
+    $p  = [$operacionId];
 
     if ($soloActivos) {
-        $wOp[] = "coo.estatus = 1";
-        // cco no tiene estatus (si lo agregas, filtra aquí también)
+        $w[] = "co.estatus = 1";
     }
     if ($buscar !== '') {
-        $wOp[]  = "(tm.nombre LIKE ? OR coo.comentario LIKE ? OR o.numero_operacion LIKE ?)";
-        array_push($pOp, "%$buscar%", "%$buscar%", "%$buscar%");
-
-        $wCon[] = "(tm.nombre LIKE ? OR cco.comentario LIKE ? OR cf.numero_ferro LIKE ? OR o.numero_operacion LIKE ?)";
-        array_push($pCon, "%$buscar%", "%$buscar%", "%$buscar%", "%$buscar%");
+        $w[] = "(tm.nombre LIKE ? OR co.comentario LIKE ? OR o.numero_operacion LIKE ?)";
+        array_push($p, "%$buscar%", "%$buscar%", "%$buscar%");
     }
     if ($moneda === 'PESOS' || $moneda === 'DLLS') {
-        $wOp[]  = "UPPER(tm.moneda) = ?";  $pOp[]  = $moneda;
-        $wCon[] = "UPPER(tm.moneda) = ?";  $pCon[] = $moneda;
+        $w[] = "UPPER(tm.moneda) = ?";
+        $p[] = $moneda;
     }
     if ($tipoId > 0) {
-        $wOp[]  = "coo.tipo_movimiento_id = ?";  $pOp[]  = $tipoId;
-        $wCon[] = "cco.tipo_movimiento_id = ?";  $pCon[] = $tipoId;
+        $w[] = "co.tipo_movimiento_id = ?";
+        $p[] = $tipoId;
     }
 
-    $parts  = [];
-    $params = [];
-
-    if ($origen === '' || $origen === 'OPERACION') {
-        $parts[]  = "
-            SELECT coo.id_costo_operacion AS row_id
-            FROM costos_operacion coo
-            LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = coo.tipo_movimiento_id
-            LEFT JOIN operaciones o       ON o.id_operacion       = coo.operacion_id
-            WHERE " . implode(' AND ', $wOp);
-        $params = array_merge($params, $pOp);
-    }
-    if ($origen === '' || $origen === 'CONTENEDOR') {
-        $parts[]  = "
-            SELECT cco.id_costo_contenedor AS row_id
-            FROM costos_contenedor_operacion cco
-            LEFT JOIN contenedores_operacion co ON co.id_contenedor = cco.contenedor_operacion_id
-            LEFT JOIN operaciones o             ON o.id_operacion   = co.operacion_id
-            LEFT JOIN contenedores_fisicos cf   ON cf.id_fisico     = co.id_fisico
-            LEFT JOIN tipos_movimiento tm       ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-            WHERE " . implode(' AND ', $wCon);
-        $params = array_merge($params, $pCon);
-    }
-
-    if (empty($parts)) return 0;
-
-    $sql = "SELECT COUNT(*) AS total FROM (" . implode(" UNION ALL ", $parts) . ") t";
+    $sql = "SELECT COUNT(*) AS total
+            FROM costos_operacion co
+            LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+            LEFT JOIN operaciones o       ON o.id_operacion       = co.operacion_id
+            WHERE " . implode(' AND ', $w);
 
     try {
-        $row = $this->select($sql, $params);
+        $row = $this->select($sql, $p);
         return (int)($row['total'] ?? 0);
     } catch (\Throwable $e) {
         return 0;
     }
 }
+
 
 /**
  * Lista filas combinadas (operación + contenedores) con paginación.
@@ -90,36 +67,34 @@ public function listarCostosCombinadosPaginado(int $page, int $perPage, array $f
     if ($operacionId <= 0) return [];
 
     $buscar      = trim((string)($f['buscar'] ?? ''));
-    $moneda      = strtoupper(trim((string)($f['moneda'] ?? ''))); // 'PESOS'|'DLLS'|''
-    $tipoId      = (int)($f['tipo_movimiento_id'] ?? 0);
-    $origen      = strtoupper(trim((string)($f['origen'] ?? ''))); // ''|'OPERACION'|'CONTENEDOR'
+    $moneda      = strtoupper(trim((string)($f['moneda'] ?? '')));
+    $tipoId      = (int)($f['tipo_movimiento_id'] ?? ($f['tipo'] ?? 0));
+    $origen      = strtoupper(trim((string)($f['origen'] ?? '')));
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // WHERE + params por parte
-    $wOp  = ["co.operacion_id = ?"];   $pOp  = [$operacionId];
-    $wCon = ["o.id_operacion   = ?"];  $pCon = [$operacionId];
+    // Si pidieran explícitamente contenedores, devuelve []
+    if ($origen === 'CONTENEDOR') return [];
+
+    $w  = ["co.operacion_id = ?"];
+    $p  = [$operacionId];
 
     if ($soloActivos) {
-        $wOp[] = "co.estatus = 1";
+        $w[] = "co.estatus = 1";
     }
     if ($buscar !== '') {
-        $wOp[]  = "(tm.nombre LIKE ? OR co.comentario LIKE ? OR o.numero_operacion LIKE ?)";
-        array_push($pOp, "%$buscar%", "%$buscar%", "%$buscar%");
-
-        $wCon[] = "(tm.nombre LIKE ? OR cco.comentario LIKE ? OR cf.numero_ferro LIKE ? OR o.numero_operacion LIKE ?)";
-        array_push($pCon, "%$buscar%", "%$buscar%", "%$buscar%", "%$buscar%");
+        $w[] = "(tm.nombre LIKE ? OR co.comentario LIKE ? OR o.numero_operacion LIKE ?)";
+        array_push($p, "%$buscar%", "%$buscar%", "%$buscar%");
     }
     if ($moneda === 'PESOS' || $moneda === 'DLLS') {
-        $wOp[]  = "UPPER(tm.moneda) = ?";  $pOp[]  = $moneda;
-        $wCon[] = "UPPER(tm.moneda) = ?";  $pCon[] = $moneda;
+        $w[] = "UPPER(tm.moneda) = ?";
+        $p[] = $moneda;
     }
     if ($tipoId > 0) {
-        $wOp[]  = "co.tipo_movimiento_id = ?";  $pOp[]  = $tipoId;
-        $wCon[] = "cco.tipo_movimiento_id = ?";  $pCon[] = $tipoId;
+        $w[] = "co.tipo_movimiento_id = ?";
+        $p[] = $tipoId;
     }
 
-    // SELECTs normalizados
-    $selOp = "
+    $sql = "
         SELECT
             'OPERACION'                 AS origen,
             NULL                        AS contenedor_id,
@@ -137,56 +112,19 @@ public function listarCostosCombinadosPaginado(int $page, int $perPage, array $f
         FROM costos_operacion co
         LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
         LEFT JOIN operaciones o       ON o.id_operacion       = co.operacion_id
-        WHERE " . implode(' AND ', $wOp);
-
-    $selCon = "
-        SELECT
-            'CONTENEDOR'                AS origen,
-            co.id_contenedor            AS contenedor_id,
-            cf.numero_ferro             AS contenedor,
-            cco.id_costo_contenedor     AS row_id,
-            o.id_operacion              AS operacion_id,
-            o.numero_operacion          AS numero_operacion,
-            tm.id_tipo_movimiento       AS tipo_movimiento_id,
-            tm.nombre                   AS concepto,
-            LOWER(tm.tipo)              AS naturaleza,
-            UPPER(tm.moneda)            AS moneda,
-            cco.monto                   AS monto,
-            cco.comentario              AS comentario,
-            cco.fecha_creacion          AS fecha
-        FROM costos_contenedor_operacion cco
-        LEFT JOIN contenedores_operacion co ON co.id_contenedor = cco.contenedor_operacion_id
-        LEFT JOIN operaciones o             ON o.id_operacion   = co.operacion_id
-        LEFT JOIN contenedores_fisicos cf   ON cf.id_fisico     = co.id_fisico
-        LEFT JOIN tipos_movimiento tm       ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-        WHERE " . implode(' AND ', $wCon);
-
-    $parts  = [];
-    $params = [];
-    if ($origen === '' || $origen === 'OPERACION') {
-        $parts[]  = $selOp;
-        $params   = array_merge($params, $pOp);
-    }
-    if ($origen === '' || $origen === 'CONTENEDOR') {
-        $parts[]  = $selCon;
-        $params   = array_merge($params, $pCon);
-    }
-    if (empty($parts)) return [];
-
-    $sql = "
-        SELECT *
-        FROM (" . implode(" UNION ALL ", $parts) . ") t
-        ORDER BY t.fecha DESC, t.row_id DESC
+        WHERE " . implode(' AND ', $w) . "
+        ORDER BY co.fecha_creacion DESC, co.id_costo_operacion DESC
         LIMIT {$perPage} OFFSET {$offset}
     ";
 
     try {
-        $rows = $this->selectAll($sql, $params);
+        $rows = $this->selectAll($sql, $p);
         return is_array($rows) ? $rows : [];
     } catch (\Throwable $e) {
         return [];
     }
 }
+
 public function totalesCostosCombinados(array $f = []): array
 {
     $operacionId = (int)($f['operacion_id'] ?? 0);
@@ -195,14 +133,13 @@ public function totalesCostosCombinados(array $f = []): array
             'total_operacion'    => 0.0,
             'total_contenedores' => 0.0,
             'total_general'      => 0.0,
-            // opcional:
             'total_abonos_operacion'    => 0.0,
             'total_abonos_contenedores' => 0.0,
         ];
     }
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // ---- COSTOS (gasto) a NIVEL OPERACIÓN
+    // GASTOS de operación
     $sqlOpGasto = "SELECT COALESCE(SUM(co.monto),0) AS total
                    FROM costos_operacion co
                    INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
@@ -210,16 +147,7 @@ public function totalesCostosCombinados(array $f = []): array
     $rowOpG = $this->select($sqlOpGasto, [$operacionId]);
     $totalOp = (float)($rowOpG['total'] ?? 0);
 
-    // ---- COSTOS (gasto) por CONTENEDOR ligados a la operación
-    $sqlConGasto = "SELECT COALESCE(SUM(cco.monto),0) AS total
-                    FROM costos_contenedor_operacion cco
-                    INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
-                    INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-                    WHERE x.operacion_id = ? AND tm.tipo='gasto'";
-    $rowConG = $this->select($sqlConGasto, [$operacionId]);
-    $totalCon = (float)($rowConG['total'] ?? 0);
-
-    // ---- (OPCIONAL) ABONOS planos
+    // ABONOS de operación
     $sqlOpAbono = "SELECT COALESCE(SUM(co.monto),0) AS total
                    FROM costos_operacion co
                    INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
@@ -227,23 +155,15 @@ public function totalesCostosCombinados(array $f = []): array
     $rowOpA = $this->select($sqlOpAbono, [$operacionId]);
     $totalAbOp = (float)($rowOpA['total'] ?? 0);
 
-    $sqlConAbono = "SELECT COALESCE(SUM(cco.monto),0) AS total
-                    FROM costos_contenedor_operacion cco
-                    INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
-                    INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-                    WHERE x.operacion_id = ? AND tm.tipo='abono'";
-    $rowConA = $this->select($sqlConAbono, [$operacionId]);
-    $totalAbCon = (float)($rowConA['total'] ?? 0);
-
     return [
-        'total_operacion'    => $totalOp,            // solo gastos
-        'total_contenedores' => $totalCon,           // solo gastos
-        'total_general'      => $totalOp + $totalCon,
-        // opcional: te puede servir si lo quieres en el payload
+        'total_operacion'    => $totalOp,
+        'total_contenedores' => 0.0,                 // <- ya no contamos contenedores
+        'total_general'      => $totalOp,            // <- igual a operación
         'total_abonos_operacion'    => $totalAbOp,
-        'total_abonos_contenedores' => $totalAbCon,
+        'total_abonos_contenedores' => 0.0,          // <- cero
     ];
 }
+
 public function abonosCombinadosDetallado(array $f = []): array
 {
     $operacionId = (int)($f['operacion_id'] ?? 0);
@@ -255,7 +175,6 @@ public function abonosCombinadosDetallado(array $f = []): array
     }
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // --- Operación por moneda (solo abonos)
     $sqlOp = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(co.monto),0) AS total
               FROM costos_operacion co
               INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
@@ -270,27 +189,12 @@ public function abonosCombinadosDetallado(array $f = []): array
         if ($m === 'DLLS')  $op['DLLS']  += $t;
     }
 
-    // --- Contenedores por moneda (solo abonos)
-    $sqlCon = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(cco.monto),0) AS total
-               FROM costos_contenedor_operacion cco
-               INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
-               INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-               WHERE x.operacion_id = ? AND tm.tipo='abono'
-               GROUP BY UPPER(tm.moneda)";
-    $rowsCon = $this->selectAll($sqlCon, [$operacionId]) ?: [];
-    $con = ['PESOS'=>0.0, 'DLLS'=>0.0];
-    foreach ($rowsCon as $r) {
-        $m = strtoupper((string)($r['moneda'] ?? ''));
-        $t = (float)($r['total'] ?? 0);
-        if ($m === 'PESOS') $con['PESOS'] += $t;
-        if ($m === 'DLLS')  $con['DLLS']  += $t;
-    }
-
     return [
         'operacion'    => $op,
-        'contenedores' => $con,
+        'contenedores' => ['PESOS'=>0.0, 'DLLS'=>0.0], // <- cero
     ];
 }
+
 // En tu Model:
 public function obtenerTipoMovimiento(int $id): ?array {
   $sql = "SELECT id_tipo_movimiento, UPPER(moneda) AS moneda, LOWER(tipo) AS tipo, nombre
@@ -301,26 +205,29 @@ public function obtenerTipoMovimiento(int $id): ?array {
   return $row ?: null;
 }
 
-public function buscarOperacionesPorTerm(string $term): array
-    {
-        // Ajusta los nombres de tablas/columnas si en tu esquema difieren
-        $sql = "SELECT 
-                    o.id_operacion, 
-                    o.numero_operacion, 
-                    c.nombre AS cliente
-                FROM operaciones o
-                LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
-                WHERE o.numero_operacion LIKE ?
-                ORDER BY o.numero_operacion ASC
-                LIMIT 20";
+ public function buscarOperacionesPorTerm(string $term): array
+{
+    $term = trim($term);
+    if ($term === '') return [];
 
-        try {
-            return $this->selectAll($sql, ["%{$term}%"]) ?: [];
-        } catch (\Throwable $e) {
-            // Log si lo manejas y regresa vacío para no romper el autocompletar
-            return [];
-        }
+    $sql = "SELECT 
+                o.id_operacion, 
+                o.numero_operacion, 
+                c.nombre AS cliente
+            FROM operaciones o
+            LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+            WHERE o.tipo_operacion_id = 1              -- solo marítimas
+              AND o.numero_operacion LIKE ?
+            ORDER BY o.numero_operacion ASC
+            LIMIT 20";
+
+    try {
+        return $this->selectAll($sql, ["%{$term}%"]) ?: [];
+    } catch (\Throwable $e) {
+        return [];
     }
+}
+
 
 public function totalesCostosCombinadosDetallado(array $f = []): array
 {
@@ -331,10 +238,9 @@ public function totalesCostosCombinadosDetallado(array $f = []): array
             'contenedores' => ['PESOS' => 0.0, 'DLLS' => 0.0],
         ];
     }
-
     $soloActivos = (bool)($f['solo_activos'] ?? true);
 
-    // --- Operación por moneda (SOLO GASTOS) ---
+    // SOLO GASTOS por moneda (nivel operación)
     $sqlOp = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(co.monto),0) AS total
               FROM costos_operacion co
               INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = co.tipo_movimiento_id
@@ -349,27 +255,12 @@ public function totalesCostosCombinadosDetallado(array $f = []): array
         if ($m === 'DLLS')  $op['DLLS']  += $t;
     }
 
-    // --- Contenedores por moneda (SOLO GASTOS) ---
-    $sqlCon = "SELECT UPPER(tm.moneda) AS moneda, COALESCE(SUM(cco.monto),0) AS total
-               FROM costos_contenedor_operacion cco
-               INNER JOIN contenedores_operacion x ON x.id_contenedor = cco.contenedor_operacion_id
-               INNER JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-               WHERE x.operacion_id = ? AND tm.tipo='gasto'
-               GROUP BY UPPER(tm.moneda)";
-    $rowsCon = $this->selectAll($sqlCon, [$operacionId]) ?: [];
-    $con = ['PESOS'=>0.0, 'DLLS'=>0.0];
-    foreach ($rowsCon as $r) {
-        $m = strtoupper((string)($r['moneda'] ?? ''));
-        $t = (float)($r['total'] ?? 0);
-        if ($m === 'PESOS') $con['PESOS'] += $t;
-        if ($m === 'DLLS')  $con['DLLS']  += $t;
-    }
-
     return [
         'operacion'    => $op,
-        'contenedores' => $con,
+        'contenedores' => ['PESOS'=>0.0, 'DLLS'=>0.0], // <- cero
     ];
 }
+
 
 
 public function obtenerTiposMovimientoActivos(): array

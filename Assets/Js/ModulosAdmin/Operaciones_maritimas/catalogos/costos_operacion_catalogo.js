@@ -9,7 +9,6 @@
   // ---------- Refs del DOM ----------
   const tbodyCostosOperacionCombined     = document.getElementById("tbodyCostosOperacionCombined");
   const costosOperacionBuscar            = document.getElementById("costosOperacionBuscar");
-  const costosOperacionFiltroOrigen      = document.getElementById("costosOperacionFiltroOrigen");
   const costosOperacionFiltroMoneda      = document.getElementById("costosOperacionFiltroMoneda");
   const costosOperacionFiltroTipo        = document.getElementById("costosOperacionFiltroTipo");
   const costosOperacionPerPageSel        = document.getElementById("costosOperacionPerPage");
@@ -17,8 +16,7 @@
   const costosOperacionMeta              = document.getElementById("costosOperacionMeta");
 
   // Tarjetas totales + controles de vista
-  const costosOperacionTotalOperacion    = document.getElementById("costosOperacionTotalOperacion");
-  const costosOperacionTotalContenedores = document.getElementById("costosOperacionTotalContenedores");
+  const costosOperacionTotalOperacion    = document.getElementById("costosOperacionTotalOperacion"); 
   const costosOperacionTotalGeneral      = document.getElementById("costosOperacionTotalGeneral");
   const costosOperacionMonedaVistaSel    = document.getElementById("costosOperacionMonedaVista");  // MXN | USD
   const costosOperacionTipoCambioInp     = document.getElementById("costosOperacionTipoCambio");   // MXN por 1 USD
@@ -65,17 +63,13 @@
   function renderCargandoCostosOperacion(){
     if (!tbodyCostosOperacionCombined) return;
     tbodyCostosOperacionCombined.innerHTML = `
-      <tr><td colspan="8" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
+      <tr><td colspan="6" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
   }
-  function renderErrorCostosOperacion(msg){
-    if (!tbodyCostosOperacionCombined) return;
-    tbodyCostosOperacionCombined.innerHTML = `
-      <tr><td colspan="8" class="text-center text-danger py-4">${msg||"Error al cargar."}</td></tr>`;
-  }
+ 
   function renderVacioCostosOperacion(){
     if (!tbodyCostosOperacionCombined) return;
     tbodyCostosOperacionCombined.innerHTML = `
-      <tr><td colspan="8" class="text-center text-muted py-4">No hay costos para mostrar.</td></tr>`;
+      <tr><td colspan="6" class="text-center text-muted py-4">No hay costos para mostrar.</td></tr>`;
   }
 
   // ---------- Render: tabla ----------
@@ -86,25 +80,17 @@ function renderTablaCostosOperacion(rows){
 
   rows.forEach(r=>{
     const tr = document.createElement("tr");
-    const origen = String(r.origen||"").toUpperCase();
-    const badgeOrigen  = (origen==="CONTENEDOR")
-      ? `<span class="badge bg-info-subtle text-info">CONTENEDOR</span>`
-      : `<span class="badge bg-primary-subtle text-primary">OPERACIÓN</span>`;
 
-    // NUEVO: naturaleza (gasto|abono)
     const nat = String(r.naturaleza || "").toUpperCase(); // "GASTO" | "ABONO"
     const isAbono = (nat === "ABONO");
     const montoFmt = moneyCostosOperacion(r.monto || 0);
     const montoCls = isAbono ? "text-success fw-semibold" : "text-danger fw-semibold";
     const montoConSigno = `${isAbono ? "+" : " "} ${montoFmt}`;
-
-    // (opcional) badge pequeño junto al concepto
     const badgeNat = nat
-      ? `<span class="badge ${isAbono ? 'bg-success-subtle text-success':'bg-danger-subtle text-danger'} ms-1"> ${nat}</span>`
+      ? `<span class="badge ${isAbono ? 'bg-success-subtle text-success':'bg-danger-subtle text-danger'} ms-1">${nat}</span>`
       : "";
 
-    // data-* actuales (por si editas desde dataset)
-    tr.dataset.origen = origen;
+    // dataset mínimo para edición
     tr.dataset.rowId  = r.row_id || "";
     tr.dataset.opId   = r.operacion_id || "";
     tr.dataset.opNom  = r.numero_operacion || "";
@@ -113,21 +99,18 @@ function renderTablaCostosOperacion(rows){
     tr.dataset.monto  = r.monto || "";
     tr.dataset.coment = r.comentario || "";
 
-     
     tr.innerHTML = `
       <td>${fmtFechaCostosOperacion(r.fecha)}</td>
-      <td>${badgeOrigen}</td>
-      <td>${origen==="CONTENEDOR" ? safeCostosOperacion(r.contenedor||"") : "Pertenece a Operacion"}</td>
       <td>${safeCostosOperacion(r.concepto||"")}${badgeNat}</td>
       <td>${prettyMonedaCostosOperacion(r.moneda||"")}</td>
       <td class="text-end ${montoCls}">${montoConSigno}</td>
       <td>${safeCostosOperacion(r.comentario||"")}</td>
       <td class="text-center">
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Editar" ${origen==="OPERACION"?"":"disabled"}>
+          <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Editar">
             <i data-feather="edit-2"></i>
           </button>
-          <button class="btn btn-outline-danger btnEliminarCostoOperacion" title="Eliminar" ${origen==="OPERACION"?"":"disabled"}>
+          <button class="btn btn-outline-danger btnEliminarCostoOperacion" title="Eliminar">
             <i data-feather="trash-2"></i>
           </button>
         </div>
@@ -138,86 +121,53 @@ function renderTablaCostosOperacion(rows){
 }
 
 
+
   // ---------- Render: totales con conversión ----------
-  function renderTotalesCostosOperacion(totales, totalesDetalle){
-    // guarda cache para recalcular al cambiar selector/tipoCambio
-    if (totalesDetalle) totalesDetalleCacheCostosOperacion = totalesDetalle;
+function renderTotalesCostosOperacion(totales, totalesDetalle){
+  if (totalesDetalle) totalesDetalleCacheCostosOperacion = totalesDetalle;
 
-    // si no tenemos detalle, pintamos simples
-    if (!totalesDetalleCacheCostosOperacion ||
-        !totalesDetalleCacheCostosOperacion.operacion ||
-        !totalesDetalleCacheCostosOperacion.contenedores) {
-      const tOp  = Number(totales?.total_operacion||0);
-      const tCo  = Number(totales?.total_contenedores||0);
-      const tGen = Number(totales?.total_general || (tOp+tCo));
-      if (costosOperacionTotalOperacion)    costosOperacionTotalOperacion.textContent    = moneyCostosOperacion(tOp);
-      if (costosOperacionTotalContenedores) costosOperacionTotalContenedores.textContent = moneyCostosOperacion(tCo);
-      if (costosOperacionTotalGeneral)      costosOperacionTotalGeneral.textContent      = moneyCostosOperacion(tGen);
-      return;
-    }
+  // Esperamos: totalesDetalle = { operacion:{PESOS: n, DLLS: n} }
+  const det = totalesDetalleCacheCostosOperacion || { operacion:{PESOS:0, DLLS:0} };
+  const opPesos = Number(det.operacion.PESOS||0);
+  const opDlls  = Number(det.operacion.DLLS ||0);
 
-    const det = totalesDetalleCacheCostosOperacion;
-    const opPesos  = Number(det.operacion.PESOS||0);
-    const opDlls   = Number(det.operacion.DLLS ||0);
-    const conPesos = Number(det.contenedores.PESOS||0);
-    const conDlls  = Number(det.contenedores.DLLS ||0);
+  const vista = (costosOperacionMonedaVistaSel?.value || "MXN").toUpperCase(); // MXN|USD
+  let tc = parseFloat(costosOperacionTipoCambioInp?.value || "0");
+  if (!Number.isFinite(tc) || tc<=0) tc = 1;
 
-    const vista = (costosOperacionMonedaVistaSel?.value || "MXN").toUpperCase(); // MXN|USD
-    let tc = parseFloat(costosOperacionTipoCambioInp?.value || "0");
-    if (!Number.isFinite(tc) || tc<=0) tc = 1;
+  let symbol = "$", totalOpConv = 0;
+  if (vista === "MXN"){ symbol="$";   totalOpConv = opPesos + (opDlls * tc); }
+  else                { symbol="US$"; totalOpConv = opDlls + (opPesos / tc); }
 
-    let symbol = "$";
-    let totalOpConv = 0, totalConConv = 0, totalGenConv = 0;
+  if (costosOperacionTotalOperacion) costosOperacionTotalOperacion.textContent = formatMoneyGenericCostosOperacion(totalOpConv, symbol);
+  if (costosOperacionTotalGeneral)   costosOperacionTotalGeneral.textContent   = formatMoneyGenericCostosOperacion(totalOpConv, symbol);
+}
 
-    if (vista === "MXN"){
-      symbol = "$";
-      totalOpConv  = opPesos  + (opDlls  * tc);
-      totalConConv = conPesos + (conDlls * tc);
-    } else {
-      symbol = "US$";
-      totalOpConv  = opDlls  + (opPesos  / tc);
-      totalConConv = conDlls + (conPesos / tc);
-    }
-    totalGenConv = totalOpConv + totalConConv;
-
-    if (costosOperacionTotalOperacion)    costosOperacionTotalOperacion.textContent    = formatMoneyGenericCostosOperacion(totalOpConv, symbol);
-    if (costosOperacionTotalContenedores) costosOperacionTotalContenedores.textContent = formatMoneyGenericCostosOperacion(totalConConv, symbol);
-    if (costosOperacionTotalGeneral)      costosOperacionTotalGeneral.textContent      = formatMoneyGenericCostosOperacion(totalGenConv, symbol);
-  }
-  function computeViewTotalsCostosOperacion(detCostos, detAbonos){
-  // detCostos: {operacion:{PESOS,DLLS}, contenedores:{PESOS,DLLS}}
-  // detAbonos: {operacion:{PESOS,DLLS}, contenedores:{PESOS,DLLS}}
+function computeViewTotalsCostosOperacion(detCostos, detAbonos){
   const vista = (costosOperacionMonedaVistaSel?.value || "MXN").toUpperCase();
   let tc = parseFloat(costosOperacionTipoCambioInp?.value || "0"); if (!Number.isFinite(tc) || tc<=0) tc = 1;
 
-  const c = detCostos || {operacion:{PESOS:0,DLLS:0}, contenedores:{PESOS:0,DLLS:0}};
-  const a = detAbonos || {operacion:{PESOS:0,DLLS:0}, contenedores:{PESOS:0,DLLS:0}};
+  const c = detCostos || { operacion:{PESOS:0, DLLS:0} };
+  const a = detAbonos || { operacion:{PESOS:0, DLLS:0} };
 
-  const opPesosC  = Number(c.operacion?.PESOS||0),  opDllsC  = Number(c.operacion?.DLLS||0);
-  const conPesosC = Number(c.contenedores?.PESOS||0), conDllsC = Number(c.contenedores?.DLLS||0);
+  const opPesosC = Number(c.operacion?.PESOS||0), opDllsC = Number(c.operacion?.DLLS||0);
+  const opPesosA = Number(a.operacion?.PESOS||0), opDllsA = Number(a.operacion?.DLLS||0);
 
-  const opPesosA  = Number(a.operacion?.PESOS||0),  opDllsA  = Number(a.operacion?.DLLS||0);
-  const conPesosA = Number(a.contenedores?.PESOS||0), conDllsA = Number(a.contenedores?.DLLS||0);
-
-  let opCost=0, contCost=0, opAbono=0, contAbono=0, symbol="$";
-
+  let opCost=0, opAbono=0, symbol="$";
   if (vista === "MXN"){
     symbol = "$";
-    opCost     = opPesosC  + (opDllsC  * tc);
-    contCost   = conPesosC + (conDllsC * tc);
-    opAbono    = opPesosA  + (opDllsA  * tc);
-    contAbono  = conPesosA + (conDllsA * tc);
+    opCost  = opPesosC + (opDllsC * tc);
+    opAbono = opPesosA + (opDllsA * tc);
   } else {
     symbol = "US$";
-    opCost     = opDllsC  + (opPesosC  / tc);
-    contCost   = conDllsC + (conPesosC / tc);
-    opAbono    = opDllsA  + (opPesosA  / tc);
-    contAbono  = conDllsA + (conPesosA / tc);
+    opCost  = opDllsC + (opPesosC / tc);
+    opAbono = opDllsA + (opPesosA / tc);
   }
 
   const fmt = (n) => symbol + " " + Number(n).toLocaleString("es-MX",{minimumFractionDigits:2, maximumFractionDigits:2});
-  return { opCost, contCost, opAbono, contAbono, fmt };
+  return { opCost, opAbono, fmt };
 }
+
 
 
   // ---------- Render: paginación + meta ----------
@@ -270,7 +220,7 @@ function renderTablaCostosOperacion(rows){
     // sin operación seleccionada: vacío
     if (!operacionIdCostosOperacion || operacionIdCostosOperacion<=0){
       renderVacioCostosOperacion();
-      renderTotalesCostosOperacion({total_operacion:0,total_contenedores:0,total_general:0}, null);
+      renderTotalesCostosOperacion(null, { operacion:{PESOS:0, DLLS:0} });
       renderPaginacionCostosOperacion({page:1,totalPages:0});
       renderMetaCostosOperacion({page:1,perPage:perPageCostosOperacion,total:0});
       return;
@@ -279,7 +229,7 @@ function renderTablaCostosOperacion(rows){
     const buscar = (costosOperacionBuscar?.value||"").trim();
     const moneda = (costosOperacionFiltroMoneda?.value||"").toUpperCase();
     const tipoId = parseInt(costosOperacionFiltroTipo?.value||"0",10) || 0;
-    const origen = (costosOperacionFiltroOrigen?.value||"").toUpperCase();
+ 
 
     if (currentXHRCostosOperacion && currentXHRCostosOperacion.readyState!==4) currentXHRCostosOperacion.abort();
     renderCargandoCostosOperacion();
@@ -291,7 +241,7 @@ function renderTablaCostosOperacion(rows){
       moneda,
       tipo: String(tipoId),
       operacion_id: String(operacionIdCostosOperacion),
-      origen
+        
     });
 
     const url = `${base_url}Operaciones_maritimas_costos_operacion/listarPaginado?${params.toString()}`;
@@ -301,33 +251,32 @@ function renderTablaCostosOperacion(rows){
     currentXHRCostosOperacion.onreadystatechange = function(){
       
       if (this.readyState!==4) return;
-      if (this.status!==200){ console.error(this.responseText); renderErrorCostosOperacion("No se pudo cargar la información."); return; }
+      if (this.status!==200){ console.error(this.responseText);   return; }
 
       let payload;
-      try{ payload = JSON.parse(this.responseText); } catch{ renderErrorCostosOperacion("Respuesta inválida del servidor."); return; }
+      try{ payload = JSON.parse(this.responseText); } catch{   return; }
 
       const data            = payload.data    || [];
       const meta            = payload.meta    || {page:1,totalPages:1,total:0,perPage:perPageCostosOperacion};
-      const totales         = payload.totales || {total_operacion:0,total_contenedores:0,total_general:0};
-      const totalesDetalle  = payload.totales_detalle || null;
+      const totalesDetalle  = payload.totales_detalle || { operacion:{PESOS:0, DLLS:0} };
+      const abonosDetalle   = payload.abonos_detalle  || { operacion:{PESOS:0, DLLS:0} };
 
       if (data.length===0 && meta.totalPages>0 && currentPageCostosOperacion>meta.totalPages){
         listarCostosOperacion(meta.totalPages);
         return;
       }
 
-      renderTablaCostosOperacion(data);
-      renderPaginacionCostosOperacion(meta);
-      renderMetaCostosOperacion(meta);
-      renderTotalesCostosOperacion(totales, totalesDetalle);
-    const abonosDetalle   = payload.abonos_detalle || { operacion:{PESOS:0,DLLS:0}, contenedores:{PESOS:0,DLLS:0} };
-
+renderTablaCostosOperacion(data);
+renderPaginacionCostosOperacion(meta);
+renderMetaCostosOperacion(meta);
+renderTotalesCostosOperacion(null, totalesDetalle);
+   
 abonosDetalleCacheCostosOperacion = abonosDetalle; // cacheamos
-const { opCost, contCost, opAbono, contAbono, fmt } =
+const { opCost, opAbono, fmt } =
   computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
 
-renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
-    
+// Ahora pintamos SOLO operación y general
+renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
     };
   }
 
@@ -350,23 +299,23 @@ renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
   });
 
   costosOperacionFiltroMoneda?.addEventListener("change",   ()=>listarCostosOperacion(1));
-  costosOperacionFiltroTipo?.addEventListener("change",     ()=>listarCostosOperacion(1));
-  costosOperacionFiltroOrigen?.addEventListener("change",   ()=>listarCostosOperacion(1));
+  costosOperacionFiltroTipo?.addEventListener("change",     ()=>listarCostosOperacion(1)); 
 
   // Recalcular tarjetas al cambiar vista de moneda o tipo de cambio
 costosOperacionMonedaVistaSel?.addEventListener("change", ()=>{
   renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
-  const { opCost, contCost, opAbono, contAbono, fmt } =
-    computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
-  renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
+  const { opCost, opAbono, fmt } =
+   computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
+ renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
 });
 
 costosOperacionTipoCambioInp?.addEventListener("input", ()=>{
   renderTotalesCostosOperacion(null, totalesDetalleCacheCostosOperacion);
-  const { opCost, contCost, opAbono, contAbono, fmt } =
+  const { opCost, opAbono, fmt } =
     computeViewTotalsCostosOperacion(totalesDetalleCacheCostosOperacion, abonosDetalleCacheCostosOperacion);
-  renderCostosAbonosCards({ opCost, contCost, opAbono, contAbono, fmt });
+  renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
 });
+
 
   // ---------- Autocomplete de Operación ----------
   function buscarOperacionesSugerenciasCostosOperacion(term){
@@ -403,7 +352,7 @@ costosOperacionTipoCambioInp?.addEventListener("input", ()=>{
       });
       opSugBox.innerHTML = html;
       opSugBox.style.display = "block";
-      opMeta && (opMeta.textContent = `${rows.length} resultado(s)`);
+      opMeta;
 
       opSugBox.querySelectorAll("button.list-group-item").forEach(btn=>{
         btn.addEventListener("click", ()=>{
@@ -734,7 +683,7 @@ document.getElementById("tbodyCostosOperacionCombined")?.addEventListener("click
   const btn = e.target.closest(".btnEditarCostoOperacion");
   if (!btn) return;
   const tr = btn.closest("tr");
-  if (!tr || tr.dataset.origen !== "OPERACION") return; // respeta tu regla
+   
   // Esta función está dentro del IIFE del modal;
   // la exponemos más abajo con window.openModalEditarCostosOperacion
   window.openModalEditarCostosOperacion?.(tr);
@@ -745,7 +694,7 @@ document.getElementById("tbodyCostosOperacionCombined")?.addEventListener("click
   const btn = e.target.closest(".btnEliminarCostoOperacion");
   if (!btn) return;
   const tr = btn.closest("tr");
-  if (!tr || tr.dataset.origen !== "OPERACION") return; // respeta tu regla
+ 
   const rowId = tr.dataset.rowId;
   Swal.fire({
     title: '¿Eliminar costo?',
@@ -783,7 +732,7 @@ window.openModalEditarCostosOperacion = openModalEditarCostosOperacion;
       ref: 'tablaCostosOperacionExportar',       // "#tablaEventos" o el elemento también funciona
       formato: 'xlsx',
       nombre: 'CostosOperacion.xlsx',
-      columnasOcultas: [7],      // oculta columna ID
+      columnasOcultas: [],      // oculta columna ID
       soloVisibles: true,
       sheetName: 'Costos Operacion'
     });
@@ -798,49 +747,41 @@ window.openModalEditarCostosOperacion = openModalEditarCostosOperacion;
       titulo: 'Costos Operacion',
       orientacion: 'landscape',  // o 'portrait'
       formatoPagina: 'letter',   // o 'a4'
-      columnasOcultas: [7],
+      columnasOcultas: [],
       soloVisibles: true
     });
   });
-  // Llama esto cuando refresques los totales
-function renderCostosAbonosCards({ 
-  opCost = 0, opAbono = 0, 
-  contCost = 0, contAbono = 0, 
-  fmt = (n) => `$ ${Number(n).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})}`
-} = {}) {
-  // Operación
-  const opBalance = (opAbono - opCost);
-  document.getElementById('costosOperacionTotalOperacion').textContent = fmt(opCost);
-  document.getElementById('costosOperacionAbonosOperacion').textContent = fmt(opAbono);
-  setBadgeValue('costosOperacionBalanceOperacion', opBalance, fmt);
-
-  // Contenedores
-  const contBalance = (contAbono - contCost);
-  document.getElementById('costosOperacionTotalContenedores').textContent = fmt(contCost);
-  document.getElementById('costosOperacionAbonosContenedores').textContent = fmt(contAbono);
-  setBadgeValue('costosOperacionBalanceContenedores', contBalance, fmt);
-
-  // General
-  const totalAbonos = opAbono + contAbono;
-  const totalCostos = opCost + contCost;
-  const totalBalance = totalAbonos - totalCostos;
-
-  document.getElementById('costosOperacionTotalGeneral').textContent = fmt(totalBalance);
-  document.getElementById('costosOperacionTotalAbonosGeneral').textContent = fmt(totalAbonos);
-  document.getElementById('costosOperacionTotalCostosGeneral').textContent = fmt(totalCostos);
-}
-
-// Badge con color dinámico (verde si >0, gris si 0, rojo si <0)
-function setBadgeValue(id, val, fmt){
+ 
+ function setBadgeValueSimple(id, val, fmt){
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = fmt(val);
   el.classList.remove('bg-light','text-dark','bg-danger','bg-success','bg-secondary');
-  if (val > 0) {
-    el.classList.add('bg-success');
-  } else if (val < 0) {
-    el.classList.add('bg-danger');
-  } else {
-    el.classList.add('bg-secondary');
-  }
+  if (val > 0) el.classList.add('bg-success');
+  else if (val < 0) el.classList.add('bg-danger');
+  else el.classList.add('bg-secondary');
 }
+
+function renderCostosAbonosCardsSoloOperacion({ opCost = 0, opAbono = 0, fmt } = {}) {
+  const opBalance = (opAbono - opCost);
+
+  // Operación
+  const elTotOp   = document.getElementById('costosOperacionTotalOperacion');
+  const elAbOp    = document.getElementById('costosOperacionAbonosOperacion');
+  if (elTotOp) elTotOp.textContent = fmt(opCost);
+  if (elAbOp)  elAbOp.textContent  = fmt(opAbono);
+  setBadgeValueSimple('costosOperacionBalanceOperacion', opBalance, fmt);
+
+  // General = SOLO operación
+  const totalAbonos  = opAbono;
+  const totalCostos  = opCost;
+  const totalBalance = totalAbonos - totalCostos;
+
+  const elGen      = document.getElementById('costosOperacionTotalGeneral');
+  const elGenAb    = document.getElementById('costosOperacionTotalAbonosGeneral');
+  const elGenCost  = document.getElementById('costosOperacionTotalCostosGeneral');
+  if (elGen)     elGen.textContent    = fmt(totalBalance);
+  if (elGenAb)   elGenAb.textContent  = fmt(totalAbonos);
+  if (elGenCost) elGenCost.textContent= fmt(totalCostos);
+}
+
