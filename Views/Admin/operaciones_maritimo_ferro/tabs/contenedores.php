@@ -9,8 +9,10 @@
     <!-- Filtros -->
     <div class="row g-3 align-items-end mb-4">
         <div class="col-12 col-md-4">
-            <label for="buscarFerroOP" class="form-label">Buscar (Operación / Cliente / Ferro / Marítimo)</label>
-            <input type="text" id="buscarFerroOP" class="form-control" placeholder="Ej. LB-01, Juan, FX001, MG001">
+            <label for="buscarFerroOP" class="form-label">Buscar (Operación / Cliente / Ferro / Marítimo /
+                Transportista)</label>
+            <input type="text" id="buscarFerroOP" class="form-control"
+                placeholder="Ej. LB-01, Juan, FX001, MG001, TMM, Transpais">
         </div>
 
         <div class="col-12 col-md-5">
@@ -55,6 +57,8 @@
                     <th>Contenedor Marítimo</th>
                     <th>Bultos (Marítimo)</th>
                     <th>Cliente</th>
+                    <!-- NUEVO: Transportista en listado -->
+                    <th>Transportista</th>
                     <th>Caja / Ferro</th>
                     <th>División de Bultos<br><small class="text-muted">(asignados al ferro)</small></th>
                     <th>Acciones</th>
@@ -113,7 +117,7 @@
                                 <input type="hidden" id="contenedorMaritimoIdFerroOP"
                                     name="contenedorMaritimoIdFerroOP">
                                 <input type="text" id="contenedorMaritimoNombreFerroOP" class="form-control"
-                                    placeholder="Escribe para buscar marítimo…" >
+                                    placeholder="Escribe para buscar marítimo…">
                                 <div id="sugMaritimosFerroOP" class="list-group"
                                     style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                                 <small class="text-muted">Filtra por número (ej. MG001…)</small>
@@ -156,12 +160,26 @@
                             </div>
                         </div>
 
-                        <!-- Comentarios -->
+                        <!-- NUEVO: Transportista -->
                         <div class="row mb-3">
-                            <div class="col-md-12">
-                                <label for="comentariosFerroOP" class="form-label">Comentarios</label>
-                                <textarea id="comentariosFerroOP" name="comentariosFerroOP" class="form-control"
-                                    rows="3"></textarea>
+                            <div class="col-md-6 position-relative">
+                                <label class="form-label">Transportista</label>
+                                <input type="hidden" id="transportistaIdFerroOP" name="transportistaIdFerroOP">
+                                <input type="text" id="transportistaNombreFerroOP" name="transportistaNombreFerroOP"
+                                    class="form-control" placeholder="Escribe para buscar transportista…">
+                                <div id="sugTransportistasFerroOP" class="list-group"
+                                    style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                                
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Comentarios -->
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <label for="comentariosFerroOP" class="form-label">Comentarios</label>
+                                        <textarea id="comentariosFerroOP" name="comentariosFerroOP" class="form-control"
+                                            rows="3"></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -182,9 +200,10 @@
 </div>
 
 
+
     <script>
         const BASE_URL = "<?= BASE_URL ?>";
         feather.replace();
     </script>
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/ferrosOperacion.js"></script>
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/ferroscatalogo.js"></script>
+    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script>
+    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>

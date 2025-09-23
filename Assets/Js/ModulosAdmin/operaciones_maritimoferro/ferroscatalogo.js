@@ -64,7 +64,7 @@
     opDebounce = setTimeout(()=>{
       if (opXHR && opXHR.readyState !== 4) opXHR.abort();
 
-      const url = BASE_URL + 'operaciones_terrestres/sugerencias_operaciones?q=' + encodeURIComponent(q) + '&limit=10';
+      const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/sugerencias_operaciones?q=' + encodeURIComponent(q) + '&limit=10';
       opXHR = new XMLHttpRequest();
       opXHR.open('GET', url, true);
       opXHR.onload = function(){
@@ -106,7 +106,7 @@
     // 4) pedir suma de bultos ya asignados a ferros en esta operación
     let asignados = 0;
     try {
-      const res = await fetchJSON(BASE_URL + 'operaciones_terrestres/suma_bultos_operacion?operacion_id=' + encodeURIComponent(item.id));
+      const res = await fetchJSON(BASE_URL + 'operaciones_maritimo_ferro_contenedores/suma_bultos_operacion?operacion_id=' + encodeURIComponent(item.id));
       if (res && typeof res.total_asignados !== 'undefined') asignados = toInt(res.total_asignados);
     } catch(_){ /* ignora, deja 0 */ }
 
@@ -174,3 +174,74 @@
   });
 
 })(); 
+document.addEventListener('DOMContentLoaded', function(){
+  const inp  = document.getElementById('transportistaNombreFerroOP');
+  const hid  = document.getElementById('transportistaIdFerroOP');
+  const box  = document.getElementById('sugTransportistasFerroOP');
+
+  if (!inp || !hid || !box) {
+    console.error('Inputs de transportista no encontrados en el DOM.');
+    return;
+  }
+
+  function showList(){ box.style.display = 'block'; }
+  function hideList(){ box.style.display = 'none'; box.innerHTML = ''; }
+
+  function render(items){
+    box.innerHTML = '';
+    if (!items || items.length === 0){ hideList(); return; }
+    for (const it of items){
+      const a = document.createElement('a');
+      a.href   = '#';
+      a.className = 'list-group-item list-group-item-action';
+      a.textContent = it.label + (it.tipo ? ` (${it.tipo})` : '');
+      a.onclick = (e)=>{
+        e.preventDefault();
+        hid.value = it.id;
+        inp.value = it.label;
+        hideList();
+      };
+      box.appendChild(a);
+    }
+    showList();
+  }
+
+  let lastXHR = null, deb = null;
+
+  function fetchSug(q){
+    if (lastXHR && lastXHR.abort) lastXHR.abort();
+
+    const x = new XMLHttpRequest();
+    lastXHR = x;
+
+    // ⚠️ Usa tu BASE_URL /PacificNort/
+    const url = `/PacificNort/operaciones_maritimo_ferro_contenedores/buscar_transportistas`
+              + `?term=${encodeURIComponent(q)}&limit=15&tipo=ferroviario`;
+
+    x.open('GET', url, true);
+    x.onload = ()=>{
+      if (x.status !== 200) { console.error('HTTP', x.status, x.responseText); return hideList(); }
+      try {
+        const resp = JSON.parse(x.responseText||'{}');
+        if (resp.ok !== true) { console.error('Resp NOK', resp); return hideList(); }
+        render(resp.items||[]);
+      } catch(e){
+        console.error('JSON error', e, x.responseText);
+        hideList();
+      }
+    };
+    x.onerror = ()=> { console.error('XHR error'); hideList(); };
+    x.send();
+  }
+
+  inp.addEventListener('input', ()=>{
+    const q = inp.value.trim();
+    hid.value = '';
+    if (deb) clearTimeout(deb);
+    deb = setTimeout(()=> { if (q.length >= 2) fetchSug(q); else hideList(); }, 180);
+  });
+
+  document.addEventListener('click', (e)=>{
+    if (!box.contains(e.target) && e.target !== inp) hideList();
+  });
+});

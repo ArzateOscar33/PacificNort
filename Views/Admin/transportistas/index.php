@@ -75,7 +75,7 @@
                         <select name="tipo" id="tipo" class="form-control" required>
                             <option value="" disabled selected>Seleccione tipo</option>
                             <option value="Terrestre">Terrestre</option>
-                            <option value="Maritimo">Marítimo</option>
+                            <option value="Ferroviario">Ferroviario</option>
                         </select>
                     </div>
 

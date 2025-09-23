@@ -1,6 +1,8 @@
 <?php
+include_once 'Models/Operaciones_maritimo_ferro_contenedoresModel.php';
 class Operaciones_maritimo_ferro extends Controller
 {
+    private $contenedoresModel;
     public function __construct()
     {
         parent::__construct();
@@ -9,6 +11,7 @@ class Operaciones_maritimo_ferro extends Controller
             header("Location: " . BASE_URL);
             exit;
         }
+       $this->contenedoresModel               = new Operaciones_maritimo_ferro_contenedoresModel();
     }
 
     /* ================================
@@ -310,6 +313,7 @@ public function actualizar()
 }
 
 
+
     /* =============================
        ========== HELPERS ==========
        ============================= */
@@ -344,6 +348,8 @@ public function actualizar()
         $data['forwarders'] = $this->model->catalogoForwarders();
         $data['shippers']   = $this->model->catalogoShippers();
         $data['puertos']    = $this->model->catalogoPuertos();
+   
+
 
         $this->views->getView('admin/Operaciones_maritimo_ferro', "ver", $data);
     }

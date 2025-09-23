@@ -143,7 +143,7 @@
     });
 
     currentXHRFerroOP = new XMLHttpRequest();
-    currentXHRFerroOP.open('GET', BASE_URL + 'operaciones_terrestres/listar?' + params.toString(), true);
+    currentXHRFerroOP.open('GET', BASE_URL + 'Operaciones_maritimo_ferro_contenedores/listar?' + params.toString(), true);
 
     setLoadingFerroOP(true);
 
