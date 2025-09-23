@@ -258,5 +258,57 @@ public function sugerenciasTransportistas(string $q = '', int $limit = 15, array
     }, $rows);
 }
 
+// En Operaciones_maritimo_ferro_contenedoresModel
+public function sugerenciasFerros(string $q = '', int $limit = 15): array
+{
+    $q = trim($q);
+    $limit = max(1, (int)$limit);
+
+    $where = " WHERE estatus = 1 ";
+    $args  = [];
+
+    if ($q !== '') {
+        $where .= " AND LOWER(numero_ferro) LIKE ? ";
+        $args[] = '%' . mb_strtolower($q, 'UTF-8') . '%';
+    }
+
+    $sql = "SELECT id_fisico AS id, numero_ferro AS label
+            FROM contenedores_fisicos
+            {$where}
+            ORDER BY numero_ferro ASC
+            LIMIT {$limit}";
+
+    return $this->selectAll($sql, $args) ?: [];
+}
+public function sugerenciasDestinos(string $q = '', int $limit = 15): array
+{
+    $q = trim($q);
+    $limit = max(1, (int)$limit);
+
+    $where = " WHERE c.estatus = 1 ";
+    $args  = [];
+
+    if ($q !== '') {
+        $where .= " AND (LOWER(c.nombre_ciudad) LIKE ?)";
+        $args[] = '%' . mb_strtolower($q, 'UTF-8') . '%';
+    }
+
+    // Si quieres mostrar estado, puedes LEFT JOIN a 'estados'
+    $sql = "SELECT 
+                c.id_ciudad   AS id,
+                c.nombre_ciudad AS ciudad
+            FROM ciudades c
+            {$where}
+            ORDER BY c.nombre_ciudad ASC
+            LIMIT {$limit}";
+    $rows = $this->selectAll($sql, $args) ?: [];
+
+    return array_map(fn($r) => [
+        'id'    => (int)$r['id'],
+        'label' => (string)$r['ciudad'],
+    ], $rows);
+}
+
+
 
 }

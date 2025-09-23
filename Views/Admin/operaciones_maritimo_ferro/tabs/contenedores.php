@@ -56,11 +56,11 @@
                     <th>Número de Operación</th>
                     <th>Contenedor Marítimo</th>
                     <th>Bultos (Marítimo)</th>
-                    <th>Cliente</th>
-                    <!-- NUEVO: Transportista en listado -->
+                    <th>Cliente</th> 
                     <th>Transportista</th>
                     <th>Caja / Ferro</th>
-                    <th>División de Bultos<br><small class="text-muted">(asignados al ferro)</small></th>
+                    <th>División de Bultos</th>
+                    <th>Destino</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -69,7 +69,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
             <div class="small text-muted">
-                <span id="metaResumenFerroOP">Mostrando 0–0 de 0</span>
+                <span id="metaResumenFerroOP">Mostrando 0-0 de 0</span>
             </div>
             <nav aria-label="Paginación Ferros en Operación">
                 <ul id="paginacionFerroOP" class="pagination pagination-sm mb-0"></ul>
@@ -172,7 +172,18 @@
                                 
                             </div>
                             <div class="col-md-6">
-                                <!-- Comentarios -->
+                                 <div class="col-md-12 position-relative">
+                                <label class="form-label">Destino</label>
+                                <input type="hidden" id="destinoIdFerroOP" name="destinoIdFerroOP">
+                                <input type="text" id="destinoNombreFerroOP" name="destinoNombreFerroOP"
+                                    class="form-control" placeholder="Escribe para buscar Destino…">
+                                <div id="destinoFerroOP" class="list-group"
+                                    style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                                
+                            </div>
+
+                            </div>
+                        </div>
                                 <div class="row mb-3">
                                     <div class="col-md-12">
                                         <label for="comentariosFerroOP" class="form-label">Comentarios</label>
@@ -180,9 +191,6 @@
                                             rows="3"></textarea>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
                     </form>
                 </div>
 

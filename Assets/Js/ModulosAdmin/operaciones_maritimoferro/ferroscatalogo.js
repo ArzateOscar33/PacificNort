@@ -174,6 +174,126 @@
   });
 
 })(); 
+// ==== Autocomplete de FERRO/CAJA ====
+(() => {
+  const inp  = document.getElementById('contenedorFerroNombreFerroOP');
+  const hid  = document.getElementById('contenedorFerroIdFerroOP');
+  const box  = document.getElementById('sugFerrosFerroOP');
+  if (!inp || !hid || !box) return;
+
+  function showList(){ box.style.display = 'block'; }
+  function hideList(){ box.style.display = 'none'; box.innerHTML = ''; }
+
+  function render(items){
+    box.innerHTML = '';
+    if (!items || !items.length){ hideList(); return; }
+    for (const it of items){
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'list-group-item list-group-item-action';
+      a.textContent = it.label; // número_ferro
+      a.onclick = (e)=>{
+        e.preventDefault();
+        hid.value = it.id;
+        inp.value = it.label;
+        hideList();
+      };
+      box.appendChild(a);
+    }
+    showList();
+  }
+
+  let lastXHR = null, deb = null;
+  function fetchSug(q){
+    if (lastXHR && lastXHR.abort) lastXHR.abort();
+    const x = new XMLHttpRequest();
+    lastXHR = x;
+    const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_ferros'
+              + '?term=' + encodeURIComponent(q) + '&limit=15';
+    x.open('GET', url, true);
+    x.onload = ()=>{
+      if (x.status !== 200){ hideList(); return; }
+      try {
+        const resp = JSON.parse(x.responseText||'{}');
+        if (resp.ok !== true){ hideList(); return; }
+        render(resp.items || []);
+      } catch { hideList(); }
+    };
+    x.onerror = ()=> hideList();
+    x.send();
+  }
+
+  inp.addEventListener('input', ()=>{
+    const q = (inp.value||'').trim();
+    hid.value = '';
+    if (deb) clearTimeout(deb);
+    deb = setTimeout(()=> { if (q.length >= 2) fetchSug(q); else hideList(); }, 180);
+  });
+
+  inp.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideList(); });
+  document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target !== inp) hideList(); });
+})();
+// ==== Autocomplete de DESTINOS (ciudades) ====
+(() => {
+  const inp  = document.getElementById('destinoNombreFerroOP');
+  const hid  = document.getElementById('destinoIdFerroOP');
+  const box  = document.getElementById('destinoFerroOP');
+  if (!inp || !hid || !box) return;
+
+  function showList(){ box.style.display = 'block'; }
+  function hideList(){ box.style.display = 'none'; box.innerHTML = ''; }
+
+  function render(items){
+    box.innerHTML = '';
+    if (!items || !items.length){ hideList(); return; }
+    for (const it of items){
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'list-group-item list-group-item-action';
+      a.textContent = it.label; // nombre_ciudad
+      a.onclick = (e)=>{
+        e.preventDefault();
+        hid.value = it.id;
+        inp.value = it.label;
+        hideList();
+      };
+      box.appendChild(a);
+    }
+    showList();
+  }
+
+  let lastXHR = null, deb = null;
+  function fetchSug(q){
+    if (lastXHR && lastXHR.abort) lastXHR.abort();
+    const x = new XMLHttpRequest(); lastXHR = x;
+    const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_destinos'
+              + '?term=' + encodeURIComponent(q) + '&limit=15';
+    x.open('GET', url, true);
+    x.onload = ()=>{
+      if (x.status !== 200){ hideList(); return; }
+      try {
+        const resp = JSON.parse(x.responseText||'{}');
+        if (resp.ok !== true){ hideList(); return; }
+        render(resp.items || []);
+      } catch { hideList(); }
+    };
+    x.onerror = ()=> hideList();
+    x.send();
+  }
+
+  inp.addEventListener('input', ()=>{
+    const q = (inp.value||'').trim();
+    hid.value = '';
+    if (deb) clearTimeout(deb);
+    deb = setTimeout(()=>{ if (q.length >= 2) fetchSug(q); else hideList(); }, 180);
+  });
+
+  inp.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideList(); });
+  document.addEventListener('click', (e)=>{
+    if (!box.contains(e.target) && e.target !== inp) hideList();
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', function(){
   const inp  = document.getElementById('transportistaNombreFerroOP');
   const hid  = document.getElementById('transportistaIdFerroOP');
@@ -213,10 +333,10 @@ document.addEventListener('DOMContentLoaded', function(){
 
     const x = new XMLHttpRequest();
     lastXHR = x;
+ 
+    const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_transportistas'
+          + `?term=${encodeURIComponent(q)}&limit=15&tipo=ferroviario`;
 
-    // ⚠️ Usa tu BASE_URL /PacificNort/
-    const url = `/PacificNort/operaciones_maritimo_ferro_contenedores/buscar_transportistas`
-              + `?term=${encodeURIComponent(q)}&limit=15&tipo=ferroviario`;
 
     x.open('GET', url, true);
     x.onload = ()=>{

@@ -9,7 +9,7 @@ class Operaciones_maritimo_ferro_contenedores extends Controller
             header("Location: " . BASE_URL);
             exit;
         }
-        $data['fisicos'] = $this->model->catalogoFerros();  
+       
     }
     public function listar()
     {
@@ -86,6 +86,37 @@ class Operaciones_maritimo_ferro_contenedores extends Controller
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
+// En Operaciones_maritimo_ferro_contenedores (controlador)
+public function buscar_ferros()
+{
+    header('Content-Type: application/json; charset=utf-8');
+    $term  = isset($_GET['term'])  ? trim($_GET['term'])  : '';
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit']  : 15;
+
+    try {
+        $items = $this->model->sugerenciasFerros($term, $limit);
+        echo json_encode(['ok' => true, 'items' => $items], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'msg' => 'Error al buscar ferros/cajas']);
+    }
+    exit;
+}
+public function buscar_destinos()
+{
+    header('Content-Type: application/json; charset=utf-8');
+    $term  = isset($_GET['term'])  ? trim($_GET['term'])  : '';
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit']  : 15;
+
+    try {
+        $items = $this->model->sugerenciasDestinos($term, $limit);
+        echo json_encode(['ok' => true, 'items' => $items], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'msg' => 'Error al buscar destinos']);
+    }
+    exit;
+}
 
     /** Paginación Bootstrap simple */
     private function buildPaginationHtml(int $totalPages, int $currentPage): string
