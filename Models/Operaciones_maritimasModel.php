@@ -59,7 +59,7 @@ public function listarPaginado(array $filters = [], int $page = 1, int $perPage 
     $offset  = ($page - 1) * $perPage;
 
     // 2) WHERE base
-    $where = "WHERE UPPER(tt.nombre_operacion) LIKE 'MARIT%'";
+    $where = "WHERE st.tipo_operacion_id IN (1)";
     $args  = [];
 
     // --- (opcional) subtipo/term: tal cual ya lo tenías ---

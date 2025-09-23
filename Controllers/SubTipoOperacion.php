@@ -21,10 +21,12 @@ class SubTipoOperacion extends Controller
 }
     public function index()
     {
-        $data['title'] = 'Subtipos De Operacion';
-        $data['tipos_operacion'] = $this->model->getTipoOperacion();
-        $data['puertos'] = $this->model->getPuertos();
-        $data['id_tipo_maritimo'] = $this->getIdTipoMaritimo();
+    $data['title'] = 'Subtipos De Operacion';
+    $data['tipos_operacion'] = $this->model->getTipoOperacion();
+    $data['puertos'] = $this->model->getPuertos();
+
+    // 👉 IDs de tipos que requieren puerto (Marítimo y Marítimo-Ferroviario)
+    $data['tipos_con_puerto_ids'] = $this->getIdsTiposMaritimos();
         $this->views->getView('admin/subtipos_operacion', "index", $data);
     }
         public function listar()
@@ -138,20 +140,20 @@ public function actualizar()
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-    private function getIdTipoMaritimo(): ?int {
-    // Puedes mover esto al modelo si prefieres
+private function getIdsTiposMaritimos(): array {
     static $cache = null;
     if ($cache !== null) return $cache;
 
-    $row = $this->model->getTipoOperacionByNombreLike('Marit%'); // ver método en el modelo abajo
-    $cache = $row ? (int)$row['id_tipo_operacion'] : null;
-    return $cache;
+    // Empata "Marítimo" y "Marítimo-Ferroviario" (ambos empiezan con "Marit")
+    $cache = $this->model->getTiposOperacionIdsByNombreLike('Marit%');
+    return $cache ?: [];
 }
 
 private function tipoRequierePuerto(int $tipo_operacion_id): bool {
-    $idMar = $this->getIdTipoMaritimo();
-    return $idMar !== null && $tipo_operacion_id === $idMar;
+    $idsMar = $this->getIdsTiposMaritimos();
+    return in_array($tipo_operacion_id, $idsMar, true);
 }
+
 
     /*
 

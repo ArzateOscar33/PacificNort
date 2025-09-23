@@ -8,7 +8,7 @@
             <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true">Resumen</a>
         </li>
          <li class="nav-item">
-            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false">Crear Operación</a>
+            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false">Crear Operación Maritima-Ferroviaria</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false">Contenedores En Operacion</a>
@@ -37,7 +37,7 @@
             <?php include 'tabs/resumen.php'; ?>
         </div>
         <div class="tab-pane fade" id="crear_operacions" role="tabpanel" aria-labelledby="crear_operacions-tab">
-            <?php include 'tabs/operaciones.php'; ?>
+            <?php include 'tabs/operaciones_mar.php'; ?>
         </div>
         <div class="tab-pane fade" id="contenedores" role="tabpanel" aria-labelledby="contenedores-tab">
             <?php include 'tabs/contenedores.php'; ?>

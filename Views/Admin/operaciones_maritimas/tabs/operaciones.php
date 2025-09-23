@@ -282,7 +282,7 @@
                         <!-- ====== Repetidor de Contenedores Marítimos (INPUT + Sugerencias) ====== -->
                         <div class="col-6">
                             <label class="form-label d-flex align-items-center justify-content-between">
-                                <span>Contenedores Marítimos</span>
+                                 
 
                             </label>
 

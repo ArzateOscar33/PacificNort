@@ -51,6 +51,7 @@ btnAgregarSubtipoOperacion.addEventListener("click", () => {
   label.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Registrar Tipo de Documento';
   document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
+    refrescarPuertoRequerido();
 });
 
 form.addEventListener("submit", function (e) {
@@ -113,7 +114,7 @@ function editar(id) {
       feather.replace();
       modal.show();
       
-
+refrescarPuertoRequerido();
       
     }
   };
@@ -202,18 +203,8 @@ document.addEventListener("click", function (e) {
     sugerenciasEl.style.display = "none";
   }
 }); 
-function tipoRequierePuertoFront() {
-  const opt = selTipoOp.options[selTipoOp.selectedIndex];
-  return (opt?.dataset?.requierePuerto === '1');
-}
+ 
 
-function refrescarPuertoRequerido() {
-  const requiere = tipoRequierePuertoFront();
-  selPuerto.disabled = !requiere;
-  selPuerto.required = requiere;
-  if (!requiere) selPuerto.value = '';
-  if (lblPuerto) lblPuerto.textContent = 'Puerto' + (requiere ? ' *' : ' (no aplica)');
-}
 const selTipoOp  = document.getElementById('tipo_operacion_id');
 const selPuerto  = document.getElementById('puerto_id');
 const lblPuerto  = document.querySelector('label[for="puerto_id"]');
@@ -231,11 +222,9 @@ function refrescarPuertoRequerido() {
   if (lblPuerto) lblPuerto.textContent = 'Puerto' + (requiere ? ' *' : ' (no aplica)');
 }
 
-// Al cargar y cuando cambie
+// Al cargar y al cambiar tipo:
 document.addEventListener('DOMContentLoaded', refrescarPuertoRequerido);
 selTipoOp.addEventListener('change', refrescarPuertoRequerido);
 
-// En editar(), después de setear valores del form, llama:
-/// ...
+ 
 refrescarPuertoRequerido();
-/// ...

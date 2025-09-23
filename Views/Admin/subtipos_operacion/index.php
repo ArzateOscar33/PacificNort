@@ -70,16 +70,21 @@
                     <input type="hidden" id="id" name="id">
                     <div class="mb-3">
                         <label for="nombre_operacion" class="form-label">Tipo de Operacion</label>
+<label for="tipo_operacion_id" class="form-label">Tipo de Operación</label>
+<?php $reqPuerto = $data['tipos_con_puerto_ids'] ?? []; ?>
 <select name="tipo_operacion_id" id="tipo_operacion_id" class="form-control" required>
   <?php foreach (($data['tipos_operacion'] ?? []) as $op): 
-        $requierePuerto = ((int)$op['id_tipo_operacion'] === (int)$data['id_tipo_maritimo']); ?>
+        $idT = (int)$op['id_tipo_operacion'];
+        $requierePuerto = in_array($idT, $reqPuerto, true) ? 1 : 0;
+  ?>
     <option 
-      value="<?= $op['id_tipo_operacion'] ?>" 
-      data-requiere-puerto="<?= $requierePuerto ? 1 : 0 ?>">
+      value="<?= $idT ?>" 
+      data-requiere-puerto="<?= $requierePuerto ?>">
       <?= htmlspecialchars($op['nombre_operacion']) ?>
     </option>
   <?php endforeach; ?>
 </select>
+
 
                     </div>
                     <div class="mb-3">
@@ -97,7 +102,7 @@
         
                     </div>
                     <div class="mb-3">
-                        <label for="nombre_operacion" class="form-label">Puerto </label>
+                        <label for="puerto_id" class="form-label">Puerto</label>
 <select name="puerto_id" id="puerto_id" class="form-control">
   <option value="">— Selecciona puerto —</option>
   <?php foreach (($data['puertos'] ?? []) as $puerto): ?>
