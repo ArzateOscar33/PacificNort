@@ -297,7 +297,7 @@
       if (inpNumeroOp){ inpNumeroOp.setAttribute('readonly','readonly'); inpNumeroOp.classList.remove('bg-light'); }
       if (selNaviera) enable(selNaviera);
       if (selForwarder) enable(selForwarder);
-      mf_setContenedoresReadonly(true);
+      mf_setContenedoresReadonly(false);
     }
   }
 
