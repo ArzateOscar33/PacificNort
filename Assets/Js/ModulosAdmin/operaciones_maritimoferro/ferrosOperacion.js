@@ -287,29 +287,37 @@ function renderRowsFerroOP(rows){
     }
   }
 
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
+form.addEventListener('submit', function(e){
+  e.preventDefault();
 
-    // === Validaciones rápidas en front (el back también valida) ===
-    const opId   = Number(operacionIdFerroOP.value||0);
-    const mgId   = Number(contenedorMaritimoIdFerroOP.value||0);
-    const fxId   = Number(contenedorFerroIdFerroOP.value||0);
-    const trans  = Number(transportistaIdFerroOP.value||0);
-    const dest   = Number(destinoIdFerroOP.value||0);
-    const asig   = Number(bultosAsignadosFerroOP.value||0);
-    const rest   = Number(bultosRestantesFerroOP.value||0);
+  // === Refs y valores ===
+  const btn   = form.querySelector('button[type="submit"]');
 
-    if (!opId)   return toast('Selecciona una operación.', false);
-    if (!mgId)   return toast('Selecciona un contenedor marítimo.', false);
-    if (!fxId)   return toast('Selecciona la caja/ferro.', false);
-    if (!trans)  return toast('Selecciona un transportista.', false);
-    if (!dest)   return toast('Selecciona un destino.', false);
-    if (asig <= 0) return toast('Los bultos asignados deben ser > 0.', false);
-    if (asig > rest) return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+  const opId  = Number(operacionIdFerroOP.value||0);
+  const mgId  = Number(contenedorMaritimoIdFerroOP.value||0);
 
-    // === POST con FormData ===
+  const fxIdInput   = document.getElementById('contenedorFerroIdFerroOP');
+  const fxNameInput = document.getElementById('contenedorFerroNombreFerroOP');
+  const fxId        = Number((fxIdInput?.value)||0);
+  const fxName      = (fxNameInput?.value||'').trim();
+
+  const trans = Number(transportistaIdFerroOP.value||0);
+  const dest  = Number(destinoIdFerroOP.value||0);
+  const asig  = Number(bultosAsignadosFerroOP.value||0);
+  const rest  = Number(bultosRestantesFerroOP.value||0);
+
+  // === Validaciones front (el back también valida) ===
+  if (!opId)          return toast('Selecciona una operación.', false);
+  if (!mgId)          return toast('Selecciona un contenedor marítimo.', false);
+  if (!fxId && !fxName) return toast('Selecciona la caja/ferro o escribe el número para crearlo.', false);
+  if (!trans)         return toast('Selecciona un transportista.', false);
+  if (!dest)          return toast('Selecciona un destino.', false);
+  if (asig <= 0)      return toast('Los bultos asignados deben ser > 0.', false);
+  if (asig > rest)    return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+
+  // ---- función que realiza el POST de la asignación (tu lógica original) ----
+  function postAsignacion() {
     const fd = new FormData(form);
-    const btn = form.querySelector('button[type="submit"]');
     btn && (btn.disabled = true);
 
     const x = new XMLHttpRequest();
@@ -326,14 +334,14 @@ function renderRowsFerroOP(rows){
         return toast(msg, false);
       }
 
-      // OK: actualizar saldo con el que regresa el backend
+      // OK: actualizar saldo con el que regresa el backend (o calcular rápido)
       const saldo = (res.data && typeof res.data.saldo !== 'undefined') ? Number(res.data.saldo) : (rest - asig);
       bultosRestantesFerroOP.value = String(saldo);
       setBadgeSaldo(saldo);
 
-      // Reset mínimo para poder seguir capturando más líneas (dejamos op+MG fijos)
-      contenedorFerroIdFerroOP.value = '';
-      document.getElementById('contenedorFerroNombreFerroOP').value = '';
+      // Reset mínimo para capturar otra línea (dejamos op + MG fijos)
+      if (fxIdInput)   fxIdInput.value = '';
+      if (fxNameInput) fxNameInput.value = '';
       bultosAsignadosFerroOP.value = '';
       comentariosFerroOP.value = '';
 
@@ -342,7 +350,6 @@ function renderRowsFerroOP(rows){
 
       const folioFx = res.data?.numero_operacion_ferro || '';
       toast(folioFx ? `Asignación registrada (${folioFx}).` : 'Asignación registrada.', true);
-
       feather.replace();
     };
 
@@ -352,7 +359,49 @@ function renderRowsFerroOP(rows){
     };
 
     x.send(fd);
-  });
+  }
+
+  // ---- Si no hay ID pero sí nombre: crear ferro al vuelo y luego asignar ----
+  if (!fxId && fxName !== '') {
+    btn && (btn.disabled = true);
+
+    const fdMk = new FormData();
+    fdMk.append('numero_ferro', fxName);
+
+    const xMk = new XMLHttpRequest();
+    xMk.open('POST', BASE_URL + 'Operaciones_maritimo_ferro_contenedores/crear_ferro', true);
+
+    xMk.onload = function(){
+      let r = null; 
+      try { r = JSON.parse(xMk.responseText||'{}'); } catch(_){}
+
+      if (!r || r.ok !== true || !r.id) {
+        btn && (btn.disabled = false);
+        return toast((r && r.msg) ? r.msg : 'No se pudo crear la caja/ferro.', false);
+      }
+
+      // Setear el hidden con el nuevo ID y continuar con el flujo normal
+      if (fxIdInput) fxIdInput.value = String(r.id);
+      // (opcional) normaliza el texto visible con la etiqueta devuelta
+      if (fxNameInput && r.label) fxNameInput.value = r.label;
+
+      // Ahora sí, post de la asignación
+      postAsignacion();
+    };
+
+    xMk.onerror = function(){
+      btn && (btn.disabled = false);
+      toast('No se pudo conectar para crear la caja/ferro.', false);
+    };
+
+    xMk.send(fdMk);
+    return; // salimos; el resto lo hace postAsignacion()
+  }
+
+  // ---- Si ya hay fxId, seguimos directo a guardar asignación ----
+  postAsignacion();
+});
+
 
  
 })();

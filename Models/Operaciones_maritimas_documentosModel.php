@@ -66,7 +66,7 @@ public function getContenedoresMaritimosOperacion(int $operacion_id): array
      * ====================================== */
     public function tiposDocumentoOperacion(bool $soloActivos = true, ?string $q = null): array
     {
-        $where = ["aplica_sobre IN ('operacion','cualquiera')"];
+        $where = ["aplica_sobre IN ('operacion','contenedor_maritimo')"];
         $params = [];
 
         if ($soloActivos) $where[] = "activo = 1";
@@ -109,7 +109,7 @@ public function getContenedoresMaritimosOperacion(int $operacion_id): array
               ON d.tipo_documento_id = t.id_tipo_documento
              AND d.operacion_id      = ?
             WHERE t.activo = 1
-              AND t.aplica_sobre IN ('operacion','cualquiera')
+              AND t.aplica_sobre IN ('contenedor_maritimo')
             GROUP BY t.id_tipo_documento, t.nombre, t.clave
             HAVING COUNT(d.id_documento) = 0
             ORDER BY t.nombre ASC

@@ -297,7 +297,7 @@
       if (inpNumeroOp){ inpNumeroOp.setAttribute('readonly','readonly'); inpNumeroOp.classList.remove('bg-light'); }
       if (selNaviera) enable(selNaviera);
       if (selForwarder) enable(selForwarder);
-      mf_setContenedoresReadonly(false);
+      mf_setContenedoresReadonly(true);
     }
   }
 
@@ -664,14 +664,9 @@ function guardarEdicionMF(){
 
   const fd = new FormData();
   fd.append('id_operacion_mf', String(id));
-
-  // Aunque subtipo esté disabled en edición, lo leemos por JS (tu backend hace fallback si cambia)
   fd.append('maritimo_ferro_subtipo',        selSubtipo?.value || '');
-
-  // BL saneado como en front (solo A-Z0-9)
   const bl = (inpBL?.value || '').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
   fd.append('maritimo_ferro_numeroBL',       bl);
-
   fd.append('maritimo_ferro_estatus',        selEstatus?.value || '');
   fd.append('maritimo_ferro_etd',            inpETD?.value || '');
   fd.append('maritimo_ferro_eta',            inpETA?.value || '');
@@ -681,7 +676,20 @@ function guardarEdicionMF(){
   fd.append('maritimo_ferro_shipperId',      selShipper?.value || '');
   fd.append('maritimo_ferro_notas',          (txtNotas?.value || '').trim());
 
-  // NOTA: en edición tus contenedores están readonly => no se envían aquí
+  // ===== NUEVO: empujar ids + bultos del repeater =====
+  if (repeater){
+    const rows = repeater.querySelectorAll('.contenedor-item');
+    rows.forEach(row=>{
+      const idInp   = row.querySelector('.contenedor-id_mf');
+      const bInp    = row.querySelector('.contenedor-bultos_mf');
+      const cid     = (idInp?.value || '').trim();
+      const bultos  = (bInp?.value || '').trim();
+      if (cid){ // solo si existe vínculo
+        fd.append('maritimo_ferro_contenedores_ids[]', cid);
+        fd.append('maritimo_ferro_contenedores_bultos[]', bultos); // '' => NULL
+      }
+    });
+  }
 
   const x = new XMLHttpRequest();
   x.open('POST', base_url + 'Operaciones_maritimo_ferro/actualizar', true);
@@ -689,24 +697,20 @@ function guardarEdicionMF(){
   x.onerror = x.onabort = x.ontimeout = ()=> Swal?.fire('Error de red','No se pudo actualizar la operación.','error');
   x.onreadystatechange = function(){
     if (x.readyState !== 4) return;
-
     if (x.status !== 200){
       console.error('actualizar error:', x.responseText);
       Swal?.fire('Error','No se pudo actualizar la operación.','error');
       return;
     }
-
     let res = {};
     try { res = JSON.parse(x.responseText); } catch(e){ res = {}; }
-
     if (res.status !== 'success'){
       Swal?.fire('Aviso', res.msg || 'No se pudo actualizar','warning');
       return;
     }
-
     Swal?.fire('Actualizada', res.data?.msg || 'Operación actualizada','success');
     (window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl).hide() : null);
-    listar(); // refresca la tabla
+    listar();
   };
   x.send(fd);
 }

@@ -564,5 +564,62 @@ public function listarSaldosMGPorOperacion(int $operacion_id): array
     ORDER BY cm.numero_contenedor ASC";
     return $this->selectAll($sql, [$operacion_id]) ?: [];
 }
+// === Helpers nuevos en el modelo ===
+private function normalizarNumeroFerro(string $num): string {
+    $num = trim($num);
+    // Mayúsculas, sin espacios dobles
+    $num = mb_strtoupper(preg_replace('/\s+/', ' ', $num), 'UTF-8');
+    return $num;
+}
+
+public function getFerroPorNumero(string $numero): ?array {
+    $numero = $this->normalizarNumeroFerro($numero);
+    $row = $this->select(
+        "SELECT id_fisico, numero_ferro 
+           FROM contenedores_fisicos 
+          WHERE LOWER(numero_ferro) = LOWER(?) 
+          LIMIT 1",
+        [$numero]
+    );
+    return $row ?: null;
+}
+
+public function crearFerro(string $numero): array {
+    $numero = $this->normalizarNumeroFerro($numero);
+
+    if ($numero === '' || mb_strlen($numero) < 2) {
+        return ['ok'=>false, 'msg'=>'Número de ferro/caja inválido.'];
+    }
+    // Regla básica de formato; ajusta a tu gusto
+    if (!preg_match('/^[A-Z0-9-_.]{2,30}$/', $numero)) {
+        return ['ok'=>false, 'msg'=>'Formato de ferro/caja no permitido.'];
+    }
+
+    // Unicidad lógica
+    $ex = $this->getFerroPorNumero($numero);
+    if ($ex) {
+        return ['ok'=>true, 'id_fisico'=>(int)$ex['id_fisico'], 'label'=>$ex['numero_ferro'], 'created'=>false];
+    }
+
+    $id = (int)$this->insertar(
+        "INSERT INTO contenedores_fisicos (numero_ferro, estatus) VALUES (?, 1)",
+        [$numero]
+    );
+    if ($id <= 0) return ['ok'=>false, 'msg'=>'No se pudo crear el ferro/caja.'];
+
+    return ['ok'=>true, 'id_fisico'=>$id, 'label'=>$numero, 'created'=>true];
+}
+
+/**
+ * Crea si no existe; si existe regresa el existente.
+ */
+public function upsertFerro(string $numero): array {
+    $numero = $this->normalizarNumeroFerro($numero);
+    $ex = $this->getFerroPorNumero($numero);
+    if ($ex) {
+        return ['ok'=>true, 'id_fisico'=>(int)$ex['id_fisico'], 'label'=>$ex['numero_ferro'], 'created'=>false];
+    }
+    return $this->crearFerro($numero);
+}
 
 }

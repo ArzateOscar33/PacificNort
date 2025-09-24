@@ -213,19 +213,32 @@ public function guardar_asignacion()
         exit;
     }
 
-    // === 1) Leer y sanear inputs del modal ===
+    // Lee ambos: hidden ID + texto visible
+    $contenedorFerroId    = (int)($_POST['contenedorFerroIdFerroOP'] ?? 0);
+    $contenedorFerroName  = trim((string)($_POST['contenedorFerroNombreFerroOP'] ?? ''));
+
+    // Si NO hay ID pero SÍ hay texto => intenta upsert en caliente
+    if ($contenedorFerroId <= 0 && $contenedorFerroName !== '') {
+        $mk = $this->model->upsertFerro($contenedorFerroName);
+        if (empty($mk['ok'])) {
+            return $this->jsonBad($mk['msg'] ?? 'No se pudo crear el ferro/caja.');
+        }
+        // Re-inyecta el id para continuar el flujo normal
+        $_POST['contenedorFerroIdFerroOP'] = $mk['id_fisico'];
+        $contenedorFerroId = (int)$mk['id_fisico'];
+    }
+
+    // === Continúa con tus lecturas / validaciones actuales ===
     $operacionId          = (int)($_POST['operacionIdFerroOP'] ?? 0);
     $contenedorMaritimoId = (int)($_POST['contenedorMaritimoIdFerroOP'] ?? 0);
-    $contenedorFerroId    = (int)($_POST['contenedorFerroIdFerroOP'] ?? 0);
     $bultosAsignados      = (int)($_POST['bultosAsignadosFerroOP'] ?? 0);
     $transportistaId      = (int)($_POST['transportistaIdFerroOP'] ?? 0);
     $destinoId            = (int)($_POST['destinoIdFerroOP'] ?? 0);
     $comentario           = trim((string)($_POST['comentariosFerroOP'] ?? ''));
 
-    // === 2) Validaciones mínimas (coherentes con el modelo) ===
     if ($operacionId <= 0)          { $this->jsonBad('Operación requerida'); }
     if ($contenedorMaritimoId <= 0) { $this->jsonBad('Contenedor marítimo requerido'); }
-    if ($contenedorFerroId <= 0)    { $this->jsonBad('Caja/Ferro requerido'); }
+    if ($contenedorFerroId <= 0)    { $this->jsonBad('Caja/Ferro requerido'); } // ← ya contempló el alta en caliente
     if ($transportistaId <= 0)      { $this->jsonBad('Transportista requerido'); }
     if ($destinoId <= 0)            { $this->jsonBad('Destino requerido'); }
     if ($bultosAsignados <= 0)      { $this->jsonBad('Los bultos asignados deben ser > 0'); }
@@ -308,5 +321,38 @@ public function saldos_por_operacion()
     ]);
 }
 
+// POST /Operaciones_maritimo_ferro_contenedores/crear_ferro
+public function crear_ferro()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok'=>false,'msg'=>'Método no permitido']); exit;
+    }
+
+    $numero = isset($_POST['numero_ferro']) ? trim((string)$_POST['numero_ferro']) : '';
+    if ($numero === '') {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok'=>false,'msg'=>'Número de ferro/caja requerido']); exit;
+    }
+
+    try {
+        $res = $this->model->upsertFerro($numero);
+        header('Content-Type: application/json; charset=utf-8');
+        if (empty($res['ok'])) {
+            echo json_encode(['ok'=>false,'msg'=>$res['msg'] ?? 'No se pudo crear']); exit;
+        }
+        echo json_encode([
+            'ok'=>true,
+            'id' => (int)$res['id_fisico'],
+            'label' => (string)$res['label'],
+            'created' => !empty($res['created'])
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok'=>false,'msg'=>'Error al crear ferro/caja']); 
+    }
+    exit;
+}
 
 }

@@ -259,20 +259,16 @@ public function actualizar()
     $id = (int)($_POST['id_operacion_mf'] ?? 0);
     if ($id <= 0) return $this->jsonError('id_operacion requerido', 400);
 
-    // Trae la operación actual para usar como fallback de campos deshabilitados
     $actual = $this->model->getOperacionById($id);
     if (!$actual) return $this->jsonError('Operación no existe', 404);
 
-    // --- Campos que podrían venir vacíos por estar deshabilitados en el form ---
-    // subtipo: en tu UI de edición está disabled → no llega → usamos el existente
+    // --- payload base (sin tocar numero_operacion) ---
     $subtipoId = (int)($_POST['maritimo_ferro_subtipo'] ?? 0);
     if ($subtipoId <= 0) $subtipoId = (int)$actual['subtipo_operacion_id'];
 
-    // BL: limpia (igual que en el front)
     $blRaw = (string)($_POST['maritimo_ferro_numeroBL'] ?? $actual['numero_bl'] ?? '');
     $numeroBL = preg_replace('/[^A-Za-z0-9]/', '', $blRaw);
 
-    // Naviera/Forwarder/Shipper pueden venir vacíos = NULL
     $navieraId   = $_POST['maritimo_ferro_navieraId']   ?? $actual['naviera_id']   ?? '';
     $forwarderId = $_POST['maritimo_ferro_forwarderId'] ?? $actual['forwarder_id'] ?? '';
     $shipperId   = $_POST['maritimo_ferro_shipperId']   ?? $actual['shipper_id']   ?? '';
@@ -291,26 +287,58 @@ public function actualizar()
         'notas'                 => trim((string)($_POST['maritimo_ferro_notas'] ?? $actual['notas'] ?? '')) ?: null,
     ];
 
-    // Nota: número_operacion NO se toca en edición (se mantiene el existente)
-    // Nota: contenedores en tu edición están readonly → no se actualizan aquí
+    // ======= NUEVO: recoger arrays de IDs y BULTOS desde el form de edición =======
+    $ids   = $_POST['maritimo_ferro_contenedores_ids']    ?? [];
+    $bults = $_POST['maritimo_ferro_contenedores_bultos'] ?? [];
 
-    // Validaciones por subtipo (requiere_naviera/forwarder) las hace tu modelo en actualizarOperacion()
-    $ok = $this->model->actualizarOperacion($op);
-    if (!$ok) return $this->jsonError('No se pudo actualizar la operación', 200);
+    // Actualizamos operación + bultos en una transacción
+    try {
+        $this->model->save("START TRANSACTION", []);
 
-    // (Opcional) Bitácora de actualización, si tienes algo como crearLog()
-    if (method_exists($this->model, 'crearLog')) {
-        $uid = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
-        $this->model->crearLog($id, $uid, 'edicion', 'Operación actualizada');
+        // 1) actualizar operación
+        if (!$this->model->actualizarOperacion($op)) {
+            $this->model->save("ROLLBACK", []);
+            return $this->jsonError('No se pudo actualizar la operación', 200);
+        }
+
+        // 2) actualizar bultos por cada contenedor (si vienen en el POST)
+        if (is_array($ids) && is_array($bults) && count($ids) > 0) {
+            $n = max(count($ids), count($bults));
+            for ($i = 0; $i < $n; $i++) {
+                $cid = isset($ids[$i]) ? (int)$ids[$i] : 0;
+                if ($cid <= 0) continue;
+
+                $bul = isset($bults[$i]) && $bults[$i] !== '' ? (int)$bults[$i] : null;
+                if ($bul !== null && $bul < 0) $bul = 0; // clamp simple
+
+                $okB = $this->model->actualizarBultos($id, $cid, $bul);
+                if ($okB === false) {
+                    $this->model->save("ROLLBACK", []);
+                    return $this->jsonError("No se pudo actualizar bultos del contenedor $cid", 200);
+                }
+            }
+        }
+
+        // 3) log
+        if (method_exists($this->model, 'crearLog')) {
+            $uid = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+            $this->model->crearLog($id, $uid, 'edicion', 'Operación actualizada (incluye bultos)');
+        }
+
+        $this->model->save("COMMIT", []);
+
+        return $this->jsonOk([
+            'id_operacion'     => $id,
+            'numero_operacion' => (string)$actual['numero_operacion'],
+            'msg'              => 'Operación y bultos actualizados',
+        ]);
+
+    } catch (\Throwable $e) {
+        $this->model->save("ROLLBACK", []);
+        return $this->jsonError('Error inesperado al actualizar', 200);
     }
-
-    // Devuelve shape compatible con tu front
-    return $this->jsonOk([
-        'id_operacion'     => $id,
-        'numero_operacion' => (string)$actual['numero_operacion'],
-        'msg'              => 'Operación actualizada',
-    ]);
 }
+
 
 
 
