@@ -51,7 +51,7 @@
     if (isLoading) {
       tbodyFerroOP.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center text-muted py-4">
+          <td colspan="9" class="text-center text-muted py-4">
             Cargando…
           </td>
         </tr>`;
@@ -62,52 +62,58 @@
   function safeIntFerroOP(v){ return (v === null || v === undefined || v === '') ? '' : Number(v); }
 
   // --------- Render ---------
-  function renderRowsFerroOP(rows){
-    if (!rows || rows.length === 0) {
-      tbodyFerroOP.innerHTML = `
-        <tr>
-          <td colspan="7" class="text-center text-muted py-4">
-            Sin resultados.
-          </td>
-        </tr>`;
-      feather.replace();
-      return;
-    }
-
-    const html = rows.map(r => {
-      const numeroOperacion   = safeTextFerroOP(r.numero_operacion);
-      const contMaritimo      = safeTextFerroOP(r.contenedor_maritimo);
-      const bultosMaritimo    = safeTextFerroOP(r.bultos_maritimo ?? '');
-      const cliente           = safeTextFerroOP(r.cliente);
-      const ferro             = safeTextFerroOP(r.ferro);
-      const bultosAsignados   = safeTextFerroOP(r.bultos_asignados ?? 0);
-      const idRow             = Number(r.id || 0);
-
-      return `
-        <tr>
-          <td>${numeroOperacion}</td>
-          <td>${contMaritimo}</td>
-          <td class="text-end">${bultosMaritimo}</td>
-          <td>${cliente}</td>
-          <td>${ferro}</td>
-          <td class="text-end">${bultosAsignados}</td>
-          <td>
-            <div class="btn-group btn-group-sm" role="group">
-              <button class="btn btn-outline-primary" data-id="${idRow}" onclick="editarFerroOP(${idRow})" title="Editar">
-                <i data-feather="edit-2"></i>
-              </button>
-              <button class="btn btn-outline-danger" data-id="${idRow}" onclick="eliminarFerroOP(${idRow})" title="Eliminar">
-                <i data-feather="trash-2"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    tbodyFerroOP.innerHTML = html;
+function renderRowsFerroOP(rows){
+  if (!rows || rows.length === 0) {
+    tbodyFerroOP.innerHTML = `
+      <tr>
+        <td colspan="9" class="text-center text-muted py-4">
+          Sin resultados.
+        </td>
+      </tr>`;
     feather.replace();
+    return;
   }
+
+  const html = rows.map(r => {
+    // el modelo ahora devuelve estos nombres
+    const idRow            = Number(r.id_row ?? r.id ?? 0);
+    const numeroOperacion  = (r.numero_operacion ?? '');
+    const contMaritimos    = (r.contenedores_maritimos ?? r.contenedor_maritimo ?? '');
+    const bultosMaritimo   = (r.bultos_maritimo ?? '');
+    const cliente          = (r.cliente ?? '');
+    const transportista    = (r.transportista ?? '');   
+    const ferro            = (r.ferro ?? '');
+    const divisionBultos   = (r.division_bultos ?? ''); 
+    const destino          = (r.destino ?? '');         
+
+    return `
+      <tr>
+        <td>${numeroOperacion}</td>
+        <td>${contMaritimos}</td>
+        <td class="text-end">${bultosMaritimo}</td>
+        <td>${cliente}</td>
+        <td>${transportista}</td>
+        <td>${ferro}</td>
+        <td>${divisionBultos}</td>
+        <td>${destino}</td>
+        <td>
+          <div class="btn-group btn-group-sm" role="group">
+            <button class="btn btn-outline-primary" data-id="${idRow}" onclick="editarFerroOP(${idRow})" title="Editar">
+              <i data-feather="edit-2"></i>
+            </button>
+            <button class="btn btn-outline-danger" data-id="${idRow}" onclick="eliminarFerroOP(${idRow})" title="Eliminar">
+              <i data-feather="trash-2"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbodyFerroOP.innerHTML = html;
+  feather.replace();
+}
+
 
   function renderMetaFerroOP(from, to, total){
     metaResumenFerroOP.textContent = `Mostrando ${from}-${to} de ${total}`;
@@ -152,7 +158,7 @@
       try { res = JSON.parse(currentXHRFerroOP.responseText); } catch(_){ res = null; }
       if (!res || !Array.isArray(res.data)) {
         tbodyFerroOP.innerHTML = `
-          <tr><td colspan="7" class="text-center text-danger">Error al cargar datos.</td></tr>`;
+          <tr><td colspan="9" class="text-center text-danger">Error al cargar datos.</td></tr>`;
         renderMetaFerroOP(0,0,0);
         paginacionFerroOP.innerHTML = '';
         return;
@@ -165,7 +171,7 @@
 
     currentXHRFerroOP.onerror = function(){
       tbodyFerroOP.innerHTML = `
-        <tr><td colspan="7" class="text-center text-danger">No se pudo conectar con el servidor.</td></tr>`;
+        <tr><td colspan="9" class="text-center text-danger">No se pudo conectar con el servidor.</td></tr>`;
       renderMetaFerroOP(0,0,0);
       paginacionFerroOP.innerHTML = '';
     };
@@ -247,3 +253,112 @@
       soloVisibles: true
     });
   });
+ 
+// === REGISTRAR ASIGNACIÓN MG→FX ===
+(function(){
+  "use strict";
+
+  const form   = document.getElementById('formFerroOP');
+  if (!form) return;
+
+  const operacionIdFerroOP          = document.getElementById('operacionIdFerroOP');
+  const contenedorMaritimoIdFerroOP = document.getElementById('contenedorMaritimoIdFerroOP');
+  const bultosMaritimoFerroOP       = document.getElementById('bultosMaritimoFerroOP');
+  const bultosRestantesFerroOP      = document.getElementById('bultosRestantesFerroOP');
+  const contenedorFerroIdFerroOP    = document.getElementById('contenedorFerroIdFerroOP');
+  const bultosAsignadosFerroOP      = document.getElementById('bultosAsignadosFerroOP');
+  const transportistaIdFerroOP      = document.getElementById('transportistaIdFerroOP');
+  const destinoIdFerroOP            = document.getElementById('destinoIdFerroOP');
+  const comentariosFerroOP          = document.getElementById('comentariosFerroOP');
+  const badgeSaldoFerroOP           = document.getElementById('badgeSaldoFerroOP');
+
+  function setBadgeSaldo(val){
+    if (!badgeSaldoFerroOP) return;
+    const v = Number(val||0);
+    badgeSaldoFerroOP.textContent = `Saldo: ${v}`;
+    badgeSaldoFerroOP.className   = 'badge ' + (v < 0 ? 'bg-danger text-white' : 'bg-success text-white');
+  }
+
+  function toast(msg, ok=true){
+    if (window.Swal) {
+      Swal.fire({ icon: ok?'success':'error', title: ok?'Listo':'Aviso', text: msg, timer: 1800, showConfirmButton:false });
+    } else {
+      alert(msg);
+    }
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    // === Validaciones rápidas en front (el back también valida) ===
+    const opId   = Number(operacionIdFerroOP.value||0);
+    const mgId   = Number(contenedorMaritimoIdFerroOP.value||0);
+    const fxId   = Number(contenedorFerroIdFerroOP.value||0);
+    const trans  = Number(transportistaIdFerroOP.value||0);
+    const dest   = Number(destinoIdFerroOP.value||0);
+    const asig   = Number(bultosAsignadosFerroOP.value||0);
+    const rest   = Number(bultosRestantesFerroOP.value||0);
+
+    if (!opId)   return toast('Selecciona una operación.', false);
+    if (!mgId)   return toast('Selecciona un contenedor marítimo.', false);
+    if (!fxId)   return toast('Selecciona la caja/ferro.', false);
+    if (!trans)  return toast('Selecciona un transportista.', false);
+    if (!dest)   return toast('Selecciona un destino.', false);
+    if (asig <= 0) return toast('Los bultos asignados deben ser > 0.', false);
+    if (asig > rest) return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+
+    // === POST con FormData ===
+    const fd = new FormData(form);
+    const btn = form.querySelector('button[type="submit"]');
+    btn && (btn.disabled = true);
+
+    const x = new XMLHttpRequest();
+    x.open('POST', BASE_URL + 'Operaciones_maritimo_ferro_contenedores/guardar_asignacion', true);
+
+    x.onload = function(){
+      btn && (btn.disabled = false);
+      let res = null;
+      try { res = JSON.parse(x.responseText||'{}'); } catch(_){}
+
+      if (!res || res.ok !== true) {
+        const msg = (res && res.msg) ? res.msg : 'No se pudo registrar la asignación.';
+        setBadgeSaldo(rest); // sin cambios
+        return toast(msg, false);
+      }
+
+      // OK: actualizar saldo con el que regresa el backend
+      const saldo = (res.data && typeof res.data.saldo !== 'undefined') ? Number(res.data.saldo) : (rest - asig);
+      bultosRestantesFerroOP.value = String(saldo);
+      setBadgeSaldo(saldo);
+
+      // Reset mínimo para poder seguir capturando más líneas (dejamos op+MG fijos)
+      contenedorFerroIdFerroOP.value = '';
+      document.getElementById('contenedorFerroNombreFerroOP').value = '';
+      bultosAsignadosFerroOP.value = '';
+      comentariosFerroOP.value = '';
+
+      // Refrescar tabla
+      if (typeof cargarTablaFerroOP === 'function') cargarTablaFerroOP();
+
+      const folioFx = res.data?.numero_operacion_ferro || '';
+      toast(folioFx ? `Asignación registrada (${folioFx}).` : 'Asignación registrada.', true);
+
+      feather.replace();
+    };
+
+    x.onerror = function(){
+      btn && (btn.disabled = false);
+      toast('No se pudo conectar con el servidor.', false);
+    };
+
+    x.send(fd);
+  });
+
+  // Feedback en vivo del saldo (opcional)
+  bultosAsignadosFerroOP?.addEventListener('input', function(){
+    const rest = Number(bultosRestantesFerroOP?.value || 0);
+    const asig = Number(bultosAsignadosFerroOP?.value || 0);
+    setBadgeSaldo(rest - asig);
+  });
+})();
+ 

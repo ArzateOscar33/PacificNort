@@ -11,81 +11,109 @@ class Operaciones_maritimo_ferro_contenedores extends Controller
         }
        
     }
-    public function listar()
-    {
-        // --- Filtros
-        $q       = isset($_GET['q'])       ? trim($_GET['q']) : '';
-        $desde   = isset($_GET['desde'])   ? trim($_GET['desde']) : '';
-        $hasta   = isset($_GET['hasta'])   ? trim($_GET['hasta']) : '';
-        $page    = isset($_GET['page'])    ? (int)$_GET['page'] : 1;
-        $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 10;
+public function listar()
+{
+    // --- Filtros
+    $q       = isset($_GET['q'])       ? trim($_GET['q']) : '';
+    $desde   = isset($_GET['desde'])   ? trim($_GET['desde']) : '';
+    $hasta   = isset($_GET['hasta'])   ? trim($_GET['hasta']) : '';
+    $page    = isset($_GET['page'])    ? (int)$_GET['page'] : 1;
+    $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 10;
 
-        // Normaliza paginación
-        if ($page < 1) $page = 1;
-        $allowedPer = [10, 25, 50, 100, 200];
-        if (!in_array($perPage, $allowedPer, true)) $perPage = 10;
+    // Normaliza paginación
+    if ($page < 1) $page = 1;
+    $allowedPer = [10, 25, 50, 100, 200];
+    if (!in_array($perPage, $allowedPer, true)) $perPage = 10;
 
-        $filters = [
-            'term'      => mb_strtolower($q, 'UTF-8'),
-            'date_from' => ($desde !== '' ? $desde : null),
-            'date_to'   => ($hasta !== '' ? $hasta : null),
+    $filters = [
+        'term'      => mb_strtolower($q, 'UTF-8'),
+        'date_from' => ($desde !== '' ? $desde : null),
+        'date_to'   => ($hasta !== '' ? $hasta : null),
+    ];
+
+    // --- Modelo
+    $res  = $this->model->listarFerrosPaginado($filters, $page, $perPage);
+    $rows = $res['data'] ?? [];
+    $meta = $res['meta'] ?? ['total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+
+    // --- Mapeo a las llaves que tu JS espera (9 columnas)
+    $data = array_map(function ($r) {
+        // Acepta 'contenedor_maritimo' o 'contenedores_maritimos'
+        $maritimo = '';
+        if (isset($r['contenedor_maritimo'])) {
+            $maritimo = (string)$r['contenedor_maritimo'];
+        } elseif (isset($r['contenedores_maritimos'])) {
+            $maritimo = (string)$r['contenedores_maritimos'];
+        }
+
+        return [
+            // usa 'id_row' si viene, y además deja 'id' por compatibilidad con botones
+            'id_row'              => (int)($r['id_row'] ?? 0),
+            'id'                  => (int)($r['id_row'] ?? 0),
+
+            'numero_operacion'    => (string)($r['numero_operacion'] ?? ''),
+            'contenedores_maritimos' => $maritimo,
+            'contenedor_maritimo' => $maritimo, // alias por compatibilidad
+
+            'bultos_maritimo'     => isset($r['bultos_maritimo']) ? (int)$r['bultos_maritimo'] : null,
+            'cliente'             => (string)($r['cliente'] ?? ''),
+
+            // NUEVOS: pásalos tal cual del modelo
+            'transportista'       => (string)($r['transportista'] ?? ''),
+            'ferro'               => (string)($r['ferro'] ?? ''),
+            'division_bultos'     => (string)($r['division_bultos'] ?? ''),
+            'destino'             => (string)($r['destino'] ?? ''),
+
+            // opcional: por si quieres usarlo después
+            'bultos_asignados_total' => isset($r['bultos_asignados_total']) ? (int)$r['bultos_asignados_total'] : 0,
+            'fecha_header'        => (string)($r['fecha_header'] ?? ''),
         ];
+    }, $rows);
 
-        // --- Modelo
-        $res  = $this->model->listarFerrosPaginado($filters, $page, $perPage);
-        $rows = $res['data'] ?? [];
-        $meta = $res['meta'] ?? ['total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+    // --- Resumen
+    $total = (int)($meta['total'] ?? 0);
+    $pp    = (int)($meta['per_page'] ?? $perPage);
+    $pg    = (int)($meta['page'] ?? $page);
+    $from  = ($total > 0) ? (($pg - 1) * $pp + 1) : 0;
+    $to    = ($total > 0) ? min($total, $pg * $pp) : 0;
 
-        // --- Mapeo a las llaves esperadas por la vista
-        // Campos esperados por la tabla:
-        // numero_operacion | contenedor_maritimo | bultos_maritimo | cliente | ferro | bultos_asignados
-        $data = array_map(function ($r) {
-            // Acepta 'contenedor_maritimo' o 'contenedores_maritimos' del modelo
-            $maritimo = '';
-            if (isset($r['contenedor_maritimo'])) {
-                $maritimo = (string)$r['contenedor_maritimo'];
-            } elseif (isset($r['contenedores_maritimos'])) {
-                $maritimo = (string)$r['contenedores_maritimos']; // GROUP_CONCAT si hay varios
-            }
+    // --- Paginación HTML Bootstrap
+    $paginationHtml = $this->buildPaginationHtml(
+        (int)($meta['total_pages'] ?? 1),
+        $pg
+    );
 
-            return [
-                'id'                 => (int)($r['id_row'] ?? 0),
-                'numero_operacion'   => (string)($r['numero_operacion'] ?? ''),
-                'contenedor_maritimo' => $maritimo,
-                'bultos_maritimo'    => array_key_exists('bultos_maritimo', $r) ? (int)$r['bultos_maritimo'] : null,
-                'cliente'            => (string)($r['cliente'] ?? ''),
-                'ferro'              => (string)($r['ferro'] ?? ''),
-                'bultos_asignados'   => (int)($r['bultos_asignados'] ?? 0),
-            ];
-        }, $rows);
+    // --- Respuesta
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'data'            => $data,
+        'from'            => $from,
+        'to'              => $to,
+        'total'           => $total,
+        'page'            => $pg,
+        'per_page'        => $pp,
+        'total_pages'     => (int)($meta['total_pages'] ?? 1),
+        'pagination_html' => $paginationHtml,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+public function saldo_mg()
+{
+    $operacion_id = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+    $mg_id        = isset($_GET['contenedor_maritimo_id']) ? (int)$_GET['contenedor_maritimo_id'] : 0;
 
-        // --- Resumen
-        $total = (int)($meta['total'] ?? 0);
-        $pp    = (int)($meta['per_page'] ?? $perPage);
-        $pg    = (int)($meta['page'] ?? $page);
-        $from  = ($total > 0) ? (($pg - 1) * $pp + 1) : 0;
-        $to    = ($total > 0) ? min($total, $pg * $pp) : 0;
-
-        // --- Paginación HTML Bootstrap
-        $paginationHtml = $this->buildPaginationHtml(
-            (int)($meta['total_pages'] ?? 1),
-            $pg
-        );
-
-        // --- Respuesta
+    if ($operacion_id <= 0 || $mg_id <= 0) {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'data'            => $data,
-            'from'            => $from,
-            'to'              => $to,
-            'total'           => $total,
-            'page'            => $pg,
-            'per_page'        => $pp,
-            'total_pages'     => (int)($meta['total_pages'] ?? 1),
-            'pagination_html' => $paginationHtml,
-        ], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['ok' => false, 'msg' => 'operacion_id y contenedor_maritimo_id son requeridos']);
         exit;
     }
+
+    $res = $this->model->getSaldoMGByOperacionYMaritimo($operacion_id, $mg_id);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => true, 'data' => $res], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // En Operaciones_maritimo_ferro_contenedores (controlador)
 public function buscar_ferros()
 {
@@ -187,6 +215,81 @@ public function buscar_destinos()
         http_response_code(500);
         echo json_encode(['ok' => false, 'msg' => 'Error al buscar transportistas']);
     }
+    exit;
+}
+/** POST /operaciones_maritimo_ferro_contenedores/guardar_asignacion */
+public function guardar_asignacion()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'msg' => 'Método no permitido'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // === 1) Leer y sanear inputs del modal ===
+    $operacionId          = (int)($_POST['operacionIdFerroOP'] ?? 0);
+    $contenedorMaritimoId = (int)($_POST['contenedorMaritimoIdFerroOP'] ?? 0);
+    $contenedorFerroId    = (int)($_POST['contenedorFerroIdFerroOP'] ?? 0);
+    $bultosAsignados      = (int)($_POST['bultosAsignadosFerroOP'] ?? 0);
+    $transportistaId      = (int)($_POST['transportistaIdFerroOP'] ?? 0);
+    $destinoId            = (int)($_POST['destinoIdFerroOP'] ?? 0);
+    $comentario           = trim((string)($_POST['comentariosFerroOP'] ?? ''));
+
+    // === 2) Validaciones mínimas (coherentes con el modelo) ===
+    if ($operacionId <= 0)          { $this->jsonBad('Operación requerida'); }
+    if ($contenedorMaritimoId <= 0) { $this->jsonBad('Contenedor marítimo requerido'); }
+    if ($contenedorFerroId <= 0)    { $this->jsonBad('Caja/Ferro requerido'); }
+    if ($transportistaId <= 0)      { $this->jsonBad('Transportista requerido'); }
+    if ($destinoId <= 0)            { $this->jsonBad('Destino requerido'); }
+    if ($bultosAsignados <= 0)      { $this->jsonBad('Los bultos asignados deben ser > 0'); }
+
+    // === 3) Payload para el modelo ===
+    $payload = [
+        'operacion_id'           => $operacionId,
+        'contenedor_maritimo_id' => $contenedorMaritimoId,
+        'contenedor_fisico_id'   => $contenedorFerroId,
+        'destino_id'             => $destinoId,
+        'transportista_id'       => $transportistaId,
+        'bultos_asignados'       => $bultosAsignados,
+        'comentario'             => $comentario,
+        // 'fecha' => 'YYYY-mm-dd', // si después agregas fecha en el modal
+    ];
+
+    // === 4) Guardar (modelo) ===
+    $res = $this->model->registrarAsignacionFerro($payload);
+
+    // === 5) Respuesta ===
+    header('Content-Type: application/json; charset=utf-8');
+    if (!is_array($res) || empty($res['ok'])) {
+        $msg = is_array($res) && isset($res['msg']) ? $res['msg'] : 'No se pudo registrar la asignación.';
+        // 200 para que el front procese el mensaje y muestre alerta
+        http_response_code(200);
+        echo json_encode(['ok' => false, 'msg' => $msg], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    echo json_encode([
+        'ok'   => true,
+        'msg'  => (string)($res['msg'] ?? 'Asignación registrada'),
+        'data' => [
+            'numero_operacion_ferro' => (string)($res['numero_operacion_ferro'] ?? ''),
+            'saldo'                  => (int)($res['saldo'] ?? 0),
+            'ids' => [
+                'operacion_ferro_id'           => (int)($res['ids']['operacion_ferro_id'] ?? 0),
+                'contenedor_maritimo_ferro_id' => (int)($res['ids']['contenedor_maritimo_ferro_id'] ?? 0),
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/** Helper local para errores 200 legibles por el front */
+private function jsonBad(string $msg): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(200);
+    echo json_encode(['ok' => false, 'msg' => $msg], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

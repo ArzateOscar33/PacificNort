@@ -153,7 +153,7 @@
       const rest = bMar - totalAsign;
       bultosRestantesFerroOP.value = String(rest);
       badgeSaldoFerroOP.textContent = 'Saldo: ' + rest;
-      badgeSaldoFerroOP.className   = 'badge ' + (rest < 0 ? 'bg-danger' : 'bg-success');
+      badgeSaldoFerroOP.className   = 'badge text-white' + (rest < 0 ? 'bg-danger' : 'bg-success');
 
       hideList(sugMaritimosFerroOP);
     });
@@ -365,3 +365,5 @@ document.addEventListener('DOMContentLoaded', function(){
     if (!box.contains(e.target) && e.target !== inp) hideList();
   });
 });
+
+

@@ -12,7 +12,7 @@
             <label for="buscarFerroOP" class="form-label">Buscar (Operación / Cliente / Ferro / Marítimo /
                 Transportista)</label>
             <input type="text" id="buscarFerroOP" class="form-control"
-                placeholder="Ej. LB-01, Juan, FX001, MG001, TMM, Transpais">
+                placeholder="Ej. LB-01, Juan, FX001, MG001">
         </div>
 
         <div class="col-12 col-md-5">
@@ -87,7 +87,8 @@
                     </h5>
                 </div>
                 <div class="modal-body">
-                    <form id="formFerroOP" autocomplete="off">
+                    <form id="formFerroOP" autocomplete="off"> 
+
                         <input type="hidden" id="rowIdFerroOP" name="rowIdFerroOP">
 
                         <!-- Operación + Cliente -->
@@ -156,11 +157,11 @@
 
                             <div class="col-md-3">
                                 <label class="form-label d-block">Validación</label>
-                                <span id="badgeSaldoFerroOP" class="badge bg-secondary">Saldo: 0</span>
+                                <span id="badgeSaldoFerroOP" class="badge bg-secondary text-white">Saldo: 0</span>
                             </div>
                         </div>
 
-                        <!-- NUEVO: Transportista -->
+                        
                         <div class="row mb-3">
                             <div class="col-md-6 position-relative">
                                 <label class="form-label">Transportista</label>
@@ -210,7 +211,7 @@
 
 
     <script>
-        const BASE_URL = "<?= BASE_URL ?>";
+        
         feather.replace();
     </script>
     <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script>
