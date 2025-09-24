@@ -97,22 +97,8 @@ public function listar()
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-public function saldo_mg()
-{
-    $operacion_id = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-    $mg_id        = isset($_GET['contenedor_maritimo_id']) ? (int)$_GET['contenedor_maritimo_id'] : 0;
 
-    if ($operacion_id <= 0 || $mg_id <= 0) {
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['ok' => false, 'msg' => 'operacion_id y contenedor_maritimo_id son requeridos']);
-        exit;
-    }
 
-    $res = $this->model->getSaldoMGByOperacionYMaritimo($operacion_id, $mg_id);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['ok' => true, 'data' => $res], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 // En Operaciones_maritimo_ferro_contenedores (controlador)
 public function buscar_ferros()
@@ -291,6 +277,35 @@ private function jsonBad(string $msg): void
     http_response_code(200);
     echo json_encode(['ok' => false, 'msg' => $msg], JSON_UNESCAPED_UNICODE);
     exit;
+}
+// En tu controlador Operaciones_maritimo_ferro_contenedores
+public function saldos_por_operacion()
+{
+    // Acepta operacion_id o numero (numero_operacion)
+    $operacion_id = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+    $numero       = isset($_GET['numero']) ? trim($_GET['numero']) : '';
+
+    if ($operacion_id <= 0) {
+        if ($numero === '') {
+            echo json_encode(['ok' => false, 'msg' => 'Falta operacion_id o numero']); return;
+        }
+        // Resolver id_operacion por numero_operacion
+        $row = $this->model->select(
+            "SELECT id_operacion FROM operaciones WHERE numero_operacion=? LIMIT 1",
+            [$numero]
+        );
+        if (!$row) { echo json_encode(['ok'=>false,'msg'=>'Operación no encontrada']); return; }
+        $operacion_id = (int)$row['id_operacion'];
+    }
+
+    // Traer los saldos por MG de esa operación
+    $items = $this->model->listarSaldosMGPorOperacion($operacion_id);
+
+    echo json_encode([
+        'ok'           => true,
+        'operacion_id' => $operacion_id,
+        'items'        => $items  // cada item trae: id_cmo, numero_contenedor, bultos_totales, bultos_asignados, bultos_restantes
+    ]);
 }
 
 

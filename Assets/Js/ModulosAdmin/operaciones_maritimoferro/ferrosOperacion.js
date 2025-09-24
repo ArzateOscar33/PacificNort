@@ -354,11 +354,6 @@ function renderRowsFerroOP(rows){
     x.send(fd);
   });
 
-  // Feedback en vivo del saldo (opcional)
-  bultosAsignadosFerroOP?.addEventListener('input', function(){
-    const rest = Number(bultosRestantesFerroOP?.value || 0);
-    const asig = Number(bultosAsignadosFerroOP?.value || 0);
-    setBadgeSaldo(rest - asig);
-  });
+ 
 })();
  

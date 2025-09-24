@@ -1,6 +1,22 @@
  
 (function(){
   "use strict";
+// Refs usados en este archivo
+const operacionIdFerroOP               = document.getElementById('operacionIdFerroOP');
+const operacionNombreFerroOP           = document.getElementById('operacionNombreFerroOP');
+const sugOperacionesFerroOP            = document.getElementById('sugOperacionesFerroOP');
+
+const clienteIdFerroOP                 = document.getElementById('clienteIdFerroOP');
+const clienteNombreFerroOP             = document.getElementById('clienteNombreFerroOP');
+
+const contenedorMaritimoIdFerroOP      = document.getElementById('contenedorMaritimoIdFerroOP');
+const contenedorMaritimoNombreFerroOP  = document.getElementById('contenedorMaritimoNombreFerroOP');
+const sugMaritimosFerroOP              = document.getElementById('sugMaritimosFerroOP');
+
+const bultosMaritimoFerroOP            = document.getElementById('bultosMaritimoFerroOP');
+const bultosRestantesFerroOP           = document.getElementById('bultosRestantesFerroOP');
+const bultosAsignadosFerroOP           = document.getElementById('bultosAsignadosFerroOP');
+const badgeSaldoFerroOP                = document.getElementById('badgeSaldoFerroOP');
 
   // ==== helpers ====
   const $ = (sel)=>document.querySelector(sel);
@@ -14,6 +30,12 @@
     x.onerror = rej;
     x.send();
   });
+function setSaldoBadge(val){
+  const v = Number(val || 0);
+  if (!badgeSaldoFerroOP) return;
+  badgeSaldoFerroOP.textContent = `Saldo: ${v}`;
+  badgeSaldoFerroOP.className   = 'badge ' + (v < 0 ? 'bg-danger text-white' : 'bg-success text-white');
+}
 
   // Crea / oculta lista de sugerencias
   function showList(box){ if (box){ box.style.display = 'block'; } }
@@ -92,29 +114,41 @@
     clienteNombreFerroOP.value = item.cliente || '';
     hideList(sugOperacionesFerroOP);
 
-    // 2) poblar sugerencias de MARÍTIMOS de esta operación
-    const maritimos = Array.isArray(item.maritimos) ? item.maritimos : [];
-    // Si quieres que el input de marítimo también autocomplete (con los de esa op):
-    contenedorMaritimoNombreFerroOP.value = '';
-    contenedorMaritimoIdFerroOP.value     = '';
-    renderMaritimosSugeridos(maritimos);
+// 2) limpiar inputs dependientes
+contenedorMaritimoNombreFerroOP.value = '';
+contenedorMaritimoIdFerroOP.value     = '';
+bultosMaritimoFerroOP.value  = '';
+bultosRestantesFerroOP.value = '';
+badgeSaldoFerroOP.textContent = 'Saldo: 0';
+badgeSaldoFerroOP.className   = 'badge bg-secondary text-white';
 
-    // 3) set bultos del marítimo (total de todos) y calcular restantes
-    const totalMaritimo = toInt(item.total_bultos_maritimos || 0);
-    bultosMaritimoFerroOP.value = String(totalMaritimo);
+// 3) pedir TODOS los MG con sus saldos de esta operación
+try {
+  const res = await fetchJSON(
+    BASE_URL + 'operaciones_maritimo_ferro_contenedores/saldos_por_operacion?operacion_id=' + encodeURIComponent(item.id)
+  );
 
-    // 4) pedir suma de bultos ya asignados a ferros en esta operación
-    let asignados = 0;
-    try {
-      const res = await fetchJSON(BASE_URL + 'operaciones_maritimo_ferro_contenedores/suma_bultos_operacion?operacion_id=' + encodeURIComponent(item.id));
-      if (res && typeof res.total_asignados !== 'undefined') asignados = toInt(res.total_asignados);
-    } catch(_){ /* ignora, deja 0 */ }
+  // Esperamos: {ok:true, operacion_id, items:[{id_cmo, contenedor_maritimo_id, numero_contenedor, bultos_totales, bultos_asignados, bultos_restantes}, ...]}
+  const items = Array.isArray(res.items) ? res.items : [];
 
-    const restantes = totalMaritimo - asignados;
-    bultosRestantesFerroOP.value = String(restantes);
-    // pinta badge
-    badgeSaldoFerroOP.textContent = 'Saldo: ' + restantes;
-    badgeSaldoFerroOP.className   = 'badge ' + (restantes < 0 ? 'bg-danger' : 'bg-success') + ' text-white';
+  // Cachea estos MG para el autocomplete del campo "Contenedor Marítimo"
+  renderMaritimosSugeridos(
+    items.map(r => ({
+      cmo_id: r.id_cmo,
+      id_contenedor_maritimo: r.contenedor_maritimo_id,
+      numero_contenedor: r.numero_contenedor,
+      bultos: Number(r.bultos_totales || 0),          // por compatibilidad con tu render
+      bultos_totales: Number(r.bultos_totales || 0),  // explícito
+      bultos_asignados: Number(r.bultos_asignados || 0),
+      bultos_restantes: Number(r.bultos_restantes || 0)
+    }))
+  );
+} catch(e){
+  // si falla: deja el cache vacío
+  renderMaritimosSugeridos([]);
+}
+  
+  
   }
 
   // ==== Autocomplete de MARÍTIMOS (usando los de la operación seleccionada) ====
@@ -139,21 +173,14 @@
         raw: m
       }));
 
-    renderSuggestions(sugMaritimosFerroOP, filtered, (it)=> {
+    renderSuggestions(sugMaritimosFerroOP, filtered, (it)=> { 
       contenedorMaritimoIdFerroOP.value = it.raw.id_contenedor_maritimo;
       contenedorMaritimoNombreFerroOP.value = it.raw.numero_contenedor;
-
-      // Si quieres recalcular con el marítimo elegido (en lugar del total):
-      const bMar = toInt(it.raw.bultos);
-      bultosMaritimoFerroOP.value = String(bMar);
-
-      // recalcular restantes usando el total asignado de la operación
-      // (si quisieras solo lo asignado a ese marítimo, necesitarías otro endpoint)
-      const totalAsign = toInt(bultosMaritimoFerroOP.value) - toInt(bultosRestantesFerroOP.value);
-      const rest = bMar - totalAsign;
-      bultosRestantesFerroOP.value = String(rest);
-      badgeSaldoFerroOP.textContent = 'Saldo: ' + rest;
-      badgeSaldoFerroOP.className   = 'badge text-white' + (rest < 0 ? 'bg-danger' : 'bg-success');
+  // Pinta valores que ya vienen del endpoint saldos_por_operacion
+  bultosMaritimoFerroOP.value  = String(it.raw.bultos_totales ?? it.raw.bultos ?? 0);
+  bultosRestantesFerroOP.value = String(it.raw.bultos_restantes ?? 0);
+  setSaldoBadge(it.raw.bultos_restantes ?? 0);
+ 
 
       hideList(sugMaritimosFerroOP);
     });
@@ -365,5 +392,3 @@ document.addEventListener('DOMContentLoaded', function(){
     if (!box.contains(e.target) && e.target !== inp) hideList();
   });
 });
-
-

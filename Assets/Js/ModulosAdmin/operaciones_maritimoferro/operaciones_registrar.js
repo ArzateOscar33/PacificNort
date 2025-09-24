@@ -274,18 +274,7 @@ selSubtipoMF?.addEventListener('change', ()=>{
   });
 });
 
-// Click Guardar (alta)
-btnSaveMF?.addEventListener('click', (e)=>{
-  e.preventDefault();
-  if (btnSaveMF.disabled) return;
-
-  if (!validarBL_MF()){ inpBL_MF?.focus(); return; }
-  if (!validarMinimoMF()){ return; }
-  if (!validarClienteSeleccionadoMF()){ return; }
-
-  btnSaveMF.disabled = true;
-  guardarOperacionMF().finally(()=> btnSaveMF.disabled = false);
-});
+ 
 
 // Al mostrar el modal MF: valida estado del botón
 modalElMF?.addEventListener('shown.bs.modal', ()=>{
