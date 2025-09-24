@@ -11,7 +11,7 @@
   const fechaDesdeFerroOP  = document.getElementById('fechaDesdeFerroOP');
   const fechaHastaFerroOP  = document.getElementById('fechaHastaFerroOP');
   const perPageSelFerroOP  = document.getElementById('perPageFerroOP');
-
+  const form   = document.getElementById('formFerroOP');
   const tbodyFerroOP       = document.getElementById('tbodyFerroOP');
   const paginacionFerroOP  = document.getElementById('paginacionFerroOP');
   const metaResumenFerroOP = document.getElementById('metaResumenFerroOP');
@@ -214,15 +214,53 @@ function renderRowsFerroOP(rows){
   };
 
   // Validación rápida de saldo en el modal (cuando lo uses)
-  bultosAsignadosFerroOP?.addEventListener('input', function(){
-    const rest = Number(bultosRestantesFerroOP?.value || 0);
-    const asig = Number(bultosAsignadosFerroOP?.value || 0);
-    const saldo = rest - asig;
-    if (badgeSaldoFerroOP){
-      badgeSaldoFerroOP.textContent = `Saldo: ${saldo}`;
-      badgeSaldoFerroOP.className = 'badge ' + (saldo < 0 ? 'bg-danger' : 'bg-success');
-    }
+ // === LIMITADOR EN TIEMPO REAL ===
+bultosAsignadosFerroOP?.addEventListener('input', function(){
+  const rest = Number(bultosRestantesFerroOP?.value || 0);
+  let asig   = Number(bultosAsignadosFerroOP?.value || 0);
+
+  if (asig < 0 || !Number.isFinite(asig)) asig = 0;
+
+  // Si el usuario intenta rebasar el saldo, recortamos
+  if (asig > rest) {
+    asig = rest;
+    bultosAsignadosFerroOP.value = String(rest);
+  }
+
+  const saldo = rest - asig;
+  if (badgeSaldoFerroOP){
+    badgeSaldoFerroOP.textContent = `Saldo: ${saldo}`;
+    badgeSaldoFerroOP.className   = 'badge ' + (saldo < 0 ? 'bg-danger text-white' : 'bg-success text-white');
+  }
+
+  // (opcional) deshabilita/enhabilita submit
+  const btn = form.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = (asig <= 0 || saldo < 0);
+});
+
+function fetchSaldoActual(operacionId, contenedorMaritimoId){
+  return new Promise((resolve, reject)=>{
+    const x = new XMLHttpRequest();
+    const params = new URLSearchParams({
+      operacion_id: String(operacionId),
+      contenedor_maritimo_id: String(contenedorMaritimoId)
+    });
+    x.open('GET', BASE_URL + 'Operaciones_maritimo_ferro_contenedores/saldo_mg?' + params.toString(), true);
+    x.onload = ()=> {
+      try {
+        const res = JSON.parse(x.responseText||'{}');
+        // espera algo como { ok:true, saldo:123 }
+        if (res && res.ok === true && Number.isFinite(Number(res.saldo))) {
+          resolve(Number(res.saldo));
+        } else {
+          reject(new Error(res?.msg || 'No se pudo obtener el saldo.'));
+        }
+      } catch(e){ reject(e); }
+    };
+    x.onerror = ()=> reject(new Error('No se pudo conectar.'));
+    x.send();
   });
+}
 
   // --------- Init ---------
   cargarTablaFerroOP();
