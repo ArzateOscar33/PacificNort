@@ -169,7 +169,7 @@
               <div class="card-body">
                 <!-- Selector para agregar marítimo -->
                 <!-- CAMBIO: ahora se busca por Operación Marítima y lo demás es readonly -->
-                <div id="selectorMaritimoFerroOP" class="row mb-3" style="display: none;">
+                <div id="selectorMaritimoFerroOP" class="row mb-3"  >
                   <!-- Operación Marítima (único editable de texto) -->
                   <div class="col-md-4 position-relative">
                     <label class="form-label">Operación Marítima</label>
@@ -300,62 +300,5 @@
 
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script>
-<script>
-/* ===============================
-   Ferros en Operación - Mostrar/Ocultar selector de marítimo (solo UI)
-   ⤷ ESTE SCRIPT NO LIMPIA AL CONFIRMAR para no romper los hidden (CMO/Op)
-   ⤷ El “limpiar tras confirmar” lo hace ferrosOperacion.js después de pushear al carrito
-   =============================== */
-(function(){
-  "use strict";
 
-  // --- Refs ---
-  const btnAgregarMaritimo   = document.getElementById("btnAgregarMaritimoFerroOP");
-  const selectorMaritimo     = document.getElementById("selectorMaritimoFerroOP");
-  const btnCancelarMaritimo  = document.getElementById("btnCancelarMaritimoFerroOP");
-  // OJO: NO nos colgamos al click de Confirmar aquí (lo maneja ferrosOperacion.js)
-
-  // API simple para que otros JS controlen el selector
-  function showSelector(){ if (selectorMaritimo) selectorMaritimo.style.display = "flex"; }
-  function hideSelector(){ if (selectorMaritimo) selectorMaritimo.style.display = "none"; }
-  function clearSelectorFields(opts){
-    const clearIds = !!(opts && opts.clearIds);
-    // Campos visibles
-    ["operacionMaritimaNombreFerroOP","clienteNombreMaritimoFerroOP","contenedorMaritimoNombreFerroOP",
-     "bultosMaritimoFerroOP","bultosRestantesFerroOP","bultosAsignadosFerroOP"
-    ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-
-    // Opcional: también hidden (solo cuando cancelas)
-    if (clearIds){
-      ["operacionMaritimaIdFerroOP","contMaritimoOperacionIdFerroOP","contenedorMaritimoIdFerroOP"
-      ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-    }
-  }
-
-  // Exponer utilidades para que ferrosOperacion.js las use si quiere
-  window.maritimoSelector = {
-    show: showSelector,
-    hide: hideSelector,
-    clear: clearSelectorFields,
-    hideAndClear: (opts)=>{ hideSelector(); clearSelectorFields(opts); },
-  };
-
-  // --- Mostrar selector al presionar "Agregar Marítimo" ---
-  btnAgregarMaritimo?.addEventListener("click", () => {
-    showSelector();
-  });
-
-  // --- Ocultar y LIMPIAR TODO al cancelar ---
-  btnCancelarMaritimo?.addEventListener("click", () => {
-    window.maritimoSelector.hideAndClear({ clearIds: true });
-  });
-
-  // IMPORTANTE:
-  // NO limpiar al confirmar desde aquí. ferrosOperacion.js se encarga:
-  // - de validar
-  // - de agregar al carrito
-  // - y recién ahí ocultar/limpiar (sin borrar IDs si no corresponde)
-
-})();
-</script>
 
