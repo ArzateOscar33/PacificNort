@@ -109,14 +109,15 @@
 
         return `
       <tr>
-        <td>${numeroOperacion}</td>
-        <td>${contMaritimos}</td>
-        <td class="text-end">${bultosMaritimo}</td>
-        <td>${cliente}</td>
-        <td>${transportista}</td>
-        <td>${ferro}</td>
-        <td>${divisionBultos}</td>
-        <td>${destino}</td>
+  <td>${numeroOperacion}</td>
+  <td>${cliente}</td>
+  <td>${ferro}</td>
+  <td>${contMaritimos}</td>
+  <td class="text-end">${bultosMaritimo}</td>
+  <td>${transportista}</td>
+  <td>${destino}</td>
+  <td>${safeTextFerroOP(r.fecha_header || '')}</td>
+  <td>${safeTextFerroOP(r.estatus || '')}</td>
         <td>
           <div class="btn-group btn-group-sm" role="group">
             <button class="btn btn-outline-primary" data-id="${idRow}" onclick="editarFerroOP(${idRow})" title="Editar">
@@ -294,12 +295,28 @@
       x.onload = () => {
         try {
           const res = JSON.parse(x.responseText || "{}");
-          // espera algo como { ok:true, saldo:123 }
-          if (res && res.ok === true && Number.isFinite(Number(res.saldo))) {
-            resolve(Number(res.saldo));
-          } else {
-            reject(new Error(res?.msg || "No se pudo obtener el saldo."));
-          }
+          const wasMultiple = (carrito.length > 0);
+if (res && res.ok === true){
+  carrito = [];
+  renderCarrito();
+  actualizarTotales();
+}
+
+if (!wasMultiple) {
+  // sólo en 1 línea tiene sentido mantener saldo local
+  const rest = Number(bultosRestantesFerroOP.value || 0);
+  const asig = Number(bultosAsignadosFerroOP.value || 0);
+  const saldo = (res.data && typeof res.data.saldo !== 'undefined')
+                  ? Number(res.data.saldo)
+                  : (rest - asig);
+  bultosRestantesFerroOP.value = String(saldo);
+  setBadgeSaldo(saldo);
+} else {
+  // en múltiple, limpia selector
+  bultosAsignadosFerroOP.value = '';
+  bultosRestantesFerroOP.value = '';
+  setBadgeSaldo(0);
+}
         } catch (e) {
           reject(e);
         }
@@ -315,31 +332,6 @@
 window.cargarTablaFerroOP = cargarTablaFerroOP;
 })();
 
-// Excel
-document.getElementById("btnExcelFerroOP")?.addEventListener("click", () => {
-  ExportarTablas.exportar({
-    ref: "tablaFerroOP", // "#tablaEventos" o el elemento también funciona
-    formato: "xlsx",
-    nombre: "FerrosEnOperacion.xlsx",
-    columnasOcultas: [6], // oculta columna ID
-    soloVisibles: true,
-    sheetName: "Contenedores En Operacion",
-  });
-});
-
-// PDF
-document.getElementById("btnPdfFerroOP")?.addEventListener("click", () => {
-  ExportarTablas.exportar({
-    ref: "#tablaFerroOP",
-    formato: "pdf",
-    nombre: "FerrosEnOperacion.pdf",
-    titulo: "Ferros En Operacion",
-    orientacion: "landscape", // o 'portrait'
-    formatoPagina: "letter", // o 'a4'
-    columnasOcultas: [6],
-    soloVisibles: true,
-  });
-});
 
 // === REGISTRAR ASIGNACIÓN MG→FX ===
 (function () {
@@ -392,142 +384,322 @@ document.getElementById("btnPdfFerroOP")?.addEventListener("click", () => {
       alert(msg);
     }
   }
+// ===== Carrito de marítimos (para múltiples líneas) =====
+const tbodySel = document.getElementById('tbodyMaritimosSeleccionados');
+const noMsg    = document.getElementById('noMaritimosMessage');
+const asigHidden = document.getElementById('asignacionesHidden');
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
+// Inputs del selector (ya existen en tu otro JS)
+const opMarInp     = document.getElementById('operacionMaritimaNombreFerroOP');
+const opMarIdHid   = document.getElementById('operacionMaritimaIdFerroOP');      // operacion_id (info)
+const cmoIdHid     = document.getElementById('contMaritimoOperacionIdFerroOP');  // cmo.id (clave)
+const contIdHid    = document.getElementById('contenedorMaritimoIdFerroOP');
+const contNameInp  = document.getElementById('contenedorMaritimoNombreFerroOP');
+const bultosTotInp = document.getElementById('bultosMaritimoFerroOP');
+const restInp      = document.getElementById('bultosRestantesFerroOP');
+const asigInp      = document.getElementById('bultosAsignadosFerroOP');
+const comentarioLineaInp = document.getElementById('comentarioLineaFerroOP'); // si no existe, es opcional
 
-    // === Refs y valores ===
-    const btn = form.querySelector('button[type="submit"]');
+let carrito = []; // { cmo_id, bultos_asignados, comentario?, numero_contenedor?, bultos_restantes? }
 
-    const opId = Number(operacionIdFerroOP.value || 0);
-    const mgId = Number(contenedorMaritimoIdFerroOP.value || 0);
-
-    const fxIdInput = document.getElementById("contenedorFerroIdFerroOP");
-    const fxNameInput = document.getElementById("contenedorFerroNombreFerroOP");
-    const fxId = Number(fxIdInput?.value || 0);
-    const fxName = (fxNameInput?.value || "").trim();
-
-    const trans = Number(transportistaIdFerroOP.value || 0);
-    const dest = Number(destinoIdFerroOP.value || 0);
-    const asig = Number(bultosAsignadosFerroOP.value || 0);
-    const rest = Number(bultosRestantesFerroOP.value || 0);
-
-    // === Validaciones front (el back también valida) ===
-    if (!opId) return toast("Selecciona una operación.", false);
-    if (!mgId) return toast("Selecciona un contenedor marítimo.", false);
-    if (!fxId && !fxName)
-      return toast(
-        "Selecciona la caja/ferro o escribe el número para crearlo.",
-        false
-      );
-    if (!trans) return toast("Selecciona un transportista.", false);
-    if (!dest) return toast("Selecciona un destino.", false);
-    if (asig <= 0) return toast("Los bultos asignados deben ser > 0.", false);
-    if (asig > rest)
-      return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
-
-    // ---- función que realiza el POST de la asignación (tu lógica original) ----
-    function postAsignacion() {
-      const fd = new FormData(form);
-      btn && (btn.disabled = true);
-
-      const x = new XMLHttpRequest();
-      x.open(
-        "POST",
-        BASE_URL + "Operaciones_maritimo_ferro_contenedores/guardar_asignacion",
-        true
-      );
-
-x.onload = function(){
-  btn && (btn.disabled = false);
-  let res = null;
-  try { res = JSON.parse(x.responseText||'{}'); } catch(_){}
-
-  if (!res || res.ok !== true) {
-    const msg = (res && res.msg) ? res.msg : 'No se pudo registrar la asignación.';
-    setBadgeSaldo(rest);
-    return toast(msg, false);
+function renderCarrito(){
+  tbodySel.innerHTML = '';
+  if (!carrito.length){
+    if (noMsg) noMsg.style.display = '';
+    return;
   }
+  if (noMsg) noMsg.style.display = 'none';
 
-  // Actualiza saldo local
-  const saldo = (res.data && typeof res.data.saldo !== 'undefined') ? Number(res.data.saldo) : (rest - asig);
-  bultosRestantesFerroOP.value = String(saldo);
-  setBadgeSaldo(saldo);
-
-  // Refrescar tabla inmediatamente
-  if (typeof window.cargarTablaFerroOP === 'function') window.cargarTablaFerroOP();
-
-  // Cerrar el modal
-  const modalEl = document.getElementById('modalFerroOP');
-  if (modalEl && window.bootstrap?.Modal) {
-    const instance = bootstrap.Modal.getOrCreateInstance(modalEl);
-    instance.hide();
-  }
-
-  // Limpieza de campos del form (opcional porque cerramos)
-  form.reset();
-
-  const folioFx = res.data?.numero_operacion_ferro || '';
-  toast(folioFx ? `Asignación registrada (${folioFx}).` : 'Asignación registrada.', true);
-  feather.replace();
-};
-
-
-      x.onerror = function () {
-        btn && (btn.disabled = false);
-        toast("No se pudo conectar con el servidor.", false);
-      };
-
-      x.send(fd);
-    }
-
-    // ---- Si no hay ID pero sí nombre: crear ferro al vuelo y luego asignar ----
-    if (!fxId && fxName !== "") {
-      btn && (btn.disabled = true);
-
-      const fdMk = new FormData();
-      fdMk.append("numero_ferro", fxName);
-
-      const xMk = new XMLHttpRequest();
-      xMk.open(
-        "POST",
-        BASE_URL + "Operaciones_maritimo_ferro_contenedores/crear_ferro",
-        true
-      );
-
-      xMk.onload = function () {
-        let r = null;
-        try {
-          r = JSON.parse(xMk.responseText || "{}");
-        } catch (_) {}
-
-        if (!r || r.ok !== true || !r.id) {
-          btn && (btn.disabled = false);
-          return toast(
-            r && r.msg ? r.msg : "No se pudo crear la caja/ferro.",
-            false
-          );
-        }
-
-        // Setear el hidden con el nuevo ID y continuar con el flujo normal
-        if (fxIdInput) fxIdInput.value = String(r.id);
-        // (opcional) normaliza el texto visible con la etiqueta devuelta
-        if (fxNameInput && r.label) fxNameInput.value = r.label;
-
-        // Ahora sí, post de la asignación
-        postAsignacion();
-      };
-
-      xMk.onerror = function () {
-        btn && (btn.disabled = false);
-        toast("No se pudo conectar para crear la caja/ferro.", false);
-      };
-
-      xMk.send(fdMk);
-      return; // salimos; el resto lo hace postAsignacion()
-    }
-
-    // ---- Si ya hay fxId, seguimos directo a guardar asignación ----
-    postAsignacion();
+  carrito.forEach((it, idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${it.numero_operacion || ''}</td>
+      <td>${it.numero_contenedor || ''}</td>
+      <td class="text-end">${it.bultos_asignados}</td>
+      <td>${it.comentario || ''}</td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger" data-idx="${idx}">
+          <i data-feather="trash-2"></i>
+        </button>
+      </td>
+    `;
+    tbodySel.appendChild(tr);
   });
+  feather.replace();
+
+  tbodySel.querySelectorAll('button[data-idx]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = Number(btn.getAttribute('data-idx'));
+      if (!isNaN(i)) {
+        carrito.splice(i,1);
+        renderCarrito();
+        actualizarTotales();
+      }
+    });
+  });
+}
+
+
+function actualizarTotales(){
+  // si usas los badges de “Total de Bultos / Marítimos”
+  const totBultos = carrito.reduce((a,b)=> a + Number(b.bultos_asignados||0), 0);
+  const totMar    = carrito.length;
+  const badgeTotB = document.getElementById('totalBultosFerroOP');
+  const badgeTotM = document.getElementById('totalMaritimosFerroOP');
+  if (badgeTotB) {
+    badgeTotB.textContent = String(totBultos);
+    badgeTotB.style.display = totBultos > 0 ? '' : 'none';
+    badgeTotB.className = 'badge ' + (totBultos > 0 ? 'bg-success text-white' : 'bg-secondary text-white');
+  }
+  if (badgeTotM) {
+    badgeTotM.textContent = String(totMar);
+    badgeTotM.style.display = totMar > 0 ? '' : 'none';
+    badgeTotM.className = 'badge ' + (totMar > 0 ? 'bg-success text-white' : 'bg-secondary text-white');
+  }
+}
+// Botón confirmar del selector (ya existe en tu vista con id "btnConfirmarMaritimoFerroOP")
+const btnConfirmar = document.getElementById('btnConfirmarMaritimoFerroOP');
+if (btnConfirmar){
+  btnConfirmar.addEventListener('click', function(){
+   if (opMarInp?.dataset.lastPick !== '1') {
+    return toast('Busca y elige una operación de la lista.', false);
+  }
+
+  const cmoId  = Number(cmoIdHid?.value || 0);
+  const asign  = Number(asigInp?.value || 0);
+  const rest   = Number(restInp?.value || 0);
+
+  if (!cmoId || !opId) return toast('Selecciona una operación/CMO válido.', false);
+  if (rest <= 0) return toast('Este marítimo no tiene saldo disponible.', false);
+  if (asign <= 0) return toast('Bultos a asignar debe ser > 0.', false);
+  if (asign > rest) return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+
+    // snapshots del selector actual
+    const opNumero = opMarInp?.value || '';                 // p.ej. "LBMF-05"
+    const opId     = Number(opMarIdHid?.value || 0);        // operación_id
+    const contNm   = contNameInp?.value || '';
+    const coment   = (comentarioLineaInp?.value || '').trim();
+    const cliente  = (document.getElementById('clienteNombreMaritimoFerroOP')?.value || '');
+
+    // Validaciones
+    if (!cmoId || !opId) return toast('Selecciona una operación/CMO válido.', false);
+    console.log('DEBUG pick', {
+  cmoId: cmoIdHid?.value,
+  opId: opMarIdHid?.value
+});
+    if (asign <= 0) return toast('Bultos a asignar debe ser > 0.', false);
+    if (asign > rest) return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+
+    // ¿ya existe el mismo CMO?
+    const ix = carrito.findIndex(x => Number(x.cmo_id) === cmoId);
+    if (ix >= 0){
+      carrito[ix].bultos_asignados = Number(carrito[ix].bultos_asignados) + asign;
+    } else {
+      carrito.push({
+        cmo_id: cmoId,
+        bultos_asignados: asign,
+        comentario: coment || null,
+        // snapshots para que no cambien después:
+        numero_operacion: opNumero,
+        operacion_id: opId,
+        numero_contenedor: contNm,
+        cliente: cliente
+      });
+    }
+
+    renderCarrito();
+    actualizarTotales();
+    asigInp.value = '';
+  });
+}
+function toggleBtn(){
+  const asign = Number(asigInp.value || 0);
+  const rest  = Number(restInp.value || 0);
+  btnConfirmar.disabled = !(asign > 0 && asign <= rest && opMarInp.dataset.lastPick === '1');
+}
+['input','change'].forEach(ev => {
+  asigInp.addEventListener(ev, toggleBtn);
+  restInp.addEventListener(ev, toggleBtn);
+  opMarInp.addEventListener(ev, toggleBtn);
+});
+toggleBtn();
+
+ 
+form.addEventListener('submit', function (e) {
+  e.preventDefault();
+  const btn = form.querySelector('button[type="submit"]');
+
+  // Header:
+  const fecha = (document.getElementById('fechaFerroOP')?.value || '').trim();
+  const fxId  = Number(document.getElementById('contenedorFerroIdFerroOP')?.value || 0);
+  const fxNm  = (document.getElementById('contenedorFerroNombreFerroOP')?.value || '').trim();
+  const trans = Number(transportistaIdFerroOP.value || 0);
+  const dest  = Number(destinoIdFerroOP.value || 0);
+
+  if (!fecha) return toast('La fecha es requerida.', false);
+  if (!fxId && !fxNm) return toast('Selecciona la caja/ferro o escribe el número.', false);
+  if (!trans) return toast('Selecciona un transportista.', false);
+  if (!dest)  return toast('Selecciona un destino.', false);
+
+  // ===== Capturas para manejar ambos modos consistentemente =====
+  const wasMultiple = (carrito.length > 0);
+  let cmoIdLocal = 0;
+  let asigLocal  = 0;
+  let restLocal  = 0;
+
+  if (!wasMultiple) {
+    // MODO 1 línea
+    cmoIdLocal = Number(document.getElementById('contMaritimoOperacionIdFerroOP')?.value || 0);
+    asigLocal  = Number(bultosAsignadosFerroOP.value || 0);
+    restLocal  = Number(bultosRestantesFerroOP.value || 0);
+
+    if (!cmoIdLocal) return toast('Selecciona una operación/CMO válido.', false);
+    
+    if (asigLocal <= 0) return toast('Los bultos asignados deben ser > 0.', false);
+    if (asigLocal > restLocal) return toast(`No hay saldo suficiente. Disponible: ${restLocal}.`, false);
+    // asigHidden NO se setea en modo 1 línea
+  } else {
+    // MODO múltiple
+    if (asigHidden) asigHidden.value = JSON.stringify(carrito);
+  }
+
+  // ---- función que realiza el POST de la asignación ----
+  function postAsignacion() {
+    const fd = new FormData(form);
+    btn && (btn.disabled = true);
+
+    const x = new XMLHttpRequest();
+    x.open("POST", BASE_URL + "Operaciones_maritimo_ferro_contenedores/guardar_asignacion", true);
+
+    x.onload = function(){
+      btn && (btn.disabled = false);
+
+      let res = null;
+      try { res = JSON.parse(x.responseText||'{}'); } catch(_){}
+
+      if (!res || res.ok !== true) {
+        // Usa las capturas solo si era 1 línea
+        if (!wasMultiple) setBadgeSaldo(restLocal);
+        const msg = (res && res.msg) ? res.msg : 'No se pudo registrar la asignación.';
+        return toast(msg, false);
+      }
+
+      // éxito
+      if (wasMultiple) {
+        // limpiar carrito y totales
+        carrito = [];
+        renderCarrito();
+        actualizarTotales();
+        // no tocamos los saldos del selector (ya no aplican)
+        bultosAsignadosFerroOP.value = '';
+        bultosRestantesFerroOP.value = '';
+        setBadgeSaldo(0);
+      } else {
+        // actualizar saldo visible del MG seleccionado
+        const saldo = (res.data && typeof res.data.saldo !== 'undefined')
+                      ? Number(res.data.saldo)
+                      : (restLocal - asigLocal);
+        bultosRestantesFerroOP.value = String(saldo);
+        setBadgeSaldo(saldo);
+      }
+
+      // Refrescar tabla
+      if (typeof window.cargarTablaFerroOP === 'function') window.cargarTablaFerroOP();
+
+      // Cerrar modal
+      const modalEl = document.getElementById('modalFerroOP');
+      if (modalEl && window.bootstrap?.Modal) {
+        const instance = bootstrap.Modal.getOrCreateInstance(modalEl);
+        instance.hide();
+      }
+
+      // Limpieza general
+      form.reset();
+
+      const folioFx = res.data?.numero_operacion_ferro || '';
+      toast(folioFx ? `Asignación registrada (${folioFx}).` : 'Asignación registrada.', true);
+      feather.replace();
+    };
+
+    x.onerror = function () {
+      btn && (btn.disabled = false);
+      toast("No se pudo conectar con el servidor.", false);
+    };
+console.log('DEBUG pick', {
+  cmoId: cmoIdHid?.value,
+  opId: opMarIdHid?.value
+});
+    x.send(fd);
+  }
+
+  // refs para crear ferro al vuelo
+  const fxIdInput = document.getElementById('contenedorFerroIdFerroOP');
+  const fxNmInput = document.getElementById('contenedorFerroNombreFerroOP');
+
+  // ---- Crear ferro si solo hay nombre ----
+  if (!fxId && fxNm !== "") {
+    btn && (btn.disabled = true);
+
+    const fdMk = new FormData();
+    fdMk.append("numero_ferro", fxNm);
+
+    const xMk = new XMLHttpRequest();
+    xMk.open("POST", BASE_URL + "Operaciones_maritimo_ferro_contenedores/crear_ferro", true);
+
+    xMk.onload = function () {
+      let r = null;
+      try { r = JSON.parse(xMk.responseText || "{}"); } catch (_) {}
+
+      if (!r || r.ok !== true || !r.id) {
+        btn && (btn.disabled = false);
+        return toast(r && r.msg ? r.msg : "No se pudo crear la caja/ferro.", false);
+      }
+
+      // Setear el hidden con el nuevo ID y continuar con el flujo normal
+      if (fxIdInput) fxIdInput.value = String(r.id);
+      if (fxNmInput && r.label) fxNmInput.value = r.label;
+
+      postAsignacion();
+    };
+
+    xMk.onerror = function () {
+      btn && (btn.disabled = false);
+      toast("No se pudo conectar para crear la caja/ferro.", false);
+    };
+
+    xMk.send(fdMk);
+    return; // el resto lo hace postAsignacion()
+  }
+
+  // ---- Ya hay fxId, guardar directo ----
+  postAsignacion();
+});
+
+
+ 
 })();
+// Excel
+document.getElementById("btnExcelFerroOP")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "tablaFerroOP", // "#tablaEventos" o el elemento también funciona
+    formato: "xlsx",
+    nombre: "FerrosEnOperacion.xlsx",
+    columnasOcultas: [6], // oculta columna ID
+    soloVisibles: true,
+    sheetName: "Contenedores En Operacion",
+  });
+});
+
+// PDF
+document.getElementById("btnPdfFerroOP")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "#tablaFerroOP",
+    formato: "pdf",
+    nombre: "FerrosEnOperacion.pdf",
+    titulo: "Ferros En Operacion",
+    orientacion: "landscape", // o 'portrait'
+    formatoPagina: "letter", // o 'a4'
+    columnasOcultas: [6],
+    soloVisibles: true,
+  });
+});

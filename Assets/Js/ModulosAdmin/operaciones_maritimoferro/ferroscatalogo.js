@@ -1,207 +1,148 @@
- 
 (function(){
   "use strict";
-// Refs usados en este archivo
-const operacionIdFerroOP               = document.getElementById('operacionIdFerroOP');
-const operacionNombreFerroOP           = document.getElementById('operacionNombreFerroOP');
-const sugOperacionesFerroOP            = document.getElementById('sugOperacionesFerroOP');
 
-const clienteIdFerroOP                 = document.getElementById('clienteIdFerroOP');
-const clienteNombreFerroOP             = document.getElementById('clienteNombreFerroOP');
+// ===== Refs usados en este archivo =====
+const operacionNombreFerroOP           = document.getElementById('operacionNombreFerroOP'); // Folio FO (solo lectura)
+const contenedorFerroIdFerroOP         = document.getElementById('contenedorFerroIdFerroOP');
+const contenedorFerroNombreFerroOP     = document.getElementById('contenedorFerroNombreFerroOP');
 
-const contenedorMaritimoIdFerroOP      = document.getElementById('contenedorMaritimoIdFerroOP');
-const contenedorMaritimoNombreFerroOP  = document.getElementById('contenedorMaritimoNombreFerroOP');
-const sugMaritimosFerroOP              = document.getElementById('sugMaritimosFerroOP');
+const destinoIdFerroOP                 = document.getElementById('destinoIdFerroOP');
+const destinoNombreFerroOP             = document.getElementById('destinoNombreFerroOP');
 
-const bultosMaritimoFerroOP            = document.getElementById('bultosMaritimoFerroOP');
-const bultosRestantesFerroOP           = document.getElementById('bultosRestantesFerroOP');
-const bultosAsignadosFerroOP           = document.getElementById('bultosAsignadosFerroOP');
-const badgeSaldoFerroOP                = document.getElementById('badgeSaldoFerroOP');
+const transportistaIdFerroOP           = document.getElementById('transportistaIdFerroOP');
+const transportistaNombreFerroOP       = document.getElementById('transportistaNombreFerroOP');
 
-  // ==== helpers ====
-  const $ = (sel)=>document.querySelector(sel);
-  const toInt = (v)=> Number.isFinite(Number(v)) ? Number(v) : 0;
-  const fetchJSON = (url)=> new Promise((res, rej)=>{
+// Campos del selector NUEVO (operación marítima + MG)
+const opInp     = document.getElementById('operacionMaritimaNombreFerroOP');  // editable
+const opIdHid   = document.getElementById('operacionMaritimaIdFerroOP');      // operacion_id
+const cmoIdHid  = document.getElementById('contMaritimoOperacionIdFerroOP');  // cmo.id
+const sugBox    = document.getElementById('sugOperacionesMaritimasFerroOP');
+
+const contIdHid   = document.getElementById('contenedorMaritimoIdFerroOP');
+const contNameInp = document.getElementById('contenedorMaritimoNombreFerroOP'); // readonly
+const cliNameInp  = document.getElementById('clienteNombreMaritimoFerroOP');    // readonly
+
+const bultosTotInp = document.getElementById('bultosMaritimoFerroOP');   // readonly
+const restInp      = document.getElementById('bultosRestantesFerroOP');  // readonly
+const asigInp      = document.getElementById('bultosAsignadosFerroOP');  // editable
+
+// Hacer el folio FO de solo lectura (se prellena al abrir modal)
+if (operacionNombreFerroOP) operacionNombreFerroOP.readOnly = true;
+
+// ==== helpers ====
+const toInt = (v)=> Number.isFinite(Number(v)) ? Number(v) : 0;
+function showList(el){ if (el){ el.style.display = 'block'; } }
+function hideList(el){ if (el){ el.style.display = 'none'; el.innerHTML = ''; } }
+function fetchJSON(url){
+  return new Promise((res, rej)=>{
     const x = new XMLHttpRequest();
     x.open('GET', url, true);
-    x.onload = ()=> {
-      try { res(JSON.parse(x.responseText||'{}')); } catch(e){ rej(e); }
-    };
+    x.onload = ()=> { try { res(JSON.parse(x.responseText||'{}')); } catch(e){ rej(e); } };
     x.onerror = rej;
     x.send();
   });
-function setSaldoBadge(val){
-  const v = Number(val || 0);
-  if (!badgeSaldoFerroOP) return;
-  badgeSaldoFerroOP.textContent = `Saldo: ${v}`;
-  badgeSaldoFerroOP.className   = 'badge ' + (v < 0 ? 'bg-danger text-white' : 'bg-success text-white');
 }
 
-  // Crea / oculta lista de sugerencias
-  function showList(box){ if (box){ box.style.display = 'block'; } }
-  function hideList(box){ if (box){ box.style.display = 'none'; box.innerHTML=''; } }
-
-  function renderSuggestions(box, items, onPick){
-    if (!box) return;
-    box.innerHTML = '';
-    if (!items || items.length === 0){ hideList(box); return; }
-
-    items.forEach(it=>{
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-      btn.innerHTML = `
-        <span>${it.label}</span>
-        ${it.total_bultos_maritimos !== undefined ? `<small class="text-muted ms-2">Bultos: ${it.total_bultos_maritimos}</small>`:''}
-      `;
-      const pick = (ev)=>{ ev.preventDefault(); onPick(it); };
-      btn.addEventListener('pointerdown', pick);
-      btn.addEventListener('click', pick);
-      box.appendChild(btn);
-    });
-    showList(box);
+// ==============
+// AUTOCOMPLETE: Operación marítima (con MG incluido)
+// ==============
+function renderSuggestions(items, onPick){
+  sugBox.innerHTML = '';
+  if (!items || !items.length){ hideList(sugBox); return; }
+  for (const it of items){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+    btn.innerHTML = `
+      <span>
+        <strong>${it.numero_operacion}</strong> — ${it.numero_contenedor}
+        <small class="text-muted"> · ${it.cliente || ''}</small>
+      </span>
+      <small class="text-muted">Tot: ${it.bultos_totales} · Asig: ${it.bultos_asignados} · Rest: ${it.bultos_restantes}</small>
+    `;
+    btn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); onPick(it); });
+    btn.addEventListener('click',       (e)=>{ e.preventDefault(); onPick(it); });
+    sugBox.appendChild(btn);
   }
-
-  // ==== Autocomplete de OPERACIÓN ====
-  let opXHR = null;
-  let opDebounce = null;
-
-  operacionNombreFerroOP?.addEventListener('input', function(e){
-    // limpiar dependencias al teclear
-    operacionIdFerroOP.value = '';
-    clienteIdFerroOP.value = '';
-    clienteNombreFerroOP.value = '';
-    contenedorMaritimoIdFerroOP.value = '';
-    contenedorMaritimoNombreFerroOP.value = '';
-    bultosMaritimoFerroOP.value = '';
-    bultosRestantesFerroOP.value = '';
-    badgeSaldoFerroOP.textContent = 'Saldo: 0';
-    badgeSaldoFerroOP.className = 'badge bg-secondary';
-
-    const q = (this.value||'').trim();
-    if (q.length < 2){ hideList(sugOperacionesFerroOP); return; }
-
-    // debounce
-    clearTimeout(opDebounce);
-    opDebounce = setTimeout(()=>{
-      if (opXHR && opXHR.readyState !== 4) opXHR.abort();
-
-      const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/sugerencias_operaciones?q=' + encodeURIComponent(q) + '&limit=10';
-      opXHR = new XMLHttpRequest();
-      opXHR.open('GET', url, true);
-      opXHR.onload = function(){
-        let res = {};
-        try { res = JSON.parse(opXHR.responseText||'{}'); } catch { res = {}; }
-        const items = Array.isArray(res.data) ? res.data : [];
-        renderSuggestions(sugOperacionesFerroOP, items, onPickOperacionFerroOP);
-      };
-      opXHR.onerror = function(){ hideList(sugOperacionesFerroOP); };
-      opXHR.send();
-    }, 250);
-  });
-
-  operacionNombreFerroOP?.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape') hideList(sugOperacionesFerroOP);
-  });
-  operacionNombreFerroOP?.addEventListener('blur', ()=> setTimeout(()=> hideList(sugOperacionesFerroOP), 150));
-
-  // Al elegir una operación:
-  async function onPickOperacionFerroOP(item){
-    // 1) set operación + cliente
-    operacionIdFerroOP.value   = item.id;
-    operacionNombreFerroOP.value = item.label; // o item.numero_operacion si lo quisieras “puro”
-    clienteIdFerroOP.value     = item.cliente_id || 0;
-    clienteNombreFerroOP.value = item.cliente || '';
-    hideList(sugOperacionesFerroOP);
-
-// 2) limpiar inputs dependientes
-contenedorMaritimoNombreFerroOP.value = '';
-contenedorMaritimoIdFerroOP.value     = '';
-bultosMaritimoFerroOP.value  = '';
-bultosRestantesFerroOP.value = '';
-badgeSaldoFerroOP.textContent = 'Saldo: 0';
-badgeSaldoFerroOP.className   = 'badge bg-secondary text-white';
-
-// 3) pedir TODOS los MG con sus saldos de esta operación
-try {
-  const res = await fetchJSON(
-    BASE_URL + 'operaciones_maritimo_ferro_contenedores/saldos_por_operacion?operacion_id=' + encodeURIComponent(item.id)
-  );
-
-  // Esperamos: {ok:true, operacion_id, items:[{id_cmo, contenedor_maritimo_id, numero_contenedor, bultos_totales, bultos_asignados, bultos_restantes}, ...]}
-  const items = Array.isArray(res.items) ? res.items : [];
-
-  // Cachea estos MG para el autocomplete del campo "Contenedor Marítimo"
-  renderMaritimosSugeridos(
-    items.map(r => ({
-      cmo_id: r.id_cmo,
-      id_contenedor_maritimo: r.contenedor_maritimo_id,
-      numero_contenedor: r.numero_contenedor,
-      bultos: Number(r.bultos_totales || 0),          // por compatibilidad con tu render
-      bultos_totales: Number(r.bultos_totales || 0),  // explícito
-      bultos_asignados: Number(r.bultos_asignados || 0),
-      bultos_restantes: Number(r.bultos_restantes || 0)
-    }))
-  );
-} catch(e){
-  // si falla: deja el cache vacío
-  renderMaritimosSugeridos([]);
+  showList(sugBox);
 }
-  
-  
-  }
 
-  // ==== Autocomplete de MARÍTIMOS (usando los de la operación seleccionada) ====
-  let cacheMaritimosDeOp = [];
-  function renderMaritimosSugeridos(maritimos){
-    cacheMaritimosDeOp = maritimos || [];
-    sugMaritimosFerroOP.innerHTML = '';
-    hideList(sugMaritimosFerroOP);
-  }
+let lastXHR = null, deb = null;
+opInp?.addEventListener('input', function(){
+  // Limpiar dependientes al teclear
+  opIdHid.value   = '';
+  cmoIdHid.value  = '';
+  contIdHid.value = '';
+  opInp.dataset.lastPick = '0';
 
-  contenedorMaritimoNombreFerroOP?.addEventListener('input', function(){
-    const q = (this.value||'').trim().toLowerCase();
-    if (!cacheMaritimosDeOp.length){ hideList(sugMaritimosFerroOP); return; }
-    if (q.length < 1){ hideList(sugMaritimosFerroOP); return; }
+  contNameInp.value = '';
+  cliNameInp.value  = '';
+  bultosTotInp.value= '';
+  restInp.value     = '';
+  asigInp.value     = '';
 
-    const filtered = cacheMaritimosDeOp
-      .filter(m => (m.numero_contenedor||'').toLowerCase().includes(q))
-      .slice(0, 10)
-      .map(m => ({
-        id: m.id_contenedor_maritimo,
-        label: `${m.numero_contenedor} — bultos: ${m.bultos}`,
-        raw: m
-      }));
+  const q = (this.value||'').trim();
+  if (q.length < 2){ hideList(sugBox); return; }
 
-    renderSuggestions(sugMaritimosFerroOP, filtered, (it)=> { 
-      contenedorMaritimoIdFerroOP.value = it.raw.id_contenedor_maritimo;
-      contenedorMaritimoNombreFerroOP.value = it.raw.numero_contenedor;
-  // Pinta valores que ya vienen del endpoint saldos_por_operacion
-  bultosMaritimoFerroOP.value  = String(it.raw.bultos_totales ?? it.raw.bultos ?? 0);
-  bultosRestantesFerroOP.value = String(it.raw.bultos_restantes ?? 0);
-  setSaldoBadge(it.raw.bultos_restantes ?? 0);
+  if (deb) clearTimeout(deb);
+  deb = setTimeout(()=>{
+    if (lastXHR && lastXHR.readyState !== 4) try{ lastXHR.abort(); }catch{}
+    const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/sugerencias_operaciones_maritimas'
+              + '?q=' + encodeURIComponent(q) + '&limit=12';
+    const x = new XMLHttpRequest(); lastXHR = x;
+    x.open('GET', url, true);
+    x.onload = ()=>{
+      if (x.status !== 200){ hideList(sugBox); return; }
+      let resp = {};
+      try { resp = JSON.parse(x.responseText||'{}'); } catch { resp = {}; }
+      const items = Array.isArray(resp.items) ? resp.items : [];
+      renderSuggestions(items, onPickOp);
+    };
+    x.onerror = ()=> hideList(sugBox);
+    x.send();
+  }, 220);
+});
+
+opInp?.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideList(sugBox); });
+opInp?.addEventListener('blur',   ()=> setTimeout(()=> hideList(sugBox), 150));
+  const opMarInp   = document.getElementById('operacionMaritimaNombreFerroOP');
+  const opMarIdHid = document.getElementById('operacionMaritimaIdFerroOP');
  
+// al teclear:
+opMarInp.dataset.lastPick = '0';
 
-      hideList(sugMaritimosFerroOP);
-    });
-  });
+// al elegir:
+function onPickOp(it){
 
-  contenedorMaritimoNombreFerroOP?.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape') hideList(sugMaritimosFerroOP);
-  });
-  contenedorMaritimoNombreFerroOP?.addEventListener('blur', ()=> setTimeout(()=> hideList(sugMaritimosFerroOP), 150));
 
-  // ==== Validación visual de saldo cuando el usuario escribe bultos del ferro ====
-  bultosAsignadosFerroOP?.addEventListener('input', function(){
-    const restBase = toInt(bultosRestantesFerroOP.value || 0);
-    const asig     = toInt(this.value || 0);
-    const saldo    = restBase - asig;
-    badgeSaldoFerroOP.textContent = 'Saldo: ' + saldo;
-    badgeSaldoFerroOP.className   = 'badge ' + (saldo < 0 ? 'bg-danger' : 'bg-success');
-  });
+  opMarIdHid.value = it.operacion_id;      
+  cmoIdHid.value   = it.cmo_id;         
+  restInp.value = String(it.bultos_restantes ?? 0);  
 
-})(); 
-// ==== Autocomplete de FERRO/CAJA ====
+  opMarInp.value        = it.numero_operacion;
+  contIdHid.value       = it.contenedor_maritimo_id;
+  contNameInp.value     = it.numero_contenedor;
+  cliNameInp.value      = it.cliente || '';
+  bultosTotInp.value    = String(it.bultos_totales ?? 0);
+  restInp.value         = String(it.bultos_restantes ?? 0);
+
+  opMarInp.dataset.lastPick = '1';        // <-- marca que sí se eligió de la lista
+  hideList(sugBox);
+}
+
+
+// Validación visual de saldo (mostrarlo si quieres en un badge)
+asigInp?.addEventListener('input', function(){
+  const restBase = toInt(restInp.value || 0);
+  const asig     = toInt(this.value || 0);
+  const saldo    = restBase - asig;
+  // si tienes badgeSaldoFerroOP: actualízalo aquí
+  // badgeSaldoFerroOP.textContent = `Saldo: ${saldo}`;
+});
+
+// ==============
+// AUTOCOMPLETE: FERRO/CAJA
+// ==============
 (() => {
   const inp  = document.getElementById('contenedorFerroNombreFerroOP');
   const hid  = document.getElementById('contenedorFerroIdFerroOP');
@@ -218,13 +159,8 @@ try {
       const a = document.createElement('a');
       a.href = '#';
       a.className = 'list-group-item list-group-item-action';
-      a.textContent = it.label; // número_ferro
-      a.onclick = (e)=>{
-        e.preventDefault();
-        hid.value = it.id;
-        inp.value = it.label;
-        hideList();
-      };
+      a.textContent = it.label;
+      a.onclick = (e)=>{ e.preventDefault(); hid.value = it.id; inp.value = it.label; hideList(); };
       box.appendChild(a);
     }
     showList();
@@ -260,7 +196,10 @@ try {
   inp.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideList(); });
   document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target !== inp) hideList(); });
 })();
-// ==== Autocomplete de DESTINOS (ciudades) ====
+
+// ==============
+// AUTOCOMPLETE: DESTINOS
+// ==============
 (() => {
   const inp  = document.getElementById('destinoNombreFerroOP');
   const hid  = document.getElementById('destinoIdFerroOP');
@@ -277,13 +216,8 @@ try {
       const a = document.createElement('a');
       a.href = '#';
       a.className = 'list-group-item list-group-item-action';
-      a.textContent = it.label; // nombre_ciudad
-      a.onclick = (e)=>{
-        e.preventDefault();
-        hid.value = it.id;
-        inp.value = it.label;
-        hideList();
-      };
+      a.textContent = it.label;
+      a.onclick = (e)=>{ e.preventDefault(); hid.value = it.id; inp.value = it.label; hideList(); };
       box.appendChild(a);
     }
     showList();
@@ -316,20 +250,18 @@ try {
   });
 
   inp.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideList(); });
-  document.addEventListener('click', (e)=>{
-    if (!box.contains(e.target) && e.target !== inp) hideList();
-  });
+  document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target !== inp) hideList(); });
 })();
 
+// ==============
+// AUTOCOMPLETE: TRANSPORTISTAS
+// ==============
 document.addEventListener('DOMContentLoaded', function(){
   const inp  = document.getElementById('transportistaNombreFerroOP');
   const hid  = document.getElementById('transportistaIdFerroOP');
   const box  = document.getElementById('sugTransportistasFerroOP');
 
-  if (!inp || !hid || !box) {
-    console.error('Inputs de transportista no encontrados en el DOM.');
-    return;
-  }
+  if (!inp || !hid || !box) return;
 
   function showList(){ box.style.display = 'block'; }
   function hideList(){ box.style.display = 'none'; box.innerHTML = ''; }
@@ -342,42 +274,28 @@ document.addEventListener('DOMContentLoaded', function(){
       a.href   = '#';
       a.className = 'list-group-item list-group-item-action';
       a.textContent = it.label + (it.tipo ? ` (${it.tipo})` : '');
-      a.onclick = (e)=>{
-        e.preventDefault();
-        hid.value = it.id;
-        inp.value = it.label;
-        hideList();
-      };
+      a.onclick = (e)=>{ e.preventDefault(); hid.value = it.id; inp.value = it.label; hideList(); };
       box.appendChild(a);
     }
     showList();
   }
 
   let lastXHR = null, deb = null;
-
   function fetchSug(q){
     if (lastXHR && lastXHR.abort) lastXHR.abort();
-
-    const x = new XMLHttpRequest();
-    lastXHR = x;
- 
+    const x = new XMLHttpRequest(); lastXHR = x;
     const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_transportistas'
-          + `?term=${encodeURIComponent(q)}&limit=15&tipo=ferroviario`;
-
-
+              + `?term=${encodeURIComponent(q)}&limit=15&tipo=ferroviario`;
     x.open('GET', url, true);
     x.onload = ()=>{
-      if (x.status !== 200) { console.error('HTTP', x.status, x.responseText); return hideList(); }
+      if (x.status !== 200) return hideList();
       try {
         const resp = JSON.parse(x.responseText||'{}');
-        if (resp.ok !== true) { console.error('Resp NOK', resp); return hideList(); }
+        if (resp.ok !== true) return hideList();
         render(resp.items||[]);
-      } catch(e){
-        console.error('JSON error', e, x.responseText);
-        hideList();
-      }
+      } catch { hideList(); }
     };
-    x.onerror = ()=> { console.error('XHR error'); hideList(); };
+    x.onerror = ()=> hideList();
     x.send();
   }
 
@@ -392,3 +310,50 @@ document.addEventListener('DOMContentLoaded', function(){
     if (!box.contains(e.target) && e.target !== inp) hideList();
   });
 });
+
+})();
+
+// ==============
+// Pre-llenar número FO-## al abrir el modal
+// ==============
+(function(){
+  "use strict";
+  const modal = document.getElementById('modalFerroOP');
+  const inpNumeroFO = document.getElementById('operacionNombreFerroOP');
+
+  if (!modal || !inpNumeroFO) return;
+
+  modal.addEventListener('shown.bs.modal', function(){
+    inpNumeroFO.value = '';
+    const x = new XMLHttpRequest();
+    const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/numero_fo_preview';
+    x.open('GET', url, true);
+    x.onload = function(){
+      if (x.status !== 200) return;
+      try {
+        const res = JSON.parse(x.responseText || '{}');
+        if (res.ok && res.numero) inpNumeroFO.value = res.numero; // p.ej. FO-12
+      } catch(e){}
+    };
+    x.onerror = function(){};
+    x.send();
+  });
+
+  // Limpieza opcional al cerrar modal
+  modal.addEventListener('hidden.bs.modal', function(){
+    [
+      'operacionMaritimaIdFerroOP',
+      'contMaritimoOperacionIdFerroOP',
+      'contenedorMaritimoIdFerroOP',
+      'operacionMaritimaNombreFerroOP',
+      'clienteNombreMaritimoFerroOP',
+      'contenedorMaritimoNombreFerroOP',
+      'bultosMaritimoFerroOP',
+      'bultosRestantesFerroOP',
+      'bultosAsignadosFerroOP'
+    ].forEach(id=>{ const el = document.getElementById(id); if (el) el.value=''; });
+
+    ['sugOperacionesMaritimasFerroOP','sugFerrosFerroOP','sugTransportistasFerroOP','destinoFerroOP']
+      .forEach(id=>{ const box = document.getElementById(id); if (box){ box.style.display='none'; box.innerHTML=''; } });
+  });
+})();

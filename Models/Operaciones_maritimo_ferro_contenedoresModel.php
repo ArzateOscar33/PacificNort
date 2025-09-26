@@ -10,13 +10,73 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
               ORDER BY numero_ferro";
         return $this->selectAll($sql) ?: [];
     }
-    public function getSumaBultosPorOperacion(int $operacion_id): array
-    {
-        $sql = "SELECT COALESCE(SUM(co.bultos),0) AS total_asignados
-              FROM contenedores_operacion co
-             WHERE co.operacion_id = ?";
-        return $this->select($sql, [$operacion_id]) ?: ['total_asignados' => 0];
+public function getSumaBultosPorOperacionFerro(int $operacion_ferro_id): int
+{
+    $row = $this->select(
+        "SELECT COALESCE(SUM(bultos_asignados),0) AS total
+           FROM contenedor_maritimo_ferro
+          WHERE operacion_ferro_id = ?",
+        [$operacion_ferro_id]
+    );
+    return (int)($row['total'] ?? 0);
+}
+public function sugerenciasOperacionesMaritimasParaFerro(string $q = '', int $limit = 15): array
+{
+    $q = trim($q);
+    $args = [];
+    $where = " WHERE o.estatus_id IN (1,5,9,10) ";
+
+    if ($q !== '') {
+        $where .= " AND (LOWER(o.numero_operacion) LIKE ?) ";
+        $args[] = '%' . mb_strtolower($q, 'UTF-8') . '%';
     }
+
+    $sql = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            cli.id_cliente,
+            COALESCE(cli.nombre,'') AS cliente,
+            cmo.id                  AS cmo_id,
+            cmo.contenedor_maritimo_id,
+            cm.numero_contenedor,
+            COALESCE(cmo.bultos,0)  AS bultos_totales,
+            -- asignados a ferros
+            COALESCE((
+                SELECT SUM(cmf.bultos_asignados)
+                  FROM contenedor_maritimo_ferro cmf
+                 WHERE cmf.cont_maritimo_operacion_id = cmo.id
+            ),0) AS bultos_asignados
+        FROM operaciones o
+        INNER JOIN clientes cli ON cli.id_cliente = o.cliente_id
+        INNER JOIN contenedores_maritimos_operacion cmo
+                ON cmo.operacion_id = o.id_operacion
+        INNER JOIN contenedores_maritimos cm
+                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        {$where}
+        ORDER BY o.id_operacion DESC
+        LIMIT " . max(1, (int)$limit);
+
+    $rows = $this->selectAll($sql, $args) ?: [];
+    // añade campo restantes y acomoda para el front
+    return array_map(function($r){
+        $tot = (int)$r['bultos_totales'];
+        $asig= (int)$r['bultos_asignados'];
+        return [
+            'operacion_id'           => (int)$r['id_operacion'],
+            'numero_operacion'       => (string)$r['numero_operacion'],
+            'cliente_id'             => (int)$r['id_cliente'],
+            'cliente'                => (string)$r['cliente'],
+            'cmo_id'                 => (int)$r['cmo_id'],
+            'contenedor_maritimo_id' => (int)$r['contenedor_maritimo_id'],
+            'numero_contenedor'      => (string)$r['numero_contenedor'],
+            'bultos_totales'         => $tot,
+            'bultos_asignados'       => $asig,
+            'bultos_restantes'       => max(0, $tot - $asig),
+        ];
+    }, $rows);
+}
+
     public function sugerenciasOperacionesFerroOP(string $q = '', int $limit = 15): array
     {
         $q = trim($q);
@@ -147,64 +207,67 @@ public function listarFerrosPaginado(array $filters = [], int $page = 1, int $pe
     if ($dateTo   !== null) { $whereDate .= " AND ofx.fecha <= ? "; $argsDate[] = $dateTo;   }
 
     // ---- Subquery: 1 fila por FX (operacion_ferro_id) ----
-    $sub = "
-        SELECT
-            ofx.id_operacion_ferro                                        AS id_row,
-            ofx.numero_operacion                                          AS numero_operacion,
-            o.id_operacion                                                AS operacion_id,
+$sub = "
+    SELECT
+        ofx.id_operacion_ferro                                        AS id_row,
+        ofx.numero_operacion                                          AS numero_operacion,
 
-            COALESCE(GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                                  ORDER BY cm.numero_contenedor
-                                  SEPARATOR ', '), '')                     AS contenedores_maritimos,
+        -- Cliente proviene de la operación marítima (cmo.operacion_id)
+        o.id_operacion                                                AS operacion_id,
 
-            COALESCE(SUM(DISTINCT cmo.bultos), 0)                          AS bultos_maritimo,
+        COALESCE(GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                              ORDER BY cm.numero_contenedor
+                              SEPARATOR ', '), '')                     AS contenedores_maritimos,
 
-            COALESCE(cli.nombre, '')                                       AS cliente,
-            COALESCE(tr.nombre, '')                                        AS transportista,
-            cf.numero_ferro                                                AS ferro,
+        COALESCE(SUM(cmo.bultos), 0)                                  AS bultos_maritimo,
 
-            COALESCE(GROUP_CONCAT(
-                CONCAT( cmf.bultos_asignados)
-                ORDER BY cm.numero_contenedor
-                SEPARATOR ' | '
-            ), '')                                                         AS division_bultos,
+        COALESCE(cli.nombre, '')                                      AS cliente,
+        COALESCE(tr.nombre, '')                                       AS transportista,
+        cf.numero_ferro                                                AS ferro,
 
-            COALESCE(cd.nombre_ciudad, '')                                 AS destino,
+        COALESCE(GROUP_CONCAT(
+            cmf.bultos_asignados
+            ORDER BY cm.numero_contenedor
+            SEPARATOR ' | '
+        ), '')                                                         AS division_bultos,
 
-            COALESCE(SUM(cmf.bultos_asignados), 0)                         AS bultos_asignados_total,
+        COALESCE(cd.nombre_ciudad, '')                                 AS destino,
 
-            ofx.fecha                                                      AS fecha_header
-        FROM operaciones_ferroviarias ofx
-        INNER JOIN contenedor_maritimo_ferro cmf
-                ON cmf.operacion_ferro_id = ofx.id_operacion_ferro
-        INNER JOIN contenedores_fisicos cf
-                ON cf.id_fisico = ofx.contenedor_fisico_id
-        INNER JOIN operaciones o
-                ON o.id_operacion = cmf.operacion_id
-        LEFT  JOIN clientes cli
-                ON cli.id_cliente = o.cliente_id
-        LEFT  JOIN transportistas tr
-                ON tr.id_transportista = ofx.transportista_id
-        LEFT  JOIN ciudades cd
-                ON cd.id_ciudad = ofx.destino_id
-        INNER JOIN contenedores_maritimos cm
-                ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
-        INNER JOIN contenedores_maritimos_operacion cmo
-                ON cmo.id = cmf.cont_maritimo_operacion_id
-        WHERE ofx.estatus_id IN (1,5,9,10)
-          AND o.estatus_id   IN (1,5,9,10)
-          {$whereBusq}
-          {$whereDate}
-        GROUP BY
-            ofx.id_operacion_ferro,
-            ofx.numero_operacion,
-            o.id_operacion,
-            cliente,
-            transportista,
-            cf.numero_ferro,
-            destino,
-            ofx.fecha
-    ";
+        COALESCE(SUM(cmf.bultos_asignados), 0)                         AS bultos_asignados_total,
+
+        ofx.fecha                                                      AS fecha_header
+    FROM operaciones_ferroviarias ofx
+    INNER JOIN contenedor_maritimo_ferro cmf
+            ON cmf.operacion_ferro_id = ofx.id_operacion_ferro
+    INNER JOIN contenedores_fisicos cf
+            ON cf.id_fisico = ofx.contenedor_fisico_id
+    INNER JOIN contenedores_maritimos cm
+            ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+    INNER JOIN contenedores_maritimos_operacion cmo
+            ON cmo.id = cmf.cont_maritimo_operacion_id
+    INNER JOIN operaciones o
+            ON o.id_operacion = cmo.operacion_id
+    LEFT  JOIN clientes cli
+            ON cli.id_cliente = o.cliente_id
+    LEFT  JOIN transportistas tr
+            ON tr.id_transportista = ofx.transportista_id
+    LEFT  JOIN ciudades cd
+            ON cd.id_ciudad = ofx.destino_id
+    WHERE ofx.estatus_id IN (1,5,9,10)
+      AND o.estatus_id   IN (1,5,9,10)
+      {$whereBusq}
+      {$whereDate}
+    GROUP BY
+        ofx.id_operacion_ferro,
+        ofx.numero_operacion,
+        o.id_operacion,
+        cliente,
+        transportista,
+        cf.numero_ferro,
+        destino,
+        ofx.fecha
+";
+
 
     // ---- TOTAL ----
     $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
@@ -335,162 +398,166 @@ public function listarFerrosPaginado(array $filters = [], int $page = 1, int $pe
     //REGISTRAR
 public function registrarAsignacionFerro(array $in): array
 {
-    // Requeridos
-    $req = ['operacion_id', 'contenedor_maritimo_id', 'contenedor_fisico_id', 'destino_id', 'transportista_id', 'bultos_asignados'];
-    foreach ($req as $k) {
+    // Espera:
+    // contenedor_fisico_id, destino_id, transportista_id, fecha (Y-m-d),
+    // estatus_id (opcional, default 9), comentario (opcional), creado_por (opcional),
+    // asignaciones: [ { cmo_id, bultos_asignados, comentario? }, ... ]
+    $reqH = ['contenedor_fisico_id', 'destino_id', 'transportista_id', 'fecha', 'asignaciones'];
+    foreach ($reqH as $k) {
         if (!isset($in[$k]) || $in[$k] === '' || $in[$k] === null) {
             return ['ok' => false, 'msg' => "Falta el campo requerido: {$k}"];
         }
     }
 
-    $operacion_id         = (int)$in['operacion_id'];
-    $cont_maritimo_id     = (int)$in['contenedor_maritimo_id'];
     $contenedor_fisico_id = (int)$in['contenedor_fisico_id'];
     $destino_id           = (int)$in['destino_id'];
     $transportista_id     = (int)$in['transportista_id'];
-    $bultos_asignados     = (int)$in['bultos_asignados'];
-    $comentario           = trim((string)($in['comentario'] ?? ''));
-    $fecha                = !empty($in['fecha']) ? $in['fecha'] : date('Y-m-d');
+    $fecha                = (string)$in['fecha'];
+    $estatus_id           = isset($in['estatus_id']) ? (int)$in['estatus_id'] : 9; // Abierta
+    $comentario_header    = trim((string)($in['comentario'] ?? ''));
+    $creado_por           = isset($in['creado_por']) ? (int)$in['creado_por'] : null;
 
-    if ($bultos_asignados <= 0) {
-        return ['ok' => false, 'msg' => 'Los bultos asignados deben ser mayores a 0.'];
+    // Lista de asignaciones
+    $asignaciones = is_array($in['asignaciones']) ? $in['asignaciones'] : [];
+    if (empty($asignaciones)) {
+        return ['ok'=>false, 'msg'=>'Debes enviar al menos una asignación.'];
     }
 
-    // 1) Resolver el registro MG en la operación y sus bultos totales
-    $rowMG = $this->select(
-        "SELECT id, COALESCE(bultos,0) AS bultos
-           FROM contenedores_maritimos_operacion
-          WHERE operacion_id=? AND contenedor_maritimo_id=?
+    // === 1) Derivar CLIENTE desde la PRIMERA asignación (cmo_id) ===
+    $prim = $asignaciones[0];
+    if (!isset($prim['cmo_id'])) return ['ok'=>false,'msg'=>'Falta cmo_id en la primera asignación.'];
+
+    $cliRow = $this->select(
+        "SELECT o.cliente_id
+           FROM contenedores_maritimos_operacion cmo
+           INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+          WHERE cmo.id = ?
           LIMIT 1",
-        [$operacion_id, $cont_maritimo_id]
+        [ (int)$prim['cmo_id'] ]
     );
-    if (!$rowMG) {
-        return ['ok' => false, 'msg' => 'El contenedor marítimo no pertenece a la operación.'];
-    }
-    $cont_maritimo_operacion_id = (int)$rowMG['id'];
-    $bultos_totales_mg          = (int)$rowMG['bultos'];
+    $cliente_id = (int)($cliRow['cliente_id'] ?? 0);
 
-    // 2) Validar saldo disponible (lo ya asignado en el puente)
-    $sumRow = $this->select(
-        "SELECT COALESCE(SUM(bultos_asignados),0) AS asignados
-           FROM contenedor_maritimo_ferro
-          WHERE cont_maritimo_operacion_id=?",
-        [$cont_maritimo_operacion_id]
-    );
-    $ya_asignados = (int)($sumRow['asignados'] ?? 0);
-    $saldo = $bultos_totales_mg - $ya_asignados;
-    if ($bultos_asignados > $saldo) {
-        return ['ok' => false, 'msg' => "No hay saldo suficiente. Saldo disponible: {$saldo}."];
+    // === 2) Crear HEADER de operación ferroviaria con número FO-## ===
+    // Config catálogo (ajústalo si cambia)
+    $subtipo_fo_id    = 26; // Subtipo FO
+    $tipo_operacion_id= 2;  // Tipo operación para FO
+
+    // Generar número con SP: CALL GenerarNumeroOperacionFerro(subtipo, @p); SELECT @p
+    // Usamos save/select porque tu Query no expone transacciones ni múltiples resultados.
+    $this->save("CALL GenerarNumeroOperacionFerro(?, @p_num)", [ $subtipo_fo_id ]);
+    $outNum = $this->select("SELECT @p_num AS numero");
+    $numero_fo = trim((string)($outNum['numero'] ?? ''));
+
+    if ($numero_fo === '') {
+        return ['ok'=>false,'msg'=>'No se pudo generar el número de operación FO-##.'];
     }
 
-    // 3.0) Construir el numero_operacion_ferro correcto: "<numero_op>-<numero_ferro>"
-    $opRow = $this->select(
-        "SELECT numero_operacion FROM operaciones WHERE id_operacion=? LIMIT 1",
-        [$operacion_id]
-    );
-    if (!$opRow) return ['ok' => false, 'msg' => 'Operación no encontrada.'];
-    $numero_op_base = trim((string)$opRow['numero_operacion']);
-
-    $fxRow = $this->select(
-        "SELECT numero_ferro FROM contenedores_fisicos WHERE id_fisico=? LIMIT 1",
-        [$contenedor_fisico_id]
-    );
-    if (!$fxRow) return ['ok' => false, 'msg' => 'Ferro/Caja no encontrada.'];
-    $numero_ferro = trim((string)$fxRow['numero_ferro']);
-
-    $numero_operacion_ferro = $numero_op_base . '-' . $numero_ferro;
-
-    // 3) Upsert del HEADER en operaciones_ferroviarias (ahora también filtra por numero_operacion)
-    $opFerro = $this->select(
-        "SELECT id_operacion_ferro, numero_operacion
-           FROM operaciones_ferroviarias
-          WHERE contenedor_fisico_id=? 
-            AND destino_id=? 
-            AND transportista_id=? 
-            AND fecha=?
-            AND numero_operacion=?          -- clave adicional para no heredar nombre de otra op
-          LIMIT 1",
-        [$contenedor_fisico_id, $destino_id, $transportista_id, $fecha, $numero_operacion_ferro]
-    );
-
-    $id_operacion_ferro = 0;
-    $header_insertado_nuevo = false;
-
-    if (!$opFerro) {
-        // No existe header con ese número => insert
-        $id_operacion_ferro = (int)$this->insertar(
-            "INSERT INTO operaciones_ferroviarias
-               (numero_operacion, contenedor_fisico_id, destino_id, transportista_id, fecha, estatus_id, comentarios)
-             VALUES (?,?,?,?,?, 9, ?)",
-            [$numero_operacion_ferro, $contenedor_fisico_id, $destino_id, $transportista_id, $fecha, $comentario]
-        );
-        if ($id_operacion_ferro <= 0) {
-            return ['ok' => false, 'msg' => 'No se pudo crear la operación ferroviaria (header).'];
-        }
-        $header_insertado_nuevo = true;
-    } else {
-        // Existe; por seguridad sincroniza el numero si difiere
-        $id_operacion_ferro = (int)$opFerro['id_operacion_ferro'];
-        if (trim((string)$opFerro['numero_operacion']) !== $numero_operacion_ferro) {
-            $this->save(
-                "UPDATE operaciones_ferroviarias
-                    SET numero_operacion=?
-                  WHERE id_operacion_ferro=?",
-                [$numero_operacion_ferro, $id_operacion_ferro]
-            );
-        }
-        // (Opcional) anexar comentario
-        if ($comentario !== '') {
-            $this->save(
-                "UPDATE operaciones_ferroviarias
-                    SET comentarios = CONCAT(COALESCE(comentarios,''), 
-                                             CASE WHEN COALESCE(comentarios,'')='' THEN '' ELSE '\n' END,
-                                             ?)
-                  WHERE id_operacion_ferro=?",
-                [$comentario, $id_operacion_ferro]
-            );
-        }
-    }
-
-    // 4) Insert de la línea MG→FX en el puente
-    $id_linea = (int)$this->insertar(
-        "INSERT INTO contenedor_maritimo_ferro
-           (operacion_ferro_id, contenedor_maritimo_id, cont_maritimo_operacion_id,
-            contenedor_fisico_id, operacion_id, comentario, bultos_asignados)
-         VALUES (?,?,?,?,?,?,?)",
+    $id_operacion_ferro = (int)$this->insertar(
+        "INSERT INTO operaciones_ferroviarias
+           (numero_operacion, contenedor_fisico_id, destino_id, transportista_id, fecha,
+            estatus_id, comentarios, cliente_id, tipo_operacion_id, subtipo_operacion_id, creado_por, bultos_total)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 0)",
         [
-            $id_operacion_ferro,
-            $cont_maritimo_id,
-            $cont_maritimo_operacion_id,
+            $numero_fo,
             $contenedor_fisico_id,
-            $operacion_id,
-            $comentario,
-            $bultos_asignados
+            $destino_id,
+            $transportista_id,
+            $fecha,
+            $estatus_id,
+            $comentario_header !== '' ? $comentario_header : null,
+            $cliente_id ?: null,
+            $tipo_operacion_id,
+            $subtipo_fo_id,
+            $creado_por
         ]
     );
-
-    if ($id_linea <= 0) {
-        if ($header_insertado_nuevo) {
-            $this->save("DELETE FROM operaciones_ferroviarias WHERE id_operacion_ferro=?", [$id_operacion_ferro]);
-        }
-        return ['ok' => false, 'msg' => 'No se pudo registrar la asignación MG→FX.'];
+    if ($id_operacion_ferro <= 0) {
+        return ['ok'=>false,'msg'=>'No se pudo crear la operación ferroviaria.'];
     }
 
-    // 5) Saldos actualizados para responder al UI
-    $nuevo_sum   = $ya_asignados + $bultos_asignados;
-    $nuevo_saldo = max(0, $bultos_totales_mg - $nuevo_sum);
+    // === 3) Insertar LÍNEAS (validando saldos por CMO) ===
+    $total_bultos = 0;
+
+    foreach ($asignaciones as $i => $a) {
+        $cmo_id = (int)($a['cmo_id'] ?? 0);
+        $cant   = (int)($a['bultos_asignados'] ?? 0);
+        $comLin = trim((string)($a['comentario'] ?? ''));
+
+        if ($cmo_id <= 0 || $cant <= 0) {
+            return ['ok'=>false, 'msg'=>"Asignación #".($i+1)." inválida (cmo_id/cantidad)."];
+        }
+
+        // Datos base del CMO
+        $row = $this->select(
+            "SELECT cmo.id, cmo.operacion_id, cmo.contenedor_maritimo_id,
+                    COALESCE(cmo.bultos,0) AS b_tot
+               FROM contenedores_maritimos_operacion cmo
+              WHERE cmo.id = ?
+              LIMIT 1",
+            [ $cmo_id ]
+        );
+        if (!$row) return ['ok'=>false, 'msg'=>"CMO #{$cmo_id} no encontrado."];
+
+        // Saldo disponible = cmo.bultos - SUM(cmf.bultos_asignados)
+        $sum = $this->select(
+            "SELECT COALESCE(SUM(bultos_asignados),0) AS b_asig
+               FROM contenedor_maritimo_ferro
+              WHERE cont_maritimo_operacion_id = ?",
+            [ $cmo_id ]
+        );
+        $tot   = (int)$row['b_tot'];
+        $asig  = (int)($sum['b_asig'] ?? 0);
+        $saldo = max(0, $tot - $asig);
+        if ($cant > $saldo) {
+            return ['ok'=>false, 'msg'=>"Asignación #".($i+1).": saldo insuficiente. Disponible: {$saldo}."];
+        }
+
+        // Insert línea (nota: en (27) NO existe cmf.operacion_id)
+        $id_linea = (int)$this->insertar(
+            "INSERT INTO contenedor_maritimo_ferro
+               (operacion_ferro_id, contenedor_maritimo_id, cont_maritimo_operacion_id,
+                contenedor_fisico_id, comentario, bultos_asignados)
+             VALUES (?,?,?,?,?,?)",
+            [
+                $id_operacion_ferro,
+                (int)$row['contenedor_maritimo_id'],
+                $cmo_id,
+                $contenedor_fisico_id,
+                $comLin !== '' ? $comLin : null,
+                $cant
+            ]
+        );
+        if ($id_linea <= 0) {
+            return ['ok'=>false,'msg'=>"No se pudo insertar la asignación #".($i+1)."."];
+        }
+
+        $total_bultos += $cant;
+    }
+
+    // === 4) Actualizar totales del HEADER (nivel código, no trigger) ===
+    $this->save(
+        "UPDATE operaciones_ferroviarias
+            SET bultos_total = COALESCE((
+                    SELECT SUM(cmf.bultos_asignados)
+                      FROM contenedor_maritimo_ferro cmf
+                     WHERE cmf.operacion_ferro_id = ?
+                ),0)
+          WHERE id_operacion_ferro = ?",
+        [ $id_operacion_ferro, $id_operacion_ferro ]
+    );
 
     return [
         'ok'   => true,
-        'msg'  => 'Asignación registrada.',
+        'msg'  => 'Operación ferroviaria creada y asignaciones registradas.',
         'ids'  => [
-            'operacion_ferro_id'           => $id_operacion_ferro,
-            'contenedor_maritimo_ferro_id' => $id_linea
+            'operacion_ferro_id' => $id_operacion_ferro,
         ],
-        'numero_operacion_ferro' => $numero_operacion_ferro,
-        'saldo' => $nuevo_saldo
+        'numero_operacion_ferro' => $numero_fo,
+        'total_bultos' => $total_bultos
     ];
 }
+
+
 
 /**
  * Saldo por ID del registro en contenedores_maritimos_operacion (cmo.id)
@@ -620,6 +687,46 @@ public function upsertFerro(string $numero): array {
         return ['ok'=>true, 'id_fisico'=>(int)$ex['id_fisico'], 'label'=>$ex['numero_ferro'], 'created'=>false];
     }
     return $this->crearFerro($numero);
+}
+// === Helpers para número FO (preview) ===
+private function getPrefijoSubtipo(int $subtipo_id): string {
+    $row = $this->select(
+        "SELECT COALESCE(prefijo_codigo,'') AS prefijo
+           FROM subtipos_operacion
+          WHERE id_subtipo = ?
+          LIMIT 1",
+        [$subtipo_id]
+    );
+    return trim((string)($row['prefijo'] ?? ''));
+}
+
+/**
+ * Calcula el siguiente número tipo "FO-01" sin tocar el consecutivo real.
+ * Útil solo para mostrar en el front; el definitivo lo genera el SP en registrarAsignacionFerro().
+ */
+public function previewNumeroOperacionFerro(int $subtipo_id = 26): array
+{
+    // 1) prefijo del subtipo (ej. 'FO')
+    $prefijo = $this->getPrefijoSubtipo($subtipo_id);
+    if ($prefijo === '') {
+        return ['ok'=>false, 'msg'=>'Prefijo no definido para el subtipo.'];
+    }
+
+    // 2) calcular el siguiente consecutivo a partir de operaciones ya creadas
+    //    Busca el máximo sufijo numérico de "FO-##"
+    $row = $this->select(
+        "SELECT 
+            COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion, '-', -1) AS UNSIGNED)), 0) AS max_seq
+         FROM operaciones_ferroviarias
+         WHERE numero_operacion LIKE CONCAT(?, '-%')",
+        [$prefijo]
+    );
+    $next = (int)($row['max_seq'] ?? 0) + 1;
+
+    // 3) formateo (02 dígitos, ajusta si quieres 3+)
+    $num = sprintf('%s-%02d', $prefijo, $next);
+
+    return ['ok'=>true, 'numero'=>$num];
 }
 
 }

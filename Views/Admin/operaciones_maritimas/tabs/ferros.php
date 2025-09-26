@@ -186,5 +186,3 @@
         const BASE_URL = "<?= BASE_URL ?>";
         feather.replace();
     </script>
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/ferrosOperacion.js"></script>
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/ferroscatalogo.js"></script>

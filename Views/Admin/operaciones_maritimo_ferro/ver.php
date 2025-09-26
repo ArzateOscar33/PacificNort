@@ -10,9 +10,9 @@
          <li class="nav-item">
             <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false">Crear Operación Maritima-Ferroviaria</a>
         </li>
-        <!--<li class="nav-item">
-            <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">Crear Operación Ferroviaria</a>
-        </li> -->
+        <li class="nav-item">
+            <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">modificacion</a>
+        </li> 
         <li class="nav-item">
             <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false">Ferros/Cajas En Operacion</a>
         </li>

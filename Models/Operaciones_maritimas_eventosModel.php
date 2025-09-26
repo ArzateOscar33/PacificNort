@@ -180,8 +180,8 @@ class Operaciones_maritimas_eventosModel extends Query
         }
 
         $sql = "INSERT INTO eventos_logisticos 
-                (operacion_id, contenedor_operacion_id, cont_maritimo_operacion_id, tipo_evento_id, fecha, comentario, creado_por)
-                VALUES (?, NULL, ?, ?, ?, ?, ?)";
+                (operacion_id, cont_maritimo_operacion_id, tipo_evento_id, fecha, comentario, creado_por)
+                VALUES (?, ?, ?, ?, ?, ?)";
         $params = [
             (int)$data['operacion_id'],
             $idMaritimo,
@@ -198,7 +198,7 @@ class Operaciones_maritimas_eventosModel extends Query
         // Solo marítimo
         $sql = "UPDATE eventos_logisticos
                 SET operacion_id = ?, 
-                    contenedor_operacion_id = NULL,
+                   
                     cont_maritimo_operacion_id = ?, 
                     tipo_evento_id = ?, 
                     fecha = ?, 
@@ -207,7 +207,7 @@ class Operaciones_maritimas_eventosModel extends Query
                   AND estatus = 1";
         $params = [
             (int)$data['operacion_id'],
-            !empty($data['cont_maritimo_operacion_id']) ? (int)$data['cont_maritimo_operacion_id'] : null,
+           (int)$data['cont_maritimo_operacion_id'],
             (int)$data['tipo_evento_id'],
             $data['fecha'],
             $data['comentario'] ?? null,
