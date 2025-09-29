@@ -89,10 +89,7 @@
             <div class="btn-group btn-group-sm" role="group">
               <button class="btn btn-outline-primary" onclick="editarFerroOP(${idRow})" title="Editar">
                 <i data-feather="edit-2"></i>
-              </button>
-              <button class="btn btn-outline-danger" onclick="eliminarFerroOP(${idRow})" title="Eliminar">
-                <i data-feather="trash-2"></i>
-              </button>
+              </button> 
             </div>
           </td>
         </tr>`;
@@ -244,6 +241,15 @@
       Swal.fire({ icon: ok ? "success" : "error", title: ok ? "Listo" : "Aviso", text: msg, timer: 1800, showConfirmButton: false });
     } else { alert(msg); }
   }
+  // Dentro del mismo IIFE donde declaras let carrito = [];
+window.getCarritoFerroOP = function(){ return carrito; };
+window.setCarritoFerroOP = function(items){
+  carrito.length = 0;
+  (items || []).forEach(it => carrito.push(it));
+  if (typeof renderCarrito === 'function') renderCarrito();
+  if (typeof actualizarTotales === 'function') actualizarTotales();
+};
+
 
   function renderCarrito(){
         console.log('=== RENDER CARRITO ===');
@@ -354,9 +360,13 @@ function toggleSelectorMaritimo(show){
   const modal = document.getElementById('modalFerroOP');
   if (!modal) return;
   modal.addEventListener('shown.bs.modal', ()=> {
-    toggleSelectorMaritimo(false);
+    const form = document.getElementById('formFerroOP');
+    const enEdicion = form && form.dataset.mode === 'edit';
+    // En crear -> oculto; en editar -> muestro
+    toggleSelectorMaritimo(!!enEdicion);
   });
 })();
+
 
 // Click en "Agregar Marítimo" -> mostrar bloque
 btnAgregar?.addEventListener('click', ()=> {

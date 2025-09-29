@@ -404,5 +404,105 @@ class Operaciones_maritimo_ferro_contenedores extends Controller
     }
     exit;
 }
+//editar
+public function obtener_operacion()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    $id     = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    $numero = isset($_GET['numero']) ? trim($_GET['numero']) : '';
+
+    
+    if ($id <= 0 && $numero !== '') {
+        $found = $this->model->findOperacionFerroIdByNumero($numero);
+        $id = $found ? (int)$found : 0;
+    }
+
+    if ($id <= 0) {
+        echo json_encode(['ok' => false, 'msg' => 'Falta id o número de la operación.']);
+        exit;
+    }
+
+    try {
+        $res = $this->model->getOperacionFerroEditable($id);
+        if (empty($res['ok'])) {
+            echo json_encode(['ok' => false, 'msg' => $res['msg'] ?? 'No se encontró la operación.']);
+            exit;
+        }
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'msg' => 'Error al obtener la operación.']);
+    }
+    exit;
+}
+
+public function actualizar_operacion()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'msg' => 'Método no permitido']);
+        exit;
+    }
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    $foId = isset($_POST['operacion_ferro_id']) ? (int)$_POST['operacion_ferro_id'] : 0;
+    if ($foId <= 0) {
+        echo json_encode(['ok' => false, 'msg' => 'operacion_ferro_id requerido']);
+        exit;
+    }
+
+    // Solo estos campos del header son editables
+    $estatus_id  = isset($_POST['estatus_id_f']) ? (int)$_POST['estatus_id_f'] : null;
+    $comentarios = isset($_POST['comentariosFerroOP']) ? trim((string)$_POST['comentariosFerroOP']) : null;
+
+    $userId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
+
+    // Acepta 'lineas' o 'asignaciones' como JSON
+    $lineas = [];
+    $raw = $_POST['lineas'] ?? $_POST['asignaciones'] ?? $_POST['asignacionesHidden'] ?? '';
+    if ($raw !== '') {
+        $parsed = json_decode((string)$raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($parsed)) {
+            echo json_encode(['ok' => false, 'msg' => 'JSON de líneas inválido.']);
+            exit;
+        }
+        $lineas = array_map(function($x){
+            return [
+                'cmo_id'           => (int)($x['cmo_id'] ?? 0),
+                'bultos_asignados' => (int)($x['bultos_asignados'] ?? 0),
+                'comentario'       => isset($x['comentario']) ? trim((string)$x['comentario']) : null,
+            ];
+        }, $parsed);
+    }
+
+    try {
+        $payload = [
+            'estatus_id'      => $estatus_id,
+            'comentarios'     => $comentarios,
+            'actualizado_por' => $userId,
+            'lineas'          => $lineas,  // si lo omites, el modelo conserva las existentes
+        ];
+
+        $res = $this->model->actualizarEstatusYLineasOperacionFerro($foId, $payload);
+        if (empty($res['ok'])) {
+            echo json_encode(['ok' => false, 'msg' => $res['msg'] ?? 'No se pudo actualizar la operación.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'ok'   => true,
+            'msg'  => (string)($res['msg'] ?? 'Operación actualizada.'),
+            'data' => $res['data'] ?? ['operacion_ferro_id' => $foId]
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'msg' => 'Error inesperado al actualizar.']);
+    }
+    exit;
+}
+
 
 }

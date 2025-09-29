@@ -299,6 +299,8 @@
 </script>
 
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script>
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script> 
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/editarFerros.js"></script>
+
 
 
