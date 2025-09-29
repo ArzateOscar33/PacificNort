@@ -168,8 +168,8 @@
 
               <div class="card-body">
                 <!-- Selector para agregar marítimo -->
-                <!-- CAMBIO: ahora se busca por Operación Marítima y lo demás es readonly -->
-                <div id="selectorMaritimoFerroOP" class="row mb-3"  >
+                 
+                <div id="selectorMaritimoFerroOP" class="row mb-3 d-none"   >
                   <!-- Operación Marítima (único editable de texto) -->
                   <div class="col-md-4 position-relative">
                     <label class="form-label">Operación Marítima</label>

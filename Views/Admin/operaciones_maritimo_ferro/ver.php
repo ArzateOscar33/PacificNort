@@ -13,9 +13,7 @@
         <li class="nav-item">
             <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">modificacion</a>
         </li> 
-        <li class="nav-item">
-            <a class="nav-link" id="contenedores-tab" data-bs-toggle="tab" href="#contenedores" role="tab" aria-controls="contenedores" aria-selected="false">Ferros/Cajas En Operacion</a>
-        </li>
+        
         <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false">Costos Contenedor</a>
         </li>
@@ -44,10 +42,7 @@
         </div>
         <div class="tab-pane fade" id="crear_operaciones_ferro" role="tabpanel" aria-labelledby="crear_operaciones_ferro-tab">
             <?php include 'tabs/operaciones_ferro.php'; ?>
-        </div>
-        <div class="tab-pane fade" id="contenedores" role="tabpanel" aria-labelledby="contenedores-tab">
-            <?php include 'tabs/contenedores.php'; ?>
-        </div>
+        </div> 
         <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
             <?php include 'tabs/costos.php'; ?>
         </div>

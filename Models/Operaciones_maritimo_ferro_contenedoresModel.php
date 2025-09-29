@@ -10,28 +10,28 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
               ORDER BY numero_ferro";
         return $this->selectAll($sql) ?: [];
     }
-public function getSumaBultosPorOperacionFerro(int $operacion_ferro_id): int
-{
-    $row = $this->select(
-        "SELECT COALESCE(SUM(bultos_asignados),0) AS total
+    public function getSumaBultosPorOperacionFerro(int $operacion_ferro_id): int
+    {
+        $row = $this->select(
+            "SELECT COALESCE(SUM(bultos_asignados),0) AS total
            FROM contenedor_maritimo_ferro
           WHERE operacion_ferro_id = ?",
-        [$operacion_ferro_id]
-    );
-    return (int)($row['total'] ?? 0);
-}
-public function sugerenciasOperacionesMaritimasParaFerro(string $q = '', int $limit = 15): array
-{
-    $q = trim($q);
-    $args = [];
-    $where = " WHERE o.estatus_id IN (1,5,9,10) ";
-
-    if ($q !== '') {
-        $where .= " AND (LOWER(o.numero_operacion) LIKE ?) ";
-        $args[] = '%' . mb_strtolower($q, 'UTF-8') . '%';
+            [$operacion_ferro_id]
+        );
+        return (int)($row['total'] ?? 0);
     }
+    public function sugerenciasOperacionesMaritimasParaFerro(string $q = '', int $limit = 15): array
+    {
+        $q = trim($q);
+        $args = [];
+        $where = " WHERE o.estatus_id IN (1,5,9,10) ";
 
-    $sql = "
+        if ($q !== '') {
+            $where .= " AND (LOWER(o.numero_operacion) LIKE ?) ";
+            $args[] = '%' . mb_strtolower($q, 'UTF-8') . '%';
+        }
+
+        $sql = "
         SELECT
             o.id_operacion,
             o.numero_operacion,
@@ -57,25 +57,25 @@ public function sugerenciasOperacionesMaritimasParaFerro(string $q = '', int $li
         ORDER BY o.id_operacion DESC
         LIMIT " . max(1, (int)$limit);
 
-    $rows = $this->selectAll($sql, $args) ?: [];
-    // añade campo restantes y acomoda para el front
-    return array_map(function($r){
-        $tot = (int)$r['bultos_totales'];
-        $asig= (int)$r['bultos_asignados'];
-        return [
-            'operacion_id'           => (int)$r['id_operacion'],
-            'numero_operacion'       => (string)$r['numero_operacion'],
-            'cliente_id'             => (int)$r['id_cliente'],
-            'cliente'                => (string)$r['cliente'],
-            'cmo_id'                 => (int)$r['cmo_id'],
-            'contenedor_maritimo_id' => (int)$r['contenedor_maritimo_id'],
-            'numero_contenedor'      => (string)$r['numero_contenedor'],
-            'bultos_totales'         => $tot,
-            'bultos_asignados'       => $asig,
-            'bultos_restantes'       => max(0, $tot - $asig),
-        ];
-    }, $rows);
-}
+        $rows = $this->selectAll($sql, $args) ?: [];
+        // añade campo restantes y acomoda para el front
+        return array_map(function ($r) {
+            $tot = (int)$r['bultos_totales'];
+            $asig = (int)$r['bultos_asignados'];
+            return [
+                'operacion_id'           => (int)$r['id_operacion'],
+                'numero_operacion'       => (string)$r['numero_operacion'],
+                'cliente_id'             => (int)$r['id_cliente'],
+                'cliente'                => (string)$r['cliente'],
+                'cmo_id'                 => (int)$r['cmo_id'],
+                'contenedor_maritimo_id' => (int)$r['contenedor_maritimo_id'],
+                'numero_contenedor'      => (string)$r['numero_contenedor'],
+                'bultos_totales'         => $tot,
+                'bultos_asignados'       => $asig,
+                'bultos_restantes'       => max(0, $tot - $asig),
+            ];
+        }, $rows);
+    }
 
     public function sugerenciasOperacionesFerroOP(string $q = '', int $limit = 15): array
     {
@@ -172,17 +172,17 @@ public function sugerenciasOperacionesMaritimasParaFerro(string $q = '', int $li
         }
         return $out;
     }
-public function listarFerrosPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
-{
-    $argsBuscar = [];
+    public function listarFerrosPaginado(array $filters = [], int $page = 1, int $per_page = 10): array
+    {
+        $argsBuscar = [];
 
-    // ---- Búsqueda libre ----
-    $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
-    $buscar = ($term !== '');
-    $needle = $buscar ? "%{$term}%" : null;
+        // ---- Búsqueda libre ----
+        $term   = isset($filters['term']) ? trim(mb_strtolower($filters['term'], 'UTF-8')) : '';
+        $buscar = ($term !== '');
+        $needle = $buscar ? "%{$term}%" : null;
 
-    $whereBusq = $buscar
-        ? " AND (
+        $whereBusq = $buscar
+            ? " AND (
                 LOWER(ofx.numero_operacion)          LIKE ?
              OR LOWER(o.numero_operacion)            LIKE ?
              OR LOWER(cm.numero_contenedor)          LIKE ?
@@ -191,111 +191,123 @@ public function listarFerrosPaginado(array $filters = [], int $page = 1, int $pe
              OR LOWER(COALESCE(tr.nombre,''))        LIKE ?
              OR LOWER(COALESCE(cd.nombre_ciudad,'')) LIKE ?
            )"
-        : "";
+            : "";
 
-    if ($buscar) {
-        array_push($argsBuscar, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
-    }
+        if ($buscar) {
+            array_push($argsBuscar, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
+        }
 
-    // ---- Fechas (YYYY-MM-DD) sobre ofx.fecha ----
-    $dateFrom = isset($filters['date_from']) && $filters['date_from'] !== '' ? $filters['date_from'] : null;
-    $dateTo   = isset($filters['date_to'])   && $filters['date_to']   !== '' ? $filters['date_to']   : null;
+        // ---- Fechas (YYYY-MM-DD) sobre ofx.fecha ----
+        $dateFrom = isset($filters['date_from']) && $filters['date_from'] !== '' ? $filters['date_from'] : null;
+        $dateTo   = isset($filters['date_to'])   && $filters['date_to']   !== '' ? $filters['date_to']   : null;
 
-    $argsDate  = [];
-    $whereDate = "";
-    if ($dateFrom !== null) { $whereDate .= " AND ofx.fecha >= ? "; $argsDate[] = $dateFrom; }
-    if ($dateTo   !== null) { $whereDate .= " AND ofx.fecha <= ? "; $argsDate[] = $dateTo;   }
+        $argsDate  = [];
+        $whereDate = "";
+        if ($dateFrom !== null) {
+            $whereDate .= " AND ofx.fecha >= ? ";
+            $argsDate[] = $dateFrom;
+        }
+        if ($dateTo   !== null) {
+            $whereDate .= " AND ofx.fecha <= ? ";
+            $argsDate[] = $dateTo;
+        }
 
-    // ---- Subquery: 1 fila por FX (operacion_ferro_id) ----
-$sub = "
-    SELECT
-        ofx.id_operacion_ferro                                        AS id_row,
-        ofx.numero_operacion                                          AS numero_operacion,
+        // ---- Subquery: 1 fila por FX (operacion_ferro_id) ----
+        $sub = "
+            SELECT
+                ofx.id_operacion_ferro                                        AS id_row,
+                ofx.numero_operacion                                          AS numero_operacion,
 
-        -- Cliente proviene de la operación marítima (cmo.operacion_id)
-        o.id_operacion                                                AS operacion_id,
+                o.id_operacion                                                AS operacion_id,
 
-        COALESCE(GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                              ORDER BY cm.numero_contenedor
-                              SEPARATOR ', '), '')                     AS contenedores_maritimos,
+                COALESCE(GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                                    ORDER BY cm.numero_contenedor
+                                    SEPARATOR ', '), '')                     AS contenedores_maritimos,
 
-        COALESCE(SUM(cmo.bultos), 0)                                  AS bultos_maritimo,
+                COALESCE(SUM(cmo.bultos), 0)                                  AS bultos_maritimo,
 
-        COALESCE(cli.nombre, '')                                      AS cliente,
-        COALESCE(tr.nombre, '')                                       AS transportista,
-        cf.numero_ferro                                                AS ferro,
+                COALESCE(cli.nombre, '')                                      AS cliente,
+                COALESCE(tr.nombre, '')                                       AS transportista,
+                cf.numero_ferro                                               AS ferro,
 
-        COALESCE(GROUP_CONCAT(
-            cmf.bultos_asignados
-            ORDER BY cm.numero_contenedor
-            SEPARATOR ' | '
-        ), '')                                                         AS division_bultos,
+                COALESCE(GROUP_CONCAT(
+                    cmf.bultos_asignados
+                    ORDER BY cm.numero_contenedor
+                    SEPARATOR ' | '
+                ), '')                                                         AS division_bultos,
 
-        COALESCE(cd.nombre_ciudad, '')                                 AS destino,
+                COALESCE(cd.nombre_ciudad, '')                                AS destino,
 
-        COALESCE(SUM(cmf.bultos_asignados), 0)                         AS bultos_asignados_total,
+                COALESCE(SUM(cmf.bultos_asignados), 0)                        AS bultos_asignados_total,
 
-        ofx.fecha                                                      AS fecha_header
-    FROM operaciones_ferroviarias ofx
-    INNER JOIN contenedor_maritimo_ferro cmf
-            ON cmf.operacion_ferro_id = ofx.id_operacion_ferro
-    INNER JOIN contenedores_fisicos cf
-            ON cf.id_fisico = ofx.contenedor_fisico_id
-    INNER JOIN contenedores_maritimos cm
-            ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
-    INNER JOIN contenedores_maritimos_operacion cmo
-            ON cmo.id = cmf.cont_maritimo_operacion_id
-    INNER JOIN operaciones o
-            ON o.id_operacion = cmo.operacion_id
-    LEFT  JOIN clientes cli
-            ON cli.id_cliente = o.cliente_id
-    LEFT  JOIN transportistas tr
-            ON tr.id_transportista = ofx.transportista_id
-    LEFT  JOIN ciudades cd
-            ON cd.id_ciudad = ofx.destino_id
-    WHERE ofx.estatus_id IN (1,5,9,10)
-      AND o.estatus_id   IN (1,5,9,10)
-      {$whereBusq}
-      {$whereDate}
-    GROUP BY
-        ofx.id_operacion_ferro,
-        ofx.numero_operacion,
-        o.id_operacion,
-        cliente,
-        transportista,
-        cf.numero_ferro,
-        destino,
-        ofx.fecha
-";
+                ofx.fecha                                                     AS fecha_header,
+
+                COALESCE(es.nombre, '')                                       AS estatus   -- 👈 NUEVO
+
+            FROM operaciones_ferroviarias ofx
+            INNER JOIN contenedor_maritimo_ferro cmf
+                    ON cmf.operacion_ferro_id = ofx.id_operacion_ferro
+            INNER JOIN contenedores_fisicos cf
+                    ON cf.id_fisico = ofx.contenedor_fisico_id
+            INNER JOIN contenedores_maritimos cm
+                    ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+            INNER JOIN contenedores_maritimos_operacion cmo
+                    ON cmo.id = cmf.cont_maritimo_operacion_id
+            INNER JOIN operaciones o
+                    ON o.id_operacion = cmo.operacion_id
+            LEFT  JOIN clientes cli
+                    ON cli.id_cliente = o.cliente_id
+            LEFT  JOIN transportistas tr
+                    ON tr.id_transportista = ofx.transportista_id
+            LEFT  JOIN ciudades cd
+                    ON cd.id_ciudad = ofx.destino_id
+            LEFT  JOIN estatus es
+                    ON es.id_estatus = ofx.estatus_id               -- 👈 NUEVO
+            WHERE ofx.estatus_id IN (1,5,9,10)
+            AND o.estatus_id   IN (1,5,9,10)
+            {$whereBusq}
+            {$whereDate}
+            GROUP BY
+                ofx.id_operacion_ferro,
+                ofx.numero_operacion,
+                o.id_operacion,
+                cliente,
+                transportista,
+                cf.numero_ferro,
+                destino,
+                ofx.fecha,
+                es.nombre                                            -- 👈 NUEVO
+        ";
 
 
-    // ---- TOTAL ----
-    $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
-    $row   = $this->select($sqlCount, array_merge($argsBuscar, $argsDate));
-    $total = (int)($row['total'] ?? 0);
 
-    // ---- Paginación ----
-    $per_page    = max(1, min($per_page, 200));
-    $total_pages = max(1, (int)ceil($total / $per_page));
-    $page        = max(1, min($page, $total_pages));
-    $offset      = ($page - 1) * $per_page;
+        // ---- TOTAL ----
+        $sqlCount = "SELECT COUNT(*) AS total FROM ({$sub}) AS t";
+        $row   = $this->select($sqlCount, array_merge($argsBuscar, $argsDate));
+        $total = (int)($row['total'] ?? 0);
 
-    // ---- DATA ----
-    $sqlData = "{$sub}
+        // ---- Paginación ----
+        $per_page    = max(1, min($per_page, 200));
+        $total_pages = max(1, (int)ceil($total / $per_page));
+        $page        = max(1, min($page, $total_pages));
+        $offset      = ($page - 1) * $per_page;
+
+        // ---- DATA ----
+        $sqlData = "{$sub}
                 ORDER BY fecha_header DESC, numero_operacion DESC, ferro ASC
                 LIMIT {$per_page} OFFSET {$offset}";
-    $data = $this->selectAll($sqlData, array_merge($argsBuscar, $argsDate)) ?: [];
+        $data = $this->selectAll($sqlData, array_merge($argsBuscar, $argsDate)) ?: [];
 
-    return [
-        'data' => $data,
-        'meta' => [
-            'total'       => $total,
-            'page'        => $page,
-            'per_page'    => $per_page,
-            'total_pages' => $total_pages,
-        ]
-    ];
-}
+        return [
+            'data' => $data,
+            'meta' => [
+                'total'       => $total,
+                'page'        => $page,
+                'per_page'    => $per_page,
+                'total_pages' => $total_pages,
+            ]
+        ];
+    }
 
 
 
@@ -396,178 +408,178 @@ $sub = "
     }
 
     //REGISTRAR
-public function registrarAsignacionFerro(array $in): array
-{
-    // Espera:
-    // contenedor_fisico_id, destino_id, transportista_id, fecha (Y-m-d),
-    // estatus_id (opcional, default 9), comentario (opcional), creado_por (opcional),
-    // asignaciones: [ { cmo_id, bultos_asignados, comentario? }, ... ]
-    $reqH = ['contenedor_fisico_id', 'destino_id', 'transportista_id', 'fecha', 'asignaciones'];
-    foreach ($reqH as $k) {
-        if (!isset($in[$k]) || $in[$k] === '' || $in[$k] === null) {
-            return ['ok' => false, 'msg' => "Falta el campo requerido: {$k}"];
+    public function registrarAsignacionFerro(array $in): array
+    {
+        // Espera:
+        // contenedor_fisico_id, destino_id, transportista_id, fecha (Y-m-d),
+        // estatus_id (opcional, default 9), comentario (opcional), creado_por (opcional),
+        // asignaciones: [ { cmo_id, bultos_asignados, comentario? }, ... ]
+        $reqH = ['contenedor_fisico_id', 'destino_id', 'transportista_id', 'fecha', 'asignaciones'];
+        foreach ($reqH as $k) {
+            if (!isset($in[$k]) || $in[$k] === '' || $in[$k] === null) {
+                return ['ok' => false, 'msg' => "Falta el campo requerido: {$k}"];
+            }
         }
-    }
 
-    $contenedor_fisico_id = (int)$in['contenedor_fisico_id'];
-    $destino_id           = (int)$in['destino_id'];
-    $transportista_id     = (int)$in['transportista_id'];
-    $fecha                = (string)$in['fecha'];
-    $estatus_id           = isset($in['estatus_id']) ? (int)$in['estatus_id'] : 9; // Abierta
-    $comentario_header    = trim((string)($in['comentario'] ?? ''));
-    $creado_por           = isset($in['creado_por']) ? (int)$in['creado_por'] : null;
+        $contenedor_fisico_id = (int)$in['contenedor_fisico_id'];
+        $destino_id           = (int)$in['destino_id'];
+        $transportista_id     = (int)$in['transportista_id'];
+        $fecha                = (string)$in['fecha'];
+        $estatus_id           = isset($in['estatus_id']) ? (int)$in['estatus_id'] : 9; // Abierta
+        $comentario_header    = trim((string)($in['comentario'] ?? ''));
+        $creado_por           = isset($in['creado_por']) ? (int)$in['creado_por'] : null;
 
-    // Lista de asignaciones
-    $asignaciones = is_array($in['asignaciones']) ? $in['asignaciones'] : [];
-    if (empty($asignaciones)) {
-        return ['ok'=>false, 'msg'=>'Debes enviar al menos una asignación.'];
-    }
+        // Lista de asignaciones
+        $asignaciones = is_array($in['asignaciones']) ? $in['asignaciones'] : [];
+        if (empty($asignaciones)) {
+            return ['ok' => false, 'msg' => 'Debes enviar al menos una asignación.'];
+        }
 
-    // === 1) Derivar CLIENTE desde la PRIMERA asignación (cmo_id) ===
-    $prim = $asignaciones[0];
-    if (!isset($prim['cmo_id'])) return ['ok'=>false,'msg'=>'Falta cmo_id en la primera asignación.'];
+        // === 1) Derivar CLIENTE desde la PRIMERA asignación (cmo_id) ===
+        $prim = $asignaciones[0];
+        if (!isset($prim['cmo_id'])) return ['ok' => false, 'msg' => 'Falta cmo_id en la primera asignación.'];
 
-    $cliRow = $this->select(
-        "SELECT o.cliente_id
+        $cliRow = $this->select(
+            "SELECT o.cliente_id
            FROM contenedores_maritimos_operacion cmo
            INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
           WHERE cmo.id = ?
           LIMIT 1",
-        [ (int)$prim['cmo_id'] ]
-    );
-    $cliente_id = (int)($cliRow['cliente_id'] ?? 0);
+            [(int)$prim['cmo_id']]
+        );
+        $cliente_id = (int)($cliRow['cliente_id'] ?? 0);
 
-    // === 2) Crear HEADER de operación ferroviaria con número FO-## ===
-    // Config catálogo (ajústalo si cambia)
-    $subtipo_fo_id    = 26; // Subtipo FO
-    $tipo_operacion_id= 2;  // Tipo operación para FO
+        // === 2) Crear HEADER de operación ferroviaria con número FO-## ===
+        // Config catálogo (ajústalo si cambia)
+        $subtipo_fo_id    = 26; // Subtipo FO
+        $tipo_operacion_id = 2;  // Tipo operación para FO
 
-    // Generar número con SP: CALL GenerarNumeroOperacionFerro(subtipo, @p); SELECT @p
-    // Usamos save/select porque tu Query no expone transacciones ni múltiples resultados.
-    $this->save("CALL GenerarNumeroOperacionFerro(?, @p_num)", [ $subtipo_fo_id ]);
-    $outNum = $this->select("SELECT @p_num AS numero");
-    $numero_fo = trim((string)($outNum['numero'] ?? ''));
+        // Generar número con SP: CALL GenerarNumeroOperacionFerro(subtipo, @p); SELECT @p
+        // Usamos save/select porque tu Query no expone transacciones ni múltiples resultados.
+        $this->save("CALL GenerarNumeroOperacionFerro(?, @p_num)", [$subtipo_fo_id]);
+        $outNum = $this->select("SELECT @p_num AS numero");
+        $numero_fo = trim((string)($outNum['numero'] ?? ''));
 
-    if ($numero_fo === '') {
-        return ['ok'=>false,'msg'=>'No se pudo generar el número de operación FO-##.'];
-    }
+        if ($numero_fo === '') {
+            return ['ok' => false, 'msg' => 'No se pudo generar el número de operación FO-##.'];
+        }
 
-    $id_operacion_ferro = (int)$this->insertar(
-        "INSERT INTO operaciones_ferroviarias
+        $id_operacion_ferro = (int)$this->insertar(
+            "INSERT INTO operaciones_ferroviarias
            (numero_operacion, contenedor_fisico_id, destino_id, transportista_id, fecha,
             estatus_id, comentarios, cliente_id, tipo_operacion_id, subtipo_operacion_id, creado_por, bultos_total)
          VALUES (?,?,?,?,?,?,?,?,?,?,?, 0)",
-        [
-            $numero_fo,
-            $contenedor_fisico_id,
-            $destino_id,
-            $transportista_id,
-            $fecha,
-            $estatus_id,
-            $comentario_header !== '' ? $comentario_header : null,
-            $cliente_id ?: null,
-            $tipo_operacion_id,
-            $subtipo_fo_id,
-            $creado_por
-        ]
-    );
-    if ($id_operacion_ferro <= 0) {
-        return ['ok'=>false,'msg'=>'No se pudo crear la operación ferroviaria.'];
-    }
-
-    // === 3) Insertar LÍNEAS (validando saldos por CMO) ===
-    $total_bultos = 0;
-
-    foreach ($asignaciones as $i => $a) {
-        $cmo_id = (int)($a['cmo_id'] ?? 0);
-        $cant   = (int)($a['bultos_asignados'] ?? 0);
-        $comLin = trim((string)($a['comentario'] ?? ''));
-
-        if ($cmo_id <= 0 || $cant <= 0) {
-            return ['ok'=>false, 'msg'=>"Asignación #".($i+1)." inválida (cmo_id/cantidad)."];
+            [
+                $numero_fo,
+                $contenedor_fisico_id,
+                $destino_id,
+                $transportista_id,
+                $fecha,
+                $estatus_id,
+                $comentario_header !== '' ? $comentario_header : null,
+                $cliente_id ?: null,
+                $tipo_operacion_id,
+                $subtipo_fo_id,
+                $creado_por
+            ]
+        );
+        if ($id_operacion_ferro <= 0) {
+            return ['ok' => false, 'msg' => 'No se pudo crear la operación ferroviaria.'];
         }
 
-        // Datos base del CMO
-        $row = $this->select(
-            "SELECT cmo.id, cmo.operacion_id, cmo.contenedor_maritimo_id,
+        // === 3) Insertar LÍNEAS (validando saldos por CMO) ===
+        $total_bultos = 0;
+
+        foreach ($asignaciones as $i => $a) {
+            $cmo_id = (int)($a['cmo_id'] ?? 0);
+            $cant   = (int)($a['bultos_asignados'] ?? 0);
+            $comLin = trim((string)($a['comentario'] ?? ''));
+
+            if ($cmo_id <= 0 || $cant <= 0) {
+                return ['ok' => false, 'msg' => "Asignación #" . ($i + 1) . " inválida (cmo_id/cantidad)."];
+            }
+
+            // Datos base del CMO
+            $row = $this->select(
+                "SELECT cmo.id, cmo.operacion_id, cmo.contenedor_maritimo_id,
                     COALESCE(cmo.bultos,0) AS b_tot
                FROM contenedores_maritimos_operacion cmo
               WHERE cmo.id = ?
               LIMIT 1",
-            [ $cmo_id ]
-        );
-        if (!$row) return ['ok'=>false, 'msg'=>"CMO #{$cmo_id} no encontrado."];
+                [$cmo_id]
+            );
+            if (!$row) return ['ok' => false, 'msg' => "CMO #{$cmo_id} no encontrado."];
 
-        // Saldo disponible = cmo.bultos - SUM(cmf.bultos_asignados)
-        $sum = $this->select(
-            "SELECT COALESCE(SUM(bultos_asignados),0) AS b_asig
+            // Saldo disponible = cmo.bultos - SUM(cmf.bultos_asignados)
+            $sum = $this->select(
+                "SELECT COALESCE(SUM(bultos_asignados),0) AS b_asig
                FROM contenedor_maritimo_ferro
               WHERE cont_maritimo_operacion_id = ?",
-            [ $cmo_id ]
-        );
-        $tot   = (int)$row['b_tot'];
-        $asig  = (int)($sum['b_asig'] ?? 0);
-        $saldo = max(0, $tot - $asig);
-        if ($cant > $saldo) {
-            return ['ok'=>false, 'msg'=>"Asignación #".($i+1).": saldo insuficiente. Disponible: {$saldo}."];
-        }
+                [$cmo_id]
+            );
+            $tot   = (int)$row['b_tot'];
+            $asig  = (int)($sum['b_asig'] ?? 0);
+            $saldo = max(0, $tot - $asig);
+            if ($cant > $saldo) {
+                return ['ok' => false, 'msg' => "Asignación #" . ($i + 1) . ": saldo insuficiente. Disponible: {$saldo}."];
+            }
 
-        // Insert línea (nota: en (27) NO existe cmf.operacion_id)
-        $id_linea = (int)$this->insertar(
-            "INSERT INTO contenedor_maritimo_ferro
+            // Insert línea (nota: en (27) NO existe cmf.operacion_id)
+            $id_linea = (int)$this->insertar(
+                "INSERT INTO contenedor_maritimo_ferro
                (operacion_ferro_id, contenedor_maritimo_id, cont_maritimo_operacion_id,
                 contenedor_fisico_id, comentario, bultos_asignados)
              VALUES (?,?,?,?,?,?)",
-            [
-                $id_operacion_ferro,
-                (int)$row['contenedor_maritimo_id'],
-                $cmo_id,
-                $contenedor_fisico_id,
-                $comLin !== '' ? $comLin : null,
-                $cant
-            ]
-        );
-        if ($id_linea <= 0) {
-            return ['ok'=>false,'msg'=>"No se pudo insertar la asignación #".($i+1)."."];
+                [
+                    $id_operacion_ferro,
+                    (int)$row['contenedor_maritimo_id'],
+                    $cmo_id,
+                    $contenedor_fisico_id,
+                    $comLin !== '' ? $comLin : null,
+                    $cant
+                ]
+            );
+            if ($id_linea <= 0) {
+                return ['ok' => false, 'msg' => "No se pudo insertar la asignación #" . ($i + 1) . "."];
+            }
+
+            $total_bultos += $cant;
         }
 
-        $total_bultos += $cant;
-    }
-
-    // === 4) Actualizar totales del HEADER (nivel código, no trigger) ===
-    $this->save(
-        "UPDATE operaciones_ferroviarias
+        // === 4) Actualizar totales del HEADER (nivel código, no trigger) ===
+        $this->save(
+            "UPDATE operaciones_ferroviarias
             SET bultos_total = COALESCE((
                     SELECT SUM(cmf.bultos_asignados)
                       FROM contenedor_maritimo_ferro cmf
                      WHERE cmf.operacion_ferro_id = ?
                 ),0)
           WHERE id_operacion_ferro = ?",
-        [ $id_operacion_ferro, $id_operacion_ferro ]
-    );
+            [$id_operacion_ferro, $id_operacion_ferro]
+        );
 
-    return [
-        'ok'   => true,
-        'msg'  => 'Operación ferroviaria creada y asignaciones registradas.',
-        'ids'  => [
-            'operacion_ferro_id' => $id_operacion_ferro,
-        ],
-        'numero_operacion_ferro' => $numero_fo,
-        'total_bultos' => $total_bultos
-    ];
-}
+        return [
+            'ok'   => true,
+            'msg'  => 'Operación ferroviaria creada y asignaciones registradas.',
+            'ids'  => [
+                'operacion_ferro_id' => $id_operacion_ferro,
+            ],
+            'numero_operacion_ferro' => $numero_fo,
+            'total_bultos' => $total_bultos
+        ];
+    }
 
 
 
-/**
- * Saldo por ID del registro en contenedores_maritimos_operacion (cmo.id)
- * Devuelve: [ok, id_cmo, operacion_id, contenedor_maritimo_id, numero_contenedor, total, asignados, saldo]
- */
-public function getSaldoPorCmoId(int $cmo_id): array
-{
-    // Total de bultos y datos del MG
-    $row = $this->select(
-        "SELECT 
+    /**
+     * Saldo por ID del registro en contenedores_maritimos_operacion (cmo.id)
+     * Devuelve: [ok, id_cmo, operacion_id, contenedor_maritimo_id, numero_contenedor, total, asignados, saldo]
+     */
+    public function getSaldoPorCmoId(int $cmo_id): array
+    {
+        // Total de bultos y datos del MG
+        $row = $this->select(
+            "SELECT 
              cmo.id,
              cmo.operacion_id,
              cmo.contenedor_maritimo_id,
@@ -578,41 +590,41 @@ public function getSaldoPorCmoId(int $cmo_id): array
                  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         WHERE cmo.id = ?
         LIMIT 1",
-        [$cmo_id]
-    );
-    if (!$row) return ['ok'=>false,'msg'=>'MG no encontrado'];
+            [$cmo_id]
+        );
+        if (!$row) return ['ok' => false, 'msg' => 'MG no encontrado'];
 
-    // Suma asignada a ferros desde ese MG
-    $sum = $this->select(
-        "SELECT COALESCE(SUM(bultos_asignados),0) AS b_asig
+        // Suma asignada a ferros desde ese MG
+        $sum = $this->select(
+            "SELECT COALESCE(SUM(bultos_asignados),0) AS b_asig
            FROM contenedor_maritimo_ferro
           WHERE cont_maritimo_operacion_id = ?",
-        [$cmo_id]
-    );
+            [$cmo_id]
+        );
 
-    $tot  = (int)($row['b_tot'] ?? 0);
-    $asig = (int)($sum['b_asig'] ?? 0);
-    $saldo = max(0, $tot - $asig);
+        $tot  = (int)($row['b_tot'] ?? 0);
+        $asig = (int)($sum['b_asig'] ?? 0);
+        $saldo = max(0, $tot - $asig);
 
-    return [
-        'ok'                     => true,
-        'id_cmo'                 => (int)$row['id'],
-        'operacion_id'           => (int)$row['operacion_id'],
-        'contenedor_maritimo_id' => (int)$row['contenedor_maritimo_id'],
-        'numero_contenedor'      => (string)$row['numero_contenedor'],
-        'total'                  => $tot,
-        'asignados'              => $asig,
-        'saldo'                  => $saldo,
-    ];
-}
+        return [
+            'ok'                     => true,
+            'id_cmo'                 => (int)$row['id'],
+            'operacion_id'           => (int)$row['operacion_id'],
+            'contenedor_maritimo_id' => (int)$row['contenedor_maritimo_id'],
+            'numero_contenedor'      => (string)$row['numero_contenedor'],
+            'total'                  => $tot,
+            'asignados'              => $asig,
+            'saldo'                  => $saldo,
+        ];
+    }
 
-/**
- * Listado de saldos por operación (todas las filas de contenedores_maritimos_operacion de esa operación)
- * Útil para pintar la vista: MG, total, asignados, saldo.
- */
-public function listarSaldosMGPorOperacion(int $operacion_id): array
-{
-    $sql = "
+    /**
+     * Listado de saldos por operación (todas las filas de contenedores_maritimos_operacion de esa operación)
+     * Útil para pintar la vista: MG, total, asignados, saldo.
+     */
+    public function listarSaldosMGPorOperacion(int $operacion_id): array
+    {
+        $sql = "
     SELECT 
         cmo.id                                         AS id_cmo,
         cmo.operacion_id,
@@ -629,104 +641,108 @@ public function listarSaldosMGPorOperacion(int $operacion_id): array
     WHERE cmo.operacion_id = ?
     GROUP BY cmo.id, cmo.operacion_id, cmo.contenedor_maritimo_id, cm.numero_contenedor, cmo.bultos
     ORDER BY cm.numero_contenedor ASC";
-    return $this->selectAll($sql, [$operacion_id]) ?: [];
-}
-// === Helpers nuevos en el modelo ===
-private function normalizarNumeroFerro(string $num): string {
-    $num = trim($num);
-    // Mayúsculas, sin espacios dobles
-    $num = mb_strtoupper(preg_replace('/\s+/', ' ', $num), 'UTF-8');
-    return $num;
-}
+        return $this->selectAll($sql, [$operacion_id]) ?: [];
+    }
+    // === Helpers nuevos en el modelo ===
+    private function normalizarNumeroFerro(string $num): string
+    {
+        $num = trim($num);
+        // Mayúsculas, sin espacios dobles
+        $num = mb_strtoupper(preg_replace('/\s+/', ' ', $num), 'UTF-8');
+        return $num;
+    }
 
-public function getFerroPorNumero(string $numero): ?array {
-    $numero = $this->normalizarNumeroFerro($numero);
-    $row = $this->select(
-        "SELECT id_fisico, numero_ferro 
+    public function getFerroPorNumero(string $numero): ?array
+    {
+        $numero = $this->normalizarNumeroFerro($numero);
+        $row = $this->select(
+            "SELECT id_fisico, numero_ferro 
            FROM contenedores_fisicos 
           WHERE LOWER(numero_ferro) = LOWER(?) 
           LIMIT 1",
-        [$numero]
-    );
-    return $row ?: null;
-}
-
-public function crearFerro(string $numero): array {
-    $numero = $this->normalizarNumeroFerro($numero);
-
-    if ($numero === '' || mb_strlen($numero) < 2) {
-        return ['ok'=>false, 'msg'=>'Número de ferro/caja inválido.'];
-    }
-    // Regla básica de formato; ajusta a tu gusto
-    if (!preg_match('/^[A-Z0-9-_.]{2,30}$/', $numero)) {
-        return ['ok'=>false, 'msg'=>'Formato de ferro/caja no permitido.'];
+            [$numero]
+        );
+        return $row ?: null;
     }
 
-    // Unicidad lógica
-    $ex = $this->getFerroPorNumero($numero);
-    if ($ex) {
-        return ['ok'=>true, 'id_fisico'=>(int)$ex['id_fisico'], 'label'=>$ex['numero_ferro'], 'created'=>false];
+    public function crearFerro(string $numero): array
+    {
+        $numero = $this->normalizarNumeroFerro($numero);
+
+        if ($numero === '' || mb_strlen($numero) < 2) {
+            return ['ok' => false, 'msg' => 'Número de ferro/caja inválido.'];
+        }
+        // Regla básica de formato; ajusta a tu gusto
+        if (!preg_match('/^[A-Z0-9-_.]{2,30}$/', $numero)) {
+            return ['ok' => false, 'msg' => 'Formato de ferro/caja no permitido.'];
+        }
+
+        // Unicidad lógica
+        $ex = $this->getFerroPorNumero($numero);
+        if ($ex) {
+            return ['ok' => true, 'id_fisico' => (int)$ex['id_fisico'], 'label' => $ex['numero_ferro'], 'created' => false];
+        }
+
+        $id = (int)$this->insertar(
+            "INSERT INTO contenedores_fisicos (numero_ferro, estatus) VALUES (?, 1)",
+            [$numero]
+        );
+        if ($id <= 0) return ['ok' => false, 'msg' => 'No se pudo crear el ferro/caja.'];
+
+        return ['ok' => true, 'id_fisico' => $id, 'label' => $numero, 'created' => true];
     }
 
-    $id = (int)$this->insertar(
-        "INSERT INTO contenedores_fisicos (numero_ferro, estatus) VALUES (?, 1)",
-        [$numero]
-    );
-    if ($id <= 0) return ['ok'=>false, 'msg'=>'No se pudo crear el ferro/caja.'];
-
-    return ['ok'=>true, 'id_fisico'=>$id, 'label'=>$numero, 'created'=>true];
-}
-
-/**
- * Crea si no existe; si existe regresa el existente.
- */
-public function upsertFerro(string $numero): array {
-    $numero = $this->normalizarNumeroFerro($numero);
-    $ex = $this->getFerroPorNumero($numero);
-    if ($ex) {
-        return ['ok'=>true, 'id_fisico'=>(int)$ex['id_fisico'], 'label'=>$ex['numero_ferro'], 'created'=>false];
+    /**
+     * Crea si no existe; si existe regresa el existente.
+     */
+    public function upsertFerro(string $numero): array
+    {
+        $numero = $this->normalizarNumeroFerro($numero);
+        $ex = $this->getFerroPorNumero($numero);
+        if ($ex) {
+            return ['ok' => true, 'id_fisico' => (int)$ex['id_fisico'], 'label' => $ex['numero_ferro'], 'created' => false];
+        }
+        return $this->crearFerro($numero);
     }
-    return $this->crearFerro($numero);
-}
-// === Helpers para número FO (preview) ===
-private function getPrefijoSubtipo(int $subtipo_id): string {
-    $row = $this->select(
-        "SELECT COALESCE(prefijo_codigo,'') AS prefijo
+    // === Helpers para número FO (preview) ===
+    private function getPrefijoSubtipo(int $subtipo_id): string
+    {
+        $row = $this->select(
+            "SELECT COALESCE(prefijo_codigo,'') AS prefijo
            FROM subtipos_operacion
           WHERE id_subtipo = ?
           LIMIT 1",
-        [$subtipo_id]
-    );
-    return trim((string)($row['prefijo'] ?? ''));
-}
-
-/**
- * Calcula el siguiente número tipo "FO-01" sin tocar el consecutivo real.
- * Útil solo para mostrar en el front; el definitivo lo genera el SP en registrarAsignacionFerro().
- */
-public function previewNumeroOperacionFerro(int $subtipo_id = 26): array
-{
-    // 1) prefijo del subtipo (ej. 'FO')
-    $prefijo = $this->getPrefijoSubtipo($subtipo_id);
-    if ($prefijo === '') {
-        return ['ok'=>false, 'msg'=>'Prefijo no definido para el subtipo.'];
+            [$subtipo_id]
+        );
+        return trim((string)($row['prefijo'] ?? ''));
     }
 
-    // 2) calcular el siguiente consecutivo a partir de operaciones ya creadas
-    //    Busca el máximo sufijo numérico de "FO-##"
-    $row = $this->select(
-        "SELECT 
+    /**
+     * Calcula el siguiente número tipo "FO-01" sin tocar el consecutivo real.
+     * Útil solo para mostrar en el front; el definitivo lo genera el SP en registrarAsignacionFerro().
+     */
+    public function previewNumeroOperacionFerro(int $subtipo_id = 26): array
+    {
+        // 1) prefijo del subtipo (ej. 'FO')
+        $prefijo = $this->getPrefijoSubtipo($subtipo_id);
+        if ($prefijo === '') {
+            return ['ok' => false, 'msg' => 'Prefijo no definido para el subtipo.'];
+        }
+
+        // 2) calcular el siguiente consecutivo a partir de operaciones ya creadas
+        //    Busca el máximo sufijo numérico de "FO-##"
+        $row = $this->select(
+            "SELECT 
             COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion, '-', -1) AS UNSIGNED)), 0) AS max_seq
          FROM operaciones_ferroviarias
          WHERE numero_operacion LIKE CONCAT(?, '-%')",
-        [$prefijo]
-    );
-    $next = (int)($row['max_seq'] ?? 0) + 1;
+            [$prefijo]
+        );
+        $next = (int)($row['max_seq'] ?? 0) + 1;
 
-    // 3) formateo (02 dígitos, ajusta si quieres 3+)
-    $num = sprintf('%s-%02d', $prefijo, $next);
+        // 3) formateo (02 dígitos, ajusta si quieres 3+)
+        $num = sprintf('%s-%02d', $prefijo, $next);
 
-    return ['ok'=>true, 'numero'=>$num];
-}
-
+        return ['ok' => true, 'numero' => $num];
+    }
 }

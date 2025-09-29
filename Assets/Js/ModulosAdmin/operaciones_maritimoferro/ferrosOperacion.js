@@ -290,6 +290,85 @@
     if (badgeTotB) { badgeTotB.textContent = String(totBultos); badgeTotB.style.display = totBultos>0 ? '' : 'none'; badgeTotB.className = 'badge ' + (totBultos>0 ? 'bg-success text-white' : 'bg-secondary text-white'); }
     if (badgeTotM) { badgeTotM.textContent = String(totMar);    badgeTotM.style.display = totMar>0 ? '' : 'none';    badgeTotM.className = 'badge ' + (totMar>0 ? 'bg-success text-white' : 'bg-secondary text-white'); }
   }
+  function limpiarLinea() {
+
+  const opInp        = document.getElementById('operacionMaritimaNombreFerroOP');
+  const opIdHid      = document.getElementById('operacionMaritimaIdFerroOP');
+  const cmoIdHid     = document.getElementById('contMaritimoOperacionIdFerroOP');
+  const contIdHid    = document.getElementById('contenedorMaritimoIdFerroOP');
+  const contNameInp  = document.getElementById('contenedorMaritimoNombreFerroOP');
+  const cliNameInp   = document.getElementById('clienteNombreMaritimoFerroOP');
+  const bultosTotInp = document.getElementById('bultosMaritimoFerroOP');
+  const restInp      = document.getElementById('bultosRestantesFerroOP');
+  const asigInp      = document.getElementById('bultosAsignadosFerroOP');
+  const comentInp    = document.getElementById('comentarioLineaFerroOP');
+  const sugBox       = document.getElementById('sugOperacionesMaritimasFerroOP');
+  const badgeSaldo   = document.getElementById('badgeSaldoFerroOP');
+
+  
+  if (opIdHid)  opIdHid.value = '';
+  if (cmoIdHid) cmoIdHid.value = '';
+  if (contIdHid) contIdHid.value = '';
+  if (contNameInp) contNameInp.value = '';
+  if (cliNameInp)  cliNameInp.value = '';
+  if (bultosTotInp) bultosTotInp.value = '';
+  if (restInp)      restInp.value = '';
+  if (asigInp)      asigInp.value = '';
+  if (comentInp)    comentInp.value = '';
+
+  // Estado visual
+  if (badgeSaldo) { badgeSaldo.textContent = 'Saldo: 0'; badgeSaldo.className = 'badge bg-secondary text-white'; }
+  if (opInp)      { opInp.dataset.lastPick = '0'; } // marcar que no hay pick activo
+
+  // Ocultar sugerencias si quedaron abiertas
+  if (sugBox) { sugBox.style.display = 'none'; sugBox.innerHTML = ''; }
+
+  // Recalcular habilitado del botón confirmar
+  if (typeof window.toggleAsignBtn === 'function') window.toggleAsignBtn();
+
+  // Dejar el foco listo para escribir el siguiente contenedor
+  if (opInp) { opInp.focus(); opInp.select(); }
+}
+
+// --- Toggle del bloque "Agregar Marítimo" ---
+const selectorMar = document.getElementById('selectorMaritimoFerroOP');
+const btnAgregar  = document.getElementById('btnAgregarMaritimoFerroOP');
+const btnCancel   = document.getElementById('btnCancelarMaritimoFerroOP');
+
+// Mostrar/ocultar bloque y botón Agregar (sin crear nuevos ids)
+function toggleSelectorMaritimo(show){
+  if (selectorMar) selectorMar.classList.toggle('d-none', !show);
+  if (btnAgregar)  btnAgregar.style.display  = show ? 'none' : '';
+  // Habilitar/deshabilitar Confirmar acorde al estado
+  const btnConf = document.getElementById('btnConfirmarMaritimoFerroOP');
+  if (btnConf) btnConf.disabled = !show;
+  // Si se abre, enfocar el input de búsqueda
+  if (show) {
+    const opInp = document.getElementById('operacionMaritimaNombreFerroOP');
+    setTimeout(()=>{ opInp?.focus(); opInp?.select(); }, 0);
+  }
+}
+
+// Al abrir modal: dejar el selector oculto y el botón Agregar visible
+(function initToggleEnModal(){
+  const modal = document.getElementById('modalFerroOP');
+  if (!modal) return;
+  modal.addEventListener('shown.bs.modal', ()=> {
+    toggleSelectorMaritimo(false);
+  });
+})();
+
+// Click en "Agregar Marítimo" -> mostrar bloque
+btnAgregar?.addEventListener('click', ()=> {
+  toggleSelectorMaritimo(true);
+});
+
+// Click en "Cancelar" (del bloque) -> limpiar línea y ocultar bloque
+btnCancel?.addEventListener('click', ()=> {
+  if (typeof limpiarLinea === 'function') limpiarLinea(); // deja todo listo para la próxima
+  toggleSelectorMaritimo(false);
+});
+
  
   // Botón confirmar del selector (agrega línea al carrito)
 // 1) Evitar doble binding del botón confirmar
@@ -322,6 +401,8 @@ if (btnConfirmar && !btnConfirmar.dataset.bound) {
     renderCarrito();
     actualizarTotales();
     bultosAsignadosFerroOP.value = '';
+      // Limpia la línea para capturar el siguiente contenedor
+    limpiarLinea();
   });
 }
 
@@ -407,56 +488,29 @@ if (btnConfirmar && !btnConfirmar.dataset.bound) {
         const x = new XMLHttpRequest();
         x.open('POST', BASE_URL + 'Operaciones_maritimo_ferro_contenedores/guardar_asignacion', true);
         
-        x.onload = function(){
-            if (btn) btn.disabled = false;
-            let res = null; 
-            try { 
-                res = JSON.parse(x.responseText||'{}'); 
-            } catch(e) {
-                console.error('Error parsing response:', e);
-            }
-            
-            if (!res || res.ok !== true){
-                const errorMsg = (res && res.msg) ? res.msg : 'No se pudo registrar la asignación.';
-                return toast(errorMsg, false);
-            }
+x.onload = function(){
+  if (btn) btn.disabled = false;
+  let res = null;
+  try { res = JSON.parse(x.responseText||'{}'); } catch(e){}
 
-            // Limpiar formulario según el flujo usado
-            if (wasMultiple){
-                carrito = []; 
-                renderCarrito(); 
-                actualizarTotales();
-            } else {
-                const saldo = (res.data && typeof res.data.saldo !== 'undefined') 
-                    ? Number(res.data.saldo) 
-                    : 0;
-                if (bultosRestantesFerroOP) bultosRestantesFerroOP.value = String(saldo);
-                setBadgeSaldo(saldo);
-            }
+  if (!res || res.ok !== true){
+    const errorMsg = (res && res.msg) ? res.msg : 'No se pudo registrar la asignación.';
+    return toast(errorMsg, false);
+  }
 
-            // Limpiar campos comunes
-            if (bultosAsignadosFerroOP) bultosAsignadosFerroOP.value = '';
+  // NO limpies aquí nada. Solo recarga tabla y cierra modal.
+  if (typeof window.cargarTablaFerroOP === 'function') window.cargarTablaFerroOP();
 
-            // Recargar tabla y cerrar modal
-            if (typeof window.cargarTablaFerroOP === 'function') {
-                window.cargarTablaFerroOP();
-            }
-            
-            const modalEl = document.getElementById('modalFerroOP');
-            if (modalEl && window.bootstrap?.Modal){
-                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-            }
-            
-            form.reset();
-            
-            const folioFx = res.data?.numero_operacion_ferro || '';
-            const successMsg = folioFx 
-                ? `Asignación registrada (${folioFx}).` 
-                : 'Asignación registrada.';
-            toast(successMsg, true);
-            
-            feather.replace();
-        };
+  const modalEl = document.getElementById('modalFerroOP');
+  if (modalEl && window.bootstrap?.Modal){
+    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+  }
+
+  // Éxito
+  const folioFx = res.data?.numero_operacion_ferro || '';
+  toast(folioFx ? `Asignación registrada (${folioFx}).` : 'Asignación registrada.', true);
+};
+
         
         x.onerror = function(){
             if (btn) btn.disabled = false;
@@ -534,6 +588,67 @@ if (btnConfirmar && !btnConfirmar.dataset.bound) {
     document.getElementById('operacionMaritimaNombreFerroOP')?.addEventListener(ev, toggleBtn);
   });
   toggleBtn();
+
+
+
+// === Reset integral del modal Ferro OP ===
+// Debe ir dentro del IIFE donde está "carrito"
+window.resetModalFerroOP = function resetModalFerroOP(){
+  const form = document.getElementById('formFerroOP');
+  const selectorMar = document.getElementById('selectorMaritimoFerroOP');
+  const btnAgregar  = document.getElementById('btnAgregarMaritimoFerroOP');
+  const btnConfirm  = document.getElementById('btnConfirmarMaritimoFerroOP');
+
+  // 1) Vaciar carrito y sus visuales
+  if (typeof carrito !== 'undefined') {
+    carrito.length = 0;
+    if (typeof renderCarrito === 'function') renderCarrito();
+    if (typeof actualizarTotales === 'function') actualizarTotales();
+  }
+
+  // 2) Limpiar SOLO la línea marítima (tu helper actual)
+  if (typeof limpiarLinea === 'function') limpiarLinea();
+
+  // 3) Ocultar selector y mostrar botón "Agregar Marítimo"
+  if (selectorMar) selectorMar.style.display = 'none';
+  if (btnAgregar)  btnAgregar.style.display  = '';
+  if (btnConfirm)  btnConfirm.disabled = true;
+
+  // 4) Limpiar campos generales del form
+  if (form) form.reset();
+
+  // 5) Reponer la fila "noMaritimosMessage" en la tabla
+  const tbodySel = document.getElementById('tbodyMaritimosSeleccionados');
+  if (tbodySel) {
+    tbodySel.innerHTML = `
+      <tr id="noMaritimosMessage">
+        <td colspan="5" class="text-center text-muted">
+          <i data-feather="package" class="me-2"></i>
+          No hay contenedores marítimos agregados
+        </td>
+      </tr>`;
+  }
+
+  // 6) Ocultar y vaciar cajas de sugerencias
+  ['sugOperacionesMaritimasFerroOP','sugFerrosFerroOP','sugTransportistasFerroOP','destinoFerroOP']
+    .forEach(id => { const box = document.getElementById(id); if (box){ box.style.display='none'; box.innerHTML=''; } });
+
+  // 7) Badges y estados
+  const badgeB = document.getElementById('totalBultosFerroOP');
+  const badgeM = document.getElementById('totalMaritimosFerroOP');
+  const badgeSaldo = document.getElementById('badgeSaldoFerroOP');
+  if (badgeB){ badgeB.textContent = '0'; badgeB.className = 'badge bg-secondary text-white'; }
+  if (badgeM){ badgeM.textContent = '0'; badgeM.className = 'badge bg-secondary text-white'; }
+  if (badgeSaldo){ badgeSaldo.textContent = 'Saldo: 0'; badgeSaldo.className = 'badge bg-secondary text-white'; }
+
+  // 8) Marcar que no hay pick activo
+  const opInp = document.getElementById('operacionMaritimaNombreFerroOP');
+  if (opInp) opInp.dataset.lastPick = '0';
+
+  // 9) Re-render de íconos
+  if (window.feather) feather.replace();
+};
+
 
 })();
 

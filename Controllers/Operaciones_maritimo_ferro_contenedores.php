@@ -57,15 +57,16 @@ class Operaciones_maritimo_ferro_contenedores extends Controller
                 'bultos_maritimo'     => isset($r['bultos_maritimo']) ? (int)$r['bultos_maritimo'] : null,
                 'cliente'             => (string)($r['cliente'] ?? ''),
 
-                // NUEVOS: pásalos tal cual del modelo
+                
                 'transportista'       => (string)($r['transportista'] ?? ''),
                 'ferro'               => (string)($r['ferro'] ?? ''),
                 'division_bultos'     => (string)($r['division_bultos'] ?? ''),
                 'destino'             => (string)($r['destino'] ?? ''),
 
-                // opcional: por si quieres usarlo después
+                 
                 'bultos_asignados_total' => isset($r['bultos_asignados_total']) ? (int)$r['bultos_asignados_total'] : 0,
                 'fecha_header'        => (string)($r['fecha_header'] ?? ''),
+                'estatus'                => (string)($r['estatus'] ?? ''),
             ];
         }, $rows);
 

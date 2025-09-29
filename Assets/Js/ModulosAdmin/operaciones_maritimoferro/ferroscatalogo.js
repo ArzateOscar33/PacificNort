@@ -346,22 +346,15 @@ function onPickOp(it){
     x.send();
   });
 
-  // Limpieza opcional al cerrar modal
-  modal.addEventListener('hidden.bs.modal', function(){
-    [
-      'operacionMaritimaIdFerroOP',
-      'contMaritimoOperacionIdFerroOP',
-      'contenedorMaritimoIdFerroOP',
-      'operacionMaritimaNombreFerroOP',
-      'clienteNombreMaritimoFerroOP',
-      'contenedorMaritimoNombreFerroOP',
-      'bultosMaritimoFerroOP',
-      'bultosRestantesFerroOP',
-      'bultosAsignadosFerroOP'
-    ].forEach(id=>{ const el = document.getElementById(id); if (el) el.value=''; });
+ (function attachModalReset(){
+  const modal = document.getElementById('modalFerroOP');
+  if (!modal) return;
 
-    ['sugOperacionesMaritimasFerroOP','sugFerrosFerroOP','sugTransportistasFerroOP','destinoFerroOP']
-      .forEach(id=>{ const box = document.getElementById(id); if (box){ box.style.display='none'; box.innerHTML=''; } });
+  // Se dispara cuando el modal YA se cerró (clic fuera, botón cancelar, tecla Esc, etc.)
+  modal.addEventListener('hidden.bs.modal', function(){
+    if (typeof window.resetModalFerroOP === 'function') window.resetModalFerroOP();
   });
+})();
+
 })();
  
