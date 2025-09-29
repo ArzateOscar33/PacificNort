@@ -1,21 +1,27 @@
-// =============== Gestión de Documentos SOLO POR OPERACIÓN ===============
+// =============== Gestión de Documentos POR OPERACIÓN Y CONTENEDOR ===============
 (function(){
   "use strict";
   const root = document.getElementById("documentosRoot");
   if (!root) return;
 
-  const docBaseDocumentos = base_url + "operaciones_maritimas_documentos/";
+  const docBase = base_url + "operaciones_maritimas_documentos/";
 
-  // -------- Refs (solo operación) --------
-  const opIdInput       = document.getElementById("documentosFiltroOpId");
-  const opNombreInput   = document.getElementById("documentosFiltroOpNombre");
-  const opSugBox        = document.getElementById("documentosFiltroOpSugerencias");
-  const opMeta          = document.getElementById("documentosFiltroOpMeta");
+  // -------- Refs (operación + contenedor) --------
+  // Filtro (vista)
+  const opIdInput        = document.getElementById("documentosFiltroOpId");
+  const opNombreInput    = document.getElementById("documentosFiltroOpNombre");
+  const opSugBox         = document.getElementById("documentosFiltroOpSugerencias");
+  const opMeta           = document.getElementById("documentosFiltroOpMeta");
 
-  const tbody           = document.getElementById("tablaDocumentos");
-  const listaSubidos    = document.getElementById("listaDocumentos");
-  const listaFaltantes  = document.getElementById("listaFaltantesDocumentos");
-  const btnNotificar    = document.getElementById("btnNotificarFaltantes");
+  const cmoIdInput       = document.getElementById("documentosFiltroCMOId");
+  const cmoNombreInput   = document.getElementById("documentosFiltroCMONombre");
+  const cmoSugBox        = document.getElementById("documentosFiltroCMOSugerencias");
+
+  // Tabla + listas
+  const tbody            = document.getElementById("tablaDocumentos");
+  const listaSubidos     = document.getElementById("listaDocumentos");
+  const listaFaltantes   = document.getElementById("listaFaltantesDocumentos");
+  const btnNotificar     = document.getElementById("btnNotificarFaltantes");
 
   // -------- Helpers --------
   const clear = el => { if (el) el.innerHTML = ""; };
@@ -33,6 +39,18 @@
                                       .replace(/>/g,'&gt;')
                                       .replace(/'/g,'&#39;');
 
+  function getJSON(url){
+    return new Promise((resolve)=>{
+      const x = new XMLHttpRequest();
+      x.open("GET", url, true);
+      x.onload = ()=> {
+        try { resolve(JSON.parse(x.responseText||'[]')); } catch { resolve([]); }
+      };
+      x.onerror = ()=> resolve([]);
+      x.send();
+    });
+  }
+
   // -------- Autocomplete de Operación --------
   opNombreInput?.addEventListener("keyup", function(){
     const term = this.value.trim();
@@ -40,7 +58,7 @@
     if (term === "") { show(opSugBox, false); return; }
 
     const http = new XMLHttpRequest();
-    http.open("GET", docBaseDocumentos + "buscarOperaciones?term=" + encodeURIComponent(term), true);
+    http.open("GET", docBase + "buscarOperaciones?term=" + encodeURIComponent(term), true);
     http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
@@ -54,7 +72,6 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "list-group-item list-group-item-action";
-        // intenta mostrar cliente si viene en la respuesta; de lo contrario solo la etiqueta
         btn.textContent = o.cliente ? `${o.label} — ${o.cliente}` : `${o.label}`;
         btn.onclick = ()=> seleccionarOperacion(o.id, o.label, o.cliente);
         opSugBox.appendChild(btn);
@@ -63,10 +80,13 @@
     };
   });
 
-  function seleccionarOperacion(id, label, cliente){
+  async function seleccionarOperacion(id, label, cliente){
     opIdInput.value     = String(id);
     opNombreInput.value = label;
     clear(opSugBox); show(opSugBox, false);
+
+    // limpiar contenedor y auto-cargar por operación
+    await autollenarContenedorPorOperacion(id);
 
     opMeta.textContent = cliente ? `Operación ${label} — ${cliente}` : `Operación ${label}`;
     listarDocumentos();
@@ -78,11 +98,84 @@
     if (opSugBox && !opSugBox.contains(e.target) && !opNombreInput.contains(e.target)) {
       show(opSugBox, false);
     }
+    if (cmoSugBox && !cmoSugBox.contains(e.target) && !cmoNombreInput.contains(e.target)) {
+      show(cmoSugBox, false);
+    }
   });
+
+  // -------- Autocomplete Contenedor (limitado por operación seleccionada) --------
+  cmoNombreInput?.addEventListener("keyup", async function(){
+    const opId = (opIdInput.value||"").trim();
+    if (!opId){ clear(cmoSugBox); show(cmoSugBox,false); return; }
+
+    const term = this.value.trim();
+    const url  = docBase + "contenedores_por_operacion?operacion_id=" + encodeURIComponent(opId) +
+                 (term ? "&term=" + encodeURIComponent(term) : "");
+    const data = await getJSON(url);
+
+    clear(cmoSugBox);
+    if (!Array.isArray(data) || data.length === 0){ show(cmoSugBox,false); return; }
+
+    data.slice(0, 10).forEach(it=>{
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action";
+      btn.textContent = it.numero_contenedor || it.label || ("CMO " + it.id);
+      btn.onclick = ()=> seleccionarCMO(it.id, it.numero_contenedor || it.label || it.id);
+      cmoSugBox.appendChild(btn);
+    });
+    show(cmoSugBox, true);
+    clearCMOView();
+  });
+  opNombreInput?.addEventListener('input', ()=>{
+  const val = (opNombreInput.value||'').trim();
+  if (val === ''){
+    opIdInput.value = '';
+    clearCMOView();              // ← limpia y bloquea contenedor
+    tbody.innerHTML = TD_EMPTY(8);
+    if (listaSubidos) listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
+    renderFaltantes([]);
+    if (btnNotificar) btnNotificar.style.display = 'none';
+  }
+});
+
+
+  function seleccionarCMO(cmoId, cmoNombre){
+    cmoIdInput.value     = String(cmoId);            // contenedor_maritimo_id
+    cmoNombreInput.value = String(cmoNombre);
+    clear(cmoSugBox); show(cmoSugBox, false);
+    listarDocumentos(); // refrescar listado acotado al contenedor
+  }
+
+  // Cuando cambie manualmente el campo de operación (perdió foco), intentar autollenar CMO
+  opNombreInput?.addEventListener('change', ()=>{
+    const opId = (opIdInput.value||"").trim();
+    if (opId) autollenarContenedorPorOperacion(Number(opId));
+  });
+
+async function autollenarContenedorPorOperacion(opId){
+  // limpia y bloquea por default
+  clearCMOView();
+
+  const data = await getJSON(docBase + "contenedores_por_operacion?operacion_id=" + encodeURIComponent(opId));
+  if (Array.isArray(data) && data.length >= 1){
+    const it = data[0]; // ← siempre el primero
+    cmoIdInput.value     = String(it.id); // contenedor_maritimo_id
+    cmoNombreInput.value = it.numero_contenedor || it.label || ("CMO " + it.id);
+    cmoNombreInput.setAttribute('readonly','readonly');
+    cmoNombreInput.placeholder = '';
+  } else {
+    // Si por alguna razón no hay, lo dejamos bloqueado y con placeholder
+    clearCMOView();
+  }
+}
+
 
   // -------- Listado --------
   function listarDocumentos(){
-    const opId = (opIdInput.value || "").trim();
+    const opId  = (opIdInput.value || "").trim();
+    const cmoId = (cmoIdInput.value || "").trim();
+
     if (!opId){
       tbody.innerHTML = TD_EMPTY(8);
       if (listaSubidos) listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
@@ -91,7 +184,9 @@
       return;
     }
 
-    const url = docBaseDocumentos + "listar?operacion_id=" + encodeURIComponent(opId);
+    let url = docBase + "listar?operacion_id=" + encodeURIComponent(opId);
+    if (cmoId) url += "&contenedor_maritimo_id=" + encodeURIComponent(cmoId);
+
     const http = new XMLHttpRequest();
     http.open("GET", url, true);
     http.send();
@@ -103,7 +198,7 @@
 
       renderTabla(rows);
       renderSubidos(rows);
-      cargarFaltantes(opId);
+      cargarFaltantes(opId); // faltantes siguen calculados por operación
       if (window.feather) feather.replace();
     };
   }
@@ -181,7 +276,7 @@
   function cargarFaltantes(opId){
     if (!opId) { renderFaltantes([]); return; }
     const http = new XMLHttpRequest();
-    http.open("GET", docBaseDocumentos + "faltantes?operacion_id=" + encodeURIComponent(opId), true);
+    http.open("GET", docBase + "faltantes?operacion_id=" + encodeURIComponent(opId), true);
     http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
@@ -191,34 +286,47 @@
     };
   }
 
-  btnNotificar?.addEventListener("click", function(){
-    const opId = (opIdInput.value || "").trim();
-    if (!opId) { Swal.fire('Aviso','Selecciona una operación','info'); return; }
+btnNotificar?.addEventListener("click", function(){
+  const opId  = (opIdInput.value || "").trim();
+  const cmoId = (cmoIdInput?.value || "").trim(); // ← NUEVO
 
-    Swal.fire({
-      title: 'Enviar correo al cliente',
-      text: 'Se enviará un correo con la lista de documentos faltantes de la operación.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Enviar',
-      cancelButtonText: 'Cancelar'
-    }).then((r)=>{
-      if (!r.isConfirmed) return;
+  if (!opId) { Swal.fire('Aviso','Selecciona una operación','info'); return; }
 
-      const fd = new FormData();
-      fd.append('operacion_id', opId);
+  Swal.fire({
+    title: 'Enviar correo al cliente',
+    text: cmoId ? 'Se enviará la lista de faltantes de ESTE CONTENEDOR.' 
+                : 'Se enviará la lista de faltantes de la OPERACIÓN.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Enviar',
+    cancelButtonText: 'Cancelar'
+  }).then((r)=>{
+    if (!r.isConfirmed) return;
 
-      const http = new XMLHttpRequest();
-      http.open("POST", docBaseDocumentos + "notificarFaltantes", true);
-      http.onreadystatechange = function(){
-        if (this.readyState !== 4) return;
-        let j = {};
-        try { j = JSON.parse(this.responseText) || {}; } catch {}
-        Swal.fire(j.status === 'success' ? 'Enviado' : 'Aviso', j.msg || '(sin mensaje)', j.status || 'info');
-      };
-      http.send(fd);
-    });
+    const fd = new FormData();
+    fd.append('operacion_id', opId);
+    if (cmoId) fd.append('contenedor_maritimo_id', cmoId); // ← para modo por contenedor
+
+    const http = new XMLHttpRequest();
+    http.open("POST", docBase + "notificarFaltantes", true);
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      let j = {};
+      try { j = JSON.parse(this.responseText) || {}; } catch {}
+
+      // j.status: success | info | warning | error | need_email
+      // j.msg:    mensaje legible
+      // j.data:   info adicional (scope, operacion, contenedor, count)
+      Swal.fire(
+        j.status === 'success' ? 'Enviado' : (j.status === 'info' ? 'Aviso' : 'Error'),
+        (j.msg || '(sin mensaje)') + (j?.data?.count!=null ? ` (faltantes: ${j.data.count})` : ''),
+        j.status === 'success' ? 'success' : (j.status === 'info' ? 'info' : 'error')
+      );
+    };
+    http.send(fd);
   });
+});
+
 
   // Exponer refresco para otras acciones (eliminar, subir)
   window.listarDocumentosDocumentos = listarDocumentos;
@@ -278,7 +386,7 @@
       if (!result.isConfirmed) return;
 
       const http = new XMLHttpRequest();
-      http.open("POST", docBaseDocumentos + "eliminar/" + encodeURIComponent(id), true);
+      http.open("POST", docBase + "eliminar/" + encodeURIComponent(id), true);
       http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
       http.send();
 
@@ -298,38 +406,124 @@
     });
   };
 
-  // Si ya hay operación seteada al cargar, listar
-  if ((opIdInput.value || "").trim()) listarDocumentos();
+  // Si ya hay operación seteada al cargar, preparar contenedor y listar
+  (async ()=>{
+    const opIdBoot = (opIdInput.value || "").trim();
+    if (opIdBoot){
+      await autollenarContenedorPorOperacion(Number(opIdBoot));
+      listarDocumentos();
+    }
+  })();
+
+function clearCMOView(){
+  if (!cmoIdInput || !cmoNombreInput) return;
+  cmoIdInput.value = '';
+  cmoNombreInput.value = '';
+  cmoNombreInput.setAttribute('readonly','readonly');
+  cmoNombreInput.placeholder = 'Selecciona una operación primero';
+  clear(cmoSugBox); show(cmoSugBox,false);
+}
+
+function unlockCMOView(){
+  if (!cmoNombreInput) return;
+  cmoNombreInput.removeAttribute('readonly');
+  cmoNombreInput.placeholder = 'Escribe para buscar el contenedor';
+}
+
+
 })();
 
-// ================== MODAL: Agregar Documento (solo operación) ==================
+// ================== MODAL: Agregar Documento (operación + contenedor) ==================
 (function(){
   "use strict";
-  const docBaseDocumentos = base_url + "operaciones_maritimas_documentos/";
+  const docBase = base_url + "operaciones_maritimas_documentos/";
   const modalEl = document.getElementById("modalAgregarDocumentoDocumentos");
   const form    = document.getElementById("formAgregarDocumentoDocumentos");
 
+  // Operación (modal)
   const mdOpId     = document.getElementById("modalDocumentosOpId");
   const mdOpNombre = document.getElementById("modalDocumentosOpNombre");
   const mdOpSug    = document.getElementById("modalDocumentosOpSugerencias");
   const mdOpMeta   = document.getElementById("modalDocumentosOpMeta");
+
+  // Contenedor (modal)
+  const mdCmoId     = document.getElementById("modalDocumentosCMOId");
+  const mdCmoNombre = document.getElementById("modalDocumentosCMONombre");
+  const mdCmoSug    = document.getElementById("modalDocumentosCMOSugerencias");
+  const mdCmoMeta   = document.getElementById("modalDocumentosCMOMeta");
+
+  // Tipos
   const selTipo    = document.getElementById("tipo_documentoDocumentos");
 
+  // Operación desde vista (para prefill)
   const vwOpId     = document.getElementById("documentosFiltroOpId");
   const vwOpNombre = document.getElementById("documentosFiltroOpNombre");
+
+  // Contenedor desde vista (para prefill)
+  const vwCmoId     = document.getElementById("documentosFiltroCMOId");
+  const vwCmoNombre = document.getElementById("documentosFiltroCMONombre");
 
   const clear = el => { if(el) el.innerHTML=""; };
   const show  = (el, v)=> { if(el) el.style.display = v ? "block" : "none"; };
   const safe  = v => (v==null ? "" : String(v));
 
-  // Al abrir, prellenar operación desde la vista y cargar tipos
-  modalEl?.addEventListener("show.bs.modal", ()=>{
-    mdOpId.value     = safe(vwOpId?.value);
-    mdOpNombre.value = safe(vwOpNombre?.value);
-    mdOpMeta.textContent = mdOpNombre.value ? `Operación ${mdOpNombre.value}` : "";
+  function getJSON(url){
+    return new Promise((resolve)=>{
+      const x = new XMLHttpRequest();
+      x.open("GET", url, true);
+      x.onload = ()=> { try { resolve(JSON.parse(x.responseText||'[]')); } catch { resolve([]); } };
+      x.onerror = ()=> resolve([]);
+      x.send();
+    });
+  }
 
-    cargarTipos(); // tipos válidos para operación
-  });
+  // Al abrir, prellenar operación/CMO desde la vista y cargar tipos
+modalEl?.addEventListener("show.bs.modal", async ()=>{
+  // Prefill Operación desde la vista
+  mdOpId.value     = safe(vwOpId?.value);
+  mdOpNombre.value = safe(vwOpNombre?.value);
+  mdOpMeta.textContent = mdOpNombre.value ? `Operación ${mdOpNombre.value}` : "";
+
+  // Requisito: solo elegir operación; el contenedor se autollenará y quedará readonly
+  if (mdOpId.value){
+    await autoFillCMOForModal(mdOpId.value); // ← AQUÍ
+  } else {
+    // Si no hay operación aún, mostrar instrucción
+    mdCmoId.value = '';
+    mdCmoNombre.value = '';
+    mdCmoNombre.setAttribute('readonly','readonly');
+    if (mdCmoMeta) mdCmoMeta.textContent = 'Selecciona primero la operación.';
+  }
+
+  cargarTipos();
+});
+mdOpNombre?.addEventListener('input', ()=>{
+  const val = (mdOpNombre.value||'').trim();
+  if (val === ''){
+    mdOpId.value = '';
+    mdCmoId.value = '';
+    mdCmoNombre.value = '';
+    mdCmoNombre.setAttribute('readonly','readonly');
+    if (mdCmoMeta) mdCmoMeta.textContent = 'Selecciona primero la operación.';
+    clear(mdCmoSug); show(mdCmoSug,false);
+  }
+});
+modalEl?.addEventListener('hidden.bs.modal', ()=>{
+  // Limpieza integral del modal
+  form?.reset();
+
+  // Limpiar operación/CMO y estados
+  mdOpId.value = '';
+  mdOpNombre.value = '';
+  mdCmoId.value = '';
+  mdCmoNombre.value = '';
+  mdCmoNombre.removeAttribute('readonly');
+  if (mdCmoMeta) mdCmoMeta.textContent = 'Escribe para buscar el contenedor (después de seleccionar operación).';
+
+  clear(mdOpSug);  show(mdOpSug,false);
+  clear(mdCmoSug); show(mdCmoSug,false);
+});
+
 
   // Autocomplete de operación en modal
   mdOpNombre?.addEventListener("keyup", function(){
@@ -338,7 +532,7 @@
     if (term === "") { show(mdOpSug,false); return; }
 
     const http = new XMLHttpRequest();
-    http.open("GET", docBaseDocumentos + "buscarOperaciones?term=" + encodeURIComponent(term), true);
+    http.open("GET", docBase + "buscarOperaciones?term=" + encodeURIComponent(term), true);
     http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
@@ -360,27 +554,60 @@
     };
   });
 
-  function seleccionarOperacionModal(id, label, cliente){
-    mdOpId.value     = String(id);
-    mdOpNombre.value = label;
-    mdOpMeta.textContent = cliente ? `Operación ${label} — ${cliente}` : `Operación ${label}`;
-    clear(mdOpSug); show(mdOpSug,false);
+function seleccionarOperacionModal(id, label, cliente){
+  mdOpId.value     = String(id);
+  mdOpNombre.value = label;
+  mdOpMeta.textContent = cliente ? `Operación ${label} — ${cliente}` : `Operación ${label}`;
+  clear(mdOpSug); show(mdOpSug,false);
+
+  // Al elegir operación en modal, autollenar contenedor y dejar readonly
+  autoFillCMOForModal(id); // ← AQUÍ
+}
+
+
+  // Autocomplete de CMO en modal (limitado por operación elegida)
+  mdCmoNombre?.addEventListener("keyup", async function(){
+    const opId = (mdOpId.value||"").trim();
+    if (!opId){ clear(mdCmoSug); show(mdCmoSug,false); return; }
+    const term = this.value.trim();
+    const url  = docBase + "contenedores_por_operacion?operacion_id=" + encodeURIComponent(opId) +
+                 (term ? "&term=" + encodeURIComponent(term) : "");
+    const data = await getJSON(url);
+
+    clear(mdCmoSug);
+    if (!Array.isArray(data) || data.length === 0){ show(mdCmoSug,false); return; }
+
+    data.slice(0,10).forEach(it=>{
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action";
+      btn.textContent = it.numero_contenedor || it.label || ("CMO " + it.id);
+      btn.onclick = ()=> seleccionarCMOModal(it.id, it.numero_contenedor || it.label || it.id);
+      mdCmoSug.appendChild(btn);
+    });
+    show(mdCmoSug,true);
+  });
+
+  function seleccionarCMOModal(id, nombre){
+    mdCmoId.value     = String(id);
+    mdCmoNombre.value = String(nombre);
+    clear(mdCmoSug); show(mdCmoSug,false);
   }
 
   // Cerrar sugerencias con clic fuera
   document.addEventListener("click", (e)=>{
     if (mdOpSug && !mdOpSug.contains(e.target) && !mdOpNombre.contains(e.target)) show(mdOpSug,false);
+    if (mdCmoSug && !mdCmoSug.contains(e.target) && !mdCmoNombre.contains(e.target)) show(mdCmoSug,false);
   });
 
-  // Cargar tipos de documento para operación
+  // Cargar tipos de documento (operación/contenedor) 
   function cargarTipos(){
     if (!selTipo) return;
     selTipo.disabled = true;
     selTipo.innerHTML = '<option value="">Cargando…</option>';
 
     const http = new XMLHttpRequest();
-    // Endpoint sin F/M: debe responder los tipos válidos a nivel operación
-    http.open('GET', docBaseDocumentos + 'tipos', true);
+    http.open('GET', docBase + 'tipos', true);
     http.send();
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
@@ -403,16 +630,20 @@
     };
   }
 
-  // Enviar formulario (solo operacion_id, tipo_documento_id, archivo)
+  // Enviar formulario (requiere operacion_id, contenedor_maritimo_id, tipo_documento_id, archivo)
   form?.addEventListener("submit", function(e){
     e.preventDefault();
-    if (!mdOpId.value) { Swal.fire('Aviso','Selecciona una operación','info'); return; }
-    if (!selTipo?.value) { Swal.fire('Aviso','Selecciona el tipo de documento','info'); return; }
+    if (!mdOpId.value)      { Swal.fire('Aviso','Selecciona una operación','info'); return; }
+    if (!mdCmoId.value)     { Swal.fire('Aviso','Selecciona el contenedor marítimo','info'); return; }
+    if (!selTipo?.value)    { Swal.fire('Aviso','Selecciona el tipo de documento','info'); return; }
 
     const fd = new FormData(form);
+    // Asegurar que mandamos los campos claves (por si el name no existiera en HTML)
+    fd.set('operacion_id', mdOpId.value);
+    fd.set('contenedor_maritimo_id', mdCmoId.value);
+
     const http = new XMLHttpRequest();
-    http.open("POST", docBaseDocumentos + "registrar", true);
-    http.send(fd);
+    http.open("POST", docBase + "registrar", true);
     http.onreadystatechange = function(){
       if (this.readyState !== 4) return;
       let res = {};
@@ -424,9 +655,40 @@
         const inst = bootstrap.Modal.getInstance(modalEl);
         inst?.hide();
         form.reset();
+
+        // Si en la vista hay una operación/CMO seleccionados, mantenerlos
+        if (vwOpId?.value) mdOpId.value = vwOpId.value;
+        if (vwOpNombre?.value) mdOpNombre.value = vwOpNombre.value;
+        if (vwCmoId?.value) { mdCmoId.value = vwCmoId.value; mdCmoNombre.value = vwCmoNombre?.value || ''; }
+
         if (window.documentosRefrescarListado) window.documentosRefrescarListado();
         if (window.feather) feather.replace();
       }
     };
+    http.send(fd);
   });
+
+  async function autoFillCMOForModal(opId){
+  // limpia
+  mdCmoId.value = '';
+  mdCmoNombre.value = '';
+  mdCmoNombre.setAttribute('readonly','readonly'); // bloqueo adelantado
+  if (mdCmoMeta) mdCmoMeta.textContent = 'Detectando contenedor…';
+
+  const data = await getJSON(docBase + "contenedores_por_operacion?operacion_id=" + encodeURIComponent(opId));
+  if (Array.isArray(data) && data.length >= 1){
+    const it = data[0]; // ← primero
+    mdCmoId.value     = String(it.id);
+    mdCmoNombre.value = it.numero_contenedor || it.label || ("CMO " + it.id);
+    mdCmoNombre.setAttribute('readonly','readonly');
+    if (mdCmoMeta) mdCmoMeta.textContent = 'Contenedor detectado y bloqueado.';
+  } else {
+    // No se encontró contenedor: dejar limpio y readonly
+    mdCmoId.value = '';
+    mdCmoNombre.value = '';
+    mdCmoNombre.setAttribute('readonly','readonly');
+    if (mdCmoMeta) mdCmoMeta.textContent = 'No se encontró contenedor para la operación.';
+  }
+}
+
 })();

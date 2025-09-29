@@ -291,4 +291,24 @@ class Operaciones_maritimas_eventosModel extends Query
         $row = $this->select($sql, [$operacionId]);
         return !empty($row);
     }
+    
+public function getContenedorMaritimoDeOperacion(int $operacionId): ?array
+{
+    if ($operacionId <= 0) return null;
+
+    $sql = "
+        SELECT 
+            cmo.id               AS id,
+            cm.numero_contenedor AS label
+        FROM contenedores_maritimos_operacion cmo
+        JOIN contenedores_maritimos cm 
+          ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        WHERE cmo.operacion_id = ?
+          AND cm.estatus = 1
+        LIMIT 1
+    ";
+    $row = $this->select($sql, [$operacionId]);
+    return $row ?: null;
+}
+
 }

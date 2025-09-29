@@ -1,8 +1,6 @@
-
 // Referencias
 const tablaDetallesLogisticos = document.getElementById("tbodyDetallesLogisticos");
 const fldContenedorTipoEventosLogisticos = document.getElementById("eventoContenedorTipo");
-
 
 const perPageEventosLogisticos    = document.getElementById("detPerPage");
 const paginacionEventosLogisticos = document.getElementById("paginacionDetalles");
@@ -11,10 +9,18 @@ const filtroOpIdEventosLogisticos   = document.getElementById("eventosFiltroOpId
 const filtroContIdEventosLogisticos = document.getElementById("eventosFiltroContenedorId");
 const buscarEventosLogisticos       = document.getElementById("buscarDetalles");
 
+// El contenedor visible del modal: SIEMPRE readonly
+const contTxtModal = document.getElementById("eventoContenedorNombre");
+if (contTxtModal) {
+  contTxtModal.readOnly = true;
+  contTxtModal.placeholder = "Se autollenará al elegir la operación";
+}
+
 let paginaEventosLogisticos = 1; // página actual
 
 listarEventoLogistico();
-  // LISTAR (GET)
+
+// LISTAR (GET)
 function listarEventoLogistico() {
   const perPage = parseInt(perPageEventosLogisticos.value || "10", 10);
   const opId    = filtroOpIdEventosLogisticos.value || "";
@@ -38,11 +44,12 @@ function listarEventoLogistico() {
     try { res = JSON.parse(this.responseText); }
     catch { res = { data: [], total: 0, page: 1, per_page: perPage }; }
 
-    renderTablaEventoLogistico(res.data || []); // tu render actual
+    renderTablaEventoLogistico(res.data || []);
     renderPaginacionEventosLogisticos(res.total || 0, res.page || 1, res.per_page || perPage);
   };
   http.send();
 }
+
 function renderPaginacionEventosLogisticos(total, page, perPage) {
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const start = total === 0 ? 0 : ((page - 1) * perPage + 1);
@@ -83,42 +90,39 @@ function renderPaginacionEventosLogisticos(total, page, perPage) {
   addItemEventosLogisticos("»", Math.min(totalPages, page + 1), page === totalPages, false);
 }
 
-
-  // RENDER
-  function renderTablaEventoLogistico(data) {
-    tablaDetallesLogisticos.innerHTML = "";
-    if (!Array.isArray(data) || data.length === 0) {
-      tablaDetallesLogisticos.innerHTML = "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
-      return;
-    }
-    data.forEach((item) => {
-      const tr = document.createElement("tr");
-      tr.classList.add("text-center");
-      tr.innerHTML = `
-        <td>${item.evento ?? ""}</td>
-        <td>${item.fecha ?? ""}</td>
-        <td>${item.operacion ?? ""}</td> 
-        <td>${item.contenedor ?? ""}</td>
-        <td>${item.comentario ?? ""}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary me-1" onclick="editarEvento(${item.id_evento})">
-            <i data-feather="edit"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger" onclick="eliminarEvento(${item.id_evento})">
-            <i data-feather="x"></i>
-          </button>
-        </td>
-      `;
-      tablaDetallesLogisticos.appendChild(tr);
-    });
-    // refresca íconos feather si los usas dentro de la tabla
-    if (window.feather) feather.replace();
+// RENDER
+function renderTablaEventoLogistico(data) {
+  tablaDetallesLogisticos.innerHTML = "";
+  if (!Array.isArray(data) || data.length === 0) {
+    tablaDetallesLogisticos.innerHTML = "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
+    return;
   }
- 
+  data.forEach((item) => {
+    const tr = document.createElement("tr");
+    tr.classList.add("text-center");
+    tr.innerHTML = `
+      <td>${item.evento ?? ""}</td>
+      <td>${item.fecha ?? ""}</td>
+      <td>${item.operacion ?? ""}</td> 
+      <td>${item.contenedor ?? ""}</td>
+      <td>${item.comentario ?? ""}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary me-1" onclick="editarEvento(${item.id_evento})">
+          <i data-feather="edit"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="eliminarEvento(${item.id_evento})">
+          <i data-feather="x"></i>
+        </button>
+      </td>
+    `;
+    tablaDetallesLogisticos.appendChild(tr);
+  });
+  if (window.feather) feather.replace();
+}
+
 // ===============================
 // Utilidades (sufijo: detallesLogisticos)
 // ===============================
- 
 function renderSugerenciasDetallesLogisticos(listEl, items, onPick) {
   listEl.innerHTML = "";
   if (!Array.isArray(items) || items.length === 0) {
@@ -158,7 +162,6 @@ function xhrGetDetallesLogisticos(url, cb) {
   const hidden  = document.getElementById("eventoOperacionId");
   const list    = document.getElementById("eventoOperacionSugerencias");
   const meta    = document.getElementById("eventoOperacionMeta");
-  const inputContTxt = document.getElementById("eventoContenedorNombre");
 
   if (!input || !list) return;
 
@@ -174,17 +177,37 @@ function xhrGetDetallesLogisticos(url, cb) {
     const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
     xhrGetDetallesLogisticos(url, (rows) => {
       renderSugerenciasDetallesLogisticos(list, rows, (it) => {
-        // setea operación
+        // 1) Seteamos la operación
         input.value  = it.label;
         hidden.value = it.id;
         list.style.display = "none";
         meta && (meta.textContent = it.meta || "");
 
-        // reset contenedor porque depende de operación
+        // 2) Reset y readonly del contenedor visible
         const hiddenCont = document.getElementById("eventoContenedorOperacionId");
-        if (inputContTxt) inputContTxt.value = "";
         if (hiddenCont) hiddenCont.value = "";
+        if (contTxtModal) {
+          contTxtModal.value = "";
+          contTxtModal.readOnly = true; // mantiene readonly
+        }
         if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
+
+        // 3) Traer el contenedor marítimo asociado a la operación y autollenar
+        const urlC = base_url + "operaciones_maritimas_eventos/contenedor_maritimo_de_operacion?operacion_id=" + it.id;
+        xhrGetDetallesLogisticos(urlC, (cont) => {
+          if (cont && cont.id) {
+            if (hiddenCont) hiddenCont.value = cont.id;               // cmo.id
+            if (contTxtModal) contTxtModal.value = cont.label || "";  // número contenedor
+            if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "MARITIMO";
+
+            // Catálogo tipos de evento para marítimo
+            cargarTiposEventoPorContenedorUI("MARITIMO");
+            if (contTxtModal) contTxtModal.readOnly = true;
+          } else {
+            // Si no hay, seguimos readonly por regla de negocio
+            if (contTxtModal) contTxtModal.readOnly = true;
+          }
+        });
       });
     });
   });
@@ -193,50 +216,23 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
   });
 })();
-
 
 // ===============================
 // AUTOCOMPLETE: MODAL -> Contenedor
 // ===============================
 (function setupContenedorModalAutocompleteDetallesLogisticos(){
   const input   = document.getElementById("eventoContenedorNombre");
-  const hiddenF = document.getElementById("eventoContenedorOperacionId"); // id FISICO (co.id) o MARITIMO (cmo.id)
+  const hiddenF = document.getElementById("eventoContenedorOperacionId");
   const list    = document.getElementById("eventoContenedorSugerencias");
   const opHidden= document.getElementById("eventoOperacionId");
 
   if (!input || !list || !opHidden) return;
 
-  let lastTermDetallesLogisticos = "";
-  input.addEventListener("input", () => {
-    if (input.disabled) return;
-    const term = input.value.trim();
-    hiddenF.value = "";
-    const opId = parseInt(opHidden.value || "0", 10);
-    if (!opId) { list.style.display = "none"; return; }
-    if (term === lastTermDetallesLogisticos) return;
-    lastTermDetallesLogisticos = term;
+  // Como es readonly, no montamos el autocomplete.
+  if (input.readOnly) return;
 
-    const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
-    xhrGetDetallesLogisticos(url, (rows) => {
-      renderSugerenciasDetallesLogisticos(list, rows, (it) => {
-        input.value  = it.label;
-        hiddenF.value = it.id; // co.id_contenedor o cmo.id
-        if (fldContenedorTipoEventosLogisticos) {
-          const tipoUI = (it.tipo || "").toUpperCase();
-          fldContenedorTipoEventosLogisticos.value = tipoUI;
-          // <<< NUEVO: carga catálogo correcto
-          cargarTiposEventoPorContenedorUI(tipoUI);
-        }
-        list.style.display = "none";
-      });
-    });
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
-  });
+  // (Si en el futuro decides habilitarlo, aquí quedaría el autocomplete)
 })();
-
 
 // ======================================
 // AUTOCOMPLETE: FILTROS SUPERIORES -> Operación
@@ -256,7 +252,6 @@ function xhrGetDetallesLogisticos(url, cb) {
   input.addEventListener("input", () => {
     const term = input.value.trim();
 
-    // <-- NUEVO: si se borra la operación, limpiar y recargar
     if (term.length === 0) {
       hidden.value = "";
       if (meta)    meta.textContent = "";
@@ -269,7 +264,7 @@ function xhrGetDetallesLogisticos(url, cb) {
       return;
     }
 
-    hidden.value = ""; // reset seleccionado
+    hidden.value = "";
     if (term === lastTermDetallesLogisticos) return;
     lastTermDetallesLogisticos = term;
 
@@ -298,8 +293,6 @@ function xhrGetDetallesLogisticos(url, cb) {
   });
 })();
 
-
-
 // ======================================
 // AUTOCOMPLETE: FILTROS SUPERIORES -> Contenedor
 // ======================================
@@ -315,7 +308,6 @@ function xhrGetDetallesLogisticos(url, cb) {
   input.addEventListener("input", () => {
     const term = input.value.trim();
 
-    // <-- NUEVO: si se borra el contenedor, limpiar y recargar
     if (term.length === 0) {
       hidden.value = "";
       list.style.display = "none";
@@ -334,10 +326,9 @@ function xhrGetDetallesLogisticos(url, cb) {
     xhrGetDetallesLogisticos(url, (rows) => {
       renderSugerenciasDetallesLogisticos(list, rows, (it) => {
         input.value  = it.label;
-        hidden.value = it.id; // físico o marítimo
+        hidden.value = it.id; // cmo.id
         list.style.display = "none";
 
-        // aplicar filtro
         paginaEventosLogisticos = 1;
         listarEventoLogistico();
       });
@@ -348,8 +339,6 @@ function xhrGetDetallesLogisticos(url, cb) {
     if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
   });
 })();
-
- 
 
 const formDetalles = document.getElementById("formEventosLogisticos");
 const modalDetalles = document.getElementById("modalDetallesLogisticos");
@@ -362,7 +351,7 @@ const fldContenedorIdDetallesLogisticos= document.getElementById("eventoContened
 const fldTipoEventoIdDetallesLogisticos= document.getElementById("tipoEventoId");
 const fldFechaDetallesLogisticos       = document.getElementById("fechaEventoLogistico");
 const fldComentarioDetallesLogisticos  = document.getElementById("comentarioEventoLogistico");
- 
+
 formDetalles.addEventListener("submit", function (e) {
   e.preventDefault();
 
@@ -373,24 +362,23 @@ formDetalles.addEventListener("submit", function (e) {
   const fecha       = fldFechaDetallesLogisticos.value.trim();
   const comentario  = fldComentarioDetallesLogisticos.value.trim();
 
-  // ===== Validaciones =====
   if (!operacionId || !tipoEventoId || !fecha) {
     Swal.fire("Campos requeridos", "Debes seleccionar operación, tipo de evento y fecha", "warning");
     return;
   }
 
-  // ===== Construir FormData =====
   const fd = new FormData();
   if (idEvento !== "") fd.append("id_evento", idEvento);
   fd.append("operacion_id", operacionId);
- const contTipo = (fldContenedorTipoEventosLogisticos && fldContenedorTipoEventosLogisticos.value) || "";
-if (contenedorId) {
-  if (contTipo === "MARITIMO") {
-    fd.append("cont_maritimo_operacion_id", contenedorId);
-  } else {
-    fd.append("contenedor_operacion_id", contenedorId);
+
+  const contTipo = (fldContenedorTipoEventosLogisticos && fldContenedorTipoEventosLogisticos.value) || "";
+  if (contenedorId) {
+    if (contTipo === "MARITIMO") {
+      fd.append("cont_maritimo_operacion_id", contenedorId);
+    } else {
+      fd.append("contenedor_operacion_id", contenedorId);
+    }
   }
-}
   fd.append("tipo_evento_id", tipoEventoId);
   fd.append("fecha", fecha);
   fd.append("comentario", comentario);
@@ -399,7 +387,6 @@ if (contenedorId) {
     ? "operaciones_maritimas_eventos/registrar" 
     : "operaciones_maritimas_eventos/actualizar");
 
-  // ===== AJAX =====
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
   http.send(fd);
@@ -412,10 +399,8 @@ if (contenedorId) {
       }
 
       let res;
-      try {
-        res = JSON.parse(this.responseText);
-      } catch (e) {
-        console.log(this.responseText);
+      try { res = JSON.parse(this.responseText); }
+      catch {
         console.error("JSON inválido:", this.responseText);
         Swal.fire("Error", "Respuesta no válida del servidor", "error");
         return;
@@ -432,9 +417,8 @@ if (contenedorId) {
         fldIdEventoDetallesLogisticos.value = "";
         if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
 
-        // Re-habilitar por si veníamos de editar
+        // Re-habilitar operación si veníamos de editar (contenedor se queda readonly)
         document.getElementById("eventoOperacionNombre").disabled = false;
-        document.getElementById("eventoContenedorNombre").disabled = false;
 
         bootstrap.Modal.getInstance(modalDetalles).hide();
         listarEventoLogistico();
@@ -451,29 +435,29 @@ if (contenedorId) {
 btnAgregarDetalles.addEventListener("click", () => {
   formDetalles.reset();
   if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
-
   fldIdEventoDetallesLogisticos.value = "";
 
-  // Re-habilitar campos bloqueados
+  // Operación editable
   document.getElementById("eventoOperacionNombre").disabled = false;
-  document.getElementById("eventoContenedorNombre").disabled = false;
 
-  // Asegurar que los hidden queden vacíos (nuevo registro)
+  // Contenedor: SIEMPRE readonly y limpio (lo llenará la operación)
+  if (contTxtModal) { 
+    contTxtModal.disabled = false; // se ve normal
+    contTxtModal.readOnly = true;
+    contTxtModal.value = "";
+  }
   fldOperacionIdDetallesLogisticos.value = "";
   fldContenedorIdDetallesLogisticos.value = "";
-  if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
-
 
   document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
   const btnSubmit = formDetalles.querySelector('button[type="submit"]');
   btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
-   setTiposEventoLoading(false); // pinta "Selecciona..."
-  fillTiposEventoOptions([]);   // vacía
+
+  setTiposEventoLoading(false);
+  fillTiposEventoOptions([]);
   selectTipoEvento.disabled = true;
 });
-
-
 
 // ===== Editar =====
 function editarEvento(id) {
@@ -500,48 +484,42 @@ function editarEvento(id) {
     }
 
     // ==== Rellenar campos ====
-    // IDs ocultos
     fldIdEventoDetallesLogisticos.value    = data.id_evento || ""; 
     fldOperacionIdDetallesLogisticos.value = data.operacion_id || "";
 
     // Limpia contenedor (hidden + visible + tipo)
-    fldContenedorIdDetallesLogisticos.value = "";                        // <-- importante
-    document.getElementById("eventoContenedorNombre").value = "";
+    fldContenedorIdDetallesLogisticos.value = "";
+    if (contTxtModal) contTxtModal.value = "";
     if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
 
-    // FÍSICO
-    if (data.contenedor_operacion_id) {
-      fldContenedorIdDetallesLogisticos.value = data.contenedor_operacion_id;
-      document.getElementById("eventoContenedorNombre").value = data.contenedor_label || "";
-      if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "FISICO";
-    }
-    // MARÍTIMO
-    else if (data.cont_maritimo_operacion_id) {
+    // MARÍTIMO (tu módulo es marítimo)
+    if (data.cont_maritimo_operacion_id) {
       fldContenedorIdDetallesLogisticos.value = data.cont_maritimo_operacion_id;
-      document.getElementById("eventoContenedorNombre").value = data.contenedor_label || "";
+      if (contTxtModal) contTxtModal.value = data.contenedor_label || "";
       if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "MARITIMO";
     }
 
-    // Inputs visibles
     document.getElementById("eventoOperacionNombre").value = data.operacion_label || "";
     fldTipoEventoIdDetallesLogisticos.value = data.tipo_evento_id || "";
     fldFechaDetallesLogisticos.value        = (data.fecha || "").substring(0, 10);
     fldComentarioDetallesLogisticos.value   = data.comentario || "";
 
-    // Bloquear campos dependientes para edición
+    // Bloquear operación; contenedor visible readonly (no editable)
     document.getElementById("eventoOperacionNombre").disabled = true;
-    document.getElementById("eventoContenedorNombre").disabled = true;
+    if (contTxtModal) { 
+      contTxtModal.disabled = false;
+      contTxtModal.readOnly = true;
+    }
 
-    // UI modal en modo actualizar
+    // Cargar catálogo acorde
+    cargarTiposEventoPorContenedorUI("MARITIMO", data.tipo_evento_id);
+
+    // UI modal
     document.getElementById("modalTituloDetalles").textContent = "Actualizar Evento";
     const btnSubmit = formDetalles.querySelector('button[type="submit"]');
     btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
     if (window.feather) feather.replace();
-    let tipoUI = "";
-    if (data.contenedor_operacion_id) tipoUI = "FISICO";
-    else if (data.cont_maritimo_operacion_id) tipoUI = "MARITIMO";
-    cargarTiposEventoPorContenedorUI(tipoUI, data.tipo_evento_id);
-    // Mostrar modal
+
     new bootstrap.Modal(modalDetalles).show();
   };
 }
@@ -582,14 +560,12 @@ function eliminarEvento(id) {
       );
 
       if (res.status === "success") {
-        listarEventoLogistico(); // refresca tabla
+        listarEventoLogistico();
       }
     };
     http.send(fdEventosLogisticosData);
   });
 }
-
-
 
 // per-page
 perPageEventosLogisticos.addEventListener("change", function () {
@@ -606,7 +582,7 @@ buscarEventosLogisticos.addEventListener("input", function () {
     listarEventoLogistico();
   }, 300);
 });
- 
+
 // ===== Tipos de evento (catálogo dinámico) =====
 const selectTipoEvento = document.getElementById("tipoEventoId");
 
@@ -636,7 +612,6 @@ function fillTiposEventoOptions(lista, preselectId = null) {
 /**
  * MARITIMO -> 1 (marítima)
  * FISICO/FERRO -> 2 (terrestre)
- * Ajusta si tus IDs reales difieren.
  */
 function mapTipoUIToTipoOperacionId(tipoUI) {
   const t = (tipoUI || '').toUpperCase();
@@ -653,7 +628,6 @@ function cargarTiposEventoPorContenedorUI(tipoUI, preselectId = null) {
   http.onreadystatechange = function(){
     if (this.readyState !== 4) return;
     if (this.status !== 200) { fillTiposEventoOptions([]); return; }
-    console.log(this.responseText);
     let data;
     try { data = JSON.parse(this.responseText); } catch { data = []; }
     fillTiposEventoOptions(Array.isArray(data) ? data : [], preselectId);
@@ -661,28 +635,27 @@ function cargarTiposEventoPorContenedorUI(tipoUI, preselectId = null) {
   http.send();
 }
 
- // Excel
-  document.getElementById('btnExportarExcelEventosLogisticos')?.addEventListener('click', () => {
-    ExportarTablas.exportar({
-      ref: 'tablaDetallesLogisticos',       // "#tablaEventos" o el elemento también funciona
-      formato: 'xlsx',
-      nombre: 'DetallesLogisticos.xlsx',
-      columnasOcultas: [5],      // oculta columna ID
-      soloVisibles: true,
-      sheetName: 'Eventos Logisticos'
-    });
+// Exportaciones
+document.getElementById('btnExportarExcelEventosLogisticos')?.addEventListener('click', () => {
+  ExportarTablas.exportar({
+    ref: 'tablaDetallesLogisticos',
+    formato: 'xlsx',
+    nombre: 'DetallesLogisticos.xlsx',
+    columnasOcultas: [5],
+    soloVisibles: true,
+    sheetName: 'Eventos Logisticos'
   });
+});
 
-  // PDF
-  document.getElementById('btnExportarPDFEventosLogisticos')?.addEventListener('click', () => {
-    ExportarTablas.exportar({
-      ref: '#tablaDetallesLogisticos',
-      formato: 'pdf',
-      nombre: 'EventosLogisticos.pdf',
-      titulo: 'Eventos Logisticos',
-      orientacion: 'landscape',  // o 'portrait'
-      formatoPagina: 'letter',   // o 'a4'
-      columnasOcultas: [5],
-      soloVisibles: true
-    });
+document.getElementById('btnExportarPDFEventosLogisticos')?.addEventListener('click', () => {
+  ExportarTablas.exportar({
+    ref: '#tablaDetallesLogisticos',
+    formato: 'pdf',
+    nombre: 'EventosLogisticos.pdf',
+    titulo: 'Eventos Logisticos',
+    orientacion: 'landscape',
+    formatoPagina: 'letter',
+    columnasOcultas: [5],
+    soloVisibles: true
   });
+});

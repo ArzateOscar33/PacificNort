@@ -313,6 +313,18 @@ class Operaciones_maritimas_eventos extends Controller
         );
         die();
     }
+    /** GET ?operacion_id=123 -> {id,label} del contenedor marítimo */
+public function contenedor_maritimo_de_operacion()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+    $opId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
+    if ($opId <= 0) { echo json_encode(null); die(); }
+
+    $row = $this->model->getContenedorMaritimoDeOperacion($opId);
+    echo json_encode($row ?: null, JSON_UNESCAPED_UNICODE);
+    die();
+}
+
 
     /* ==== Helper para responder JSON consistente ==== */
     private function json($data, $code = 200)
