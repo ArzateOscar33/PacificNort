@@ -270,7 +270,7 @@ window.setCarritoFerroOP = function(items){
         <td>${it.numero_operacion || ''}</td>
         <td>${it.numero_contenedor || ''}</td>
         <td class="text-end">${it.bultos_asignados}</td>
-        <td>${it.comentario || ''}</td>
+        
         <td class="text-center">
           <button type="button" class="btn btn-sm btn-outline-danger" data-idx="${idx}">
             <i data-feather="trash-2"></i>

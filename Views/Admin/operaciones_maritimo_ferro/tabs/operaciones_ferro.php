@@ -1,7 +1,7 @@
 <div class="container py-4 col-md-12">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4><i data-feather="box" class="me-2"></i>Operaciones Ferroviarias</h4>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalFerroOP">
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalFerroOP">
       <i data-feather="plus"></i>Nueva Operación Ferroviaria
     </button>
   </div>
@@ -80,7 +80,7 @@
   <div class="modal fade" id="modalFerroOP" tabindex="-1" aria-labelledby="modalFerroOPLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
+        <div class="modal-header bg-success text-white">
           <h5 class="modal-title" id="modalFerroOPLabel">
             <i data-feather="plus-circle" class="me-1"></i> Nueva Operación Ferroviaria
           </h5>
@@ -231,8 +231,7 @@
                       <tr>
                         <th>Operación Marítima</th>
                         <th>Contenedor Marítimo</th>
-                        <th>Bultos Asignados</th>
-                        <th>Comentarios</th>
+                        <th>Bultos Asignados</th> 
                         <th>Acciones</th>
                       </tr>
                     </thead>
@@ -284,7 +283,7 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i data-feather="x"></i> Cancelar
           </button>
-          <button type="submit" form="formFerroOP" class="btn btn-primary">
+          <button type="submit" form="formFerroOP" class="btn btn-success">
             <i data-feather="save"></i> Crear Operación Ferroviaria
           </button>
         </div>

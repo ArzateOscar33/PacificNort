@@ -104,9 +104,13 @@ function validarMinimoMF(){
 
 // ===== Prefill folio preliminar por subtipo (usa preview_folio del controlador MF) =====
 function prefillNumeroPorSubtipoMF(){
-  const subtipoId = (selSubtipoMF?.value || '').trim();
+  // ⛔ No tocar folio en edición
+  const isEdit =
+    (document.getElementById('formOperacionMaritimoFerro')?.dataset?.mode === 'edit') ||
+    ((document.getElementById('id_operacion_mf')?.value || '').trim() !== '');
+  if (isEdit) return;
 
-  // <-- si no hay subtipo, NO pegues al backend y limpia el folio
+  const subtipoId = (selSubtipoMF?.value || '').trim();
   if (!subtipoId){
     if (inpNumeroOp_MF){
       inpNumeroOp_MF.value = '';
@@ -122,13 +126,10 @@ function prefillNumeroPorSubtipoMF(){
   x.onreadystatechange = function(){
     if (x.readyState !== 4) return;
     if (x.status !== 200) return;
-
     let d = {};
     try { d = JSON.parse(x.responseText||'{}'); } catch(e){}
-
     const ok = d && d.status === 'success';
     const payload = ok ? (d.data ?? d) : null;
-
     if (ok && payload?.codigo && inpNumeroOp_MF){
       const code = String(payload.codigo);
       inpNumeroOp_MF.value = code;
@@ -138,6 +139,7 @@ function prefillNumeroPorSubtipoMF(){
   };
   x.send();
 }
+
 
 
 
@@ -278,9 +280,14 @@ selSubtipoMF?.addEventListener('change', ()=>{
 
 // Al mostrar el modal MF: valida estado del botón
 modalElMF?.addEventListener('shown.bs.modal', ()=>{
-     if (selSubtipoMF?.value) prefillNumeroPorSubtipoMF();
+  const isEdit =
+    (formOpMF?.dataset?.mode === 'edit') ||
+    ((document.getElementById('id_operacion_mf')?.value || '').trim() !== '');
+  if (!isEdit && selSubtipoMF?.value) prefillNumeroPorSubtipoMF();
+
   if (typeof validarCamposObligatorios === 'function') {
     if (validarCamposObligatorios()) btnSaveMF?.removeAttribute('disabled');
     else btnSaveMF?.setAttribute('disabled','disabled');
   }
 });
+
