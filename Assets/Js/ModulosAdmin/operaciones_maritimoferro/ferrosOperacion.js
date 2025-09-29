@@ -290,41 +290,41 @@
     if (badgeTotB) { badgeTotB.textContent = String(totBultos); badgeTotB.style.display = totBultos>0 ? '' : 'none'; badgeTotB.className = 'badge ' + (totBultos>0 ? 'bg-success text-white' : 'bg-secondary text-white'); }
     if (badgeTotM) { badgeTotM.textContent = String(totMar);    badgeTotM.style.display = totMar>0 ? '' : 'none';    badgeTotM.className = 'badge ' + (totMar>0 ? 'bg-success text-white' : 'bg-secondary text-white'); }
   }
-
+ 
   // Botón confirmar del selector (agrega línea al carrito)
-  const btnConfirmar = document.getElementById('btnConfirmarMaritimoFerroOP');
-  if (btnConfirmar){
-    btnConfirmar.addEventListener('click', function(){
-          console.log('=== CONFIRMAR CLICKED ===');
-    console.log('Antes - carrito.length:', carrito.length);
-      if (opMarInp?.dataset.lastPick !== '1') return toast('Busca y elige una operación de la lista.', false);
+// 1) Evitar doble binding del botón confirmar
+const btnConfirmar = document.getElementById('btnConfirmarMaritimoFerroOP');
+if (btnConfirmar && !btnConfirmar.dataset.bound) {
+  btnConfirmar.dataset.bound = '1';
+  btnConfirmar.addEventListener('click', function(){
+    if (opMarInp?.dataset.lastPick !== '1') return toast('Busca y elige una operación de la lista.', false);
 
-      const cmoId  = Number(cmoIdHid?.value || 0);
-      const asign  = parseInt((bultosAsignadosFerroOP?.value || '').trim(), 10);
-      const rest   = Number(restInp?.value || 0);
-      const opNumero = opMarInp?.value || '';
-      const opId     = Number(opMarIdHid?.value || 0);
-      const contNm   = contNameInp?.value || '';
-      const coment   = (comentarioLineaInp?.value || '').trim();
-      const cliente  = (document.getElementById('clienteNombreMaritimoFerroOP')?.value || '');
+    const cmoId   = Number(cmoIdHid?.value || 0);
+    const rest    = Number(restInp?.value || 0);
+    const rawAsig = (bultosAsignadosFerroOP?.value ?? '').toString();
+    const asign   = Math.trunc(Number(rawAsig.replace(/[^\d.-]/g, '')));
 
-      if (!cmoId || !opId) return toast('Selecciona una operación/CMO válido.', false);
-      if (!Number.isFinite(asign) || asign <= 0) return toast('Bultos a asignar debe ser > 0.', false);
-      console.log('Asign:', asign, 'Rest:', rest);
-      if (asign > rest) return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+    if (!(asign > 0)) return toast('Bultos a asignar debe ser > 0.', false);
+    if (asign > rest) return toast(`No hay saldo suficiente. Disponible: ${rest}.`, false);
+    if (!cmoId)       return toast('Selecciona una operación/CMO válido.', false);
 
-      const ix = carrito.findIndex(x => Number(x.cmo_id) === cmoId);
-      if (ix >= 0){ carrito[ix].bultos_asignados = Number(carrito[ix].bultos_asignados) + asign; }
-      else {
-        carrito.push({ cmo_id: cmoId, bultos_asignados: asign, comentario: coment || null, numero_operacion: opNumero, operacion_id: opId, numero_contenedor: contNm, cliente });
-      }
-      renderCarrito();
-      actualizarTotales();
-      bultosAsignadosFerroOP.value = '';
-    });
-        console.log('Después - carrito.length:', carrito.length);
-    console.log('Carrito actual:', carrito);
-  }
+    // 2) DEFINIR variables usadas en el push
+    const coment   = (comentarioLineaInp?.value || '').trim() || null;
+    const opNumero = opMarInp?.value || '';
+    const opId     = Number(opMarIdHid?.value || 0);
+    const contNm   = contNameInp?.value || '';
+    const cliente  = document.getElementById('clienteNombreMaritimoFerroOP')?.value || '';
+
+    const ix = carrito.findIndex(x => Number(x.cmo_id) === cmoId);
+    if (ix >= 0) carrito[ix].bultos_asignados = Number(carrito[ix].bultos_asignados) + asign;
+    else carrito.push({ cmo_id: cmoId, bultos_asignados: asign, comentario: coment, numero_operacion: opNumero, operacion_id: opId, numero_contenedor: contNm, cliente });
+
+    renderCarrito();
+    actualizarTotales();
+    bultosAsignadosFerroOP.value = '';
+  });
+}
+
 
   function setBadgeSaldo(val){
     if (!badgeSaldoFerroOP) return;
