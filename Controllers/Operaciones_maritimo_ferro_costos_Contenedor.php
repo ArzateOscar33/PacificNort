@@ -1,6 +1,4 @@
 <?php
-require_once "Models/OperacionesLogModel.php";
-
 class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
 {
     /** @var OperacionesLogModel */
@@ -10,21 +8,25 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
     {
         parent::__construct();
         if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+        require_once "Models/OperacionesLogModel.php";
         $this->opLog = new OperacionesLogModel();
     }
 
     /* ===== Helpers de auditoría ===== */
-    private function logOp(int $operacionId, string $accion, string $descripcion): void
+    private function logOp(int $operacionFerroId, string $accion, string $descripcion): void
     {
-        if ($operacionId <= 0) return;
+        if ($operacionFerroId <= 0) return;
         try {
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
-            $id = $this->opLog->crear($operacionId, $usuarioId, $accion, $descripcion);
-            if (!$id) { error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}"); }
+            // Si tu OperacionesLogModel registra por operación marítima,
+            // puedes crear un método alterno para ferro o guardar el ID “tal cual”.
+            $id = $this->opLog->crear($operacionFerroId, $usuarioId, $accion, $descripcion);
+            if (!$id) { error_log("operaciones_log: insert falló ({$accion}) opFerro={$operacionFerroId}"); }
         } catch (\Throwable $e) {
             error_log("operaciones_log error: ".$e->getMessage());
         }
     }
+
     private function makeDesc(string $base, array $info = []): string
     {
         if (empty($info)) return $base;
@@ -33,315 +35,258 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
         return $base.' ('.implode(', ', $kv).')';
     }
 
+    /**
+     * GET /Operaciones_ferroviarias_costos_operacion/listarPaginado
+     * Query:
+     *  - page, perPage, buscar, moneda(PESOS|DLLS|''), tipo, operacion_ferro_id, solo_activos(1|0)
+     */
     public function listarPaginado()
     {
         header('Content-Type: application/json; charset=UTF-8');
 
-        $page    = (int)($_GET['page']    ?? 1);
-        $perPage = (int)($_GET['perPage'] ?? 10);
-        $buscar  = trim($_GET['buscar']   ?? '');
-        $moneda  = trim($_GET['moneda']   ?? '');            // 'PESOS' | 'DLLS' | ''
-        $tipoId  = (int)($_GET['tipo']    ?? 0);
-        $naturaleza = isset($_GET['naturaleza']) ? strtoupper(trim($_GET['naturaleza'])) : ''; 
+        $page        = (int)($_GET['page'] ?? 1);
+        $perPage     = (int)($_GET['perPage'] ?? 10);
+        $buscar      = trim((string)($_GET['buscar'] ?? ''));
+        $monedaRaw   = trim((string)($_GET['moneda'] ?? ''));
+        $tipoId      = (int)($_GET['tipo'] ?? 0);
+        $operacionId = (int)($_GET['operacion_ferro_id'] ?? $_GET['operacion_id'] ?? 0);
+        $soloActivos = isset($_GET['solo_activos']) ? ((int)$_GET['solo_activos'] === 1) : true;
+
+        $m = strtoupper($monedaRaw);
+        if ($m !== 'PESOS' && $m !== 'DLLS') { $m = ''; }
 
         $filtros = [
+            'operacion_ferro_id' => $operacionId,
             'buscar'             => $buscar,
-            'moneda'             => $moneda,
+            'moneda'             => $m,
             'tipo_movimiento_id' => $tipoId,
-            'naturaleza'         => in_array($naturaleza, ['GASTO','ABONO'], true) ? $naturaleza : '',
+            'solo_activos'       => $soloActivos,
         ];
 
         try {
-            $total = $this->model->contarCostos($filtros);
-            $rows  = $this->model->listarCostosPaginado($page, $perPage, $filtros);
+            $abonosDetalle = $this->model->abonosCombinadosDetallado($filtros);
+            $totales       = $this->model->totalesCostosCombinados($filtros);
+            $totalesDet    = $this->model->totalesCostosCombinadosDetallado($filtros);
+            $total         = $this->model->contarCostosCombinados($filtros);
 
             $totalPages = (int)ceil($total / max(1, $perPage));
+            if ($totalPages > 0 && $page > $totalPages) { $page = $totalPages; }
+            if ($page < 1) $page = 1;
+
+            $rows = $this->model->listarCostosCombinadosPaginado($page, $perPage, $filtros);
+
             echo json_encode([
-                'status' => 'success',
-                'meta' => [
+                'status'  => 'success',
+                'meta'    => [
                     'page'       => $page,
                     'perPage'    => $perPage,
-                    'total'      => $total,
+                    'total'      => (int)$total,
                     'totalPages' => $totalPages
                 ],
-                'data' => $rows
-            ]);
+                'totales' => is_array($totales) ? $totales : [
+                    'total_operacion'           => 0,
+                    'total_contenedores'        => 0,
+                    'total_general'             => 0,
+                    'total_abonos_operacion'    => 0,
+                    'total_abonos_contenedores' => 0,
+                ],
+                'totales_detalle' => is_array($totalesDet) ? $totalesDet : [
+                    'operacion'    => ['PESOS' => 0.0, 'DLLS' => 0.0],
+                    'contenedores' => ['PESOS' => 0.0, 'DLLS' => 0.0],
+                ],
+                'abonos_detalle' => is_array($abonosDetalle) ? $abonosDetalle : [
+                    'operacion'    => ['PESOS' => 0.0, 'DLLS' => 0.0],
+                    'contenedores' => ['PESOS' => 0.0, 'DLLS' => 0.0],
+                ],
+                'data'    => is_array($rows) ? $rows : []
+            ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode([
                 'status'  => 'error',
-                'message' => 'Error al listar costos: ' . $e->getMessage()
+                'message' => 'Error al listar costos (ferro): ' . $e->getMessage()
             ]);
         }
     }
 
-public function catalogoTiposMovimiento()
-{
-    header('Content-Type: application/json; charset=UTF-8');
-    $tipo        = isset($_GET['tipo']) ? strtoupper(trim($_GET['tipo'])) : '';
-    $soloGastos  = isset($_GET['solo_gastos']) ? (int)$_GET['solo_gastos'] : 0; // compat.
-    $categoriaId = isset($_GET['categoria_id']) ? (int)$_GET['categoria_id'] : 0;
-    $categoria   = isset($_GET['categoria']) ? trim($_GET['categoria']) : '';
-
-    try {
-        if ($categoriaId <= 0 && $categoria !== '' && method_exists($this->model, 'getTipoOperacionIdPorNombre')) {
-            $categoriaId = (int)($this->model->getTipoOperacionIdPorNombre($categoria) ?? 0);
-        }
-
-        // compat: solo_gastos=1 => tipo=GASTO
-        if ($soloGastos === 1 && $tipo === '') $tipo = 'GASTO';
-        if (!in_array($tipo, ['GASTO','ABONO',''], true)) $tipo = '';
-
-        $rows = $this->model->catalogoTiposMovimiento($tipo ?: null, $categoriaId > 0 ? $categoriaId : null);
-        echo json_encode($rows, JSON_UNESCAPED_UNICODE);
-    } catch (\Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['status'=>'error','message'=>$e->getMessage()]);
-    }
-}
-
-
     /**
-     * GET /Operaciones_maritimas_costos_Contenedor/buscarOperaciones?term=JL
+     * GET /Operaciones_ferroviarias_costos_operacion/buscarOperaciones?term=xxx
+     * Autocompletar por número de operación (ferro).
      */
     public function buscarOperaciones()
     {
         header('Content-Type: application/json; charset=UTF-8');
-        $term  = isset($_GET['term']) ? trim($_GET['term']) : '';
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 8;
 
-        try {
-            $rows = $this->model->buscarOperaciones($term, $limit);
-            echo json_encode($rows, JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * GET /Operaciones_maritimas_costos_Contenedor/buscarContenedoresPorOperacion?operacion_id=7&term=FXE
-     */
-    public function buscarContenedoresPorOperacion()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-        $operacionId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-        $term        = isset($_GET['term']) ? trim($_GET['term']) : '';
-        $limit       = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-
-        if ($operacionId <= 0) {
-            http_response_code(400);
-            echo json_encode(['status' => 'warning', 'message' => 'operacion_id es requerido']);
+        $term = trim((string)($_GET['term'] ?? ''));
+        if ($term === '') {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
             return;
         }
 
         try {
-            $rows = $this->model->buscarContenedoresPorOperacion($operacionId, $term, $limit);
-            echo json_encode($rows, JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
-    }
-
-    /* ================== CRUD con LOG ================== */
-
-    public function registrarCostoContenedor()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        try {
-            $contenedorOpId = (int)($_POST['costosContenedorContenedorId'] ?? 0); // contenedor_operacion_id
-            $tipoMovId      = (int)($_POST['costosContenedoresTipoCosto'] ?? 0);  // tipo_movimiento_id
-            $monto          = (float)($_POST['costosContenedoresMonto'] ?? 0);
-            $comentario     = trim((string)($_POST['costosContenedoresComentarios'] ?? ''));
-
-            if ($contenedorOpId <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona una operación y un contenedor válido']); return; }
-            if ($tipoMovId <= 0)      { echo json_encode(['status'=>'warning','msg'=>'Selecciona un tipo de costo']); return; }
-            if ($monto <= 0)          { echo json_encode(['status'=>'warning','msg'=>'El monto debe ser mayor a 0']); return; }
-
-            // Validaciones/Reglas
-            $co = $this->model->obtenerContenedorOperacion($contenedorOpId);
-            if (!$co) { echo json_encode(['status'=>'warning','msg'=>'El contenedor en operación no existe']); return; }
-
-            $tm = $this->model->obtenerTipoMovimiento($tipoMovId);
-            if (!$tm || (int)($tm['estatus'] ?? 0) !== 1) {
-                echo json_encode(['status'=>'warning','msg'=>'El tipo no existe o está inactivo']); return;
-            }
-            $nat = strtoupper($tm['tipo'] ?? '');
-            if (!in_array($nat, ['GASTO','ABONO'], true)) {
-                echo json_encode(['status'=>'warning','msg'=>'El tipo debe ser GASTO o ABONO']); return;
-            }
-            $idTerrestre = $this->model->obtenerTipoOperacionIdPorNombre('Terrestre'); // puede ser null
-            if ($idTerrestre && (int)($tm['tipo_operacion_id'] ?? 0) !== (int)$idTerrestre) {
-                echo json_encode(['status'=>'warning','msg'=>'El tipo de costo no pertenece a la categoría TERRESTRE']); return;
-            }
-
-            // Insert
-            $newId = $this->model->insertarCostoContenedor($contenedorOpId, $tipoMovId, $monto, $comentario);
-            if (!$newId) { echo json_encode(['status'=>'error','msg'=>'No se pudo insertar el costo']); return; }
-
-            // Obtener fila “bonita”
-            $row = $this->model->obtenerCostoPorId((int)$newId);
-
-            // ===== LOG: Creado =====
-            $opId = (int)($co['operacion_id'] ?? 0);
-            $desc = $this->makeDesc('Costo de contenedor creado', [
-                'costo_id'    => (int)$newId,
-                'cont_op_id'  => $contenedorOpId,
-                'tipo_id'     => $tipoMovId,
-                'monto'       => $monto,
-                'coment'      => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
-            ]);
-            $this->logOp($opId, 'creacion', $desc);
-            if(strtoupper($tm['tipo'] ?? '') === 'ABONO') {
-                echo json_encode([
-                'status' => 'success',
-                'msg'    => 'Abono registrado correctamente',
-                'id'     => (int)$newId,
-                'data'   => $row
-            ], JSON_UNESCAPED_UNICODE);
-            }
-            else {
-                echo json_encode([
-                'status' => 'success',
-                'msg'    => 'Costo registrado correctamente',
-                'id'     => (int)$newId,
-                'data'   => $row
-            ], JSON_UNESCAPED_UNICODE);
-        }
-
-
+            $rows = $this->model->buscarOperacionesPorTerm($term);
+            echo json_encode(is_array($rows) ? $rows : [], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode([
-                'status'=>'error',
-                'msg'   =>'Error al guardar: '.$e->getMessage()
-            ]);
+                'status'  => 'error',
+                'message' => 'Error al buscar operaciones (ferro): ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
         }
     }
 
-    public function obtenerCosto($id)
+    /**
+     * POST /Operaciones_ferroviarias_costos_operacion/guardar
+     * Body:
+     *  - row_id(0 crea / >0 actualiza), operacion_ferro_id, tipo_movimiento_id, monto, comentario
+     */
+    public function guardar()
     {
         header('Content-Type: application/json; charset=UTF-8');
-        $id = (int)$id;
-        if ($id <= 0) { echo json_encode(['status'=>'warning','msg'=>'ID inválido']); return; }
 
         try {
-            $row = $this->model->obtenerCostoPorId($id);
-            if (!$row) { echo json_encode(['status'=>'warning','msg'=>'No encontrado']); return; }
+            $rowId       = (int)($_POST['row_id'] ?? 0);
+            $operacionId = (int)($_POST['operacion_ferro_id'] ?? $_POST['operacion_id'] ?? 0);
+            $tipoId      = (int)($_POST['tipo_movimiento_id'] ?? 0);
+            $monto       = (float)($_POST['monto'] ?? 0);
+            $comentario  = trim((string)($_POST['comentario'] ?? ''));
+
+            if ($operacionId <= 0 && $rowId <= 0) { echo json_encode(['status'=>'warning','message'=>'Falta operación ferro']); return; }
+            if ($tipoId      <= 0) { echo json_encode(['status'=>'warning','message'=>'Selecciona un tipo de movimiento']); return; }
+            if ($monto       <= 0) { echo json_encode(['status'=>'warning','message'=>'Monto inválido']); return; }
+
+            // Catálogo para moneda y tipo (gasto|abono)
+            $tm = $this->model->obtenerTipoMovimiento($tipoId);
+            if (!$tm) { echo json_encode(['status'=>'warning','message'=>'Tipo de movimiento inválido']); return; }
+
+            $monedaCat = strtoupper((string)($tm['moneda'] ?? ''));
+            $tipoDinero = strtolower((string)($tm['tipo'] ?? '')); // 'gasto' | 'abono'
+            if ($monedaCat !== 'PESOS' && $monedaCat !== 'DLLS') {
+                echo json_encode(['status'=>'warning','message'=>'Moneda del tipo de movimiento inválida']); return;
+            }
+
+            if ($rowId > 0){
+                // === ACTUALIZAR ===
+                $prev  = $this->model->obtenerCostoOperacion($rowId);
+                $opId4 = $operacionId > 0 ? $operacionId : (int)($prev['operacion_ferro_id'] ?? 0);
+
+                $ok = $this->model->actualizarCostoOperacion($rowId, [
+                    'tipo_movimiento_id' => $tipoId,
+                    'monto'              => $monto,
+                    'comentario'         => $comentario,
+                ]);
+                if (!$ok){ echo json_encode(['status'=>'error','message'=>'No se actualizó el registro']); return; }
+
+                $desc = $this->makeDesc('Movimiento de operación FERRO actualizado', [
+                    'costo_id' => $rowId,
+                    'tipo_id'  => $tipoId,
+                    'tipo'     => $tipoDinero,
+                    'monto'    => $monto,
+                    'moneda'   => $monedaCat,
+                    'coment'   => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
+                ]);
+                $this->logOp($opId4, 'actualizacion', $desc);
+
+                echo json_encode(['status'=>'success','message'=>'Actualizado']); return;
+
+            } else {
+                // === CREAR ===
+                if ($operacionId <= 0){ echo json_encode(['status'=>'warning','message'=>'Falta operación ferro']); return; }
+
+                $newId = $this->model->insertarCostoOperacion([
+                    'operacion_ferro_id' => $operacionId,
+                    'tipo_movimiento_id' => $tipoId,
+                    'monto'              => $monto,
+                    'comentario'         => $comentario,
+                ]);
+                if ($newId <= 0){ echo json_encode(['status'=>'error','message'=>'No se creó el registro']); return; }
+
+                $desc = $this->makeDesc('Movimiento de operación FERRO creado', [
+                    'costo_id' => $newId,
+                    'tipo_id'  => $tipoId,
+                    'tipo'     => $tipoDinero,
+                    'monto'    => $monto,
+                    'moneda'   => $monedaCat,
+                    'coment'   => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
+                ]);
+                $this->logOp($operacionId, 'creacion', $desc);
+
+                echo json_encode(['status'=>'success','message'=>'Creado','id'=>$newId]); return;
+            }
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['status'=>'error','message'=>'Error al guardar (ferro): '.$e->getMessage()]);
+        }
+    }
+
+    /** GET /Operaciones_ferroviarias_costos_operacion/obtenerUno?id=XX */
+    public function obtenerUno()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0){ echo json_encode(['status'=>'warning','message'=>'ID inválido']); return; }
+        try {
+            $row = $this->model->obtenerCostoOperacion($id);
+            if (!$row){ echo json_encode(['status'=>'warning','message'=>'No encontrado']); return; }
             echo json_encode(['status'=>'success','data'=>$row], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>$e->getMessage()]);
+            echo json_encode(['status'=>'error','message'=>'Error: '.$e->getMessage()]);
         }
     }
 
-    public function actualizarCostoContenedor()
+    /** POST /Operaciones_ferroviarias_costos_operacion/desactivarCostoOperacion */
+    public function desactivarCostoOperacion()
     {
         header('Content-Type: application/json; charset=UTF-8');
-
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0){ echo json_encode(['status'=>'warning','message'=>'ID inválido']); return; }
         try {
-            $id             = (int)($_POST['row_id'] ?? 0);
-            $contenedorOpId = (int)($_POST['costosContenedorContenedorId'] ?? 0);
-            $tipoMovId      = (int)($_POST['costosContenedoresTipoCosto'] ?? 0);
-            $monto          = (float)($_POST['costosContenedoresMonto'] ?? 0);
-            $comentario     = trim((string)($_POST['costosContenedoresComentarios'] ?? ''));
+            $row = $this->model->obtenerCostoOperacion($id);
+            $ok  = $this->model->desactivarCostoOperacion($id);
 
-            if ($id <= 0)             { echo json_encode(['status'=>'warning','msg'=>'ID inválido']); return; }
-            if ($contenedorOpId <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona una operación y contenedor válido']); return; }
-            if ($tipoMovId <= 0)      { echo json_encode(['status'=>'warning','msg'=>'Selecciona un tipo de costo']); return; }
-            if ($monto <= 0)          { echo json_encode(['status'=>'warning','msg'=>'El monto debe ser mayor a 0']); return; }
-
-            // Snapshot y validaciones
-            $prev = $this->model->obtenerCostoPorId($id);
-            $co   = $this->model->obtenerContenedorOperacion($contenedorOpId);
-            if (!$co) { echo json_encode(['status'=>'warning','msg'=>'El contenedor en operación no existe']); return; }
-
-            $tm = $this->model->obtenerTipoMovimiento($tipoMovId);
-            if (!$tm || (int)($tm['estatus'] ?? 0) !== 1) { echo json_encode(['status'=>'warning','msg'=>'El tipo de costo no existe o está inactivo']); return; }
-            if (strtoupper($tm['tipo'] ?? '') !== 'GASTO') { echo json_encode(['status'=>'success','msg'=>'Abono Actualizado']); return; }
-
-            $idTerrestre = $this->model->obtenerTipoOperacionIdPorNombre('Terrestre');
-            if ($idTerrestre && (int)($tm['tipo_operacion_id'] ?? 0) !== (int)$idTerrestre) {
-                echo json_encode(['status'=>'warning','msg'=>'El tipo de costo no pertenece a TERRESTRE']); return;
+            if ($ok) {
+                $opId = (int)($row['operacion_ferro_id'] ?? 0);
+                $desc = $this->makeDesc('Costo de operación FERRO desactivado', [
+                    'costo_id' => $id,
+                    'tipo_id'  => $row['tipo_movimiento_id'] ?? '-',
+                    'monto'    => $row['monto'] ?? '-',
+                    'moneda'   => $row['moneda'] ?? '-'
+                ]);
+                $this->logOp($opId, 'cancelacion', $desc);
             }
 
-            // Actualizar
-            $ok = $this->model->actualizarCostoContenedor($id, $contenedorOpId, $tipoMovId, $monto, $comentario);
-            if (!$ok) { echo json_encode(['status'=>'error','msg'=>'No se pudo actualizar']); return; }
-
-            $row = $this->model->obtenerCostoPorId($id);
-
-            // ===== LOG: Actualizado =====
-            $opId = (int)($co['operacion_id'] ?? ($prev['operacion_id'] ?? 0));
-            $desc = $this->makeDesc('Costo de contenedor actualizado', [
-                'costo_id'    => $id,
-                'cont_op_id'  => $contenedorOpId,
-                'tipo_id'     => $tipoMovId,
-                'monto'       => $monto,
-                'coment'      => ($comentario !== '' ? mb_substr($comentario,0,60).'…' : '')
-            ]);
-            $this->logOp($opId, 'actualizacion', $desc);
-
-            echo json_encode(['status'=>'success','msg'=>'Costo actualizado','data'=>$row], JSON_UNESCAPED_UNICODE);
-
+            echo json_encode($ok ? ['status'=>'success'] : ['status'=>'error','message'=>'No se desactivó']);
         } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>'Error al actualizar: '.$e->getMessage()]);
+            echo json_encode(['status'=>'error','message'=>$e->getMessage()]);
         }
     }
 
-    public function eliminarCostoContenedor()
+    /** POST /Operaciones_ferroviarias_costos_operacion/reactivarCostoOperacion */
+    public function reactivarCostoOperacion()
     {
         header('Content-Type: application/json; charset=UTF-8');
-
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0){ echo json_encode(['status'=>'warning','message'=>'ID inválido']); return; }
         try {
-            $id = (int)($_POST['id'] ?? 0);
-            if ($id <= 0) { echo json_encode(['status'=>'warning','msg'=>'ID inválido']); return; }
+            $row = $this->model->obtenerCostoOperacion($id);
+            $ok  = $this->model->reactivarCostoOperacion($id);
 
-            // Verifica existencia (y úsalo para el log)
-            $row = $this->model->obtenerCostoPorId($id);
-            if (!$row) { echo json_encode(['status'=>'warning','msg'=>'Registro no encontrado']); return; }
-
-            $ok = $this->model->eliminarCostoContenedor($id);
-            if (!$ok) { echo json_encode(['status'=>'error','msg'=>'No se pudo eliminar']); return; }
-
-            // ===== LOG: Eliminado =====
-            // Saca operacion_id de la fila o, si no viene, de contenedor_operacion
-            $opId = (int)($row['operacion_id'] ?? 0);
-            if ($opId <= 0 && !empty($row['contenedor_operacion_id'])) {
-                $co = $this->model->obtenerContenedorOperacion((int)$row['contenedor_operacion_id']);
-                $opId = (int)($co['operacion_id'] ?? 0);
+            if ($ok) {
+                $opId = (int)($row['operacion_ferro_id'] ?? 0);
+                $desc = $this->makeDesc('Costo de operación FERRO reactivado', [
+                    'costo_id' => $id,
+                    'tipo_id'  => $row['tipo_movimiento_id'] ?? '-'
+                ]);
+                // Si no tienes 'reactivacion' en ENUM, mantenemos 'actualizacion'
+                $this->logOp($opId, 'actualizacion', $desc);
             }
 
-            $desc = $this->makeDesc('Costo de contenedor eliminado', [
-                'costo_id'    => $id,
-                'cont_op_id'  => $row['contenedor_operacion_id'] ?? '-',
-                'tipo_id'     => $row['tipo_movimiento_id'] ?? '-',
-                'monto'       => $row['monto'] ?? '-'
-            ]);
-            $this->logOp($opId, 'cancelacion', $desc);
-
-            echo json_encode(['status'=>'success','msg'=>'Costo eliminado correctamente']);
+            echo json_encode($ok ? ['status'=>'success'] : ['status'=>'error','message'=>'No se reactivó']);
         } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>'Error al eliminar: '.$e->getMessage()]);
+            echo json_encode(['status'=>'error','message'=>$e->getMessage()]);
         }
     }
-    public function totales()
-{
-    header('Content-Type: application/json; charset=UTF-8');
-    $opId  = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : null;
-    $contO = isset($_GET['contenedor_operacion_id']) ? (int)$_GET['contenedor_operacion_id'] : null;
-
-    try {
-        $rows = $this->model->totalesPorAlcance($opId ?: null, $contO ?: null);
-        echo json_encode(['status'=>'success','data'=>$rows], JSON_UNESCAPED_UNICODE);
-    } catch (\Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['status'=>'error','msg'=>$e->getMessage()]);
-    }
-}
-
 }

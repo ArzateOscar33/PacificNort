@@ -18,8 +18,8 @@
   // Tarjetas totales + controles de vista
   const costosOperacionTotalOperacion    = document.getElementById("costosOperacionTotalOperacion"); 
   const costosOperacionTotalGeneral      = document.getElementById("costosOperacionTotalGeneral");
-  const costosOperacionMonedaVistaSel    = document.getElementById("costosOperacionMonedaVista");  // MXN | USD
-  const costosOperacionTipoCambioInp     = document.getElementById("costosOperacionTipoCambio");   // MXN por 1 USD
+  const costosOperacionMonedaVistaSel    = document.getElementById("costosOperacionMonedaVista");  
+  const costosOperacionTipoCambioInp     = document.getElementById("costosOperacionTipoCambio");    
 
   // Autocomplete Operación
   const opIdInp        = document.getElementById("costosOperacionFiltroOpId");

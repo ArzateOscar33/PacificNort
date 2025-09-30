@@ -14,8 +14,11 @@
             <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">Ferros en Operación</a>
         </li> 
         
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false">Costos Contenedor</a>
+        </li> -->
+        <li class="nav-item">
+            <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false">Costos Operaciones</a>
         </li>
  
         <li class="nav-item">
