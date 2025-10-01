@@ -22,18 +22,18 @@
         </li>
  
         <li class="nav-item">
-            <a class="nav-link" id="trazabilidad-tab" data-bs-toggle="tab" href="#trazabilidad" role="tab" aria-controls="trazabilidad" aria-selected="false">Trazabilidad</a>
+            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false">Documentos</a>
         </li>
  
  
-        <!--<li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#detalles-logisticos">
-            <i data-feather="file-text"></i> Detalles Logísticos
+         <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
+            <i data-feather="file-text"></i> Trazabilidad
         </a>
-        </li> -->
+        </li>  
     </ul>
 
     <div class="tab-content mt-3">
@@ -52,8 +52,8 @@
         <div class="tab-pane fade" id="costos_operacion" role="tabpanel" aria-labelledby="costos_operacion-tab">
             <?php include 'tabs/costos_operacion.php'; ?>
         </div>
-        <div class="tab-pane fade" id="trazabilidad" role="tabpanel" aria-labelledby="trazabilidad-tab">
-            <?php include 'tabs/trazabilidad.php'; ?>
+        <div class="tab-pane fade" id="Eventos_Logisticos" role="tabpanel" aria-labelledby="Eventos_Logisticos-tab">
+            <?php include 'tabs/Eventos_Logisticos.php'; ?>
         </div>
         <div class="tab-pane fade" id="documentos" role="tabpanel" aria-labelledby="documentos-tab">
             <?php include 'tabs/documentos.php'; ?>
@@ -62,7 +62,9 @@
         <div class="tab-pane fade" id="log" role="tabpanel" aria-labelledby="log-tab">
             <?php include 'tabs/log.php'; ?>
         </div> 
-
+        <div class="tab-pane fade" id="trazabilidad" role="tabpanel" aria-labelledby="trazabilidad-tab">
+            <?php include 'tabs/trazabilidad.php'; ?>
+        </div> 
         <div class="tab-pane fade" id="detalles-logisticos" role="tabpanel" aria-labelledby="detalles-logisticos-tab">
             <?php include 'tabs/detalles_logisticos.php'; ?>
         </div> 
