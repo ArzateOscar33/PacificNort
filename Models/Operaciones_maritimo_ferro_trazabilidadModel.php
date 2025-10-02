@@ -493,134 +493,8 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
             'data'  => $rows
         ];
     }
-    //edicion
-    /**************************************************************
-     * Guardado DIFERENCIAL de tramos + costo por tramo (transacc.)
-     * - Solo ciudades en origen/destino (IDs válidos y > 0)
-     * - orden llega desde el “carrito” (no hay reordenamiento)
-     * - Transacción TOTAL (todo o nada)
-     * - Diferencial:
-     *    • con id_tramo > 0 => UPDATE
-     *    • sin id_tramo     => INSERT
-     *    • tramos existentes que no vienen => DELETE
-     **************************************************************/
-     public function guardarTramosYCostosTransaccional(
-    int $operacionFerroId,
-    int $rutaId,
-    array $tramosPayload,
-    int $creadoPorUsuarioId
-): array {
-    // 1) Normalizar payload
-    $tramos = [];
-    $idsEnPayload = [];
-    $n = 0;
-
-    foreach ($tramosPayload as $t) {
-        $n++;
-        $idTramo          = isset($t['id_tramo']) ? (int)$t['id_tramo'] : 0;
-        $orden            = isset($t['orden']) ? (int)$t['orden'] : $n; // viene del carrito
-        $origenId         = (int)($t['origen_id'] ?? 0);
-        $destinoId        = (int)($t['destino_id'] ?? 0);
-        $transportistaId  = (int)($t['transportista_id'] ?? 0);
-        $monto            = (float)($t['monto'] ?? 0);
-        $comentario       = isset($t['comentario']) ? trim((string)$t['comentario']) : null;
-
-        // Validaciones mínimas
-        if ($origenId <= 0 || $destinoId <= 0 || $transportistaId <= 0) {
-            return ['ok'=>false, 'msg'=>"Tramo #$n inválido (IDs requeridos)."];
-        }
-
-        $tramos[] = compact('idTramo','orden','origenId','destinoId','transportistaId','monto','comentario');
-        if ($idTramo > 0) $idsEnPayload[] = $idTramo;
-    }
-
-    // 2) Diferencial: qué existe y ya no viene => eliminar
-    $existentes     = $this->getTramosPorRuta($rutaId);
-    $idsExistentes  = array_map(fn($r)=>(int)$r['id_tramo'], $existentes);
-    $aEliminar      = array_values(array_diff($idsExistentes, $idsEnPayload));
-
-    $insertados = 0; 
-    $actualizados = 0; 
-    $costos = 0;
-
-    try {
-        // 3) Transacción TOTAL
-        $this->save("START TRANSACTION", []);
-
-        // 3.1) Eliminar “faltantes”
-        if (!empty($aEliminar)) {
-            $okDel = $this->eliminarTramosPorIds($aEliminar);
-            // Acepta 0,1,N como válido; solo false es error real
-            if ($okDel === false) {
-                $this->save("ROLLBACK", []);
-                return ['ok'=>false, 'msg'=>'No fue posible eliminar tramos removidos.'];
-            }
-        }
-
-        // 3.2) Upsert (update/insert) + costo por tramo
-        foreach ($tramos as $t) {
-            if ($t['idTramo'] > 0) {
-                // UPDATE existente (0 filas afectadas también es válido)
-                $ok = $this->actualizarTramoRutaFerro(
-                    $t['idTramo'], $t['orden'], $t['origenId'], $t['destinoId'],
-                    $t['transportistaId'], $t['monto'], $t['comentario']
-                );
-                if ($ok === false) {
-                    $this->save("ROLLBACK", []);
-                    return ['ok'=>false,'msg'=>'No fue posible actualizar un tramo.'];
-                }
-                $actualizados++;
-
-                // Registrar costo por actualización
-                $idCosto = $this->insertarCostoTransporteFerro(
-                    $operacionFerroId, $t['monto'], $t['comentario'], $creadoPorUsuarioId, 23, 1
-                );
-                if ($idCosto <= 0) {
-                    $this->save("ROLLBACK", []);
-                    return ['ok'=>false,'msg'=>'Tramo actualizado, pero falló el costo asociado.'];
-                }
-                $costos++;
-            } else {
-                // INSERT nuevo
-                $nuevoId = $this->insertarTramoRutaFerro(
-                    $rutaId, $t['orden'], $t['origenId'], $t['destinoId'],
-                    $t['transportistaId'], $t['monto'], $t['comentario']
-                );
-                if ($nuevoId <= 0) {
-                    $this->save("ROLLBACK", []);
-                    return ['ok'=>false,'msg'=>'No fue posible insertar un tramo.'];
-                }
-                $insertados++;
-
-                // Registrar costo por inserción
-                $idCosto = $this->insertarCostoTransporteFerro(
-                    $operacionFerroId, $t['monto'], $t['comentario'], $creadoPorUsuarioId, 23, 1
-                );
-                if ($idCosto <= 0) {
-                    $this->save("ROLLBACK", []);
-                    return ['ok'=>false,'msg'=>'Tramo insertado, pero falló el costo asociado.'];
-                }
-                $costos++;
-            }
-        }
-
-        // 3.3) Listo
-        $this->save("COMMIT", []);
-        return [
-            'ok'           => true,
-            'insertados'   => $insertados,
-            'actualizados' => $actualizados,
-            'eliminados'   => count($aEliminar),
-            'costos'       => $costos
-        ];
-    } catch (Throwable $e) {
-        $this->save("ROLLBACK", []);
-        error_log('guardarTramosYCostosTransaccional: '.$e->getMessage());
-        return ['ok'=>false, 'msg'=>'Error interno en la transacción.'];
-    }
-}
-
-
+ 
+ 
 
     // === HEADER de la ruta (solo lectura para el modal de edición)
     public function getRutaFerroHeaderByRutaId(int $rutaId): ?array
@@ -694,110 +568,211 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     ";
         return $this->selectAll($sql, [$rutaId]) ?: [];
     }
+ /**************************************************************
+ * DIFERENCIAL (inserta/actualiza/elimina)
+ * - Solo registra COSTO en INSERT (no en UPDATE)
+ * - Evita colisiones de orden asignando MAX(orden)+1 para cada nuevo tramo
+ **************************************************************/
+public function guardarTramosYCostosTransaccional(
+    int $operacionFerroId,
+    int $rutaId,
+    array $tramosPayload,
+    int $creadoPorUsuarioId
+): array {
+    // 1) Normalizar payload
+    $tramos = [];
+    $idsEnPayload = [];
+    $n = 0;
 
-    /*********************************************************
-     * Guardado APPEND-ONLY (no elimina)
-     * - Si llega id_tramo  > 0  => UPDATE
-     * - Si NO llega id_tramo    => INSERT
-     * - Nunca borra tramos que no vienen en el payload
-     * - Registra costo (tipo 23) por cada INSERT/UPDATE
-     *********************************************************/
-    public function guardarTramosAppendOnly(
-        int $operacionFerroId,
-        int $rutaId,
-        array $tramosPayload,
-        int $creadoPorUsuarioId
-    ): array {
-        $tramos = [];
-        $n = 0;
-        foreach ($tramosPayload as $t) {
-            $n++;
-            $idTramo         = isset($t['id_tramo']) ? (int)$t['id_tramo'] : 0;
-            $orden           = isset($t['orden']) ? (int)$t['orden'] : $n;
-            $origenId        = (int)($t['origen_id'] ?? 0);
-            $destinoId       = (int)($t['destino_id'] ?? 0);
-            $transportistaId = (int)($t['transportista_id'] ?? 0);
-            $monto           = (float)($t['monto'] ?? 0);
-            $comentario      = isset($t['comentario']) ? trim((string)$t['comentario']) : null;
+    foreach ($tramosPayload as $t) {
+        $n++;
+        $idTramo         = isset($t['id_tramo']) ? (int)$t['id_tramo'] : 0;
+        $orden           = isset($t['orden']) ? (int)$t['orden'] : $n; // se ignora en INSERT para evitar colisiones
+        $origenId        = (int)($t['origen_id'] ?? 0);
+        $destinoId       = (int)($t['destino_id'] ?? 0);
+        $transportistaId = (int)($t['transportista_id'] ?? 0);
+        $monto           = (float)($t['monto'] ?? 0);
+        $comentario      = isset($t['comentario']) ? trim((string)$t['comentario']) : null;
 
-            if ($origenId <= 0 || $destinoId <= 0 || $transportistaId <= 0) {
-                return ['ok' => false, 'msg' => "Tramo #$n inválido (IDs requeridos)."];
+        if ($origenId <= 0 || $destinoId <= 0 || $transportistaId <= 0) {
+            return ['ok'=>false, 'msg'=>"Tramo #$n inválido (IDs requeridos)."];
+        }
+        $tramos[] = compact('idTramo','orden','origenId','destinoId','transportistaId','monto','comentario');
+        if ($idTramo > 0) $idsEnPayload[] = $idTramo;
+    }
+
+    // 2) Diferencial (qué se elimina)
+    $existentes    = $this->getTramosPorRuta($rutaId);
+    $idsExistentes = array_map(fn($r)=>(int)$r['id_tramo'], $existentes);
+    $aEliminar     = array_values(array_diff($idsExistentes, $idsEnPayload));
+
+    // 3) Preparar siguiente orden disponible (una sola vez)
+    $rowNext  = $this->select("SELECT COALESCE(MAX(orden),0)+1 AS nexto FROM rutas_ferro_tramos WHERE ruta_id = ?", [$rutaId]);
+    $nextOrden = $rowNext ? (int)$rowNext['nexto'] : 1;
+
+    $insertados = 0; $actualizados = 0; $costos = 0;
+
+    try {
+        $this->save("START TRANSACTION", []);
+
+        // 3.1) Eliminar faltantes (0 filas afectadas es OK; solo false es error)
+        if (!empty($aEliminar)) {
+            $okDel = $this->eliminarTramosPorIds($aEliminar);
+            if ($okDel === false) {
+                $this->save("ROLLBACK", []);
+                return ['ok'=>false, 'msg'=>'No fue posible eliminar tramos removidos.'];
             }
-            $tramos[] = compact('idTramo', 'orden', 'origenId', 'destinoId', 'transportistaId', 'monto', 'comentario');
         }
 
-        $this->save("START TRANSACTION", []);
-        $insertados = 0;
-        $actualizados = 0;
-        $costos = 0;
-
+        // 3.2) Upsert
         foreach ($tramos as $t) {
             if ($t['idTramo'] > 0) {
-                // UPDATE existente
+                // UPDATE (sin costo nuevo)
                 $ok = $this->actualizarTramoRutaFerro(
-                    $t['idTramo'],
-                    $t['orden'],
-                    $t['origenId'],
-                    $t['destinoId'],
-                    $t['transportistaId'],
-                    $t['monto'],
-                    $t['comentario']
+                    $t['idTramo'], $t['orden'], $t['origenId'], $t['destinoId'],
+                    $t['transportistaId'], $t['monto'], $t['comentario']
                 );
-                if ($ok !== 1) {
+                if ($ok === false) {
                     $this->save("ROLLBACK", []);
-                    return ['ok' => false, 'msg' => 'No fue posible actualizar un tramo.'];
+                    return ['ok'=>false,'msg'=>'No fue posible actualizar un tramo.'];
                 }
                 $actualizados++;
-
-                // costo por actualización
-                $idCosto = $this->insertarCostoTransporteFerro(
-                    $operacionFerroId,
-                    $t['monto'],
-                    $t['comentario'],
-                    $creadoPorUsuarioId,
-                    23,
-                    1
-                );
-                if ($idCosto <= 0) {
-                    $this->save("ROLLBACK", []);
-                    return ['ok' => false, 'msg' => 'Falló costo (update).'];
-                }
-                $costos++;
             } else {
-                // INSERT nuevo
+                // INSERT (asignar orden consecutivo para evitar colisiones) + costo
+                $ordenFinal = $nextOrden++;
                 $nuevoId = $this->insertarTramoRutaFerro(
-                    $rutaId,
-                    $t['orden'],
-                    $t['origenId'],
-                    $t['destinoId'],
-                    $t['transportistaId'],
-                    $t['monto'],
-                    $t['comentario']
+                    $rutaId, $ordenFinal, $t['origenId'], $t['destinoId'],
+                    $t['transportistaId'], $t['monto'], $t['comentario']
                 );
                 if ($nuevoId <= 0) {
                     $this->save("ROLLBACK", []);
-                    return ['ok' => false, 'msg' => 'No fue posible insertar un tramo.'];
+                    return ['ok'=>false,'msg'=>'No fue posible insertar un tramo.'];
                 }
                 $insertados++;
 
-                // costo por inserción
+                // registrar costo SOLO en INSERT
                 $idCosto = $this->insertarCostoTransporteFerro(
-                    $operacionFerroId,
-                    $t['monto'],
-                    $t['comentario'],
-                    $creadoPorUsuarioId,
-                    23,
-                    1
+                    $operacionFerroId, $t['monto'], $t['comentario'], $creadoPorUsuarioId, 23, 1
                 );
                 if ($idCosto <= 0) {
                     $this->save("ROLLBACK", []);
-                    return ['ok' => false, 'msg' => 'Falló costo (insert).'];
+                    return ['ok'=>false,'msg'=>'Tramo insertado, pero falló el costo asociado.'];
                 }
                 $costos++;
             }
         }
 
         $this->save("COMMIT", []);
-        return ['ok' => true, 'insertados' => $insertados, 'actualizados' => $actualizados, 'costos' => $costos];
+        return [
+            'ok'           => true,
+            'insertados'   => $insertados,
+            'actualizados' => $actualizados,
+            'eliminados'   => count($aEliminar),
+            'costos'       => $costos
+        ];
+    } catch (Throwable $e) {
+        $this->save("ROLLBACK", []);
+        error_log('guardarTramosYCostosTransaccional: '.$e->getMessage());
+        return ['ok'=>false, 'msg'=>'Error interno en la transacción.'];
     }
+}
+/*********************************************************
+ * APPEND-ONLY (no elimina tramos que no vengan)
+ * - Solo registra COSTO en INSERT (no en UPDATE)
+ * - Evita colisiones de orden asignando MAX(orden)+1 por cada nuevo insert
+ *********************************************************/
+public function guardarTramosAppendOnly(
+    int $operacionFerroId,
+    int $rutaId,
+    array $tramosPayload,
+    int $creadoPorUsuarioId
+): array {
+    // 1) Normalizar payload
+    $tramos = [];
+    $n = 0;
+    foreach ($tramosPayload as $t) {
+        $n++;
+        $idTramo         = isset($t['id_tramo']) ? (int)$t['id_tramo'] : 0;
+        $orden           = isset($t['orden']) ? (int)$t['orden'] : $n; // se ignora en INSERT
+        $origenId        = (int)($t['origen_id'] ?? 0);
+        $destinoId       = (int)($t['destino_id'] ?? 0);
+        $transportistaId = (int)($t['transportista_id'] ?? 0);
+        $monto           = (float)($t['monto'] ?? 0);
+        $comentario      = isset($t['comentario']) ? trim((string)$t['comentario']) : null;
+
+        if ($origenId <= 0 || $destinoId <= 0 || $transportistaId <= 0) {
+            return ['ok'=>false, 'msg'=>"Tramo #$n inválido (IDs requeridos)."];
+        }
+        $tramos[] = compact('idTramo','orden','origenId','destinoId','transportistaId','monto','comentario');
+    }
+
+    // 2) Preparar siguiente orden disponible (una sola vez)
+    $rowNext   = $this->select("SELECT COALESCE(MAX(orden),0)+1 AS nexto FROM rutas_ferro_tramos WHERE ruta_id = ?", [$rutaId]);
+    $nextOrden = $rowNext ? (int)$rowNext['nexto'] : 1;
+
+    $insertados = 0; $actualizados = 0; $costos = 0;
+
+    $this->save("START TRANSACTION", []);
+    try {
+        foreach ($tramos as $t) {
+            if ($t['idTramo'] > 0) {
+                // UPDATE (sin costo nuevo)
+                $ok = $this->actualizarTramoRutaFerro(
+                    $t['idTramo'], $t['orden'], $t['origenId'], $t['destinoId'],
+                    $t['transportistaId'], $t['monto'], $t['comentario']
+                );
+                if ($ok !== 0 && $ok !== 1) { // false = error real
+                    if ($ok === false) {
+                        $this->save("ROLLBACK", []);
+                        return ['ok'=>false,'msg'=>'No fue posible actualizar un tramo.'];
+                    }
+                }
+                $actualizados++;
+            } else {
+                // INSERT (asignar orden consecutivo) + costo
+                $ordenFinal = $nextOrden++;
+                $nuevoId = $this->insertarTramoRutaFerro(
+                    $rutaId, $ordenFinal, $t['origenId'], $t['destinoId'],
+                    $t['transportistaId'], $t['monto'], $t['comentario']
+                );
+                if ($nuevoId <= 0) {
+                    $this->save("ROLLBACK", []);
+                    return ['ok'=>false,'msg'=>'No fue posible insertar un tramo.'];
+                }
+                $insertados++;
+
+                // costo SOLO en INSERT
+                $idCosto = $this->insertarCostoTransporteFerro(
+                    $operacionFerroId, $t['monto'], $t['comentario'], $creadoPorUsuarioId, 23, 1
+                );
+                if ($idCosto <= 0) {
+                    $this->save("ROLLBACK", []);
+                    return ['ok'=>false,'msg'=>'Falló costo (insert).'];
+                }
+                $costos++;
+            }
+        }
+
+        $this->save("COMMIT", []);
+        return ['ok'=>true, 'insertados'=>$insertados, 'actualizados'=>$actualizados, 'costos'=>$costos];
+    } catch (Throwable $e) {
+        $this->save("ROLLBACK", []);
+        error_log('guardarTramosAppendOnly: '.$e->getMessage());
+        return ['ok'=>false, 'msg'=>'Error interno en la transacción.'];
+    }
+}
+
+
+// 1) Helper: siguiente orden disponible para una ruta
+private function getNextOrdenForRuta(int $rutaId): int {
+    $row = $this->select("SELECT COALESCE(MAX(orden),0)+1 AS nexto FROM rutas_ferro_tramos WHERE ruta_id = ?", [$rutaId]);
+    return $row ? (int)$row['nexto'] : 1;
+}
+
+// (Opcional) Si quieres conservar el orden del payload cuando no colisiona:
+private function ordenDisponible(int $rutaId, int $orden): bool {
+    $row = $this->select("SELECT 1 FROM rutas_ferro_tramos WHERE ruta_id=? AND orden=? LIMIT 1", [$rutaId, $orden]);
+    return !$row; // true si NO existe
+}
+
 }
