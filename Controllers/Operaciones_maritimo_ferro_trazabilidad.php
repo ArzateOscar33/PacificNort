@@ -264,49 +264,7 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
         ]);
     }
 
-    //TRAMOS
-    public function guardar_tramos(): void
-{
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $this->json(['ok'=>false,'msg'=>'Método no permitido'], 405);
-    }
 
-    // 1) Insumos
-    $rutaId            = (int)($_POST['ruta_id'] ?? 0);
-    $operacionFerroId  = (int)($_POST['operacion_ferro_id'] ?? 0);
-
-    // Los tramos (carrito) llegan ya sea en "rutasPayload" (de tu hidden) o "tramos"
-    $raw = $_POST['rutasPayload'] ?? $_POST['tramos'] ?? '[]';
-    $tramosPayload = json_decode($raw, true);
-
-    if ($rutaId <= 0 || $operacionFerroId <= 0) {
-        $this->json(['ok'=>false,'msg'=>'ruta_id y operacion_ferro_id son requeridos.'], 400);
-    }
-    if (!is_array($tramosPayload) || empty($tramosPayload)) {
-        $this->json(['ok'=>false,'msg'=>'No hay tramos para guardar.'], 400);
-    }
-
-    // 2) Usuario (desde backend)
-    if (session_status() === PHP_SESSION_NONE) { @session_start(); }
-    $creadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
-    if ($creadoPor <= 0) {
-        $this->json(['ok'=>false,'msg'=>'Sesión inválida. Vuelve a iniciar sesión.'], 401);
-    }
-
-    // 3) Guardar (transacción total)
-    try {
-        $res = $this->model->guardarTramosYCostosTransaccional(
-            $operacionFerroId, $rutaId, $tramosPayload, $creadoPor
-        );
-        if (!$res['ok']) {
-            $this->json(['ok'=>false,'msg'=>$res['msg'] ?? 'No fue posible guardar los tramos.'], 500);
-        }
-        $this->json(['ok'=>true, 'data'=>$res, 'msg'=>'Tramos guardados correctamente.']);
-    } catch (Throwable $e) {
-        error_log("guardar_tramos ERROR: ".$e->getMessage());
-        $this->json(['ok'=>false,'msg'=>'Error interno al guardar tramos.'], 500);
-    }
-}
 public function rutas_list(): void
     {
         try {
@@ -338,4 +296,160 @@ public function rutas_list(): void
             echo json_encode(['ok'=>false, 'total'=>0, 'data'=>[], 'msg'=>'Error interno al listar rutas.']);
         }
     }
+
+
+    //trazabilida
+    public function ruta_detalle(): void
+{
+    $rutaId = isset($_GET['id_ruta']) ? (int)$_GET['id_ruta'] : 0;
+    if ($rutaId <= 0) {
+        $this->badRequest('id_ruta inválido.');
+    }
+
+    try {
+        // Header (op, ferro, comentario)
+        $hdr = $this->model->getRutaFerroHeaderByRutaId($rutaId);
+        if (!$hdr) {
+            $this->notFound('Ruta no encontrada.');
+        }
+
+        // Clientes chips (todos los de la operación)
+        $clientes = $this->model->getClientesPorOperacionFerroId((int)$hdr['operacion_ferro_id']) ?: [];
+
+        // Tramos para pintar en la tabla (carrito)
+        $tramos = $this->model->getTramosPorRutaConNombres($rutaId) ?: [];
+
+        // Normalizar salida
+        $outClientes = array_map(function($c){
+            return [
+                'id_cliente' => (int)$c['id_cliente'],
+                'nombre'     => (string)$c['nombre']
+            ];
+        }, $clientes);
+
+        $this->json([
+            'ok'     => true,
+            'header' => [
+                'id_ruta'             => (int)$hdr['id_ruta'],
+                'operacion_ferro_id'  => (int)$hdr['operacion_ferro_id'],
+                'numero_operacion'    => (string)$hdr['numero_operacion'],
+                'contenedor_fisico_id'=> (int)$hdr['contenedor_fisico_id'],
+                'numero_ferro'        => (string)($hdr['numero_ferro'] ?? ''),
+                'comentario_ruta'     => (string)($hdr['comentario_ruta'] ?? '')
+            ],
+            'clientes' => $outClientes,
+            'tramos'   => $tramos
+        ]);
+    } catch (Throwable $e) {
+        error_log('ruta_detalle: ' . $e->getMessage());
+        $this->json(['ok'=>false, 'msg'=>'Error interno.'], 500);
+    }
+}
+
+
+// === EDITAR (DIFERENCIAL): inserta/actualiza/elimina según payload ===
+public function guardar_tramos(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $this->json(['ok'=>false,'msg'=>'Método no permitido'], 405);
+    }
+
+    $rutaId           = (int)($_POST['ruta_id'] ?? 0);
+    $operacionFerroId = (int)($_POST['operacion_ferro_id'] ?? 0);
+
+    // Acepta "rutasPayload" (hidden) o "tramos"
+    $raw = $_POST['rutasPayload'] ?? $_POST['tramos'] ?? '[]';
+    $tramosPayload = json_decode($raw, true);
+
+    if ($rutaId <= 0 || $operacionFerroId <= 0) {
+        $this->json(['ok'=>false,'msg'=>'ruta_id y operacion_ferro_id son requeridos.'], 400);
+    }
+    if (!is_array($tramosPayload) || empty($tramosPayload)) {
+        $this->json(['ok'=>false,'msg'=>'No hay tramos para guardar.'], 400);
+    }
+
+    // Deben venir TODOS los tramos que quieres que queden en BD:
+    //  - existentes con id_tramo > 0 (para conservar o actualizar)
+    //  - nuevos sin id_tramo (para insertar)
+    //  - los que NO vengan serán eliminados
+    if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+    $creadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+    if ($creadoPor <= 0) {
+        $this->json(['ok'=>false,'msg'=>'Sesión inválida. Vuelve a iniciar sesión.'], 401);
+    }
+
+    try {
+        $res = $this->model->guardarTramosYCostosTransaccional(
+            $operacionFerroId, $rutaId, $tramosPayload, $creadoPor
+        );
+        if (empty($res['ok'])) {
+            $this->json(['ok'=>false,'msg'=>$res['msg'] ?? 'No fue posible guardar los tramos.'], 500);
+        }
+        $this->json([
+            'ok'=>true,
+            'msg'=>'Tramos guardados correctamente.',
+            'data'=>[
+                'insertados'   => (int)$res['insertados'],
+                'actualizados' => (int)$res['actualizados'],
+                'eliminados'   => (int)$res['eliminados'],
+                'costos'       => (int)$res['costos'],
+            ]
+        ]);
+    } catch (Throwable $e) {
+        error_log("guardar_tramos ERROR: ".$e->getMessage());
+        $this->json(['ok'=>false,'msg'=>'Error interno al guardar tramos.'], 500);
+    }
+}
+
+// === APPEND-ONLY: inserta/actualiza; NO elimina tramos que no vengan ===
+public function guardar_tramos_append(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $this->json(['ok'=>false, 'msg'=>'Método no permitido'], 405);
+    }
+
+    $rutaId           = (int)($_POST['ruta_id'] ?? 0);
+    $operacionFerroId = (int)($_POST['operacion_ferro_id'] ?? 0);
+
+    $raw           = $_POST['rutasPayload'] ?? $_POST['tramos'] ?? '[]';
+    $tramosPayload = json_decode($raw, true);
+
+    if ($rutaId <= 0 || $operacionFerroId <= 0) {
+        $this->json(['ok'=>false,'msg'=>'ruta_id y operacion_ferro_id son requeridos.'], 400);
+    }
+    if (!is_array($tramosPayload) || empty($tramosPayload)) {
+        $this->json(['ok'=>false,'msg'=>'No hay tramos para guardar.'], 400);
+    }
+
+    if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+    $creadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+    if ($creadoPor <= 0) {
+        $this->json(['ok'=>false, 'msg'=>'Sesión inválida. Vuelve a iniciar sesión.'], 401);
+    }
+
+    try {
+        $res = $this->model->guardarTramosAppendOnly(
+            $operacionFerroId, $rutaId, $tramosPayload, $creadoPor
+        );
+        if (empty($res['ok'])) {
+            $this->json(['ok'=>false, 'msg'=>$res['msg'] ?? 'No fue posible guardar.'], 500);
+        }
+        $this->json([
+            'ok'=>true,
+            'msg'=>'Tramos guardados (sin eliminar existentes).',
+            'data'=>[
+                'insertados'   => (int)$res['insertados'],
+                'actualizados' => (int)$res['actualizados'],
+                'costos'       => (int)$res['costos'],
+            ]
+        ]);
+    } catch (Throwable $e) {
+        error_log('guardar_tramos_append: ' . $e->getMessage());
+        $this->json(['ok'=>false, 'msg'=>'Error interno al guardar.'], 500);
+    }
+}
+
+
+
+
 }

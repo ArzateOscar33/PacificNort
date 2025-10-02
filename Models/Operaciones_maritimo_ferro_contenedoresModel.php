@@ -263,8 +263,8 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
                     ON cd.id_ciudad = ofx.destino_id
             LEFT  JOIN estatus es
                     ON es.id_estatus = ofx.estatus_id               -- 👈 NUEVO
-            WHERE ofx.estatus_id IN (1,5,9,10)
-            AND o.estatus_id   IN (1,5,9,10)
+            WHERE ofx.estatus_id IN (1,5,9,10,7)
+            AND o.estatus_id   IN (1,5,9,10,7)
             {$whereBusq}
             {$whereDate}
             GROUP BY

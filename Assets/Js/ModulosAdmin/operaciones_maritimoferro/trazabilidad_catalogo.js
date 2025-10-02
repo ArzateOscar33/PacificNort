@@ -443,17 +443,27 @@ inpTransNom.addEventListener("input", debounce(function(){
   });
 
   // Hooks de acción de fila (placeholder)
-  tbody?.addEventListener('click', function(ev){
-    const btn = ev.target.closest('button[data-action]');
-    if (!btn) return;
-    const action = btn.getAttribute('data-action');
-    const id     = Number(btn.getAttribute('data-id') || 0);
-    if (!id) return;
+tbody?.addEventListener('click', function(ev){
+  const btn = ev.target.closest('button[data-action]');
+  if (!btn) return;
+  const action = btn.getAttribute('data-action');
+  const id     = Number(btn.getAttribute('data-id') || 0);
+  if (!id) return;
 
-    if (action === 'ver'){ console.log('ver ruta', id); /* abre modal detalle */ }
-    else if (action === 'editar'){ console.log('editar ruta', id); /* abre modal edición */ }
-    else if (action === 'eliminar'){ console.log('eliminar ruta', id); /* confirm + delete */ }
-  });
+  if (action === 'ver'){
+    console.log('ver ruta', id);
+  } else if (action === 'editar'){
+    // >>> Abrir modal de edición con esa ruta
+    if (typeof window.editarRutaFerro === 'function') {
+      window.editarRutaFerro(id);
+    } else {
+      console.error('window.editarRutaFerro no está disponible. ¿Cargaste el JS del modal?');
+    }
+  } else if (action === 'eliminar'){
+    console.log('eliminar ruta', id);
+  }
+});
+
 
   // ----- Inicio -----
   cargar();
