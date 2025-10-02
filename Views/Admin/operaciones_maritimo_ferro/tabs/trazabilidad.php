@@ -268,7 +268,7 @@
 
 
 
-
+<script src="<?php echo BASE_URL ?>/assets/js/modulosadmin/operaciones_maritimoferro/trazabilidad_catalogo.js"></script>
 <script>
   // Si no lo tienes en otro lado:
   // const BASE_URL = "<?= BASE_URL ?>";

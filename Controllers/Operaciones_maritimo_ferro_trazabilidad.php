@@ -8,7 +8,236 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
             @session_start();
         }
     }
+ /* ===========================
+     * Helpers de respuesta JSON
+     * =========================== */
+    private function json($payload, int $code = 200): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
- 
- 
+    private function badRequest(string $msg): void
+    {
+        $this->json(['ok' => false, 'msg' => $msg], 400);
+    }
+
+    private function notFound(string $msg): void
+    {
+        $this->json(['ok' => false, 'msg' => $msg], 404);
+    }
+
+    /* =======================================================
+     * GET /operaciones_maritimo_ferro_trazabilidad/sugerencias_operaciones_ferro?q=FO-01&limit=10
+     * Autosuggest para "Operación Ferroviaria" (por número FO, ferro/caja o cliente)
+     * ======================================================= */
+    public function sugerencias_operaciones_ferro(): void
+    {
+        // 1) Leer inputs
+        $q     = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        if ($q === '') {
+            $this->badRequest('Parámetro q requerido.');
+        }
+        if ($limit <= 0 || $limit > 50) { $limit = 10; }
+
+        // 2) Consultar modelo
+        try {
+            $rows = $this->model->buscarOperacionesFerroSugerencias($q, $limit);
+        } catch (Throwable $e) {
+            error_log('sugerencias_operaciones_ferro: ' . $e->getMessage());
+            $this->json(['ok' => false, 'msg' => 'Error al buscar sugerencias.'], 500);
+        }
+
+        // 3) Dar respuesta (lista plana ideal para pintar list-group)
+        // Estructura sugerida para el frontend:
+        // [
+        //   { "id": 123, "numero_operacion": "FO-0001", "numero_ferro": "FX12345", "cliente": "ACME" }
+        // ]
+        $data = array_map(function($r) {
+            return [
+                'id'               => (int)$r['id_operacion_ferro'],
+                'numero_operacion' => (string)$r['numero_operacion'],
+                'numero_ferro'     => (string)($r['numero_ferro'] ?? ''),
+                'cliente'          => (string)($r['cliente_nombre'] ?? '')
+            ];
+        }, $rows ?? []);
+
+        $this->json(['ok' => true, 'items' => $data]);
+    }
+
+    /* =======================================================
+     * GET /operaciones_maritimo_ferro_trazabilidad/datos_modal_trazabilidad?id=123
+     * ======================================================= */
+    public function datos_modal_trazabilidad(): void
+    {
+        // 1) Validar id
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) {
+            $this->badRequest('ID inválido.');
+        }
+
+        // 2) Leer paquete desde el modelo
+        try {
+            $pack = $this->model->getDatosModalTrazabilidad($id);
+        } catch (Throwable $e) {
+            error_log('datos_modal_trazabilidad: ' . $e->getMessage());
+            $this->json(['ok' => false, 'msg' => 'Error al leer datos de la operación.'], 500);
+        }
+
+        if (!$pack || empty($pack['operacion'])) {
+            $this->notFound('Operación ferroviaria no encontrada.');
+        }
+
+        // 3) Normalizar salida para el modal
+        // operacion: id, numero_operacion, fecha, comentarios, estatus_id, cliente (id/nombre)
+        $op = $pack['operacion'];
+        $operacion = [
+            'id_operacion_ferro' => (int)$op['id_operacion_ferro'],
+            'numero_operacion'   => (string)$op['numero_operacion'],
+            'fecha'              => (string)($op['fecha'] ?? ''),
+            'comentarios'        => (string)($op['comentarios'] ?? ''),
+            'estatus_id'         => isset($op['estatus_id']) ? (int)$op['estatus_id'] : null,
+            'cliente_id'         => isset($op['cliente_id']) ? (int)$op['cliente_id'] : null,
+            'cliente_nombre'     => (string)($op['cliente_nombre'] ?? '')
+        ];
+
+        // ferro: id_fisico, numero_ferro
+        $ferro = $pack['ferro'] ? [
+            'id_fisico'    => isset($pack['ferro']['id_fisico']) ? (int)$pack['ferro']['id_fisico'] : (int)$op['contenedor_fisico_id'],
+            'numero_ferro' => (string)($pack['ferro']['numero_ferro'] ?? $op['numero_ferro'] ?? '')
+        ] : [
+            'id_fisico'    => isset($op['contenedor_fisico_id']) ? (int)$op['contenedor_fisico_id'] : null,
+            'numero_ferro' => (string)($op['numero_ferro'] ?? '')
+        ];
+
+        // clientes: lista [{id_cliente, nombre}]
+        $clientes = array_map(function($c){
+            return [
+                'id_cliente' => (int)$c['id_cliente'],
+                'nombre'     => (string)$c['nombre']
+            ];
+        }, $pack['clientes'] ?? []);
+
+        // 4) Respuesta
+        $this->json([
+            'ok'        => true,
+            'operacion' => $operacion,
+            'ferro'     => $ferro,
+            'clientes'  => $clientes
+        ]);
+    }
+
+    /* =======================================================
+     * (OPCIONAL) GET /operaciones_maritimo_ferro_trazabilidad/ferro_por_operacion?id=123
+     * Si quieres un endpoint específico para revalidar el ferro/caja 1:1
+     * ======================================================= */
+    public function ferro_por_operacion(): void
+    {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) { $this->badRequest('ID inválido.'); }
+
+        try {
+            $row = $this->model->getFerroDeOperacionFerro($id);
+        } catch (Throwable $e) {
+            error_log('ferro_por_operacion: ' . $e->getMessage());
+            $this->json(['ok' => false, 'msg' => 'Error al leer ferro.'], 500);
+        }
+
+        if (!$row) { $this->notFound('No se encontró ferro/caja para esta operación.'); }
+
+        $this->json([
+            'ok' => true,
+            'ferro' => [
+                'id_fisico'    => (int)$row['id_fisico'],
+                'numero_ferro' => (string)$row['numero_ferro']
+            ]
+        ]);
+    }
+       /* =======================
+     * LUGARES (ciudades/puertos)
+     * ======================= */
+
+       ///operaciones_maritimo_ferro_trazabilidad/sugerencias_lugares?q=Laz
+       ///operaciones_maritimo_ferro_trazabilidad/sugerencias_ciudades?q=tij
+    public function sugerencias_lugares(): void
+    {
+        $term  = isset($_GET['q']) ? trim($_GET['q']) : '';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        if ($term === '') {
+            $this->json(['ok'=>false, 'msg'=>'Parámetro q requerido'], 400);
+        }
+        $rows = $this->model->buscarLugares($term, $limit);
+
+        $items = array_map(function($r){
+            return [
+                'id'    => (int)$r['id'],
+                'nombre'=> (string)$r['nombre'],
+                'tipo'  => (string)$r['tipo']  // ciudad|puerto
+            ];
+        }, $rows ?? []);
+
+        $this->json(['ok'=>true, 'items'=>$items]);
+    }
+
+    //operaciones_maritimo_ferro_trazabilidad/sugerencias_ciudades?q=tij
+    public function sugerencias_ciudades(): void
+    {
+        $term  = isset($_GET['q']) ? trim($_GET['q']) : '';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        if ($term === '') {
+            $this->json(['ok'=>false, 'msg'=>'Parámetro q requerido'], 400);
+        }
+        $rows = $this->model->buscarCiudades($term, $limit);
+
+        $items = array_map(function($r){
+            return ['id'=>(int)$r['id'], 'nombre'=>(string)$r['nombre']];
+        }, $rows ?? []);
+
+        $this->json(['ok'=>true, 'items'=>$items]);
+    }
+    //operaciones_maritimo_ferro_trazabilidad/sugerencias_puertos?q=Lazaro
+    public function sugerencias_puertos(): void
+    {
+        $term  = isset($_GET['q']) ? trim($_GET['q']) : '';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        if ($term === '') {
+            $this->json(['ok'=>false, 'msg'=>'Parámetro q requerido'], 400);
+        }
+        $rows = $this->model->buscarPuertos($term, $limit);
+
+        $items = array_map(function($r){
+            return ['id'=>(int)$r['id'], 'nombre'=>(string)$r['nombre']];
+        }, $rows ?? []);
+
+        $this->json(['ok'=>true, 'items'=>$items]);
+    }
+
+    /* =======================
+     * TRANSPORTISTAS
+     * ======================= */
+    // operaciones_maritimo_ferro_trazabilidad/sugerencias_transportistas?q=ferro&tipo=ferroviario
+    public function sugerencias_transportistas(): void
+    {
+        $term  = isset($_GET['q']) ? trim($_GET['q']) : '';
+        $tipo  = isset($_GET['tipo']) ? trim($_GET['tipo']) : 'ferroviario';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        if ($term === '') {
+            $this->json(['ok'=>false, 'msg'=>'Parámetro q requerido'], 400);
+        }
+
+        $rows = $this->model->buscarTransportistas($term, $tipo, $limit);
+
+        $items = array_map(function($r){
+            return [
+                'id'    => (int)$r['id'],
+                'nombre'=> (string)$r['nombre'],
+                'tipo'  => (string)$r['tipo']
+            ];
+        }, $rows ?? []);
+
+        $this->json(['ok'=>true, 'items'=>$items]);
+    }
 }
