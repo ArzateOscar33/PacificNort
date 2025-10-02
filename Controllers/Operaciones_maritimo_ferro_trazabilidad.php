@@ -198,22 +198,7 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
 
         $this->json(['ok'=>true, 'items'=>$items]);
     }
-    //operaciones_maritimo_ferro_trazabilidad/sugerencias_puertos?q=Lazaro
-    public function sugerencias_puertos(): void
-    {
-        $term  = isset($_GET['q']) ? trim($_GET['q']) : '';
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-        if ($term === '') {
-            $this->json(['ok'=>false, 'msg'=>'Parámetro q requerido'], 400);
-        }
-        $rows = $this->model->buscarPuertos($term, $limit);
-
-        $items = array_map(function($r){
-            return ['id'=>(int)$r['id'], 'nombre'=>(string)$r['nombre']];
-        }, $rows ?? []);
-
-        $this->json(['ok'=>true, 'items'=>$items]);
-    }
+ 
 
     /* =======================
      * TRANSPORTISTAS
@@ -239,5 +224,43 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
         }, $rows ?? []);
 
         $this->json(['ok'=>true, 'items'=>$items]);
+    }
+
+    //REGISTRAR
+     public function crear_ruta_ferro(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['ok'=>false,'msg'=>'Método no permitido'], 405);
+        }
+
+        // 1) Leer inputs
+        $opId   = (int)($_POST['operacion_ferro_id']   ?? 0);
+        $fisId  = (int)($_POST['contenedor_fisico_id'] ?? 0);
+        $coment = isset($_POST['comentario']) ? trim((string)$_POST['comentario'])
+                 : (isset($_POST['comentario_ruta']) ? trim((string)$_POST['comentario_ruta']) : null);
+
+        // 2) Validaciones mínimas
+        if ($opId <= 0 || $fisId <= 0) {
+            $this->json(['ok'=>false, 'msg'=>'operacion_ferro_id y contenedor_fisico_id son requeridos.'], 400);
+        }
+
+        // 3) Insertar ruta
+        try {
+            $rutaId = $this->model->crearRutaFerro($opId, $fisId, $coment);
+        } catch (Throwable $e) {
+            error_log('crear_ruta_ferro ERROR: '.$e->getMessage());
+            $this->json(['ok'=>false, 'msg'=>'Error al crear la ruta.'], 500);
+        }
+
+        if ($rutaId <= 0) {
+            $this->json(['ok'=>false, 'msg'=>'No fue posible registrar la ruta.'], 500);
+        }
+
+        // 4) Respuesta OK
+        $this->json([
+            'ok'      => true,
+            'ruta_id' => (int)$rutaId,
+            'msg'     => 'Ruta creada correctamente.'
+        ]);
     }
 }

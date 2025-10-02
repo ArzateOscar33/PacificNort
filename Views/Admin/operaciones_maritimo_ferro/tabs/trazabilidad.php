@@ -135,17 +135,14 @@
                   <!-- Sugerencias ferro/caja -->
                   <div id="sugFerrosRuta" class="list-group position-absolute w-100"
                        style="z-index:1055; display:none;"></div>
-                  <div class="form-text">Se habilita al elegir la operación ferroviaria.</div>
+                   
                 </div>
 
                 <!-- Clientes detectados en esta operación (opcional informativo) -->
                 <div class="col-12">
                   <label class="form-label mb-1">Clientes en esta operación</label>
                   <div id="rutaClientesChips" class="d-flex flex-wrap gap-2"> 
-                    <span class="badge bg-success text-white">Cliente A</span>
-                    <span class="badge bg-success text-white">Cliente B</span>
-                    <span class="badge bg-success text-white">Cliente C</span>
-                    <span class="badge bg-success text-white">Cliente D</span>
+                     
                     
                   </div>
                   <div class="form-text"></div>
@@ -269,6 +266,7 @@
 
 
 <script src="<?php echo BASE_URL ?>/assets/js/modulosadmin/operaciones_maritimoferro/trazabilidad_catalogo.js"></script>
+<script src="<?php echo BASE_URL ?>/assets/js/modulosadmin/operaciones_maritimoferro/trazabilidad_registrar.js"></script>
 <script>
   // Si no lo tienes en otro lado:
   // const BASE_URL = "<?= BASE_URL ?>";
@@ -276,6 +274,7 @@
 </script>
 
 <script>
+  /*
 (function(){
   "use strict";
 
@@ -459,9 +458,11 @@
   // ===== Inicio
   cargar();
 })();
+*/
 </script>
  
 <script>
+  /*
 (function(){
   "use strict";
 
@@ -696,7 +697,7 @@
     fd.append('ferro_id', rutaFerroId.value);
     fd.append('rutas', rutasPayload.value); // JSON de tramos
     xhr.send(fd);
-    */
+   
 
     // De momento solo mostramos un OK de ejemplo:
     f.ok('Simulación: se enviaría el JSON de tramos al servidor.');
@@ -710,5 +711,6 @@
 
   // Render inicial
   feather.replace();
-})();
+  
+})(); */
 </script>

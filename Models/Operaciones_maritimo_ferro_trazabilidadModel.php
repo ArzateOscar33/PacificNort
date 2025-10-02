@@ -179,11 +179,10 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         $limC  = max(1, (int)floor($limit / 2));
         $limP  = $limit - $limC;
 
-        $ciudades = $this->buscarCiudades($term, $limC);
-        $puertos  = $this->buscarPuertos($term, $limP);
+        $ciudades = $this->buscarCiudades($term, $limC); 
 
         // Mezcla simple (puedes mejorar priorizando coincidencias exactas)
-        return array_values(array_merge($ciudades, $puertos));
+        return array_values(array_merge($ciudades));
     }
 
     /* =================
@@ -198,7 +197,7 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     public function buscarTransportistas(string $term, string $tipo = 'ferroviario', int $limit = 10): array
     {
         $like  = '%' . trim($term) . '%';
-        $tipo  = in_array($tipo, ['terrestre','maritimo','ferroviario'], true) ? $tipo : 'ferroviario';
+        $tipo  = in_array($tipo, ['terrestre','maritimo','ferroviario'], true) ? $tipo : 'ferroviario' ;
         $limit = max(1, min(50, (int)$limit));
 
         $sql = "
@@ -221,5 +220,12 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     {
         return $this->buscarTransportistas($term, 'ferroviario', $limit);
     }
-    
+    //REGISTRAR
+    public function crearRutaFerro(int $operacionFerroId, int $contenedorFisicoId, ?string $comentario = null): int
+{
+    $sql = "INSERT INTO rutas_ferro (operacion_ferro_id, contenedor_fisico_id, comentario)
+            VALUES (?, ?, ?)";
+    return (int)$this->insertar($sql, [$operacionFerroId, $contenedorFisicoId, $comentario]);
+}
+
 }

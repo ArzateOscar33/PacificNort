@@ -246,7 +246,7 @@ inpTransNom.addEventListener("input", debounce(function(){
       const btn = document.createElement("button");
       btn.type="button";
       btn.className="list-group-item list-group-item-action";
-      btn.textContent = item.nombre;
+      btn.textContent = item.nombre+ "-"+ (item.tipo);
       btn.onclick = function(){
         hidTransId.value = item.id;
         inpTransNom.value = item.nombre;
