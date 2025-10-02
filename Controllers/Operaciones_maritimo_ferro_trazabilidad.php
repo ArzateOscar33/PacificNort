@@ -263,4 +263,79 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
             'msg'     => 'Ruta creada correctamente.'
         ]);
     }
+
+    //TRAMOS
+    public function guardar_tramos(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $this->json(['ok'=>false,'msg'=>'Método no permitido'], 405);
+    }
+
+    // 1) Insumos
+    $rutaId            = (int)($_POST['ruta_id'] ?? 0);
+    $operacionFerroId  = (int)($_POST['operacion_ferro_id'] ?? 0);
+
+    // Los tramos (carrito) llegan ya sea en "rutasPayload" (de tu hidden) o "tramos"
+    $raw = $_POST['rutasPayload'] ?? $_POST['tramos'] ?? '[]';
+    $tramosPayload = json_decode($raw, true);
+
+    if ($rutaId <= 0 || $operacionFerroId <= 0) {
+        $this->json(['ok'=>false,'msg'=>'ruta_id y operacion_ferro_id son requeridos.'], 400);
+    }
+    if (!is_array($tramosPayload) || empty($tramosPayload)) {
+        $this->json(['ok'=>false,'msg'=>'No hay tramos para guardar.'], 400);
+    }
+
+    // 2) Usuario (desde backend)
+    if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+    $creadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+    if ($creadoPor <= 0) {
+        $this->json(['ok'=>false,'msg'=>'Sesión inválida. Vuelve a iniciar sesión.'], 401);
+    }
+
+    // 3) Guardar (transacción total)
+    try {
+        $res = $this->model->guardarTramosYCostosTransaccional(
+            $operacionFerroId, $rutaId, $tramosPayload, $creadoPor
+        );
+        if (!$res['ok']) {
+            $this->json(['ok'=>false,'msg'=>$res['msg'] ?? 'No fue posible guardar los tramos.'], 500);
+        }
+        $this->json(['ok'=>true, 'data'=>$res, 'msg'=>'Tramos guardados correctamente.']);
+    } catch (Throwable $e) {
+        error_log("guardar_tramos ERROR: ".$e->getMessage());
+        $this->json(['ok'=>false,'msg'=>'Error interno al guardar tramos.'], 500);
+    }
+}
+public function rutas_list(): void
+    {
+        try {
+            // Sanitizar/leer query params
+            $q       = isset($_GET['q'])      ? trim((string)$_GET['q']) : '';
+            $desde   = isset($_GET['desde'])  ? trim((string)$_GET['desde']) : null;
+            $hasta   = isset($_GET['hasta'])  ? trim((string)$_GET['hasta']) : null;
+            $page    = isset($_GET['page'])   ? (int)$_GET['page'] : 1;
+            $perPage = isset($_GET['perPage'])? (int)$_GET['perPage'] : 10;
+
+            // Llamar al modelo
+            $res = $this->model->listarRutasFerroCatalogo($q, $desde, $hasta, $page, $perPage);
+
+            // Formato directo para tu JS de catálogo
+            $out = [
+                'ok'    => (bool)($res['ok'] ?? false),
+                'total' => (int)($res['total'] ?? 0),
+                'from'  => (int)($res['from'] ?? 0),
+                'to'    => (int)($res['to'] ?? 0),
+                'data'  => $res['data'] ?? []
+            ];
+
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($out);
+        } catch (Throwable $e) {
+            error_log("rutas_list error: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok'=>false, 'total'=>0, 'data'=>[], 'msg'=>'Error interno al listar rutas.']);
+        }
+    }
 }

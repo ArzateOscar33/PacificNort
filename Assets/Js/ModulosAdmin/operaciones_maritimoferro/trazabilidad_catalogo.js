@@ -261,3 +261,202 @@ inpTransNom.addEventListener("input", debounce(function(){
 
 
 })();
+// ===============================================
+// Catálogo Rutas Ferro/Caja — Listado & Paginación
+// ===============================================
+(function(){
+  "use strict";
+
+  // ----- Refs -----
+  const tbody   = document.getElementById("tbodyRutasFerro");
+  const emptyTr = document.getElementById("rutasEmptyRow");
+  const meta    = document.getElementById("rutasMeta");
+  const ulPag   = document.getElementById("rutasPaginacion");
+
+  const inpQ    = document.getElementById("rutasBuscar");
+  const inpIni  = document.getElementById("rutasFechaIni");
+  const inpFin  = document.getElementById("rutasFechaFin");
+  const selPer  = document.getElementById("rutasPerPage");
+
+  const btnXls  = document.getElementById("rutasExcel");
+  const btnPdf  = document.getElementById("rutasPdf");
+
+  // ----- Estado -----
+  let page    = 1;
+  let perPage = Number(selPer?.value || 10);
+  let total   = 0;
+  let rows    = [];
+  let inflight = null;
+  let tmr = null;
+
+  // ----- Utils -----
+  const U = {
+    money(n){ return Number(n || 0).toLocaleString('es-MX', { style:'currency', currency:'MXN' }); },
+    fmt(iso){
+      if(!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString();
+    },
+    setMeta(){
+      const from = total === 0 ? 0 : ((page-1)*perPage + 1);
+      const to   = total === 0 ? 0 : Math.min(total, page*perPage);
+      if (meta) meta.textContent = `Mostrando ${from}–${to} de ${total}`;
+    },
+    renderPag(){
+      if (!ulPag) return;
+      ulPag.innerHTML = '';
+      const pages = Math.max(1, Math.ceil(total / perPage));
+      const add = (p, label, disabled=false, active=false)=>{
+        const li = document.createElement('li');
+        li.className = `page-item ${disabled?'disabled':''} ${active?'active':''}`;
+        li.innerHTML = `<a class="page-link" href="#" data-page="${p}">${label}</a>`;
+        ulPag.appendChild(li);
+      };
+      add(Math.max(1, page-1), '«', page===1);
+      for (let i=1;i<=pages;i++){
+        if (i===1 || i===pages || Math.abs(i-page)<=2){
+          add(i, i, false, i===page);
+        } else if (Math.abs(i-page)===3) {
+          const li = document.createElement('li');
+          li.className = 'page-item disabled';
+          li.innerHTML = `<span class="page-link">…</span>`;
+          ulPag.appendChild(li);
+        }
+      }
+      add(Math.min(pages, page+1), '»', page===pages);
+    },
+    renderRows(){
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!Array.isArray(rows) || rows.length === 0){
+        if (emptyTr){ emptyTr.style.display=''; tbody.appendChild(emptyTr); }
+        U.setMeta(); U.renderPag(); feather?.replace(); return;
+      }
+      if (emptyTr){ emptyTr.style.display='none'; }
+
+      rows.forEach(it=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="fw-semibold">${it.operacion_numero || '-'}</div> 
+          </td>
+          <td>
+            <div class="fw-semibold">${it.ferro_nombre || '-'}</div> 
+          </td>
+          <td>${it.cliente || '-'}</td>
+          <td>${it.origen_inicial || '-'}</td>
+          <td><span class="badge bg-info text-white">${it.destino_actual || '-'}</span></td>
+          <td class="text-center"><span class="badge bg-secondary text-white">${it.tramos_count || 0}</span></td>
+          <td class="text-end"><span class="badge bg-warning text-dark">${U.money(it.costo_acumulado || 0)}</span></td>
+          <td>${U.fmt(it.updated_at)}</td>
+          <td class="text-nowrap"> 
+            <button class="btn btn-sm btn-outline-success me-1" data-action="editar" data-id="${it.ferro_ruta_id}">
+              <i data-feather="edit-2"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" data-action="eliminar" data-id="${it.ferro_ruta_id}">
+              <i data-feather="trash-2"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      U.setMeta(); U.renderPag(); feather?.replace();
+    },
+    debounce(fn, ms=300){
+      return function(){ clearTimeout(tmr); tmr = setTimeout(()=>fn.apply(this, arguments), ms); };
+    }
+  };
+
+  // ----- Fetch -----
+  function cargar(){
+    // cancelar inflight
+    try { if (inflight && inflight.readyState !== 4) inflight.abort(); } catch(_){}
+
+    const q     = (inpQ?.value || '').trim();
+    const desde = (inpIni?.value || '').trim();
+    const hasta = (inpFin?.value || '').trim();
+
+    const params = new URLSearchParams({
+      q, desde, hasta,
+      page: String(page),
+      perPage: String(perPage)
+    });
+
+    inflight = new XMLHttpRequest();
+    inflight.open('GET', BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_list?' + params.toString(), true);
+
+    // loading
+    if (tbody){
+      tbody.innerHTML = `
+        <tr><td colspan="9" class="text-center text-muted py-4">
+          Cargando…
+        </td></tr>`;
+    }
+
+    inflight.onreadystatechange = function(){
+      if (inflight.readyState !== 4) return;
+      if (inflight.status !== 200){
+        rows = []; total = 0;
+        U.renderRows();
+        console.error('rutas_list error:', inflight.responseText);
+        return;
+      }
+      let res;
+      try { res = JSON.parse(inflight.responseText || '{}'); } catch(e){ res = { ok:false, data:[] }; }
+
+      if (!res.ok){ rows=[]; total=0; U.renderRows(); return; }
+      rows  = Array.isArray(res.data) ? res.data : [];
+      total = Number(res.total || 0);
+      U.renderRows();
+    };
+
+    inflight.send();
+  }
+
+  // ----- Eventos -----
+  inpQ?.addEventListener('input', U.debounce(()=>{ page=1; cargar(); }, 350));
+  inpIni?.addEventListener('change', ()=>{ page=1; cargar(); });
+  inpFin?.addEventListener('change', ()=>{ page=1; cargar(); });
+  selPer?.addEventListener('change', ()=>{ perPage = Number(selPer.value||10); page=1; cargar(); });
+
+  ulPag?.addEventListener('click', function(ev){
+    const a = ev.target.closest('a[data-page]');
+    if (!a) return;
+    ev.preventDefault();
+    const p = Number(a.getAttribute('data-page'));
+    if (Number.isInteger(p) && p>0 && p !== page){ page = p; cargar(); }
+  });
+
+  // Export (si tus endpoints existen)
+  btnXls?.addEventListener('click', function(){
+    const qs = new URLSearchParams({
+      q: inpQ?.value || '', desde: inpIni?.value || '', hasta: inpFin?.value || ''
+    });
+    window.open(BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_export_excel?' + qs.toString(), '_blank');
+  });
+  btnPdf?.addEventListener('click', function(){
+    const qs = new URLSearchParams({
+      q: inpQ?.value || '', desde: inpIni?.value || '', hasta: inpFin?.value || ''
+    });
+    window.open(BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_export_pdf?' + qs.toString(), '_blank');
+  });
+
+  // Hooks de acción de fila (placeholder)
+  tbody?.addEventListener('click', function(ev){
+    const btn = ev.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+    const id     = Number(btn.getAttribute('data-id') || 0);
+    if (!id) return;
+
+    if (action === 'ver'){ console.log('ver ruta', id); /* abre modal detalle */ }
+    else if (action === 'editar'){ console.log('editar ruta', id); /* abre modal edición */ }
+    else if (action === 'eliminar'){ console.log('eliminar ruta', id); /* confirm + delete */ }
+  });
+
+  // ----- Inicio -----
+  cargar();
+  // expón si quieres refrescar desde fuera
+  window.cargarRutasFerroCatalogo = cargar;
+})();

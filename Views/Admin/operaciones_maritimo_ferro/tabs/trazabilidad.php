@@ -239,7 +239,7 @@
                     <tr>
                       <th colspan="4" class="text-end">Total:</th>
                       <th class="text-end">
-                        <span id="totalMonto" class="badge bg-success">0.00</span>
+                        <span id="totalMonto" class="badge bg-success text-white">0.00</span>
                       </th>
                       <th colspan="2"></th>
                     </tr>
