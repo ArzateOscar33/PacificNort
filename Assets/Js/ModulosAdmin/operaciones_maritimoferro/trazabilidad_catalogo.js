@@ -442,6 +442,67 @@ inpTransNom.addEventListener("input", debounce(function(){
     window.open(BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_export_pdf?' + qs.toString(), '_blank');
   });
 
+  // ----- Helpers para eliminar -----
+function confirmarBajaRuta(rutaId){
+  return new Promise((resolve)=>{
+    if (window.Swal){
+      Swal.fire({
+        icon: "warning",
+        title: "¿Dar de baja la ruta?",
+        html: "Se desactivará la <b>ruta</b>, sus <b>tramos</b> y los <b>costos de transporte</b> de la FO asociada.",
+        showCancelButton: true,
+        confirmButtonText: "Sí, dar de baja",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true
+      }).then(r => resolve(!!r.isConfirmed));
+    } else {
+      resolve(confirm("Se dará de baja la ruta, sus tramos y costos de transporte. ¿Continuar?"));
+    }
+  });
+}
+
+function postBajaRutaFerro(rutaId){
+  return new Promise((resolve)=>{
+    const fd = new FormData();
+    fd.append("ruta_id", String(rutaId));
+    // Si el endpoint permite IDs de tipo transporte personalizados, podrías añadirlos:
+    // fd.append("transport_ids", JSON.stringify([23]));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/baja_ruta_ferro", true);
+
+    // (Opcional) token CSRF si lo usas:
+    // xhr.setRequestHeader("X-CSRF-Token", CSRF_TOKEN);
+
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState !== 4) return;
+      try {
+        resolve(JSON.parse(xhr.responseText || "{}"));
+      } catch(e){
+        resolve({ ok:false, msg:"Respuesta inválida del servidor." });
+      }
+    };
+    xhr.send(fd);
+  });
+}
+
+// Mini feedback en el botón para evitar doble click
+function setBtnBusy(btn, busy=true){
+  if (!btn) return;
+  btn.disabled = !!busy;
+  const icon = btn.querySelector("i[data-feather]");
+  if (busy){
+    btn.dataset._oldHtml = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Procesando…`;
+  } else {
+    if (btn.dataset._oldHtml){
+      btn.innerHTML = btn.dataset._oldHtml;
+      delete btn.dataset._oldHtml;
+      feather?.replace();
+    }
+  }
+}
+
   // Hooks de acción de fila (placeholder)
 tbody?.addEventListener('click', function(ev){
   const btn = ev.target.closest('button[data-action]');
@@ -460,8 +521,36 @@ tbody?.addEventListener('click', function(ev){
       console.error('window.editarRutaFerro no está disponible. ¿Cargaste el JS del modal?');
     }
   } else if (action === 'eliminar'){
-    console.log('eliminar ruta', id);
-  }
+  const btnRef = btn; // referencia al botón clicado
+
+  (async () => {
+    const ok = await confirmarBajaRuta(id);
+    if (!ok) return;
+
+    setBtnBusy(btnRef, true);
+    const res = await postBajaRutaFerro(id);
+    setBtnBusy(btnRef, false);
+
+    if (!res || !res.ok){
+      if (window.Swal) Swal.fire("Error", res?.msg || "No fue posible dar de baja la ruta.", "error");
+      else alert(res?.msg || "No fue posible dar de baja la ruta.");
+      return;
+    }
+
+    if (window.Swal) Swal.fire("Hecho", "Ruta y dependencias dadas de baja.", "success");
+    else alert("Ruta y dependencias dadas de baja.");
+
+    // refresca el listado
+    page = 1; // opcional: regresar a la primera página
+    cargar();
+
+    // si el modal de edición estaba abierto sobre esa ruta, ciérralo
+    const modalEl = document.getElementById("modalRutasFerro");
+    if (modalEl && modalEl.classList.contains("show") && window.bootstrap?.Modal){
+      bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    }
+  })();
+}
 });
 
 

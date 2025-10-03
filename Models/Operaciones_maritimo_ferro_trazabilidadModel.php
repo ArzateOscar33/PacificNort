@@ -243,7 +243,7 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     {
         $sql = "SELECT id_tramo, ruta_id, orden, origen_id, destino_id, transportista_id, monto, comentario
               FROM rutas_ferro_tramos
-             WHERE ruta_id = ?
+             WHERE ruta_id = ? AND estatus = 1
              ORDER BY orden ASC, id_tramo ASC";
         return $this->selectAll($sql, [$rutaId]) ?: [];
     }
@@ -331,57 +331,59 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
 
 
     //LISTAR PAGINADO
-    public function listarRutasFerroCatalogo(
-        string $q = '',
-        ?string $desde = null,
-        ?string $hasta = null,
-        int $page = 1,
-        int $perPage = 10
-    ): array {
-        $page    = max(1, (int)$page);
-        $perPage = max(1, min(200, (int)$perPage));
-        $offset  = ($page - 1) * $perPage;
+  public function listarRutasFerroCatalogo(
+    string $q = '',
+    ?string $desde = null,
+    ?string $hasta = null,
+    int $page = 1,
+    int $perPage = 10
+): array {
+    $page    = max(1, (int)$page);
+    $perPage = max(1, min(200, (int)$perPage));
+    $offset  = ($page - 1) * $perPage;
 
-        // Normalizar filtros
-        $buscar = trim($q) !== '' ? '%' . trim($q) . '%' : null;
-        $useDate = (!empty($desde) || !empty($hasta));
+    $buscar  = trim($q) !== '' ? '%' . trim($q) . '%' : null;
+    $useDate = (!empty($desde) || !empty($hasta));
 
-        // --- Subquery: agregados de tramos (count, sum, max_updated)
-        // FIX: rutas_ferro_tramos NO tiene updated_at; usar created_at.
-        $sqlAggTramos = "
+    // Agregados SOLO con tramos activos
+    $sqlAggTramos = "
         SELECT 
             t.ruta_id,
             COUNT(*)                 AS tramos_count,
             COALESCE(SUM(t.monto),0) AS costo_acumulado,
             MAX(t.created_at)        AS t_max_updated
         FROM rutas_ferro_tramos t
+        WHERE t.estatus = 1
         GROUP BY t.ruta_id
     ";
 
-        // --- Subquery: primer tramo por ruta (para origen)
-        $sqlFirst = "
+    // Primer tramo (de tramos activos)
+    $sqlFirst = "
         SELECT tt.ruta_id, tt.id_tramo, tt.origen_id
         FROM rutas_ferro_tramos tt
         INNER JOIN (
             SELECT ruta_id, MIN(orden) AS min_orden
             FROM rutas_ferro_tramos
+            WHERE estatus = 1
             GROUP BY ruta_id
         ) x ON x.ruta_id = tt.ruta_id AND x.min_orden = tt.orden
+        WHERE tt.estatus = 1
     ";
 
-        // --- Subquery: último tramo por ruta (para destino)
-        $sqlLast = "
+    // Último tramo (de tramos activos)
+    $sqlLast = "
         SELECT tt.ruta_id, tt.id_tramo, tt.destino_id
         FROM rutas_ferro_tramos tt
         INNER JOIN (
             SELECT ruta_id, MAX(orden) AS max_orden
             FROM rutas_ferro_tramos
+            WHERE estatus = 1
             GROUP BY ruta_id
         ) x ON x.ruta_id = tt.ruta_id AND x.max_orden = tt.orden
+        WHERE tt.estatus = 1
     ";
 
-        // --- Subquery: clientes (TODOS) por operación_ferro
-        $sqlClientesOp = "
+    $sqlClientesOp = "
         SELECT 
             z.operacion_ferro_id,
             GROUP_CONCAT(DISTINCT c.nombre ORDER BY c.nombre SEPARATOR ', ') AS clientes
@@ -400,64 +402,64 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         GROUP BY z.operacion_ferro_id
     ";
 
-        // --- SQL base con joins y agregados
-        $sqlBase = "
+    // Base: IMPORTANTE -> rf.estatus = 1 (solo rutas activas)
+    $sqlBase = "
         FROM rutas_ferro rf
         INNER JOIN operaciones_ferroviarias ofe 
                 ON ofe.id_operacion_ferro = rf.operacion_ferro_id
-        LEFT JOIN contenedores_fisicos cf 
+        LEFT JOIN  contenedores_fisicos cf 
                 ON cf.id_fisico = rf.contenedor_fisico_id
 
         LEFT JOIN ($sqlAggTramos) agg  ON agg.ruta_id  = rf.id_ruta
         LEFT JOIN ($sqlFirst)     f    ON f.ruta_id    = rf.id_ruta
         LEFT JOIN ($sqlLast)      l    ON l.ruta_id    = rf.id_ruta
 
-        LEFT JOIN ciudades cori ON cori.id_ciudad = f.origen_id     -- origen inicial
-        LEFT JOIN ciudades cdes ON cdes.id_ciudad = l.destino_id    -- destino actual
+        LEFT JOIN ciudades cori ON cori.id_ciudad = f.origen_id
+        LEFT JOIN ciudades cdes ON cdes.id_ciudad = l.destino_id
 
         LEFT JOIN ($sqlClientesOp) cli ON cli.operacion_ferro_id = ofe.id_operacion_ferro
+        WHERE rf.estatus = 1
     ";
 
-        // Campo de fecha efectiva para filtro/orden
-        $fechaOrden = "COALESCE(agg.t_max_updated, rf.updated_at, rf.created_at)";
+    $fechaOrden = "COALESCE(agg.t_max_updated, rf.updated_at, rf.created_at)";
 
-        // --- WHERE dinámico
-        $wheres = [];
-        $paramsCount = [];
-        $paramsData  = [];
+    // WHERE dinámico (se añade encima de rf.estatus=1 ya presente en $sqlBase)
+    $wheres = [];
+    $paramsCount = [];
+    $paramsData  = [];
 
-        if ($buscar !== null) {
-            $wheres[] = "(ofe.numero_operacion LIKE ? 
-                      OR cf.numero_ferro LIKE ?
-                      OR cli.clientes LIKE ?
-                      OR cori.nombre_ciudad LIKE ?
-                      OR cdes.nombre_ciudad LIKE ?)";
-            array_push($paramsCount, $buscar, $buscar, $buscar, $buscar, $buscar);
-            array_push($paramsData,  $buscar, $buscar, $buscar, $buscar, $buscar);
+    if ($buscar !== null) {
+        $wheres[] = "(ofe.numero_operacion LIKE ? 
+                  OR cf.numero_ferro LIKE ?
+                  OR cli.clientes LIKE ?
+                  OR cori.nombre_ciudad LIKE ?
+                  OR cdes.nombre_ciudad LIKE ?)";
+        array_push($paramsCount, $buscar, $buscar, $buscar, $buscar, $buscar);
+        array_push($paramsData,  $buscar, $buscar, $buscar, $buscar, $buscar);
+    }
+
+    if ($useDate) {
+        if (!empty($desde)) {
+            $wheres[] = "DATE($fechaOrden) >= ?";
+            $paramsCount[] = $desde;
+            $paramsData[]  = $desde;
         }
-
-        if ($useDate) {
-            if (!empty($desde)) {
-                $wheres[] = "DATE($fechaOrden) >= ?";
-                $paramsCount[] = $desde;
-                $paramsData[]  = $desde;
-            }
-            if (!empty($hasta)) {
-                $wheres[] = "DATE($fechaOrden) <= ?";
-                $paramsCount[] = $hasta;
-                $paramsData[]  = $hasta;
-            }
+        if (!empty($hasta)) {
+            $wheres[] = "DATE($fechaOrden) <= ?";
+            $paramsCount[] = $hasta;
+            $paramsData[]  = $hasta;
         }
+    }
 
-        $whereSql = count($wheres) ? ("WHERE " . implode(" AND ", $wheres)) : "";
+    $whereSqlExtra = count($wheres) ? (" AND " . implode(" AND ", $wheres)) : "";
 
-        // --- TOTAL
-        $sqlTotal = "SELECT COUNT(*) AS total " . $sqlBase . " " . $whereSql;
-        $rowTot = $this->select($sqlTotal, $paramsCount);
-        $total = $rowTot ? (int)$rowTot['total'] : 0;
+    // TOTAL (ya incluye rf.estatus=1 en $sqlBase)
+    $sqlTotal = "SELECT COUNT(*) AS total " . $sqlBase . $whereSqlExtra;
+    $rowTot   = $this->select($sqlTotal, $paramsCount);
+    $total    = $rowTot ? (int)$rowTot['total'] : 0;
 
-        // --- DATA
-        $sqlData = "
+    // DATA
+    $sqlData = "
         SELECT
             rf.id_ruta                  AS ferro_ruta_id,
             ofe.id_operacion_ferro     AS operacion_id,
@@ -474,27 +476,24 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
             COALESCE(agg.costo_acumulado, 0)  AS costo_acumulado,
 
             $fechaOrden                 AS updated_at
-        " . $sqlBase . "
-        $whereSql
+        " . $sqlBase . $whereSqlExtra . "
         ORDER BY $fechaOrden DESC, rf.id_ruta DESC
         LIMIT $perPage OFFSET $offset
     ";
-        $rows = $this->selectAll($sqlData, $paramsData) ?: [];
+    $rows = $this->selectAll($sqlData, $paramsData) ?: [];
 
-        // Rango mostrado
-        $from = ($total === 0) ? 0 : ($offset + 1);
-        $to   = ($total === 0) ? 0 : min($total, $offset + $perPage);
+    $from = ($total === 0) ? 0 : ($offset + 1);
+    $to   = ($total === 0) ? 0 : min($total, $offset + $perPage);
 
-        return [
-            'ok'    => true,
-            'total' => $total,
-            'from'  => $from,
-            'to'    => $to,
-            'data'  => $rows
-        ];
-    }
- 
- 
+    return [
+        'ok'    => true,
+        'total' => $total,
+        'from'  => $from,
+        'to'    => $to,
+        'data'  => $rows
+    ];
+}
+
 
     // === HEADER de la ruta (solo lectura para el modal de edición)
     public function getRutaFerroHeaderByRutaId(int $rutaId): ?array
@@ -563,7 +562,7 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         LEFT JOIN ciudades       co ON co.id_ciudad = t.origen_id
         LEFT JOIN ciudades       cd ON cd.id_ciudad = t.destino_id
         LEFT JOIN transportistas tr ON tr.id_transportista = t.transportista_id
-        WHERE t.ruta_id = ?
+        WHERE t.ruta_id = ? AND t.estatus = 1
         ORDER BY t.orden ASC, t.id_tramo ASC
     ";
         return $this->selectAll($sql, [$rutaId]) ?: [];
@@ -774,5 +773,101 @@ private function ordenDisponible(int $rutaId, int $orden): bool {
     $row = $this->select("SELECT 1 FROM rutas_ferro_tramos WHERE ruta_id=? AND orden=? LIMIT 1", [$rutaId, $orden]);
     return !$row; // true si NO existe
 }
+public function bajaLogicaRutaFerroSinRutaId(
+    int $rutaId,
+    int $usuarioId,
+    array $transportTypeIds = [23] // <- aquí define(s) tus tipos "Transporte"
+): array {
+    // 0) FO (encabezado) de la ruta
+    $row = $this->select(
+        "SELECT operacion_ferro_id 
+           FROM rutas_ferro 
+          WHERE id_ruta = ? AND estatus = 1 
+          LIMIT 1",
+        [$rutaId]
+    );
+    if (!$row) {
+        return ['ok'=>false, 'msg'=>'Ruta no encontrada o ya dada de baja.'];
+    }
+    $operacionFerroId = (int)$row['operacion_ferro_id'];
+
+    // Build IN (?, ?, ?) para los tipos de transporte
+    $transportTypeIds = array_values(array_unique(array_map('intval', $transportTypeIds)));
+    if (empty($transportTypeIds)) {
+        return ['ok'=>false, 'msg'=>'No se definieron tipos de movimiento de transporte.'];
+    }
+    $marks = implode(',', array_fill(0, count($transportTypeIds), '?'));
+    $paramsTipos = $transportTypeIds; // para reuso
+
+    try {
+        $this->save("START TRANSACTION", []);
+
+        // 1) Apagar TRAMOS de la ruta
+        $ok1 = $this->save(
+            "UPDATE rutas_ferro_tramos 
+                SET estatus = 0 
+              WHERE ruta_id = ? AND estatus = 1",
+            [$rutaId]
+        );
+        if ($ok1 === false) {
+            $this->save("ROLLBACK", []);
+            return ['ok'=>false, 'msg'=>'No fue posible desactivar tramos.'];
+        }
+
+        // 2) Apagar COSTOS de TRANSPORTE de la FO (afecta todos los costos transporte de la FO)
+        $paramsCostos = array_merge([$operacionFerroId], $paramsTipos);
+        $ok2 = $this->save(
+            "UPDATE costos_operacion_ferro 
+                SET estatus = 0
+              WHERE operacion_ferro_id = ?
+                AND tipo_movimiento_id IN ($marks)
+                AND estatus = 1",
+            $paramsCostos
+        );
+        if ($ok2 === false) {
+            $this->save("ROLLBACK", []);
+            return ['ok'=>false, 'msg'=>'No fue posible desactivar costos de transporte.'];
+        }
+
+        // 3) Apagar la RUTA
+        $ok3 = $this->save(
+            "UPDATE rutas_ferro 
+                SET estatus = 0, updated_at = NOW()
+              WHERE id_ruta = ? AND estatus = 1",
+            [$rutaId]
+        );
+        if ($ok3 === false) {
+            $this->save("ROLLBACK", []);
+            return ['ok'=>false, 'msg'=>'No fue posible desactivar la ruta.'];
+        }
+
+        // 4) (Opcional) Bitácora
+        if ($usuarioId > 0) {
+            @$this->insertarBitacora(
+                $usuarioId, 'trazabilidad_ferro', 'baja_logica',
+                'rutas_ferro', $rutaId, 
+                'Baja lógica: ruta_ferro + tramos + costos transporte (FO='.$operacionFerroId.')'
+            );
+        }
+
+        $this->save("COMMIT", []);
+        return [
+            'ok'    => true,
+            'msg'   => 'Ruta y dependencias (tramos + costos de transporte) desactivadas.',
+            // Tip: algunos drivers regresan 0/1; si quieres conteos reales, haz SELECT COUNT(*) previos.
+        ];
+    } catch (Throwable $e) {
+        $this->save("ROLLBACK", []);
+        error_log('bajaLogicaRutaFerroSinRutaId: '.$e->getMessage());
+        return ['ok'=>false, 'msg'=>'Error interno en la transacción.'];
+    }
+}
+
+// (Opcional) si no la tienes ya:
+private function insertarBitacora(int $usuarioId, string $modulo, string $accion, string $entidad, int $entidadId, string $detalle=''): void {
+    $sql = "INSERT INTO bitacora (usuario_id, modulo, accion, entidad, entidad_id, detalle) VALUES (?, ?, ?, ?, ?, ?)";
+    $this->insertar($sql, [$usuarioId, $modulo, $accion, $entidad, $entidadId, $detalle]);
+}
+
 
 }

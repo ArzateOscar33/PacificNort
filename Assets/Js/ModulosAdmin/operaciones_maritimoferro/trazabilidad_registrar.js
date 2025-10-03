@@ -81,7 +81,6 @@
     });
   }
 
-  // ===== FASE 2: Guardar tramos + costos por tramo =====
 
   // ===== FASE 2: Guardar tramos + costos por tramo =====
 async function guardarTramosTrazabilidad(rutaId, operacionFerroId){

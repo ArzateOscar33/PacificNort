@@ -451,5 +451,22 @@ public function guardar_tramos_append(): void
 
 
 
+public function baja_ruta_ferro() {
+    if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+
+    $rutaId  = (int)($_POST['ruta_id'] ?? 0);
+    $userId  = (int)($_SESSION['id_usuario'] ?? 0);
+
+    if ($rutaId <= 0 || $userId <= 0) {
+        $this->json(['ok'=>false, 'msg'=>'Parámetros inválidos.']);
+        return;
+    }
+
+    // Si algún día cambias los IDs de “transporte”, pásalos aquí:
+    $transportIds = [23]; 
+
+    $resp = $this->model->bajaLogicaRutaFerroSinRutaId($rutaId, $userId, $transportIds);
+    $this->json($resp);
+}
 
 }
