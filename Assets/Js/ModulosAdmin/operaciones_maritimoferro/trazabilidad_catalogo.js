@@ -57,7 +57,7 @@ const sugTrans    = document.getElementById("sugTransportistasRuta");
       if(!data){ hidFerroId.value = ""; inpFerroNom.value = ""; return; }
       hidFerroId.value  = data.id_fisico != null ? String(data.id_fisico) : "";
       inpFerroNom.value = data.numero_ferro || "";
-      inpFerroNom.disabled = false; // lo habilitamos por si quieres editar/confirmar
+      //inpFerroNom.disabled = false; // lo habilitamos por si quieres editar/confirmar
     },
     setOperacion(op){
       hidOpId.value       = op.id_operacion_ferro != null ? String(op.id_operacion_ferro) : "";

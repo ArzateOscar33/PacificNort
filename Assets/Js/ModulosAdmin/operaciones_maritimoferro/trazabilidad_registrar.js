@@ -200,10 +200,14 @@ async function guardarTramosTrazabilidad(rutaId, operacionFerroId){
     if (typeof window.cargarRutasFerroCatalogo === "function") {
       window.cargarRutasFerroCatalogo();
     }
-    const modalEl = document.getElementById("modalRutasFerro");
-    if (modalEl && window.bootstrap?.Modal) {
-      bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-    }
+// Limpiar y cerrar modal
+const modalEl = document.getElementById("modalRutasFerro");
+if (modalEl && window.bootstrap?.Modal) {
+  const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modalInstance.hide();
+  // El evento 'hidden.bs.modal' se encargará de limpiar
+}
+    
   });
 
   // ===============================
@@ -421,7 +425,7 @@ async function guardarTramosTrazabilidad(rutaId, operacionFerroId){
     document
       .getElementById("rutaOperacionFerroNombre")
       ?.removeAttribute("readonly");
-    document.getElementById("rutaFerroNombre")?.removeAttribute("readonly");
+    //document.getElementById("rutaFerroNombre")?.removeAttribute("readonly");
     inpOrigenNomTraz?.removeAttribute("readonly");
   }
 
@@ -533,19 +537,103 @@ async function guardarTramosTrazabilidad(rutaId, operacionFerroId){
     }
   };
 
-  // Cuando vayas a crear NUEVA ruta (alta), asegúrate de resetear:
-  window.nuevaRutaFerro = function () {
-    isEditTraz = false;
-    rutaIdTrazabilidad = null;
-    tramosTraz.length = 0;
-    utilTraz.render();
-    utilTraz.syncPayload();
-    unlockHeaderTraz();
-    // limpia encabezado si quieres...
-    const opNom = document.getElementById("rutaOperacionFerroNombre");
-    const fxNom = document.getElementById("rutaFerroNombre");
-    if (opNom) opNom.value = "";
-    if (fxNom) fxNom.value = "";
-    if (inpComentarioRuta) inpComentarioRuta.value = "";
-  };
+// Cuando vayas a crear NUEVA ruta (alta)
+window.nuevaRutaFerro = function () {
+  limpiarModalRutasTraz(); // Usa la función centralizada
+};
+
+
+// Función para limpiar completamente el modal
+function limpiarModalRutasTraz() {
+  // Resetear modo
+  isEditTraz = false;
+  rutaIdTrazabilidad = null;
+
+  // Limpiar encabezado
+  hidOpIdTrazabilidad.value = "";
+  hidFerroIdTrazabilidad.value = "";
+  
+  const opNom = document.getElementById("rutaOperacionFerroNombre");
+  const fxNom = document.getElementById("rutaFerroNombre");
+  
+  if (opNom) {
+    opNom.value = "";
+    opNom.removeAttribute("readonly"); // Activo para poder registrar
+  }
+  
+  if (fxNom) {
+    fxNom.value = "";
+    fxNom.disabled = true; // Deshabilitar hasta que se seleccione operación
+    //fxNom.removeAttribute("readonly"); // Remover readonly también
+  }
+  
+  if (inpComentarioRuta) inpComentarioRuta.value = "";
+
+  // Limpiar chips de clientes
+  const chipsClientes = document.getElementById("rutaClientesChips");
+  if (chipsClientes) {
+    chipsClientes.innerHTML = `<span class="text-muted small">Sin clientes detectados para esta operación.</span>`;
+  }
+
+  // Limpiar inputs de línea de tramo
+  hidOrigenIdTraz.value = "";
+  if (inpOrigenNomTraz) {
+    inpOrigenNomTraz.value = "";
+    inpOrigenNomTraz.removeAttribute("readonly"); // Activo para poder escribir
+  }
+  
+  hidDestinoIdTraz.value = "";
+  if (inpDestinoNomTraz) inpDestinoNomTraz.value = "";
+  
+  hidTransIdTraz.value = "";
+  if (inpTransNomTraz) inpTransNomTraz.value = "";
+  
+  if (inpMontoTraz) inpMontoTraz.value = "";
+  if (inpComentTraz) inpComentTraz.value = "";
+
+  // Limpiar carrito de tramos
+  tramosTraz.length = 0;
+  utilTraz.render();
+  utilTraz.syncPayload();
+
+  // Limpiar el payload hidden explícitamente
+  if (payloadHiddenTraz) payloadHiddenTraz.value = "";
+
+  // Desbloquear campos (por si venía de edición)
+  unlockHeaderTraz();
+  
+  // Limpiar sugerencias visibles (del archivo trazabilidad.txt)
+  const sugOpsBox = document.getElementById("sugOperacionesFerroRuta");
+  const sugFerrosBox = document.getElementById("sugFerrosRuta");
+  const sugOrigenes = document.getElementById("sugOrigenesRuta");
+  const sugDestinos = document.getElementById("sugDestinosRuta");
+  const sugTrans = document.getElementById("sugTransportistasRuta");
+  
+  if (sugOpsBox) {
+    sugOpsBox.innerHTML = "";
+    sugOpsBox.style.display = "none";
+  }
+  if (sugFerrosBox) {
+    sugFerrosBox.innerHTML = "";
+    sugFerrosBox.style.display = "none";
+  }
+  if (sugOrigenes) {
+    sugOrigenes.innerHTML = "";
+    sugOrigenes.style.display = "none";
+  }
+  if (sugDestinos) {
+    sugDestinos.innerHTML = "";
+    sugDestinos.style.display = "none";
+  }
+  if (sugTrans) {
+    sugTrans.innerHTML = "";
+    sugTrans.style.display = "none";
+  }
+}
+
+// Limpiar modal al cerrarse (tanto después de guardar como al cancelar)
+const modalRutasFerro = document.getElementById("modalRutasFerro");
+modalRutasFerro?.addEventListener('hidden.bs.modal', function () {
+  limpiarModalRutasTraz();
+});
 })();

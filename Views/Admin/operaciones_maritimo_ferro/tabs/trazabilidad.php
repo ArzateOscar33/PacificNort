@@ -4,9 +4,12 @@
 
 <!-- Botón para abrir el modal de Rutas Ferro/Caja -->
 <div class="d-flex justify-content-end mb-3">
-  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalRutasFerro">
-    <i data-feather="map"></i> Rutas Ferro/Caja
-  </button>
+<button class="btn btn-success" 
+        onclick="window.nuevaRutaFerro()" 
+        data-bs-toggle="modal" 
+        data-bs-target="#modalRutasFerro">
+  <i data-feather="map"></i> Nueva Ruta Ferro/Caja
+</button>
 </div>
 <!-- ========== RESUMEN DE RUTAS FERRO/CAJA (COMPACTO) ========== -->
 <div class="card mt-4" id="rutasFerroResumen">
