@@ -20,7 +20,7 @@
                      <div class="mb-2">
                          <label for="selectContenedorResumen" class="form-label">Seleccionar Contenedor:</label>
                          <div class="d-flex gap-2">
-                             <select class="form-control" id="selectContenedorResumen">
+                             <select class="form-control" id="selectContenedorResumen" readonly disabled>
                                  <option value="">-- Selecciona una Operación --</option>
                              </select>
                              <button class="btn btn-outline-secondary" id="btnRefrescarResumen" title="Refrescar">

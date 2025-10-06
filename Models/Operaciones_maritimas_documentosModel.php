@@ -16,6 +16,7 @@ class Operaciones_maritimas_documentosModel extends Query
             LEFT JOIN clientes cl ON cl.id_cliente = o.cliente_id
             WHERE LOWER(o.numero_operacion) LIKE ?
               AND o.estatus_id IN (1,5,9)
+              AND o.tipo_operacion_id IN(1)
             ORDER BY o.id_operacion DESC
             LIMIT 20
         ";
