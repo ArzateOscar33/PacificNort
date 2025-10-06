@@ -225,10 +225,17 @@ window.editarFerroOP = function (idRow) {
     if (contFerroId)  contFerroId.value  = d.ferro_id || '';
     if (contFerroNom) contFerroNom.value = d.ferro || ''; // "FX-001" por ejemplo
 
-    const transportistaId = document.getElementById('transportistaIdFerroOP');
-    const transportistaNom= document.getElementById('transportistaNombreFerroOP');
-    if (transportistaId)  transportistaId.value  = d.transportista_id || '';
-    if (transportistaNom) transportistaNom.value = d.transportista || '';
+    // Auto-set del ferro con el setter público
+    if (typeof window.setFerroDeOperacion === 'function') {
+      window.setFerroDeOperacion({ id: d.ferro_id, label: d.ferro });
+    } else {
+      // fallback por si el setter no existiera
+      const contFerroId  = document.getElementById('contenedorFerroIdFerroOP');
+      const contFerroNom = document.getElementById('contenedorFerroNombreFerroOP');
+      if (contFerroId)  contFerroId.value  = d.ferro_id || '';
+      if (contFerroNom) contFerroNom.value = d.ferro || '';
+    }
+
 
     const destinoId = document.getElementById('destinoIdFerroOP');
     const destinoNom= document.getElementById('destinoNombreFerroOP');
@@ -307,6 +314,17 @@ window.editarFerroOP = function (idRow) {
   const comentarioLineaInp = document.getElementById('comentarioLineaFerroOP');
 
   let carrito = [];  
+  // Setter público para auto-seleccionar el ferro desde cualquier flujo
+  window.setFerroDeOperacion = function ({ id, label } = {}) {
+    const hid = document.getElementById('contenedorFerroIdFerroOP');
+    const inp = document.getElementById('contenedorFerroNombreFerroOP');
+    if (hid) hid.value = id ? String(id) : '';
+    if (inp) inp.value = label || '';
+  };
+
+  // (Opcional) evitar captura manual si así lo decidiste
+  const ferroName = document.getElementById('contenedorFerroNombreFerroOP');
+  if (ferroName) ferroName.readOnly = true;
 
   function toast(msg, ok = true) {
     if (window.Swal) {
