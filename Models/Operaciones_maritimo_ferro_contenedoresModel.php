@@ -24,7 +24,7 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
     {
         $q = trim($q);
         $args = [];
-        $where = " WHERE o.estatus_id IN (1,5,9,10) ";
+        $where = " WHERE o.estatus_id IN (1,5,9,10)  AND o.tipo_operacion_id IN(11)";
 
         if ($q !== '') {
             $where .= " AND (LOWER(o.numero_operacion) LIKE ?) ";
@@ -242,7 +242,7 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
 
                 ofx.fecha                                                     AS fecha_header,
 
-                COALESCE(es.nombre, '')                                       AS estatus   -- 👈 NUEVO
+                COALESCE(es.nombre, '')                                       AS estatus   
 
             FROM operaciones_ferroviarias ofx
             INNER JOIN contenedor_maritimo_ferro cmf
@@ -262,7 +262,7 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
             LEFT  JOIN ciudades cd
                     ON cd.id_ciudad = ofx.destino_id
             LEFT  JOIN estatus es
-                    ON es.id_estatus = ofx.estatus_id               -- 👈 NUEVO
+                    ON es.id_estatus = ofx.estatus_id               
             WHERE ofx.estatus_id IN (1,5,9,10,7)
             AND o.estatus_id   IN (1,5,9,10,7)
             {$whereBusq}
@@ -276,7 +276,7 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
                 cf.numero_ferro,
                 destino,
                 ofx.fecha,
-                es.nombre                                            -- 👈 NUEVO
+                es.nombre                                            
         ";
 
 

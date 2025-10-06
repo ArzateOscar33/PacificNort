@@ -178,7 +178,79 @@
   perPageSelFerroOP?.addEventListener("change", function () { currentPageFerroOP = 1; cargarTablaFerroOP(); });
 
   // Hooks placeholder (editar/eliminar)
-  window.editarFerroOP = function (idRow) { console.log("editarFerroOP", idRow); };
+  // Hooks placeholder (editar/eliminar)
+window.editarFerroOP = function (idRow) {
+  const form = document.getElementById('formFerroOP');
+  if (!form) return;
+
+  // 1) Modo edición
+  form.dataset.mode = 'edit';
+
+  // 2) Limpiar visuales mínimos de selector (opcional, según tu flujo)
+  //    No resetees todo con resetModalFerroOP() porque eso te volvería a "create".
+  //    Si quieres ocultar el selector aquí, puedes:
+  const selectorMar = document.getElementById('selectorMaritimoFerroOP');
+  const btnAgregar  = document.getElementById('btnAgregarMaritimoFerroOP');
+  if (selectorMar) selectorMar.classList.remove('d-none');
+  if (btnAgregar)  btnAgregar.classList.add('d-none');
+
+  // 3) Traer datos del registro para llenar el modal
+  const x = new XMLHttpRequest();
+  x.open('GET', BASE_URL + 'Operaciones_maritimo_ferro_contenedores/obtener?id=' + encodeURIComponent(idRow), true);
+  x.onload = function(){
+    if (x.status !== 200) { console.error('No se pudo cargar el detalle'); return; }
+    let res = {};
+    try { res = JSON.parse(x.responseText || '{}'); } catch(_) {}
+
+    if (!res || res.ok !== true || !res.data) {
+      console.error('Respuesta inválida al obtener detalle');
+      return;
+    }
+
+    const d = res.data;
+
+    // ----- Campos del HEADER -----
+    // Número FO existente (NO debe cambiar en edición)
+    const inpNumeroFO = document.getElementById('operacionNombreFerroOP');
+    if (inpNumeroFO && d.numero_operacion_ferro) {
+      inpNumeroFO.value = d.numero_operacion_ferro;  // p.ej. "FO-12"
+    }
+
+    // Otros campos típicos del header (ajusta nombres según tu payload):
+    const fechaFerroOP = document.getElementById('fechaFerroOP');
+    if (fechaFerroOP && d.fecha_header) fechaFerroOP.value = d.fecha_header;
+
+    const contFerroId  = document.getElementById('contenedorFerroIdFerroOP');
+    const contFerroNom = document.getElementById('contenedorFerroNombreFerroOP');
+    if (contFerroId)  contFerroId.value  = d.ferro_id || '';
+    if (contFerroNom) contFerroNom.value = d.ferro || ''; // "FX-001" por ejemplo
+
+    const transportistaId = document.getElementById('transportistaIdFerroOP');
+    const transportistaNom= document.getElementById('transportistaNombreFerroOP');
+    if (transportistaId)  transportistaId.value  = d.transportista_id || '';
+    if (transportistaNom) transportistaNom.value = d.transportista || '';
+
+    const destinoId = document.getElementById('destinoIdFerroOP');
+    const destinoNom= document.getElementById('destinoNombreFerroOP');
+    if (destinoId)  destinoId.value  = d.destino_id || '';
+    if (destinoNom) destinoNom.value = d.destino || '';
+
+    // Si tu vista de edición también muestra líneas/“carrito”, aquí puedes setearlo:
+    if (Array.isArray(d.lineas) && typeof window.setCarritoFerroOP === 'function') {
+      // cada línea debería traer: cmo_id, bultos_asignados, numero_operacion, numero_contenedor, etc.
+      window.setCarritoFerroOP(d.lineas);
+    }
+
+    // 4) Abrir modal (IMPORTANTE: después de setear data-mode="edit")
+    const modalEl = document.getElementById('modalFerroOP');
+    if (modalEl && window.bootstrap?.Modal) {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  };
+  x.onerror = function(){ console.error('Error de red al obtener detalle'); };
+  x.send();
+};
+
   window.eliminarFerroOP = function (idRow) { console.log("eliminarFerroOP", idRow); };
 
   // === LIMITADOR EN TIEMPO REAL DEL SALDO ===
@@ -343,17 +415,27 @@ const btnCancel   = document.getElementById('btnCancelarMaritimoFerroOP');
 
 // Mostrar/ocultar bloque y botón Agregar (sin crear nuevos ids)
 function toggleSelectorMaritimo(show){
-  if (selectorMar) selectorMar.classList.toggle('d-none', !show);
-  if (btnAgregar)  btnAgregar.style.display  = show ? 'none' : '';
-  // Habilitar/deshabilitar Confirmar acorde al estado
+  if (selectorMar){
+    selectorMar.classList.toggle('d-none', !show);
+    // elimina cualquier inline style viejo que pueda quedar
+    selectorMar.style.removeProperty('display');
+  }
+  if (btnAgregar){
+    // el botón “Añadir” debe ocultarse cuando el selector está visible
+    btnAgregar.classList.toggle('d-none', !!show);
+    btnAgregar.style.removeProperty('display');
+  }
+  // habilita/deshabilita Confirmar acorde al estado
   const btnConf = document.getElementById('btnConfirmarMaritimoFerroOP');
   if (btnConf) btnConf.disabled = !show;
-  // Si se abre, enfocar el input de búsqueda
+
+  // al abrir, enfoca el input
   if (show) {
     const opInp = document.getElementById('operacionMaritimaNombreFerroOP');
     setTimeout(()=>{ opInp?.focus(); opInp?.select(); }, 0);
   }
 }
+
 
 // Al abrir modal: dejar el selector oculto y el botón Agregar visible
 (function initToggleEnModal(){
@@ -362,22 +444,19 @@ function toggleSelectorMaritimo(show){
   modal.addEventListener('shown.bs.modal', ()=> {
     const form = document.getElementById('formFerroOP');
     const enEdicion = form && form.dataset.mode === 'edit';
-    // En crear -> oculto; en editar -> muestro
+    // crear -> oculto; editar -> visible
     toggleSelectorMaritimo(!!enEdicion);
   });
 })();
 
 
-// Click en "Agregar Marítimo" -> mostrar bloque
-btnAgregar?.addEventListener('click', ()=> {
-  toggleSelectorMaritimo(true);
-});
 
-// Click en "Cancelar" (del bloque) -> limpiar línea y ocultar bloque
+btnAgregar?.addEventListener('click', ()=> { toggleSelectorMaritimo(true); });
 btnCancel?.addEventListener('click', ()=> {
-  if (typeof limpiarLinea === 'function') limpiarLinea(); // deja todo listo para la próxima
+  if (typeof limpiarLinea === 'function') limpiarLinea();
   toggleSelectorMaritimo(false);
 });
+
 
  
   // Botón confirmar del selector (agrega línea al carrito)
@@ -619,13 +698,24 @@ window.resetModalFerroOP = function resetModalFerroOP(){
   // 2) Limpiar SOLO la línea marítima (tu helper actual)
   if (typeof limpiarLinea === 'function') limpiarLinea();
 
-  // 3) Ocultar selector y mostrar botón "Agregar Marítimo"
-  if (selectorMar) selectorMar.style.display = 'none';
-  if (btnAgregar)  btnAgregar.style.display  = '';
-  if (btnConfirm)  btnConfirm.disabled = true;
+  // 3) Ocultar selector (solo d-none) y mostrar botón “Añadir”
+  if (selectorMar){
+    selectorMar.classList.add('d-none');
+    selectorMar.style.removeProperty('display');
+  }
+  if (btnAgregar){
+    btnAgregar.classList.remove('d-none');
+    btnAgregar.style.removeProperty('display');
+  }
+  if (btnConfirm) btnConfirm.disabled = true;
 
-  // 4) Limpiar campos generales del form
-  if (form) form.reset();
+
+// 4) Limpiar campos generales del form
+if (form) {
+  form.reset();
+  form.dataset.mode = 'create';   // <- AÑADE ESTO para que la próxima apertura sea "crear"
+}
+
 
   // 5) Reponer la fila "noMaritimosMessage" en la tabla
   const tbodySel = document.getElementById('tbodyMaritimosSeleccionados');

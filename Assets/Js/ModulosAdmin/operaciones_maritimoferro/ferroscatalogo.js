@@ -320,41 +320,48 @@ function onPickOp(it){
 
 })();
 
-// ==============
+ 
 // Pre-llenar número FO-## al abrir el modal
 // ==============
 (function(){
   "use strict";
   const modal = document.getElementById('modalFerroOP');
   const inpNumeroFO = document.getElementById('operacionNombreFerroOP');
-
+const form = document.getElementById('formFerroOP');
+if (form) form.dataset.mode = 'edit';
   if (!modal || !inpNumeroFO) return;
+modal.addEventListener('shown.bs.modal', function(){
+  const form = document.getElementById('formFerroOP');
+  const isEdit = form && form.dataset.mode === 'edit';
+  if (isEdit) {
+    // En edición NO hacer preview; respetar el FO ya cargado en editarFerroOP()
+    return;
+  }
 
-  modal.addEventListener('shown.bs.modal', function(){
-    inpNumeroFO.value = '';
-    const x = new XMLHttpRequest();
-    const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/numero_fo_preview';
-    x.open('GET', url, true);
-    x.onload = function(){
-      if (x.status !== 200) return;
-      try {
-        const res = JSON.parse(x.responseText || '{}');
-        if (res.ok && res.numero) inpNumeroFO.value = res.numero; // p.ej. FO-12
-      } catch(e){}
-    };
-    x.onerror = function(){};
-    x.send();
-  });
+  // Solo en crear: pedir preview
+  inpNumeroFO.value = '';
+  const x = new XMLHttpRequest();
+  const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/numero_fo_preview';
+  x.open('GET', url, true);
+  x.onload = function(){
+    if (x.status !== 200) return;
+    try {
+      const res = JSON.parse(x.responseText || '{}');
+      if (res.ok && res.numero) inpNumeroFO.value = res.numero; // p.ej. FO-12
+    } catch(e){}
+  };
+  x.onerror = function(){};
+  x.send();
+});
 
- (function attachModalReset(){
-  const modal = document.getElementById('modalFerroOP');
-  if (!modal) return;
+  (function attachModalReset(){
+    const modal = document.getElementById('modalFerroOP');
+    if (!modal) return;
+    modal.addEventListener('hidden.bs.modal', function(){
+      if (typeof window.resetModalFerroOP === 'function') window.resetModalFerroOP();
+    });
+  })();
 
-  // Se dispara cuando el modal YA se cerró (clic fuera, botón cancelar, tecla Esc, etc.)
-  modal.addEventListener('hidden.bs.modal', function(){
-    if (typeof window.resetModalFerroOP === 'function') window.resetModalFerroOP();
-  });
 })();
 
-})();
  
