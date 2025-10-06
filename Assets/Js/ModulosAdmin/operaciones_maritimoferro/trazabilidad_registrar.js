@@ -48,6 +48,14 @@
       return { opId, ferroId };
     },
   };
+function setOrigenReadonlyByState(){
+  if (!inpOrigenNomTraz) return;
+  if (tramosTraz.length > 0) {
+    inpOrigenNomTraz.setAttribute("readonly", "readonly");
+  } else {
+    inpOrigenNomTraz.removeAttribute("readonly");
+  }
+}
 
   /**
    * Crea encabezado en rutas_ferro
@@ -325,6 +333,7 @@ if (modalEl && window.bootstrap?.Modal) {
           utilTraz.syncPayload();
           // encadenar origen del siguiente tramo
           setNextOriginFromLastTraz();
+          setOrigenReadonlyByState(); 
         });
       });
     },
@@ -352,6 +361,27 @@ if (modalEl && window.bootstrap?.Modal) {
     inpMontoTraz.value = "";
     inpComentTraz.value = "";
   }
+// Hook global llamado desde el archivo del modal al detectar edición del nombre de operación
+window.onOperacionEditClear = function () {
+  // Limpia ids de encabezado dependientes
+  hidOpIdTrazabilidad.value = "";
+  hidFerroIdTrazabilidad.value = "";
+
+  // Ferro/caja: texto vacío y deshabilitado hasta seleccionar operación válida otra vez
+  const fxNom = document.getElementById("rutaFerroNombre");
+  if (fxNom) {
+    fxNom.value = "";
+    fxNom.disabled = true;
+  }
+
+  // Limpia inputs de línea y carrito completo de tramos
+  tramosTraz.length = 0;
+  utilTraz.render();
+  utilTraz.syncPayload();
+setOrigenReadonlyByState(); 
+  // Reinicia inputs de tramo (incluido ORIGEN)
+  resetLineaTraz(false);
+};
 
   // ---- Agregar tramo (botón +) ----
   btnAgregarTramoTraz?.addEventListener("click", function () {
@@ -394,6 +424,7 @@ if (modalEl && window.bootstrap?.Modal) {
     // Preparar siguiente: origen = destino recién agregado
     resetLineaTraz(true);
     setNextOriginFromLastTraz();
+    setOrigenReadonlyByState(); 
     inpDestinoNomTraz?.focus();
   });
 
@@ -607,6 +638,7 @@ function limpiarModalRutasTraz() {
   const sugOrigenes = document.getElementById("sugOrigenesRuta");
   const sugDestinos = document.getElementById("sugDestinosRuta");
   const sugTrans = document.getElementById("sugTransportistasRuta");
+  setOrigenReadonlyByState();
   
   if (sugOpsBox) {
     sugOpsBox.innerHTML = "";

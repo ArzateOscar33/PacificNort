@@ -71,11 +71,23 @@ const sugTrans    = document.getElementById("sugTransportistasRuta");
   function debounce(fn, wait){
     let t; return function(){ clearTimeout(t); t = setTimeout(()=>fn.apply(this, arguments), wait); };
   }
-
+let opNombreConfirmado = ""; // último número de operación confirmado por clic en sugerencia
   // ====== AUTOSUGGEST: Operación Ferroviaria ======
   inpOpNombre.addEventListener("input", debounce(function(){
     const term = (this.value || "").trim();
     hidOpId.value = ""; // si empieza a escribir, limpiamos selección previa
+    // Si el usuario modifica/borr(a) el texto de la operación previamente confirmada, limpiar todo
+if (opNombreConfirmado && (this.value || "") !== opNombreConfirmado) {
+  opNombreConfirmado = "";         // ya no hay una operación confirmada
+  hidOpId.value = "";              // sin selección
+  ui.setFerro(null);               // limpia ferro/caja
+  ui.renderClientes([]);           // limpia chips de clientes
+
+  // Si el archivo de registrar expone un hook para limpiar carrito/inputs, úsalo
+  if (typeof window.onOperacionEditClear === "function") {
+    window.onOperacionEditClear();
+  }
+}
     ui.empty(sugOpsBox);
 
     if(term.length === 0){ return; }
@@ -108,6 +120,7 @@ const sugTrans    = document.getElementById("sugTransportistasRuta");
           ui.empty(sugOpsBox);
           hidOpId.value     = String(item.id);
           inpOpNombre.value = item.numero_operacion || "";
+          opNombreConfirmado = item.numero_operacion || "";
 
           // Cargar datos completos para llenar Ferro y Clientes
           cargarDatosModal(Number(item.id));
