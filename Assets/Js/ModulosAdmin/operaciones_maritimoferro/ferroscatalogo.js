@@ -34,7 +34,11 @@
   const toInt = (v)=> Number.isFinite(Number(v)) ? Number(v) : 0;
   function showList(el){ if (el){ el.style.display = 'block'; } }
   function hideList(el){ if (el){ el.style.display = 'none'; el.innerHTML = ''; } }
-
+const form = document.getElementById("formFerroOP");
+ 
+if (form && !form.dataset.mode) {
+  form.dataset.mode = 'create';   // ← default al cargar la página
+}
   // ==============
   // AUTOCOMPLETE: Operación marítima (con MG incluido)
   // ==============
@@ -327,8 +331,9 @@ function onPickOp(it){
   "use strict";
   const modal = document.getElementById('modalFerroOP');
   const inpNumeroFO = document.getElementById('operacionNombreFerroOP');
-const form = document.getElementById('formFerroOP');
-if (form) form.dataset.mode = 'edit';
+//const form = document.getElementById('formFerroOP');
+//if (form) form.dataset.mode = 'edit';
+
   if (!modal || !inpNumeroFO) return;
 modal.addEventListener('shown.bs.modal', function(){
   const form = document.getElementById('formFerroOP');
