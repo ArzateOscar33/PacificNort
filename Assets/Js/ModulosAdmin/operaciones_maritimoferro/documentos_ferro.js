@@ -77,7 +77,7 @@
         btn.className = "list-group-item list-group-item-action";
         btn.innerHTML = `<div class="d-flex justify-content-between">
           <span>${escAttr(o.label)}</span>
-          <small class="text-muted">${o.contenedores||0} cont.</small>
+           
         </div>`;
         btn.onclick = ()=> seleccionarOperacion(o.id, o.label, (o.fuente || 'MF'));
         opSugBox.appendChild(btn);
@@ -538,7 +538,7 @@
         btn.className = "list-group-item list-group-item-action";
         btn.innerHTML = `<div class="d-flex justify-content-between">
           <span>${escAttr(o.label)}</span>
-          <small class="text-muted">${o.contenedores||0} cont.</small>
+           
         </div>`;
         btn.onclick = ()=> {
           mdOpId.value = String(o.id);
