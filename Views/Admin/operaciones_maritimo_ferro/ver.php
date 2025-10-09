@@ -22,7 +22,7 @@
         </li>
  
         <li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos</a>
+            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos Maritimos</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false">Documentos</a>

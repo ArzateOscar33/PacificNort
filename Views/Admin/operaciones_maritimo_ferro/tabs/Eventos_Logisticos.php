@@ -2,7 +2,7 @@
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
-        <i data-feather="file-text" class="me-1"></i> Eventos Logísticos
+        <i data-feather="file-text" class="me-1"></i> Eventos Logísticos (Marítimo)
       </h5>
       <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos"
         id="btnAbrirModalDetalles">
@@ -20,48 +20,47 @@
           <div class="position-relative">
             <input type="hidden" id="eventosFiltroOpId">
             <input type="text" id="eventosFiltroOpNombre" class="form-control"
-              placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
+              placeholder="Escribe para buscar (ej. LBMF-06)" autocomplete="off">
             <div id="eventosFiltroOpSugerencias" class="list-group"
               style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
           <div class="form-text" id="eventosFiltroOpMeta"></div>
         </div>
 
-        <!-- Contenedor FÍSICO (Caja/Ferro) con sugerencias -->
-        <div class=" col-md-4">
-          <label for="eventosFiltroContenedorNombre" class="form-label mb-1">Contenedor físico (Caja/Ferro)</label>
+        <!-- Contenedor MARÍTIMO con sugerencias -->
+        <div class="col-md-4">
+          <label for="eventosFiltroContMarNombre" class="form-label mb-1">Contenedor marítimo</label>
           <div class="position-relative">
-            <!-- Aquí guardamos el contenedor_operacion_id para filtrar -->
-            <input type="hidden" id="eventosFiltroContenedorId">
-            <input type="text" id="eventosFiltroContenedorNombre" class="form-control"
-              placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
-            <div id="eventosFiltroContenedorSugerencias" class="list-group"
+            <!-- Guardaremos el cont_maritimo_operacion.id para filtrar -->
+            <input type="hidden" id="eventosFiltroContMarId">
+            <input type="text" id="eventosFiltroContMarNombre" class="form-control"
+              placeholder="Escribe para buscar (ej. MG0001, WHSU..., OOLU...)" autocomplete="off">
+            <div id="eventosFiltroContMarSugerencias" class="list-group"
               style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
-
+          <div class="form-text" id="eventosFiltroContMarMeta"></div>
         </div>
 
         <!-- Buscador libre -->
-        <div class=" col-md-2">
-          <label for="buscarDetalles" class="form-label mb-1">Buscar</label>
-          <input id="buscarDetalles" class="form-control" placeholder="Buscar texto libre…">
+        <div class="col-md-2">
+          <label for="buscarEventosMar" class="form-label mb-1">Buscar</label>
+          <input id="buscarEventosMar" class="form-control" placeholder="Buscar texto libre…">
         </div>
 
-                        <div class="col-md-2">
-                    <button class="btn btn-sm btn-outline-success" id="btnExportarExcelEventosLogisticos">
-                        <i data-feather="file-text" class="me-1"></i> Excel
-                    </button>
-                    <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFEventosLogisticos">
-                        <i data-feather="file" class="me-1"></i> PDF
-                    </button>
-                </div>
+        <!-- Exportaciones -->
+        <div class="col-md-2 d-flex gap-2">
+          <button class="btn btn-sm btn-outline-success w-100" id="btnExportarExcelEventosLogisticos">
+            <i data-feather="file-text" class="me-1"></i> Excel
+          </button>
+          <button class="btn btn-sm btn-outline-warning w-100" id="btnExportarPDFEventosLogisticos">
+            <i data-feather="file" class="me-1"></i> PDF
+          </button>
+        </div>
 
-
-
-        <!-- perPage (IDs existentes) -->
+        <!-- perPage -->
         <div class="col-12 d-flex align-items-center justify-content-end gap-2">
-          <label for="detPerPage" class="mb-0 small text-muted">Mostrar</label>
-          <select id="detPerPage" class="form-control" style="width: 90px;">
+          <label for="evMarPerPage" class="mb-0 small text-muted">Mostrar</label>
+          <select id="evMarPerPage" class="form-control" style="width: 90px;">
             <option value="10" selected>10</option>
             <option value="25">25</option>
             <option value="50">50</option>
@@ -71,32 +70,37 @@
         </div>
       </div>
 
-      <!-- Tabla de eventos (por fila) -->
+      <!-- Tabla de eventos por contenedor marítimo -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle" id="tablaDetallesLogisticos">
+        <table class="table table-hover align-middle" id="tablaEventosMar">
           <thead class="table-primary">
-            <tr class="text-center">
-              <th>Evento</th>
-              <th>Fecha</th>
-              <th>Operación</th> 
-              <th>Contenedor</th> 
-              <th>Comentarios</th>
-              <th>Acciones</th>
+            <tr id="theadEventosMar" class="text-center">
+              <!-- Fijos -->
+              <th style="min-width: 140px;">Operación</th>
+              <th style="min-width: 180px;">Contenedor marítimo</th>
+              <!-- Dinámicos (JS): una <th> por cada tipo de evento marítimo -->
+              <!-- Ejemplo inyectado por JS:
+                   <th data-evt-id="8">Arribo A Puerto</th>
+                   <th data-evt-id="9">Cargado</th>
+                   <th data-evt-id="10">Entrega</th>
+                   <th data-evt-id="11">Cita en puerto</th>
+                   <th data-evt-id="14">Entrega Programada</th>
+              -->
             </tr>
           </thead>
-          <tbody id="tbodyDetallesLogisticos">
-            <!-- filas dinámicas -->
+          <tbody id="tbodyEventosMar">
+            <!-- JS: filas dinámicas. Cada <td> de evento mostrará la FECHA o vacío -->
           </tbody>
         </table>
 
         <!-- Paginación + resumen -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
           <div class="small text-muted">
-            <span id="detMetaResumen">Mostrando 0–0 de 0</span>
+            <span id="evMarMetaResumen">Mostrando 0–0 de 0</span>
           </div>
-          <nav aria-label="Paginación de detalles">
-            <ul id="paginacionDetalles" class="pagination pagination-sm mb-0">
-              <!-- Se llena desde JS -->
+          <nav aria-label="Paginación de eventos marítimos">
+            <ul id="evMarPaginacion" class="pagination pagination-sm mb-0">
+              <!-- JS -->
             </ul>
           </nav>
         </div>
@@ -105,6 +109,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- MODAL: Crear / Editar Evento Logístico -->
 <div class="modal fade" id="modalDetallesLogisticos" tabindex="-1" aria-hidden="true">
@@ -138,12 +143,12 @@
 
             <!-- Contenedor físico (Caja/Ferro) con sugerencias -->
             <div class="col-md-6">
-              <label for="eventoContenedorNombre" class="form-label">Contenedor físico (Caja/Ferro)</label>
+              <label for="eventoContenedorNombre" class="form-label">Contenedor</label>
               <div class="position-relative">
                 <!-- Guardaremos directamente el contenedor_operacion_id -->
                 <input type="hidden" id="eventoContenedorOperacionId" name="eventoContenedorOperacionId">
                 <input type="text" id="eventoContenedorNombre" class="form-control"
-                  placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off">
+                  placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off" readonly>
                 <div id="eventoContenedorSugerencias" class="list-group"
                   style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               </div>
@@ -190,8 +195,53 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="modalEvtCell" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title" id="modalEvtCellTitle">Evento</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEvtCell">
+        <div class="modal-body">
+          <input type="hidden" id="cellOpId">
+          <input type="hidden" id="cellCmoId">
+          <input type="hidden" id="cellEvtId">
+          <input type="hidden" id="cellIdEvento"> <!-- si existe -->
+
+          <div class="mb-2">
+            <label class="form-label">Operación</label>
+            <input id="cellOpTxt" class="form-control" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Contenedor</label>
+            <input id="cellCtnTxt" class="form-control" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Tipo de evento</label>
+            <input id="cellEvtTxt" class="form-control" readonly>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Fecha</label>
+            <input type="date" id="cellFecha" class="form-control" required>
+          </div>
+          <div>
+            <label class="form-label">Comentario</label>
+            <input id="cellComentario" class="form-control" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCellDelete" class="btn btn-outline-danger d-none">Eliminar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script>
   feather.replace();
 </script>
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimas/eventos_logisticos.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/eventos_logisticos_mar_catalogo.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/eventos_logisticos_mar.js"></script>
