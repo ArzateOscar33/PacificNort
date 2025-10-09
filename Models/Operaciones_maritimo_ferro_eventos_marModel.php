@@ -1,22 +1,7 @@
 <?php
 class Operaciones_maritimo_ferro_eventos_marModel extends Query
 {
-private function getIdEventoArribo(): ?int
-{
-    static $cache = null;
-    if ($cache !== null) return $cache;
-
-    $row = $this->select("
-        SELECT id_tipo_evento
-        FROM tipos_evento_logistico
-        WHERE estatus = 1
-          AND id_tipo_operacion = 1
-          AND LOWER(nombre) LIKE 'arribo%puerto'
-        LIMIT 1
-    ");
-    $cache = $row ? (int)$row['id_tipo_evento'] : null;
-    return $cache;
-}
+ 
 
 public function listarEventosMFPaginado(
     int $page,

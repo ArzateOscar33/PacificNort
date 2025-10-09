@@ -23,9 +23,9 @@
         <li class="nav-item">
             <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">Ferros en Operación</a>
         </li> 
-        <!--<li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos Ferroviarios/Terrestres</a>
-        </li> -->
+        <li class="nav-item">
+            <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false">Eventos Logisticos Ferroviarios/Terrestres</a>
+        </li> 
           <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
             <i data-feather="file-text"></i> Trazabilidad
@@ -60,7 +60,10 @@
             <?php include 'tabs/costos_operacion.php'; ?>
         </div>
         <div class="tab-pane fade" id="Eventos_Logisticos" role="tabpanel" aria-labelledby="Eventos_Logisticos-tab">
-            <?php include 'tabs/Eventos_Logisticos.php'; ?>
+            <?php include 'tabs/Eventos_Logisticos_mar.php'; ?>
+        </div>
+        <div class="tab-pane fade" id="Eventos_Logisticos_ferro" role="tabpanel" aria-labelledby="Eventos_Logisticos_ferro-tab">
+            <?php include 'tabs/Eventos_Logisticos_ferro.php'; ?>
         </div>
         <div class="tab-pane fade" id="documentos" role="tabpanel" aria-labelledby="documentos-tab">
             <?php include 'tabs/documentos.php'; ?>
