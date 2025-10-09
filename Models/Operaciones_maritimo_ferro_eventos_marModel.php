@@ -462,5 +462,36 @@ public function eliminar(int $idEvento): bool
     return (bool)$this->save($sql, [$idEvento]);
 }
 
+/** Sugerencias de operaciones MF (por número o por id si teclean solo dígitos) */
+public function sugerirOperacionesMF(string $term, int $limit = 8): array
+{
+    $limit   = max(1, min(20, (int)$limit));
+    $needle  = '%' . mb_strtolower(trim($term), 'UTF-8') . '%';
+    $isNum   = ctype_digit(trim($term));
+
+    $where   = "o.tipo_operacion_id = 11 AND (LOWER(o.numero_operacion) LIKE ?"
+             . ($isNum ? " OR o.id_operacion = ?" : "")
+             . ")";
+
+    $params  = [$needle];
+    if ($isNum) $params[] = (int)$term;
+
+    $sql = "
+        SELECT 
+            o.id_operacion AS id,
+            o.numero_operacion AS label,
+            COUNT(DISTINCT cmo.id) AS maritimos
+        FROM operaciones o
+        LEFT JOIN contenedores_maritimos_operacion cmo
+               ON cmo.operacion_id = o.id_operacion
+        WHERE $where
+        GROUP BY o.id_operacion, o.numero_operacion
+        ORDER BY o.numero_operacion ASC
+        LIMIT $limit
+    ";
+
+    $rows = $this->selectAll($sql, $params);
+    return is_array($rows) ? $rows : [];
+}
 
 }

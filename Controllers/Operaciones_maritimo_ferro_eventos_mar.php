@@ -337,5 +337,38 @@ public function eliminar()
     }
     die();
 }
+/* =============================================================
+   AUTOCOMPLETE (filtro superior): OPERACIONES MF (id_tipo_operacion = 11)
+   GET ?term=LBMF-06[&limit=10]
+   Respuesta: [{id, label, meta}]
+   ============================================================= */
+public function sugerir_operaciones()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $term  = isset($_GET['term'])  ? trim((string)$_GET['term'])  : '';
+    $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit'])  : 10;
+
+    if ($term === '') { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
+
+    try {
+        // usa la función nueva del modelo (con match por numero_operacion y por id si son dígitos)
+        $rows = $this->model->sugerirOperacionesMF($term, $limit);
+
+        $out = array_map(function ($r) {
+            return [
+                'id'    => (int)($r['id'] ?? 0),
+                'label' => (string)($r['label'] ?? ''),                 // numero_operacion
+                'meta'  => isset($r['maritimos']) ? ($r['maritimos'].' contenedor(es)') : ''
+            ];
+        }, is_array($rows) ? $rows : []);
+
+        echo json_encode($out, JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        error_log('sugerir_operaciones MF: '.$e->getMessage());
+        echo json_encode([], JSON_UNESCAPED_UNICODE);
+    }
+    die();
+}
 
 }

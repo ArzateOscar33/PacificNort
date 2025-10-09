@@ -695,3 +695,134 @@ modalEl?.addEventListener('hidden.bs.modal', () => {
 })();
 
 })();
+/* ===========================================================
+   Filtro superior: Operación (con sugerencias)
+   - Endpoint: Operaciones_maritimo_ferro_eventos_mar/sugerir_operaciones
+   - Al seleccionar: llena hidden eventosFiltroOpId y refresca el listado
+   =========================================================== */
+(function evMFFilterOp(){
+  "use strict";
+
+  // ---- Refs UI (filtro superior) ----
+  const inpOp   = document.getElementById("eventosFiltroOpNombre");
+  const hidOpId = document.getElementById("eventosFiltroOpId");
+  const box     = document.getElementById("eventosFiltroOpSugerencias");
+  const meta    = document.getElementById("eventosFiltroOpMeta");
+
+  if (!inpOp || !hidOpId || !box) return;
+
+  // ---- Utils locales ----
+  function xhrGet(url, ok, err){
+    const http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      if (this.status === 200){
+        let json=null; try{ json = JSON.parse(this.responseText); }catch{}
+        ok && ok(json || []);
+      } else {
+        err && err(this.responseText || "HTTP error");
+      }
+    };
+    http.send();
+  }
+
+  function renderSugerencias(listEl, items, onPick){
+    listEl.innerHTML = "";
+    if (!Array.isArray(items) || items.length === 0){
+      listEl.style.display = "none";
+      return;
+    }
+    items.forEach(it => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+      btn.innerHTML =
+        `<span>${it.label || ""}</span>` +
+        (it.meta ? `<small class="text-muted">${it.meta}</small>` : "");
+      btn.addEventListener("click", () => onPick(it));
+      listEl.appendChild(btn);
+    });
+    listEl.style.display = "block";
+  }
+
+  function pickOperacion(it){
+    // pinta selección
+    inpOp.value  = it.label || "";
+    hidOpId.value= it.id || "";
+    if (meta) meta.textContent = it.meta || "";
+    box.style.display = "none";
+
+    // dispara cambio para que tu listado se actualice
+    // (evMFListPivot ya escucha 'change' en eventosFiltroOpNombre)
+    inpOp.dispatchEvent(new Event("change"));
+    // y fuerza un refresco (volver a página 1)
+    window.refreshEventosMF && window.refreshEventosMF({ keepPage: false });
+  }
+
+  function clearSeleccion(){
+    hidOpId.value = "";
+    if (meta) meta.textContent = "";
+  }
+
+  // ---- Autocomplete con debounce ----
+  let tmr = null, lastTerm = "";
+  inpOp.addEventListener("input", () => {
+    const term = (inpOp.value || "").trim();
+
+    // si el usuario escribe, invalida selección previa
+    clearSeleccion();
+
+    if (term.length === 0){
+      box.style.display = "none";
+      // refresca listado sin filtro (volver a página 1)
+      window.refreshEventosMF && window.refreshEventosMF({ keepPage: false });
+      return;
+    }
+
+    clearTimeout(tmr);
+    tmr = setTimeout(() => {
+      if (term === lastTerm) return;
+      lastTerm = term;
+      const url = `${base_url}Operaciones_maritimo_ferro_eventos_mar/sugerir_operaciones?term=${encodeURIComponent(term)}&limit=10`;
+      xhrGet(url, (rows) => {
+        renderSugerencias(box, rows, pickOperacion);
+      }, () => { box.style.display = "none"; });
+    }, 250);
+  });
+
+  // Enter: si hay una única sugerencia visible, la toma
+  inpOp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter"){
+      e.preventDefault();
+      const first = box.querySelector(".list-group-item");
+      if (first){
+        first.click();
+      }else{
+        // si no hay sugerencia visible, aplica lo que esté (sin id) => quita filtro
+        clearSeleccion();
+        window.refreshEventosMF && window.refreshEventosMF({ keepPage: false });
+      }
+    } else if (e.key === "Escape"){
+      box.style.display = "none";
+    }
+  });
+
+  // Clic fuera: cierra el dropdown
+  document.addEventListener("click", (ev) => {
+    if (!box.contains(ev.target) && ev.target !== inpOp){
+      box.style.display = "none";
+    }
+  });
+
+  // Cambio manual (por si limpian el input desde UI/auto-complete del navegador)
+  inpOp.addEventListener("change", () => {
+    // si no hay id seleccionado, quitar filtro
+    if (!(hidOpId.value || "").trim()){
+      if (meta) meta.textContent = "";
+    }
+    // El evMFListPivot ya hace listar() en 'change' de este input;
+    // si además quieres forzar ir a la página 1:
+    window.refreshEventosMF && window.refreshEventosMF({ keepPage: false });
+  });
+})();
