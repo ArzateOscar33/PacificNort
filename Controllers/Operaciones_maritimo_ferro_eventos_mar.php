@@ -20,7 +20,7 @@ class Operaciones_maritimo_ferro_eventos_mar extends Controller
     // Parámetros de query (con defaults)
     $page    = isset($_GET['page'])     ? max(1, (int)$_GET['page'])       : 1;
     $perPage = isset($_GET['per_page']) ? min(100, max(1, (int)$_GET['per_page'])) : 10;
-
+    
     // Filtros opcionales
     $opId    = (isset($_GET['op_id'])   && $_GET['op_id']   !== '') ? (int)$_GET['op_id']   : null;
     $contId  = (isset($_GET['cont_id']) && $_GET['cont_id'] !== '') ? (int)$_GET['cont_id'] : null; // cmo.id
@@ -271,6 +271,70 @@ public function obtener_por_clave()
 
     $row = $this->model->obtenerEventoPorClave($opId, $cmoId, $evtId);
     echo json_encode($row ?: null, JSON_UNESCAPED_UNICODE);
+    die();
+}
+public function actualizar()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $evento = [
+        'id_evento'                  => (int)($_POST['id_evento'] ?? 0),
+        'operacion_id'               => (int)($_POST['operacion_id'] ?? 0),
+        'cont_maritimo_operacion_id' => (int)($_POST['cont_maritimo_operacion_id'] ?? 0),
+        'tipo_evento_id'             => (int)($_POST['tipo_evento_id'] ?? 0),
+        'fecha'                      => trim($_POST['fecha'] ?? ''),
+        'comentario'                 => trim($_POST['comentario'] ?? '')
+    ];
+
+    if ($evento['id_evento'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Falta id_evento']); die(); }
+    if ($evento['operacion_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona una operación (MF).']); die(); }
+    if ($evento['cont_maritimo_operacion_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'No hay contenedor marítimo ligado a la operación.']); die(); }
+    if ($evento['tipo_evento_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona un tipo de evento marítimo.']); die(); }
+    if ($evento['fecha'] === '') { echo json_encode(['status'=>'warning','msg'=>'Indica la fecha del evento.']); die(); }
+
+    try {
+        $ok = $this->model->actualizar($evento);
+        if ($ok) {
+            // LOG opcional
+            $desc = $this->makeDesc('Evento actualizado', [
+                'id_evento'   => $evento['id_evento'],
+                'operacion'   => $evento['operacion_id'],
+                'cmo'         => $evento['cont_maritimo_operacion_id'],
+                'tipo_evt_id' => $evento['tipo_evento_id'],
+                'fecha'       => $evento['fecha']
+            ]);
+            $this->logOp($evento['operacion_id'], 'actualizacion', $desc);
+
+            echo json_encode(['status'=>'success','msg'=>'Evento actualizado']);
+        } else {
+            echo json_encode(['status'=>'error','msg'=>'No fue posible actualizar. Verifica MF, CMO activo/pertenencia, tipo marítimo y que no sea duplicado.']);
+        }
+    } catch (\Throwable $e) {
+        error_log('actualizar evento MF: '.$e->getMessage());
+        http_response_code(500);
+        echo json_encode(['status'=>'error','msg'=>'Error interno al actualizar.']);
+    }
+    die();
+}
+
+public function eliminar()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $id = (int)($_POST['id_evento'] ?? 0);
+    if ($id <= 0) { echo json_encode(['status'=>'warning','msg'=>'Falta id_evento']); die(); }
+
+    try {
+        $ok = $this->model->eliminar($id);
+        echo json_encode([
+            'status' => $ok ? 'success' : 'error',
+            'msg'    => $ok ? 'Evento eliminado' : 'No se pudo eliminar'
+        ]);
+    } catch (\Throwable $e) {
+        error_log('eliminar evento MF: '.$e->getMessage());
+        http_response_code(500);
+        echo json_encode(['status'=>'error','msg'=>'Error interno al eliminar.']);
+    }
     die();
 }
 

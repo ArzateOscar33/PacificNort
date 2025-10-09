@@ -1,6 +1,22 @@
 <?php
 class Operaciones_maritimo_ferro_eventos_marModel extends Query
 {
+private function getIdEventoArribo(): ?int
+{
+    static $cache = null;
+    if ($cache !== null) return $cache;
+
+    $row = $this->select("
+        SELECT id_tipo_evento
+        FROM tipos_evento_logistico
+        WHERE estatus = 1
+          AND id_tipo_operacion = 1
+          AND LOWER(nombre) LIKE 'arribo%puerto'
+        LIMIT 1
+    ");
+    $cache = $row ? (int)$row['id_tipo_evento'] : null;
+    return $cache;
+}
 
 public function listarEventosMFPaginado(
     int $page,
@@ -8,92 +24,149 @@ public function listarEventosMFPaginado(
     ?int $opId = null,
     ?int $contMarOpId = null,
     string $q = ''
-): array
-{
-    // saneo de paginación
+): array {
     $perPage = min(100, max(1, $perPage));
     $offset  = max(0, ($page - 1) * $perPage);
 
-    // WHERE base: solo activos + operaciones MF (id_tipo_operacion = 11)
-    $where  = [
-        "e.estatus = 1",
-        "o.tipo_operacion_id = 11" // MF
-    ];
+    // ---- Filtro base: renglones = (operación MF + contenedor marítimo en operación)
+    $where = ["o.tipo_operacion_id = 11"]; // MF
     $params = [];
 
-    // filtro por operación (opcional)
     if (!empty($opId)) {
-        $where[] = "e.operacion_id = ?";
+        $where[] = "o.id_operacion = ?";
         $params[] = (int)$opId;
     }
-
-    // filtro por contenedor marítimo en operación (opcional)
     if (!empty($contMarOpId)) {
-        $where[] = "e.cont_maritimo_operacion_id = ?";
+        $where[] = "cmo.id = ?";
         $params[] = (int)$contMarOpId; // cmo.id
     }
-
-    // búsqueda libre (evento, comentario, operación, contenedor)
     if ($q !== '') {
         $like = '%'.mb_strtolower($q, 'UTF-8').'%';
+        // busca por op o número de contenedor
         $where[] = "("
-                 . "LOWER(te.nombre) LIKE ? "
-                 . "OR LOWER(e.comentario) LIKE ? "
-                 . "OR LOWER(o.numero_operacion) LIKE ? "
+                 . "LOWER(o.numero_operacion) LIKE ? "
                  . "OR LOWER(cm.numero_contenedor) LIKE ?"
                  . ")";
-        array_push($params, $like, $like, $like, $like);
+        array_push($params, $like, $like);
     }
-
     $whereSql = 'WHERE '.implode(' AND ', $where);
 
-    // ---- total
-    $countSql = "
-        SELECT COUNT(*) AS total
-        FROM eventos_logisticos e
-        JOIN operaciones o ON o.id_operacion = e.operacion_id
-        LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
-        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = e.cont_maritimo_operacion_id
-        LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        $whereSql
+    // ---- 1) TOTAL de renglones (parejas op+cmo)
+    $sqlCount = "
+        SELECT COUNT(*) AS total_rows
+        FROM (
+            SELECT o.id_operacion, cmo.id
+            FROM contenedores_maritimos_operacion cmo
+            JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+            JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id AND cm.estatus = 1
+            $whereSql
+            GROUP BY o.id_operacion, cmo.id
+        ) t
     ";
-    $rowCount = $this->select($countSql, $params);
-    $total    = $rowCount ? (int)$rowCount['total'] : 0;
+    $rowCount = $this->select($sqlCount, $params);
+    $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
 
-    // ---- datos (orden: operación↑, contenedor↑, fecha↓, id↓)
-    $dataSql = "
+    // ---- 2) Página de renglones (op + cmo) ordenados
+    $sqlRows = "
+        SELECT 
+            o.id_operacion,
+            o.numero_operacion   AS operacion,
+            cmo.id               AS cmo_id,
+            cm.numero_contenedor AS contenedor
+        FROM contenedores_maritimos_operacion cmo
+        JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+        JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id AND cm.estatus = 1
+        $whereSql
+        GROUP BY o.id_operacion, cmo.id, operacion, contenedor
+        ORDER BY operacion ASC, contenedor ASC
+        LIMIT $perPage OFFSET $offset
+    ";
+    $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
+
+    if (empty($rowsPairs)) {
+        // Devuelve estructura vacía coherente
+        return [
+            'rows'     => [],
+            'total'    => $totalRows, // total de renglones
+            'page'     => $page,
+            'per_page' => $perPage
+        ];
+    }
+
+    // ---- 3) Trae eventos SOLO de los CMO en esta página
+    $cmoIds = array_column($rowsPairs, 'cmo_id');
+    $in     = implode(',', array_fill(0, count($cmoIds), '?'));
+    $paramsEvt = $cmoIds;
+
+    $sqlEvts = "
         SELECT
             e.id_evento,
             e.operacion_id,
             e.cont_maritimo_operacion_id,
             e.tipo_evento_id,
-            te.nombre               AS evento,
+            te.nombre            AS evento,
             e.fecha,
-            e.comentario,
-            o.numero_operacion      AS operacion,
-            cm.numero_contenedor    AS contenedor
+            e.comentario
         FROM eventos_logisticos e
-        JOIN operaciones o ON o.id_operacion = e.operacion_id
         LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
-        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = e.cont_maritimo_operacion_id
-        LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        $whereSql
-        ORDER BY
-            o.numero_operacion ASC,
-            contenedor ASC,
-            e.fecha DESC,
-            e.id_evento DESC
-        LIMIT $perPage OFFSET $offset
+        WHERE e.estatus = 1
+          AND e.cont_maritimo_operacion_id IN ($in)
     ";
-    $rows = $this->selectAll($dataSql, $params);
+    $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
 
+    // ---- 4) Devuelve “filas por evento” pero SOLO de la página,
+    //         adjuntando operacion/contenedor para que el frontend pivotee.
+    //         (Si un renglón no tiene eventos, devolvemos un “evento vacío”
+    //          para que aparezca y el frontend lo pinte como “Sin registrar”.)
+    $byCmo = [];
+    foreach ($rowsPairs as $r) {
+        $byCmo[(int)$r['cmo_id']] = $r; // operacion, contenedor, etc.
+    }
+
+    $out = [];
+    foreach ($rowsEvts as $e) {
+        $cmoId = (int)$e['cont_maritimo_operacion_id'];
+        if (!isset($byCmo[$cmoId])) continue; // seguridad
+        $out[] = [
+            'id_evento'                  => (int)$e['id_evento'],
+            'operacion_id'               => (int)$e['operacion_id'],
+            'cont_maritimo_operacion_id' => $cmoId,
+            'tipo_evento_id'             => (int)$e['tipo_evento_id'],
+            'evento'                     => (string)($e['evento'] ?? ''),
+            'fecha'                      => (string)($e['fecha'] ?? ''),
+            'comentario'                 => (string)($e['comentario'] ?? ''),
+            'operacion'                  => (string)$byCmo[$cmoId]['operacion'],
+            'contenedor'                 => (string)$byCmo[$cmoId]['contenedor'],
+        ];
+    }
+
+    // Renglones SIN eventos: empuja un “dummy” para que el frontend los muestre
+    $cmoConEvento = array_unique(array_column($out, 'cont_maritimo_operacion_id'));
+    foreach ($rowsPairs as $r) {
+        if (!in_array((int)$r['cmo_id'], $cmoConEvento, true)) {
+            $out[] = [
+                'id_evento'                  => null,
+                'operacion_id'               => (int)$r['id_operacion'],
+                'cont_maritimo_operacion_id' => (int)$r['cmo_id'],
+                'tipo_evento_id'             => null,
+                'evento'                     => null,
+                'fecha'                      => null,
+                'comentario'                 => null,
+                'operacion'                  => (string)$r['operacion'],
+                'contenedor'                 => (string)$r['contenedor'],
+            ];
+        }
+    }
+
+    // IMPORTANTE: total = total de renglones (parejas), no de eventos.
     return [
-        'rows'     => is_array($rows) ? $rows : [],
-        'total'    => $total,
+        'rows'     => $out,
+        'total'    => $totalRows,
         'page'     => $page,
         'per_page' => $perPage
     ];
 }
+
 
 
 
@@ -379,5 +452,15 @@ public function obtenerEventoPorClave(int $operacionId, int $cmoId, int $tipoEve
     $row = $this->select($sql, [$operacionId, $cmoId, $tipoEventoId]);
     return $row ?: null;
 }
+public function eliminar(int $idEvento): bool
+{
+    if ($idEvento <= 0) return false;
+    $sql = "UPDATE eventos_logisticos
+               SET estatus = 0
+             WHERE id_evento = ?
+             LIMIT 1";
+    return (bool)$this->save($sql, [$idEvento]);
+}
+
 
 }

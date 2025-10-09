@@ -15,7 +15,7 @@
       <!-- Filtros superiores -->
       <div class="row g-3 align-items-end mb-3">
         <!-- Operación con sugerencias -->
-        <div class="col-md-4">
+        <div class="col-md-8">
           <label for="eventosFiltroOpNombre" class="form-label mb-1">Operación</label>
           <div class="position-relative">
             <input type="hidden" id="eventosFiltroOpId">
@@ -27,28 +27,21 @@
           <div class="form-text" id="eventosFiltroOpMeta"></div>
         </div>
 
-        <!-- Contenedor MARÍTIMO con sugerencias -->
-        <div class="col-md-4">
-          <label for="eventosFiltroContMarNombre" class="form-label mb-1">Contenedor marítimo</label>
-          <div class="position-relative">
-            <!-- Guardaremos el cont_maritimo_operacion.id para filtrar -->
-            <input type="hidden" id="eventosFiltroContMarId">
-            <input type="text" id="eventosFiltroContMarNombre" class="form-control"
-              placeholder="Escribe para buscar (ej. MG0001, WHSU..., OOLU...)" autocomplete="off">
-            <div id="eventosFiltroContMarSugerencias" class="list-group"
-              style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-          </div>
-          <div class="form-text" id="eventosFiltroContMarMeta"></div>
-        </div>
+<!-- Rango de fechas 
+<div class="col-md-4">
+  <label class="form-label mb-1">Rango de fechas</label>
+  <div class="d-flex align-items-center gap-2">
+    <input type="date" id="fechaDesdeEventosMar" class="form-control" style="min-width: 0;" title="Fecha desde">
+    <span class="text-muted">—</span>
+    <input type="date" id="fechaHastaEventosMar" class="form-control" style="min-width: 0;" title="Fecha hasta">
+  </div>
+ 
+</div>-->
 
-        <!-- Buscador libre -->
-        <div class="col-md-2">
-          <label for="buscarEventosMar" class="form-label mb-1">Buscar</label>
-          <input id="buscarEventosMar" class="form-control" placeholder="Buscar texto libre…">
-        </div>
+ 
 
         <!-- Exportaciones -->
-        <div class="col-md-2 d-flex gap-2">
+        <div class="col-md-4 d-flex gap-2">
           <button class="btn btn-sm btn-outline-success w-100" id="btnExportarExcelEventosLogisticos">
             <i data-feather="file-text" class="me-1"></i> Excel
           </button>

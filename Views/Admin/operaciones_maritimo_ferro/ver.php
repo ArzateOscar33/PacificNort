@@ -7,33 +7,40 @@
         <li class="nav-item">
             <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true">Resumen</a>
         </li>
+         <!--  MARITIMA -->
          <li class="nav-item">
             <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false">Crear Operación Maritima-Ferroviaria</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">Ferros en Operación</a>
-        </li> 
-        
+            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos Maritimos</a>
+        </li>
+
+         <!-- FIN MARITMA -->
         <!-- <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false">Costos Contenedor</a>
         </li> -->
+        <!-- FERRO/TERRESTRE -->
         <li class="nav-item">
-            <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false">Costos Operaciones</a>
-        </li>
- 
-        <li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos Maritimos</a>
-        </li>
+            <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false">Ferros en Operación</a>
+        </li> 
+        <!--<li class="nav-item">
+            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false">Eventos Logisticos Ferroviarios/Terrestres</a>
+        </li> -->
+          <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
+            <i data-feather="file-text"></i> Trazabilidad
+        </a>
+
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false">Documentos</a>
         </li>
  
- 
-         <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
-            <i data-feather="file-text"></i> Trazabilidad
-        </a>
+ <!-- FIN FERRO/TERRESTRE -->
+
         </li>  
+                <li class="nav-item">
+            <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false">Costos Operaciones</a>
+        </li>
     </ul>
 
     <div class="tab-content mt-3">

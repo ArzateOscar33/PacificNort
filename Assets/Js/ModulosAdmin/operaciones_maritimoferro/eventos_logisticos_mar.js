@@ -280,7 +280,7 @@
             modal.hide();
 
             // Si tienes una función global para refrescar la tabla principal, llámala aquí:
-            // listarEventosMF();  // <- por ejemplo
+            window.refreshEventosMF && window.refreshEventosMF({ keepPage: true });
           }
         },
         (err) => {
@@ -422,11 +422,13 @@
     }
 
     for (const row of pivoted) {
-      const tr = document.createElement("tr");
-      let html = `
-        <td class="text-center">${row.operacion}</td>
-        <td class="text-center">${row.contenedor}</td>
-      `;
+ const tr = document.createElement("tr");
+ tr.dataset.oplabel  = row.operacion || "";
+ tr.dataset.ctnlabel = row.contenedor || "";
+ let html = `
+   <td class="text-center">${row.operacion}</td>
+   <td class="text-center">${row.contenedor}</td>
+ `;
 // dentro de renderBody(), al pintar cada columna dinámica:
 for (const c of COLS) {
   const val = row.cells[c.key] || "Sin registrar";
@@ -507,6 +509,11 @@ for (const c of COLS) {
       tbody.innerHTML = `<tr><td colspan="${2 + COLS.length }" class="text-center text-danger py-3">Error al obtener datos</td></tr>`;
     });
   }
+  // refresco público y seguro
+window.refreshEventosMF = function (opts = { keepPage: true }) {
+  if (!opts.keepPage) currentPage = 1; // si quieres volver a la página 1
+  listar();
+};
 
   // ---- Cargar columnas (si no existen) y luego listar ----
   function init() {
@@ -559,6 +566,7 @@ for (const c of COLS) {
 
 
   (function evMFCellModal(){
+    let cellDirty = false;
   const modalEl = document.getElementById('modalEvtCell');
   const formEl  = document.getElementById('formEvtCell');
 
@@ -589,8 +597,8 @@ for (const c of COLS) {
 
     // Cargar textos de fila (ya están en el DOM de la misma fila)
     const tr = td.parentElement;
-    opTxt.value  = tr.children[0].textContent.trim(); // Operación
-    ctnTxt.value = tr.children[1].textContent.trim(); // Contenedor
+ opTxt.value  = tr.dataset.oplabel  || "";
+ ctnTxt.value = tr.dataset.ctnlabel || "";
     evtTxt.value = evtName;
 
     // Set hidden
@@ -623,6 +631,7 @@ for (const c of COLS) {
       }
     };
     http.send();
+   
   });
 
   // 2) Guardar (crear/actualizar)
@@ -646,9 +655,10 @@ for (const c of COLS) {
       if (this.status === 200){
         let res=null; try{res=JSON.parse(this.responseText);}catch{}
         Swal?.fire(res?.status==='success'?'Éxito':'Atención', res?.msg||'Listo', res?.status||'success');
+        cellDirty = true;
         bootstrap.Modal.getInstance(modalEl)?.hide();
         // refresca listado
-        window.listarEventosMF && window.listarEventosMF();
+         window.refreshEventosMF && window.refreshEventosMF({ keepPage: true });
       }
     };
     http.send(fd);
@@ -669,11 +679,18 @@ for (const c of COLS) {
         let res=null; try{res=JSON.parse(this.responseText);}catch{}
         Swal?.fire(res?.status==='success'?'Eliminado':'Atención', res?.msg||'Listo', res?.status==='success'?'success':'warning');
         bootstrap.Modal.getInstance(modalEl)?.hide();
-        window.listarEventosMF && window.listarEventosMF();
+         window.refreshEventosMF && window.refreshEventosMF({ keepPage: true });
       };
       http.send(fd);
     });
   });
+// después de declarar modalEl y cellDirty:
+modalEl?.addEventListener('hidden.bs.modal', () => {
+  if (cellDirty) {
+    window.refreshEventosMF && window.refreshEventosMF({ keepPage: true });
+    cellDirty = false;
+  }
+});
 
 })();
 
