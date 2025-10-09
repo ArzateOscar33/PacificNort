@@ -10,7 +10,7 @@
         </div>
 
         <div class="ms-auto col-md-12 d-flex justify-content-end mb-3">
-          <button class="btn btn-primary" id="costosOperacionBtnNuevo" data-bs-toggle="modal" data-bs-target="#modalCostoOperacion">
+          <button class="btn btn-success" id="costosOperacionBtnNuevo" data-bs-toggle="modal" data-bs-target="#modalCostoOperacion">
             <i data-feather="plus"></i> Añadir Costo
           </button>
         </div>

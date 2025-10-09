@@ -66,15 +66,20 @@ if (form && !form.dataset.mode) {
   let lastXHR = null, deb = null;
   opInp?.addEventListener('input', function(){
 
-// === LIMPIEZA TOTAL DEL MODAL SI EL USUARIO BORRA CUALQUIER CARÁCTER ===
+// === SOLO LIMPIA EL BLOQUE MARÍTIMO SI EL USUARIO BORRA CARACTERES ===
 const prevLen = Number(this.dataset.prevLen || 0);
 const currLen = (this.value || '').length;
-// Si se detecta borrado (currLen < prevLen), limpiamos TODO el modal
-if (currLen < prevLen && typeof window.resetModalFerroOP === 'function') {
-  window.resetModalFerroOP();           // ← limpia integral (header + selector + carrito)
+
+if (currLen < prevLen) {
+  // Limpia únicamente la línea/bloque marítimo actual
+  if (typeof window.limpiarLinea === 'function') window.limpiarLinea();
+
+  // Asegúrate de que el selector marítimo siga visible para volver a escribir
+  if (typeof window.toggleSelectorMaritimo === 'function') window.toggleSelectorMaritimo(true);
 }
 // Actualiza el largo previo
 this.dataset.prevLen = String(currLen);
+
 
     // Limpiar dependientes al teclear
     opIdHid.value   = '';

@@ -322,9 +322,22 @@ window.editarFerroOP = function (idRow) {
     if (inp) inp.value = label || '';
   };
 
-  // (Opcional) evitar captura manual si así lo decidiste
-  const ferroName = document.getElementById('contenedorFerroNombreFerroOP');
-  if (ferroName) ferroName.readOnly = true;
+const ferroName = document.getElementById('contenedorFerroNombreFerroOP');
+ 
+
+function syncReadonlyFerro() {
+  if (!ferroName || !form) return;
+  const mode = form.dataset.mode || 'create';
+  ferroName.readOnly = (mode === 'edit');   // ← solo readonly en editar
+}
+
+// Sincroniza al cargar este archivo
+syncReadonlyFerro();
+
+// Cuando se muestre/oculte el modal también sincroniza
+document.getElementById('modalFerroOP')?.addEventListener('shown.bs.modal', syncReadonlyFerro);
+document.getElementById('modalFerroOP')?.addEventListener('hidden.bs.modal', syncReadonlyFerro);
+
 
   function toast(msg, ok = true) {
     if (window.Swal) {
@@ -424,6 +437,10 @@ window.setCarritoFerroOP = function(items){
 
   // Dejar el foco listo para escribir el siguiente contenedor
   if (opInp) { opInp.focus(); opInp.select(); }
+
+// Mantener el selector visible para seguir capturando
+if (typeof window.toggleSelectorMaritimo === 'function') window.toggleSelectorMaritimo(true);
+
 }
 
 // --- Toggle del bloque "Agregar Marítimo" ---
