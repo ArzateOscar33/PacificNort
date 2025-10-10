@@ -236,5 +236,5 @@
 <script>
   feather.replace();
 </script>
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/eventos_logisticos_mar_catalogo.js"></script>
+ 
 <script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/eventos_logisticos_mar.js"></script>
