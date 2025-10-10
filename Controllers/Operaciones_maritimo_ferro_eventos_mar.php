@@ -98,11 +98,15 @@ public function buscar_operaciones()
 
     try {
         $rows = $this->model->buscarOperacionesMaritimoFerro($term, $limit);
+
         $out  = array_map(function ($r) {
+            $contenedores = isset($r['contenedores']) ? trim((string)$r['contenedores']) : '';
+            $fallback     = isset($r['maritimos']) ? ((int)$r['maritimos'] . ' contenedor(es)') : '';
+
             return [
                 'id'    => (int)($r['id'] ?? 0),
                 'label' => (string)($r['label'] ?? ''),
-                'meta'  => isset($r['maritimos']) ? ($r['maritimos'] . ' contenedor(es)') : ''
+                'meta'  => $contenedores !== '' ? $contenedores : $fallback,
             ];
         }, is_array($rows) ? $rows : []);
 
@@ -113,6 +117,7 @@ public function buscar_operaciones()
     }
     die();
 }
+
 
 /* =============================================================
    AUTOCOMPLETE: CONTENEDORES MARÍTIMOS DE UNA OPERACIÓN MF
@@ -352,14 +357,16 @@ public function sugerir_operaciones()
     if ($term === '') { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
 
     try {
-        // usa la función nueva del modelo (con match por numero_operacion y por id si son dígitos)
         $rows = $this->model->sugerirOperacionesMF($term, $limit);
 
         $out = array_map(function ($r) {
+            $contenedores = isset($r['contenedores']) ? trim((string)$r['contenedores']) : '';
+            $fallback     = isset($r['maritimos']) ? ((int)$r['maritimos'].' contenedor(es)') : '';
+
             return [
                 'id'    => (int)($r['id'] ?? 0),
-                'label' => (string)($r['label'] ?? ''),                 // numero_operacion
-                'meta'  => isset($r['maritimos']) ? ($r['maritimos'].' contenedor(es)') : ''
+                'label' => (string)($r['label'] ?? ''),  // numero_operacion
+                'meta'  => $contenedores !== '' ? $contenedores : $fallback,
             ];
         }, is_array($rows) ? $rows : []);
 
@@ -370,5 +377,6 @@ public function sugerir_operaciones()
     }
     die();
 }
+
 
 }

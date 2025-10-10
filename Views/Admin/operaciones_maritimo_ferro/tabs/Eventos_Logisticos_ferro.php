@@ -20,7 +20,7 @@
           <div class="position-relative">
             <input type="hidden" id="eventosFerFiltroOpId">
             <input type="text" id="eventosFerFiltroOpNombre" class="form-control"
-              placeholder="Escribe para buscar (ej. LBFER-06)" autocomplete="off">
+              placeholder="Escribe para buscar (ej. FO)" autocomplete="off">
             <div id="eventosFerFiltroOpSugerencias" class="list-group"
               style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>

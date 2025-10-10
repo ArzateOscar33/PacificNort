@@ -13,7 +13,7 @@ public function listarEventosMFPaginado(
     $perPage = min(100, max(1, $perPage));
     $offset  = max(0, ($page - 1) * $perPage);
 
-    // ---- Filtro base: renglones = (operación MF + contenedor marítimo en operación)
+    // ---- Filtros base (solo MF)
     $where = ["o.tipo_operacion_id = 11"]; // MF
     $params = [];
 
@@ -27,7 +27,6 @@ public function listarEventosMFPaginado(
     }
     if ($q !== '') {
         $like = '%'.mb_strtolower($q, 'UTF-8').'%';
-        // busca por op o número de contenedor
         $where[] = "("
                  . "LOWER(o.numero_operacion) LIKE ? "
                  . "OR LOWER(cm.numero_contenedor) LIKE ?"
@@ -36,23 +35,25 @@ public function listarEventosMFPaginado(
     }
     $whereSql = 'WHERE '.implode(' AND ', $where);
 
-    // ---- 1) TOTAL de renglones (parejas op+cmo)
+    // ---- 1) TOTAL de renglones (parejas op+cmo) independientemente de eventos
     $sqlCount = "
         SELECT COUNT(*) AS total_rows
         FROM (
             SELECT o.id_operacion, cmo.id
             FROM contenedores_maritimos_operacion cmo
             JOIN operaciones o ON o.id_operacion = cmo.operacion_id
-            JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id AND cm.estatus = 1
+            JOIN contenedores_maritimos cm 
+                 ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+                AND cm.estatus = 1
             $whereSql
             GROUP BY o.id_operacion, cmo.id
         ) t
     ";
-    $rowCount = $this->select($sqlCount, $params);
+    $rowCount  = $this->select($sqlCount, $params);
     $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
 
-    // ---- 2) Página de renglones (op + cmo) ordenados
-    $sqlRows = "
+    // ---- 2) Página de parejas (op + cmo)
+    $sqlPairs = "
         SELECT 
             o.id_operacion,
             o.numero_operacion   AS operacion,
@@ -60,90 +61,82 @@ public function listarEventosMFPaginado(
             cm.numero_contenedor AS contenedor
         FROM contenedores_maritimos_operacion cmo
         JOIN operaciones o ON o.id_operacion = cmo.operacion_id
-        JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id AND cm.estatus = 1
+        JOIN contenedores_maritimos cm 
+             ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+            AND cm.estatus = 1
         $whereSql
         GROUP BY o.id_operacion, cmo.id, operacion, contenedor
         ORDER BY operacion ASC, contenedor ASC
         LIMIT $perPage OFFSET $offset
     ";
-    $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
+    $rowsPairs = $this->selectAll($sqlPairs, $params) ?: [];
 
     if (empty($rowsPairs)) {
-        // Devuelve estructura vacía coherente
         return [
             'rows'     => [],
-            'total'    => $totalRows, // total de renglones
+            'total'    => $totalRows,
             'page'     => $page,
             'per_page' => $perPage
         ];
     }
 
-    // ---- 3) Trae eventos SOLO de los CMO en esta página
+    // ---- 3) Traer eventos con LEFT JOIN partiendo de la página de parejas
     $cmoIds = array_column($rowsPairs, 'cmo_id');
     $in     = implode(',', array_fill(0, count($cmoIds), '?'));
     $paramsEvt = $cmoIds;
 
-    $sqlEvts = "
+    $sqlPageWithEvents = "
         SELECT
+            p.id_operacion,
+            p.operacion,
+            p.cmo_id,
+            p.contenedor,
             e.id_evento,
             e.operacion_id,
             e.cont_maritimo_operacion_id,
             e.tipo_evento_id,
-            te.nombre            AS evento,
+            te.nombre AS evento,
             e.fecha,
             e.comentario
-        FROM eventos_logisticos e
-        LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
-        WHERE e.estatus = 1
-          AND e.cont_maritimo_operacion_id IN ($in)
+        FROM (
+            SELECT 
+                o.id_operacion,
+                o.numero_operacion   AS operacion,
+                cmo.id               AS cmo_id,
+                cm.numero_contenedor AS contenedor
+            FROM contenedores_maritimos_operacion cmo
+            JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+            JOIN contenedores_maritimos cm 
+                 ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+                AND cm.estatus = 1
+            WHERE cmo.id IN ($in)
+            GROUP BY o.id_operacion, cmo.id, operacion, contenedor
+        ) p
+        LEFT JOIN eventos_logisticos e
+               ON e.estatus = 1
+              AND e.cont_maritimo_operacion_id = p.cmo_id
+        LEFT JOIN tipos_evento_logistico te
+               ON te.id_tipo_evento = e.tipo_evento_id
+        ORDER BY p.operacion ASC, p.contenedor ASC, e.tipo_evento_id ASC, e.fecha DESC
     ";
-    $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
+    $rows = $this->selectAll($sqlPageWithEvents, $paramsEvt) ?: [];
 
-    // ---- 4) Devuelve “filas por evento” pero SOLO de la página,
-    //         adjuntando operacion/contenedor para que el frontend pivotee.
-    //         (Si un renglón no tiene eventos, devolvemos un “evento vacío”
-    //          para que aparezca y el frontend lo pinte como “Sin registrar”.)
-    $byCmo = [];
-    foreach ($rowsPairs as $r) {
-        $byCmo[(int)$r['cmo_id']] = $r; // operacion, contenedor, etc.
-    }
-
+    // ---- 4) Normalizar salida (si no hay e.*, vendrá NULL y eso ya representa “sin registrar”)
     $out = [];
-    foreach ($rowsEvts as $e) {
-        $cmoId = (int)$e['cont_maritimo_operacion_id'];
-        if (!isset($byCmo[$cmoId])) continue; // seguridad
+    foreach ($rows as $r) {
         $out[] = [
-            'id_evento'                  => (int)$e['id_evento'],
-            'operacion_id'               => (int)$e['operacion_id'],
-            'cont_maritimo_operacion_id' => $cmoId,
-            'tipo_evento_id'             => (int)$e['tipo_evento_id'],
-            'evento'                     => (string)($e['evento'] ?? ''),
-            'fecha'                      => (string)($e['fecha'] ?? ''),
-            'comentario'                 => (string)($e['comentario'] ?? ''),
-            'operacion'                  => (string)$byCmo[$cmoId]['operacion'],
-            'contenedor'                 => (string)$byCmo[$cmoId]['contenedor'],
+            'id_evento'                  => isset($r['id_evento']) ? (int)$r['id_evento'] : null,
+            'operacion_id'               => (int)$r['id_operacion'], // usamos p.id_operacion como canon
+            'cont_maritimo_operacion_id' => (int)$r['cmo_id'],
+            'tipo_evento_id'             => isset($r['tipo_evento_id']) ? (int)$r['tipo_evento_id'] : null,
+            'evento'                     => (string)($r['evento'] ?? ''),
+            'fecha'                      => (string)($r['fecha'] ?? ''),
+            'comentario'                 => (string)($r['comentario'] ?? ''),
+            'operacion'                  => (string)$r['operacion'],
+            'contenedor'                 => (string)$r['contenedor'],
         ];
     }
 
-    // Renglones SIN eventos: empuja un “dummy” para que el frontend los muestre
-    $cmoConEvento = array_unique(array_column($out, 'cont_maritimo_operacion_id'));
-    foreach ($rowsPairs as $r) {
-        if (!in_array((int)$r['cmo_id'], $cmoConEvento, true)) {
-            $out[] = [
-                'id_evento'                  => null,
-                'operacion_id'               => (int)$r['id_operacion'],
-                'cont_maritimo_operacion_id' => (int)$r['cmo_id'],
-                'tipo_evento_id'             => null,
-                'evento'                     => null,
-                'fecha'                      => null,
-                'comentario'                 => null,
-                'operacion'                  => (string)$r['operacion'],
-                'contenedor'                 => (string)$r['contenedor'],
-            ];
-        }
-    }
-
-    // IMPORTANTE: total = total de renglones (parejas), no de eventos.
     return [
         'rows'     => $out,
         'total'    => $totalRows,
@@ -151,6 +144,7 @@ public function listarEventosMFPaginado(
         'per_page' => $perPage
     ];
 }
+
 
 
 
@@ -206,18 +200,27 @@ public function buscarOperacionesMaritimoFerro(string $term, int $limit = 10): a
 
     $sql = "
         SELECT 
-            o.id_operacion AS id,
-            o.numero_operacion AS label,
-            COUNT(DISTINCT cmo.id) AS maritimos
+            o.id_operacion                       AS id,
+            o.numero_operacion                   AS label,
+            COUNT(DISTINCT cmo.id)               AS maritimos,
+            /* Lista de números de contenedor */
+            GROUP_CONCAT(
+                DISTINCT cm.numero_contenedor
+                ORDER BY cm.numero_contenedor SEPARATOR ', '
+            )                                     AS contenedores
         FROM operaciones o
         LEFT JOIN contenedores_maritimos_operacion cmo
                ON cmo.operacion_id = o.id_operacion
-        WHERE o.tipo_operacion_id = 11                 -- <<<<<< CLAVE: MF
+        LEFT JOIN contenedores_maritimos cm
+               ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+              AND cm.estatus = 1
+        WHERE o.tipo_operacion_id = 11
           AND LOWER(o.numero_operacion) LIKE ?
         GROUP BY o.id_operacion, o.numero_operacion
         ORDER BY o.numero_operacion ASC
         LIMIT $limit
     ";
+
     $rows = $this->selectAll($sql, [$needle]);
     return is_array($rows) ? $rows : [];
 }
@@ -451,8 +454,9 @@ public function eliminar(int $idEvento): bool
 public function sugerirOperacionesMF(string $term, int $limit = 8): array
 {
     $limit   = max(1, min(20, (int)$limit));
-    $needle  = '%' . mb_strtolower(trim($term), 'UTF-8') . '%';
-    $isNum   = ctype_digit(trim($term));
+    $term    = trim($term);
+    $needle  = '%' . mb_strtolower($term, 'UTF-8') . '%';
+    $isNum   = ctype_digit($term);
 
     $where   = "o.tipo_operacion_id = 11 AND (LOWER(o.numero_operacion) LIKE ?"
              . ($isNum ? " OR o.id_operacion = ?" : "")
@@ -463,12 +467,20 @@ public function sugerirOperacionesMF(string $term, int $limit = 8): array
 
     $sql = "
         SELECT 
-            o.id_operacion AS id,
-            o.numero_operacion AS label,
-            COUNT(DISTINCT cmo.id) AS maritimos
+            o.id_operacion                       AS id,
+            o.numero_operacion                   AS label,
+            COUNT(DISTINCT cmo.id)               AS maritimos,
+            /* Lista de números de contenedor */
+            GROUP_CONCAT(
+                DISTINCT cm.numero_contenedor
+                ORDER BY cm.numero_contenedor SEPARATOR ', '
+            )                                     AS contenedores
         FROM operaciones o
         LEFT JOIN contenedores_maritimos_operacion cmo
                ON cmo.operacion_id = o.id_operacion
+        LEFT JOIN contenedores_maritimos cm
+               ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+              AND cm.estatus = 1
         WHERE $where
         GROUP BY o.id_operacion, o.numero_operacion
         ORDER BY o.numero_operacion ASC
