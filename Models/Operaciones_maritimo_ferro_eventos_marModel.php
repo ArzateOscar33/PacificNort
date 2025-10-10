@@ -17,6 +17,12 @@ public function listarEventosMFPaginado(
     $where = ["o.tipo_operacion_id = 11"]; // MF
     $params = [];
 
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // NUEVO FILTRO: excluir operaciones con estatus Cancelado(6) o Finalizada(7)
+    // (catálogo 'estatus': 6=Cancelado, 7=Finalizada)
+    $where[] = "o.estatus_id NOT IN (6, 7)";
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
     if (!empty($opId)) {
         $where[] = "o.id_operacion = ?";
         $params[] = (int)$opId;
@@ -121,12 +127,12 @@ public function listarEventosMFPaginado(
     ";
     $rows = $this->selectAll($sqlPageWithEvents, $paramsEvt) ?: [];
 
-    // ---- 4) Normalizar salida (si no hay e.*, vendrá NULL y eso ya representa “sin registrar”)
+    // ---- 4) Normalizar salida
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
             'id_evento'                  => isset($r['id_evento']) ? (int)$r['id_evento'] : null,
-            'operacion_id'               => (int)$r['id_operacion'], // usamos p.id_operacion como canon
+            'operacion_id'               => (int)$r['id_operacion'],
             'cont_maritimo_operacion_id' => (int)$r['cmo_id'],
             'tipo_evento_id'             => isset($r['tipo_evento_id']) ? (int)$r['tipo_evento_id'] : null,
             'evento'                     => (string)($r['evento'] ?? ''),

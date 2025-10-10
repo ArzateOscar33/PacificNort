@@ -98,151 +98,155 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
        Paginado (FO): lista “parejas” (FO + Ferro) y sus eventos.
        Cada columna de la vista = un tipo de evento TERRESTRE.
        =========================================================== */
-    public function listarEventosFOPaginado(
-        int $page,
-        int $perPage,
-        ?int $opFerroId = null,
-        ?int $ferroId   = null,      // contenedores_fisicos.id_fisico
-        string $q       = '',         // busca por FO o ferro
-        ?string $fechaDesde = null,   // (reservado para futuro)
-        ?string $fechaHasta = null    // (reservado para futuro)
-    ): array {
-        $perPage = min(100, max(1, $perPage));
-        $offset  = ($page - 1) * $perPage;
+public function listarEventosFOPaginado(
+    int $page,
+    int $perPage,
+    ?int $opFerroId = null,
+    ?int $ferroId   = null,      // contenedores_fisicos.id_fisico
+    string $q       = '',         // busca por FO o ferro
+    ?string $fechaDesde = null,   // (reservado para futuro)
+    ?string $fechaHasta = null    // (reservado para futuro)
+): array {
+    $perPage = min(100, max(1, $perPage));
+    $offset  = ($page - 1) * $perPage;
 
-        $where   = ["cf.estatus = 1"];
-        $params  = [];
+    $where   = ["cf.estatus = 1"];
+    $params  = [];
 
-        if ($opFerroId) {
-            $where[] = "of.id_operacion_ferro = ?";
-            $params[] = $opFerroId;
-        }
-        if ($ferroId) {
-            $where[] = "cf.id_fisico = ?";
-            $params[] = $ferroId;
-        }
-        if ($q !== '') {
-            $like = '%' . mb_strtolower(trim($q), 'UTF-8') . '%';
-            $where[] = "(LOWER(of.numero_operacion) LIKE ? OR LOWER(cf.numero_ferro) LIKE ?)";
-            array_push($params, $like, $like);
-        }
-        $whereSql = 'WHERE ' . implode(' AND ', $where);
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // NUEVO FILTRO: excluir operaciones con estatus Cancelado(6) o Finalizada(7)
+    // (catálogo 'estatus': 6=Cancelado, 7=Finalizada)
+    $where[] = "of.estatus_id NOT IN (6, 7)";
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-        // 1) TOTAL parejas (FO + Ferro)
-        $sqlCount = "
-            SELECT COUNT(*) AS total_rows
-            FROM (
-                SELECT of.id_operacion_ferro, cf.id_fisico
-                FROM operaciones_ferroviarias of
-                JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
-                {$whereSql}
-                GROUP BY of.id_operacion_ferro, cf.id_fisico
-            ) t";
-        $rowCount  = $this->select($sqlCount, $params);
-        $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
+    if ($opFerroId) {
+        $where[] = "of.id_operacion_ferro = ?";
+        $params[] = $opFerroId;
+    }
+    if ($ferroId) {
+        $where[] = "cf.id_fisico = ?";
+        $params[] = $ferroId;
+    }
+    if ($q !== '') {
+        $like = '%' . mb_strtolower(trim($q), 'UTF-8') . '%';
+        $where[] = "(LOWER(of.numero_operacion) LIKE ? OR LOWER(cf.numero_ferro) LIKE ?)";
+        array_push($params, $like, $like);
+    }
+    $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-        // 2) Página: parejas (FO + Ferro)
-        $sqlRows = "
-            SELECT 
-                of.id_operacion_ferro              AS op_ferro_id,
-                of.numero_operacion                AS operacion,
-                cf.id_fisico                       AS ferro_id,
-                cf.numero_ferro                    AS ferro
+    // 1) TOTAL parejas (FO + Ferro)
+    $sqlCount = "
+        SELECT COUNT(*) AS total_rows
+        FROM (
+            SELECT of.id_operacion_ferro, cf.id_fisico
             FROM operaciones_ferroviarias of
             JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
             {$whereSql}
-            GROUP BY of.id_operacion_ferro, cf.id_fisico, operacion, ferro
-            ORDER BY operacion ASC, ferro ASC
-            LIMIT {$perPage} OFFSET {$offset}";
-        $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
+            GROUP BY of.id_operacion_ferro, cf.id_fisico
+        ) t";
+    $rowCount  = $this->select($sqlCount, $params);
+    $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
 
-        if (empty($rowsPairs)) {
-            return [
-                'rows'     => [],
-                'total'    => $totalRows,
-                'page'     => $page,
-                'per_page' => $perPage
-            ];
-        }
+    // 2) Página: parejas (FO + Ferro)
+    $sqlRows = "
+        SELECT 
+            of.id_operacion_ferro              AS op_ferro_id,
+            of.numero_operacion                AS operacion,
+            cf.id_fisico                       AS ferro_id,
+            cf.numero_ferro                    AS ferro
+        FROM operaciones_ferroviarias of
+        JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
+        {$whereSql}
+        GROUP BY of.id_operacion_ferro, cf.id_fisico, operacion, ferro
+        ORDER BY operacion ASC, ferro ASC
+        LIMIT {$perPage} OFFSET {$offset}";
+    $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
 
-        // 3) Trae eventos de esos ferros en esta página
-        $pairKeys = array_map(fn($r) => [(int)$r['op_ferro_id'], (int)$r['ferro_id']], $rowsPairs);
-        // separa para IN()
-        $opIds   = array_values(array_unique(array_column($rowsPairs, 'op_ferro_id')));
-        $fxIds   = array_values(array_unique(array_column($rowsPairs, 'ferro_id')));
-        $inOps   = implode(',', array_fill(0, count($opIds), '?'));
-        $inFxs   = implode(',', array_fill(0, count($fxIds), '?'));
-
-        $paramsEvt = array_merge($opIds, $fxIds);
-        $sqlEvts = "
-            SELECT
-                e.id_evento,
-                e.operacion_ferro_id,
-                e.contenedor_fisico_id,
-                e.tipo_evento_id,
-                te.nombre AS evento,
-                e.fecha,
-                e.comentario
-            FROM eventos_ferroviarios e
-            LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
-            WHERE e.estatus = 1
-              AND e.operacion_ferro_id IN ($inOps)
-              AND e.contenedor_fisico_id IN ($inFxs)";
-        $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
-
-        // 4) Adjunta FO/Ferro a cada evento y “rellena vacíos”
-        $byPair = [];
-        foreach ($rowsPairs as $r) {
-            $key = $r['op_ferro_id'].'_'.$r['ferro_id'];
-            $byPair[$key] = $r; // operacion, ferro
-        }
-
-        $out = [];
-        foreach ($rowsEvts as $e) {
-            $key = ((int)$e['operacion_ferro_id']).'_'.((int)$e['contenedor_fisico_id']);
-            if (!isset($byPair[$key])) continue;
-            $out[] = [
-                'id_evento'           => (int)$e['id_evento'],
-                'operacion_ferro_id'  => (int)$e['operacion_ferro_id'],
-                'contenedor_fisico_id'=> (int)$e['contenedor_fisico_id'],
-                'tipo_evento_id'      => (int)$e['tipo_evento_id'],
-                'evento'              => (string)($e['evento'] ?? ''),
-                'fecha'               => (string)($e['fecha'] ?? ''),
-                'comentario'          => (string)($e['comentario'] ?? ''),
-                'operacion'           => (string)$byPair[$key]['operacion'],
-                'ferro'               => (string)$byPair[$key]['ferro'],
-            ];
-        }
-
-        // Parejas sin eventos: empuja dummy para que se pinten en la tabla
-        $pairsConEvento = array_unique(array_map(
-            fn($r) => $r['operacion_ferro_id'].'_'.$r['contenedor_fisico_id'],
-            $out
-        ));
-        foreach ($rowsPairs as $r) {
-            $key = $r['op_ferro_id'].'_'.$r['ferro_id'];
-            if (!in_array($key, $pairsConEvento, true)) {
-                $out[] = [
-                    'id_evento'            => null,
-                    'operacion_ferro_id'   => (int)$r['op_ferro_id'],
-                    'contenedor_fisico_id' => (int)$r['ferro_id'],
-                    'tipo_evento_id'       => null,
-                    'evento'               => null,
-                    'fecha'                => null,
-                    'comentario'           => null,
-                    'operacion'            => (string)$r['operacion'],
-                    'ferro'                => (string)$r['ferro'],
-                ];
-            }
-        }
-
+    if (empty($rowsPairs)) {
         return [
-            'rows'     => $out,       // “filas por evento” (el frontend pivotea por columnas)
-            'total'    => $totalRows, // total de parejas FO+Ferro (no de eventos)
+            'rows'     => [],
+            'total'    => $totalRows,
             'page'     => $page,
             'per_page' => $perPage
         ];
     }
+
+    // 3) Trae eventos de esos ferros en esta página
+    $opIds   = array_values(array_unique(array_column($rowsPairs, 'op_ferro_id')));
+    $fxIds   = array_values(array_unique(array_column($rowsPairs, 'ferro_id')));
+    $inOps   = implode(',', array_fill(0, count($opIds), '?'));
+    $inFxs   = implode(',', array_fill(0, count($fxIds), '?'));
+
+    $paramsEvt = array_merge($opIds, $fxIds);
+    $sqlEvts = "
+        SELECT
+            e.id_evento,
+            e.operacion_ferro_id,
+            e.contenedor_fisico_id,
+            e.tipo_evento_id,
+            te.nombre AS evento,
+            e.fecha,
+            e.comentario
+        FROM eventos_ferroviarios e
+        LEFT JOIN tipos_evento_logistico te ON te.id_tipo_evento = e.tipo_evento_id
+        WHERE e.estatus = 1
+          AND e.operacion_ferro_id IN ($inOps)
+          AND e.contenedor_fisico_id IN ($inFxs)";
+    $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
+
+    // 4) Adjunta FO/Ferro y rellena vacíos
+    $byPair = [];
+    foreach ($rowsPairs as $r) {
+        $key = $r['op_ferro_id'].'_'.$r['ferro_id'];
+        $byPair[$key] = $r;
+    }
+
+    $out = [];
+    foreach ($rowsEvts as $e) {
+        $key = ((int)$e['operacion_ferro_id']).'_'.((int)$e['contenedor_fisico_id']);
+        if (!isset($byPair[$key])) continue;
+        $out[] = [
+            'id_evento'            => (int)$e['id_evento'],
+            'operacion_ferro_id'   => (int)$e['operacion_ferro_id'],
+            'contenedor_fisico_id' => (int)$e['contenedor_fisico_id'],
+            'tipo_evento_id'       => (int)$e['tipo_evento_id'],
+            'evento'               => (string)($e['evento'] ?? ''),
+            'fecha'                => (string)($e['fecha'] ?? ''),
+            'comentario'           => (string)($e['comentario'] ?? ''),
+            'operacion'            => (string)$byPair[$key]['operacion'],
+            'ferro'                => (string)$byPair[$key]['ferro'],
+        ];
+    }
+
+    $pairsConEvento = array_unique(array_map(
+        fn($r) => $r['operacion_ferro_id'].'_'.$r['contenedor_fisico_id'],
+        $out
+    ));
+    foreach ($rowsPairs as $r) {
+        $key = $r['op_ferro_id'].'_'.$r['ferro_id'];
+        if (!in_array($key, $pairsConEvento, true)) {
+            $out[] = [
+                'id_evento'            => null,
+                'operacion_ferro_id'   => (int)$r['op_ferro_id'],
+                'contenedor_fisico_id' => (int)$r['ferro_id'],
+                'tipo_evento_id'       => null,
+                'evento'               => null,
+                'fecha'                => null,
+                'comentario'           => null,
+                'operacion'            => (string)$r['operacion'],
+                'ferro'                => (string)$r['ferro'],
+            ];
+        }
+    }
+
+    return [
+        'rows'     => $out,
+        'total'    => $totalRows,
+        'page'     => $page,
+        'per_page' => $perPage
+    ];
+}
+
 
     /* ==========================================================
        Reglas de validación (FO=2, eventos TERRESTRES=2) + CRUD
