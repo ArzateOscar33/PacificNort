@@ -47,11 +47,13 @@ const sugTrans    = document.getElementById("sugTransportistasRuta");
         muted.className = "text-muted small";
         muted.textContent = "Sin clientes detectados para esta operación.";
         chipsClientes.appendChild(muted);
+        chipsClientes.style.display = "block"; // <- asegurar visible aunque esté vacío
         return;
       }
       list.forEach(c => {
         chipsClientes.appendChild(ui.badge(c.nombre || ("ID " + c.id_cliente)));
       });
+       chipsClientes.style.display = "block";  // <- asegurar visible
     },
     setFerro(data){
       if(!data){ hidFerroId.value = ""; inpFerroNom.value = ""; return; }
@@ -116,14 +118,12 @@ if (opNombreConfirmado && (this.value || "") !== opNombreConfirmado) {
         const ferroTxt = item.numero_ferro ? ` — ${item.numero_ferro}` : ""; 
         btn.textContent = `${item.numero_operacion}${ferroTxt}`;
         btn.onclick = function(){
-          // Fijar selección
+          const opId = item.id_operacion_ferro ?? item.id; // robusto
           ui.empty(sugOpsBox);
-          hidOpId.value     = String(item.id);
+          hidOpId.value     = String(opId);
           inpOpNombre.value = item.numero_operacion || "";
           opNombreConfirmado = item.numero_operacion || "";
-
-          // Cargar datos completos para llenar Ferro y Clientes
-          cargarDatosModal(Number(item.id));
+          cargarDatosModal(Number(opId));
         };
         sugOpsBox.appendChild(btn);
       });
@@ -273,6 +273,8 @@ inpTransNom.addEventListener("input", debounce(function(){
 },250));
 
 
+
+window.renderRutaClientes = (list) => ui.renderClientes(list);
 })();
 // ===============================================
 // Catálogo Rutas Ferro/Caja — Listado & Paginación

@@ -501,13 +501,9 @@ setOrigenReadonlyByState();
     if (inpComentarioRuta) inpComentarioRuta.value = hdr.comentario_ruta || "";
 
     // Chips clientes (reutiliza ui.renderClientes si existe del JS de catálogo)
-    if (Array.isArray(clientes)) {
-      const chips = clientes.map((c) => ({
-        id_cliente: c.id_cliente,
-        nombre: c.nombre,
-      }));
-      if (typeof ui !== "undefined" && ui.renderClientes)
-        ui.renderClientes(chips);
+    if (Array.isArray(clientes) && window.renderRutaClientes) {
+      const chips = clientes.map(c => ({ id_cliente: c.id_cliente, nombre: c.nombre }));
+      window.renderRutaClientes(chips);
     }
   }
 
