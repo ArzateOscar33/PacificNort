@@ -116,20 +116,25 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
      *  - ferro: id/numero_ferro
      *  - clientes: chips con id/nombre
      */
-    public function getDatosModalTrazabilidad(int $operacionFerroId): array
-    {
-        $hdr      = $this->getOperacionFerroBasicos($operacionFerroId);
-        $ferro    = $hdr
-            ? ['id_fisico' => $hdr['contenedor_fisico_id'], 'numero_ferro' => $hdr['numero_ferro']]
-            : $this->getFerroDeOperacionFerro($operacionFerroId);
-        $clientes = $this->getClientesDeOperacionFerro($operacionFerroId);
+public function getDatosModalTrazabilidad(int $operacionFerroId): array
+{
+    $hdr      = $this->getOperacionFerroBasicos($operacionFerroId);
+    $ferro    = $hdr
+        ? ['id_fisico' => $hdr['contenedor_fisico_id'], 'numero_ferro' => $hdr['numero_ferro']]
+        : $this->getFerroDeOperacionFerro($operacionFerroId);
+    $clientes = $this->getClientesDeOperacionFerro($operacionFerroId);
 
-        return [
-            'operacion' => $hdr,
-            'ferro'     => $ferro,
-            'clientes'  => $clientes,
-        ];
-    }
+    // 🔹 NUEVO: total vigente desde costos_operacion_ferro (tipo 23, estatus=1)
+    $totalVigente = $this->getTotalTransporteActualPorFO($operacionFerroId);
+
+    return [
+        'operacion' => $hdr,
+        'ferro'     => $ferro,
+        'clientes'  => $clientes,
+        'total_transporte_actual' => $totalVigente, // <- añade este campo
+    ];
+}
+
 
 
     /* ============================
@@ -330,8 +335,8 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
 
 
 
-    //LISTAR PAGINADO
-  public function listarRutasFerroCatalogo(
+// LISTAR PAGINADO
+public function listarRutasFerroCatalogo(
     string $q = '',
     ?string $desde = null,
     ?string $hasta = null,
@@ -345,86 +350,99 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     $buscar  = trim($q) !== '' ? '%' . trim($q) . '%' : null;
     $useDate = (!empty($desde) || !empty($hasta));
 
-    // Agregados SOLO con tramos activos
+    // 1) Solo métricas de tramos (SIN sumar monto aquí)
     $sqlAggTramos = "
-        SELECT 
-            t.ruta_id,
-            COUNT(*)                 AS tramos_count,
-            COALESCE(SUM(t.monto),0) AS costo_acumulado,
-            MAX(t.created_at)        AS t_max_updated
-        FROM rutas_ferro_tramos t
-        WHERE t.estatus = 1
-        GROUP BY t.ruta_id
+      SELECT 
+        t.ruta_id,
+        COUNT(*)          AS tramos_count,
+        MAX(t.created_at) AS t_max_updated
+      FROM rutas_ferro_tramos t
+      WHERE t.estatus = 1
+      GROUP BY t.ruta_id
+    ";
+
+    // 2) Suma de costos de transporte vigentes por operación FERRO
+    $sqlAggCostosPorFO = "
+      SELECT 
+        operacion_ferro_id,
+        COALESCE(SUM(monto),0) AS costo_acumulado
+      FROM costos_operacion_ferro
+      WHERE estatus = 1
+        AND tipo_movimiento_id = 23
+      GROUP BY operacion_ferro_id
     ";
 
     // Primer tramo (de tramos activos)
     $sqlFirst = "
-        SELECT tt.ruta_id, tt.id_tramo, tt.origen_id
-        FROM rutas_ferro_tramos tt
-        INNER JOIN (
-            SELECT ruta_id, MIN(orden) AS min_orden
-            FROM rutas_ferro_tramos
-            WHERE estatus = 1
-            GROUP BY ruta_id
-        ) x ON x.ruta_id = tt.ruta_id AND x.min_orden = tt.orden
-        WHERE tt.estatus = 1
+      SELECT tt.ruta_id, tt.id_tramo, tt.origen_id
+      FROM rutas_ferro_tramos tt
+      INNER JOIN (
+          SELECT ruta_id, MIN(orden) AS min_orden
+          FROM rutas_ferro_tramos
+          WHERE estatus = 1
+          GROUP BY ruta_id
+      ) x ON x.ruta_id = tt.ruta_id AND x.min_orden = tt.orden
+      WHERE tt.estatus = 1
     ";
 
     // Último tramo (de tramos activos)
     $sqlLast = "
-        SELECT tt.ruta_id, tt.id_tramo, tt.destino_id
-        FROM rutas_ferro_tramos tt
-        INNER JOIN (
-            SELECT ruta_id, MAX(orden) AS max_orden
-            FROM rutas_ferro_tramos
-            WHERE estatus = 1
-            GROUP BY ruta_id
-        ) x ON x.ruta_id = tt.ruta_id AND x.max_orden = tt.orden
-        WHERE tt.estatus = 1
+      SELECT tt.ruta_id, tt.id_tramo, tt.destino_id
+      FROM rutas_ferro_tramos tt
+      INNER JOIN (
+          SELECT ruta_id, MAX(orden) AS max_orden
+          FROM rutas_ferro_tramos
+          WHERE estatus = 1
+          GROUP BY ruta_id
+      ) x ON x.ruta_id = tt.ruta_id AND x.max_orden = tt.orden
+      WHERE tt.estatus = 1
     ";
 
+    // Clientes agregados por operación FO (principal + ligados por marítima)
     $sqlClientesOp = "
-        SELECT 
-            z.operacion_ferro_id,
-            GROUP_CONCAT(DISTINCT c.nombre ORDER BY c.nombre SEPARATOR ', ') AS clientes
-        FROM (
-            SELECT ofx.id_operacion_ferro AS operacion_ferro_id, ofx.cliente_id
-            FROM operaciones_ferroviarias ofx
+      SELECT 
+          z.operacion_ferro_id,
+          GROUP_CONCAT(DISTINCT c.nombre ORDER BY c.nombre SEPARATOR ', ') AS clientes
+      FROM (
+          SELECT ofx.id_operacion_ferro AS operacion_ferro_id, ofx.cliente_id
+          FROM operaciones_ferroviarias ofx
 
-            UNION ALL
+          UNION ALL
 
-            SELECT cmf.operacion_ferro_id, o.cliente_id
-            FROM contenedor_maritimo_ferro cmf
-            INNER JOIN contenedores_maritimos_operacion cmo ON cmo.id = cmf.cont_maritimo_operacion_id
-            INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
-        ) z
-        INNER JOIN clientes c ON c.id_cliente = z.cliente_id
-        GROUP BY z.operacion_ferro_id
+          SELECT cmf.operacion_ferro_id, o.cliente_id
+          FROM contenedor_maritimo_ferro cmf
+          INNER JOIN contenedores_maritimos_operacion cmo ON cmo.id = cmf.cont_maritimo_operacion_id
+          INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+      ) z
+      INNER JOIN clientes c ON c.id_cliente = z.cliente_id
+      GROUP BY z.operacion_ferro_id
     ";
 
-    // Base: IMPORTANTE -> rf.estatus = 1 (solo rutas activas)
+    // Base con todos los JOINs y filtros fijos
     $sqlBase = "
-        FROM rutas_ferro rf
-        INNER JOIN operaciones_ferroviarias ofe 
-                ON ofe.id_operacion_ferro = rf.operacion_ferro_id
-        LEFT JOIN  contenedores_fisicos cf 
-                ON cf.id_fisico = rf.contenedor_fisico_id
+      FROM rutas_ferro rf
+      INNER JOIN operaciones_ferroviarias ofe 
+              ON ofe.id_operacion_ferro = rf.operacion_ferro_id
+      LEFT JOIN contenedores_fisicos cf 
+              ON cf.id_fisico = rf.contenedor_fisico_id
 
-        LEFT JOIN ($sqlAggTramos) agg  ON agg.ruta_id  = rf.id_ruta
-        LEFT JOIN ($sqlFirst)     f    ON f.ruta_id    = rf.id_ruta
-        LEFT JOIN ($sqlLast)      l    ON l.ruta_id    = rf.id_ruta
+      LEFT JOIN ($sqlAggTramos)       aggT ON aggT.ruta_id = rf.id_ruta
+      LEFT JOIN ($sqlAggCostosPorFO)  aggC ON aggC.operacion_ferro_id = ofe.id_operacion_ferro
+      LEFT JOIN ($sqlFirst)           f    ON f.ruta_id    = rf.id_ruta
+      LEFT JOIN ($sqlLast)            l    ON l.ruta_id    = rf.id_ruta
 
-        LEFT JOIN ciudades cori ON cori.id_ciudad = f.origen_id
-        LEFT JOIN ciudades cdes ON cdes.id_ciudad = l.destino_id
+      LEFT JOIN ciudades cori ON cori.id_ciudad = f.origen_id
+      LEFT JOIN ciudades cdes ON cdes.id_ciudad = l.destino_id
 
-        LEFT JOIN ($sqlClientesOp) cli ON cli.operacion_ferro_id = ofe.id_operacion_ferro
-        WHERE rf.estatus = 1
+      LEFT JOIN ($sqlClientesOp) cli ON cli.operacion_ferro_id = ofe.id_operacion_ferro
+      WHERE rf.estatus = 1
     ";
 
-    $fechaOrden = "COALESCE(agg.t_max_updated, rf.updated_at, rf.created_at)";
+    // Orden temporal preferente
+    $fechaOrden = "COALESCE(aggT.t_max_updated, rf.updated_at, rf.created_at)";
 
-    // WHERE dinámico (se añade encima de rf.estatus=1 ya presente en $sqlBase)
-    $wheres = [];
+    // WHERE dinámico
+    $wheres      = [];
     $paramsCount = [];
     $paramsData  = [];
 
@@ -453,32 +471,32 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
 
     $whereSqlExtra = count($wheres) ? (" AND " . implode(" AND ", $wheres)) : "";
 
-    // TOTAL (ya incluye rf.estatus=1 en $sqlBase)
+    // TOTAL
     $sqlTotal = "SELECT COUNT(*) AS total " . $sqlBase . $whereSqlExtra;
     $rowTot   = $this->select($sqlTotal, $paramsCount);
     $total    = $rowTot ? (int)$rowTot['total'] : 0;
 
     // DATA
     $sqlData = "
-        SELECT
-            rf.id_ruta                  AS ferro_ruta_id,
-            ofe.id_operacion_ferro     AS operacion_id,
-            ofe.numero_operacion       AS operacion_numero,
-            cf.id_fisico               AS ferro_id,
-            cf.numero_ferro            AS ferro_nombre,
+      SELECT
+          rf.id_ruta                        AS ferro_ruta_id,
+          ofe.id_operacion_ferro           AS operacion_id,
+          ofe.numero_operacion             AS operacion_numero,
+          cf.id_fisico                     AS ferro_id,
+          cf.numero_ferro                  AS ferro_nombre,
 
-            cli.clientes               AS cliente,
+          cli.clientes                     AS cliente,
 
-            cori.nombre_ciudad         AS origen_inicial,
-            cdes.nombre_ciudad         AS destino_actual,
+          cori.nombre_ciudad               AS origen_inicial,
+          cdes.nombre_ciudad               AS destino_actual,
 
-            COALESCE(agg.tramos_count, 0)     AS tramos_count,
-            COALESCE(agg.costo_acumulado, 0)  AS costo_acumulado,
+          COALESCE(aggT.tramos_count, 0)   AS tramos_count,
+          COALESCE(aggC.costo_acumulado,0) AS costo_acumulado,
 
-            $fechaOrden                 AS updated_at
-        " . $sqlBase . $whereSqlExtra . "
-        ORDER BY $fechaOrden DESC, rf.id_ruta DESC
-        LIMIT $perPage OFFSET $offset
+          $fechaOrden                      AS updated_at
+      " . $sqlBase . $whereSqlExtra . "
+      ORDER BY $fechaOrden DESC, rf.id_ruta DESC
+      LIMIT $perPage OFFSET $offset
     ";
     $rows = $this->selectAll($sqlData, $paramsData) ?: [];
 
@@ -867,6 +885,17 @@ public function bajaLogicaRutaFerroSinRutaId(
 private function insertarBitacora(int $usuarioId, string $modulo, string $accion, string $entidad, int $entidadId, string $detalle=''): void {
     $sql = "INSERT INTO bitacora (usuario_id, modulo, accion, entidad, entidad_id, detalle) VALUES (?, ?, ?, ?, ?, ?)";
     $this->insertar($sql, [$usuarioId, $modulo, $accion, $entidad, $entidadId, $detalle]);
+}
+public function getTotalTransporteActualPorFO(int $operacionFerroId): float
+{
+    $row = $this->select("
+        SELECT COALESCE(SUM(monto),0) AS total
+        FROM costos_operacion_ferro
+        WHERE operacion_ferro_id = ?
+          AND tipo_movimiento_id = 23
+          AND estatus = 1
+    ", [$operacionFerroId]);
+    return $row ? (float)$row['total'] : 0.0;
 }
 
 

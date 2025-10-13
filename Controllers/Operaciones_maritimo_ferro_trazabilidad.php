@@ -326,7 +326,7 @@ public function rutas_list(): void
                 'nombre'     => (string)$c['nombre']
             ];
         }, $clientes);
-
+ $totalActual = $this->model->getTotalTransporteActualPorFO((int)$hdr['operacion_ferro_id']);
         $this->json([
             'ok'     => true,
             'header' => [
@@ -338,7 +338,8 @@ public function rutas_list(): void
                 'comentario_ruta'     => (string)($hdr['comentario_ruta'] ?? '')
             ],
             'clientes' => $outClientes,
-            'tramos'   => $tramos
+            'tramos'   => $tramos,
+            'total_transporte_actual' => $totalActual
         ]);
     } catch (Throwable $e) {
         error_log('ruta_detalle: ' . $e->getMessage());

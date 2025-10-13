@@ -550,6 +550,10 @@ setOrigenReadonlyByState();
 
     // 3) Poner tramos en carrito
     setCarritoDesdeServidorTraz(res.tramos || []);
+    // 3.1) Sobrescribir el total del modal con el TOTAL vigente de costos_operacion_ferro
+if (typeof res.total_transporte_actual === "number") {
+  totalMontoBadgeTraz.textContent = utilTraz.money(res.total_transporte_actual);
+}
 
     // 4) Encabezado y Origen readonly
     lockHeaderAndOriginTraz();
