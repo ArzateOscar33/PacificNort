@@ -71,64 +71,64 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
     /* =======================================================
      * GET /operaciones_maritimo_ferro_trazabilidad/datos_modal_trazabilidad?id=123
      * ======================================================= */
-    public function datos_modal_trazabilidad(): void
-    {
-        // 1) Validar id
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        if ($id <= 0) {
-            $this->badRequest('ID inválido.');
-        }
-
-        // 2) Leer paquete desde el modelo
-        try {
-            $pack = $this->model->getDatosModalTrazabilidad($id);
-        } catch (Throwable $e) {
-            error_log('datos_modal_trazabilidad: ' . $e->getMessage());
-            $this->json(['ok' => false, 'msg' => 'Error al leer datos de la operación.'], 500);
-        }
-
-        if (!$pack || empty($pack['operacion'])) {
-            $this->notFound('Operación ferroviaria no encontrada.');
-        }
-
-        // 3) Normalizar salida para el modal
-        // operacion: id, numero_operacion, fecha, comentarios, estatus_id, cliente (id/nombre)
-        $op = $pack['operacion'];
-        $operacion = [
-            'id_operacion_ferro' => (int)$op['id_operacion_ferro'],
-            'numero_operacion'   => (string)$op['numero_operacion'],
-            'fecha'              => (string)($op['fecha'] ?? ''),
-            'comentarios'        => (string)($op['comentarios'] ?? ''),
-            'estatus_id'         => isset($op['estatus_id']) ? (int)$op['estatus_id'] : null,
-            'cliente_id'         => isset($op['cliente_id']) ? (int)$op['cliente_id'] : null,
-            'cliente_nombre'     => (string)($op['cliente_nombre'] ?? '')
-        ];
-
-        // ferro: id_fisico, numero_ferro
-        $ferro = $pack['ferro'] ? [
-            'id_fisico'    => isset($pack['ferro']['id_fisico']) ? (int)$pack['ferro']['id_fisico'] : (int)$op['contenedor_fisico_id'],
-            'numero_ferro' => (string)($pack['ferro']['numero_ferro'] ?? $op['numero_ferro'] ?? '')
-        ] : [
-            'id_fisico'    => isset($op['contenedor_fisico_id']) ? (int)$op['contenedor_fisico_id'] : null,
-            'numero_ferro' => (string)($op['numero_ferro'] ?? '')
-        ];
-
-        // clientes: lista [{id_cliente, nombre}]
-        $clientes = array_map(function($c){
-            return [
-                'id_cliente' => (int)$c['id_cliente'],
-                'nombre'     => (string)$c['nombre']
-            ];
-        }, $pack['clientes'] ?? []);
-
-        // 4) Respuesta
-        $this->json([
-            'ok'        => true,
-            'operacion' => $operacion,
-            'ferro'     => $ferro,
-            'clientes'  => $clientes
-        ]);
+public function datos_modal_trazabilidad(): void
+{
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($id <= 0) {
+        $this->badRequest('ID inválido.');
     }
+
+    try {
+        $pack = $this->model->getDatosModalTrazabilidad($id);
+    } catch (Throwable $e) {
+        error_log('datos_modal_trazabilidad: ' . $e->getMessage());
+        $this->json(['ok' => false, 'msg' => 'Error al leer datos de la operación.'], 500);
+    }
+
+    if (!$pack || empty($pack['operacion'])) {
+        $this->notFound('Operación ferroviaria no encontrada.');
+    }
+
+    $op = $pack['operacion'];
+    $operacion = [
+        'id_operacion_ferro' => (int)$op['id_operacion_ferro'],
+        'numero_operacion'   => (string)$op['numero_operacion'],
+        'fecha'              => (string)($op['fecha'] ?? ''),
+        'comentarios'        => (string)($op['comentarios'] ?? ''),
+        'estatus_id'         => isset($op['estatus_id']) ? (int)$op['estatus_id'] : null,
+        'cliente_id'         => isset($op['cliente_id']) ? (int)$op['cliente_id'] : null,
+        'cliente_nombre'     => (string)($op['cliente_nombre'] ?? '')
+    ];
+
+    $ferro = $pack['ferro'] ? [
+        'id_fisico'    => isset($pack['ferro']['id_fisico']) ? (int)$pack['ferro']['id_fisico'] : (int)$op['contenedor_fisico_id'],
+        'numero_ferro' => (string)($pack['ferro']['numero_ferro'] ?? $op['numero_ferro'] ?? '')
+    ] : [
+        'id_fisico'    => isset($op['contenedor_fisico_id']) ? (int)$op['contenedor_fisico_id'] : null,
+        'numero_ferro' => (string)($op['numero_ferro'] ?? '')
+    ];
+
+    $clientes = array_map(function($c){
+        return [
+            'id_cliente' => (int)$c['id_cliente'],
+            'nombre'     => (string)$c['nombre']
+        ];
+    }, $pack['clientes'] ?? []);
+
+    // 🔹 Agregar el total actual de transporte (nuevo campo)
+    $totalTransporteActual = isset($pack['total_transporte_actual'])
+        ? (float)$pack['total_transporte_actual']
+        : 0.0;
+
+    $this->json([
+        'ok'        => true,
+        'operacion' => $operacion,
+        'ferro'     => $ferro,
+        'clientes'  => $clientes,
+        'total_transporte_actual' => $totalTransporteActual
+    ]);
+}
+
 
     /* =======================================================
      * (OPCIONAL) GET /operaciones_maritimo_ferro_trazabilidad/ferro_por_operacion?id=123
@@ -298,8 +298,12 @@ public function rutas_list(): void
     }
 
 
-    //trazabilida
-    public function ruta_detalle(): void
+// trazabilida
+// ============================================ 
+// Operaciones_maritimo_ferro_trazabilidad
+// ============================================
+
+public function ruta_detalle(): void
 {
     $rutaId = isset($_GET['id_ruta']) ? (int)$_GET['id_ruta'] : 0;
     if ($rutaId <= 0) {
@@ -313,11 +317,20 @@ public function rutas_list(): void
             $this->notFound('Ruta no encontrada.');
         }
 
-        // Clientes chips (todos los de la operación)
-        $clientes = $this->model->getClientesPorOperacionFerroId((int)$hdr['operacion_ferro_id']) ?: [];
+        $operacionFerroId = (int)$hdr['operacion_ferro_id'];
 
-        // Tramos para pintar en la tabla (carrito)
-        $tramos = $this->model->getTramosPorRutaConNombres($rutaId) ?: [];
+        // Clientes chips (todos los de la operación)
+        $clientes = $this->model->getClientesPorOperacionFerroId($operacionFerroId) ?: [];
+
+        // 🔹 CAMBIO CRÍTICO: Usar el nuevo método que trae costos vigentes
+        $tramos = $this->model->getTramosPorRutaConNombresYCostosVigentes($rutaId, $operacionFerroId) ?: [];
+
+        // ✅ Calcular total desde los montos vigentes (ya vienen en $tramos)
+        $totalActual = 0.0;
+        foreach ($tramos as $t) {
+            // Usar el monto_vigente que ya viene del modelo
+            $totalActual += (float)$t['monto_vigente'];
+        }
 
         // Normalizar salida
         $outClientes = array_map(function($c){
@@ -326,19 +339,19 @@ public function rutas_list(): void
                 'nombre'     => (string)$c['nombre']
             ];
         }, $clientes);
- $totalActual = $this->model->getTotalTransporteActualPorFO((int)$hdr['operacion_ferro_id']);
+
         $this->json([
             'ok'     => true,
             'header' => [
-                'id_ruta'             => (int)$hdr['id_ruta'],
-                'operacion_ferro_id'  => (int)$hdr['operacion_ferro_id'],
-                'numero_operacion'    => (string)$hdr['numero_operacion'],
-                'contenedor_fisico_id'=> (int)$hdr['contenedor_fisico_id'],
-                'numero_ferro'        => (string)($hdr['numero_ferro'] ?? ''),
-                'comentario_ruta'     => (string)($hdr['comentario_ruta'] ?? '')
+                'id_ruta'              => (int)$hdr['id_ruta'],
+                'operacion_ferro_id'   => $operacionFerroId,
+                'numero_operacion'     => (string)$hdr['numero_operacion'],
+                'contenedor_fisico_id' => (int)$hdr['contenedor_fisico_id'],
+                'numero_ferro'         => (string)($hdr['numero_ferro'] ?? ''),
+                'comentario_ruta'      => (string)($hdr['comentario_ruta'] ?? '')
             ],
             'clientes' => $outClientes,
-            'tramos'   => $tramos,
+            'tramos'   => $tramos, // Ya incluyen monto_vigente
             'total_transporte_actual' => $totalActual
         ]);
     } catch (Throwable $e) {
@@ -346,6 +359,7 @@ public function rutas_list(): void
         $this->json(['ok'=>false, 'msg'=>'Error interno.'], 500);
     }
 }
+
 
 
 // === EDITAR (DIFERENCIAL): inserta/actualiza/elimina según payload ===

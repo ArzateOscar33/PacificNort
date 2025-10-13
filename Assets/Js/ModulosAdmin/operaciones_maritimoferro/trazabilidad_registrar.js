@@ -233,7 +233,7 @@ if (modalEl && window.bootstrap?.Modal) {
 
   const btnAgregarTramoTraz = document.getElementById("btnAgregarTramo");
   const tbodyTramosTraz = document.getElementById("tbodyTramos");
-  const noTramosRowTraz = document.getElementById("noTramosRow");
+  const noTramosRow = document.getElementById("noTramosRow");
   const totalMontoBadgeTraz = document.getElementById("totalMonto");
 
   // Hidden que viaja al back
@@ -283,60 +283,78 @@ if (modalEl && window.bootstrap?.Modal) {
     },
 
     // Render de tabla + cálculo total
-    render() {
-      // limpiar
-      tbodyTramosTraz.innerHTML = "";
-      if (!tramosTraz.length) {
-        noTramosRowTraz.style.display = "";
-        tbodyTramosTraz.appendChild(noTramosRowTraz);
-        totalMontoBadgeTraz.textContent = utilTraz.money(0);
-        return;
-      }
-      noTramosRowTraz.style.display = "none";
+render() {
+  // Limpia el cuerpo antes de repintar
+  tbodyTramosTraz.innerHTML = "";
 
-      let total = 0;
-      tramosTraz.forEach((t, idx) => {
-        total += utilTraz.toNumber(t.monto);
-        const esExistente = !!t.id_tramo && isEditTraz;
+  if (!tramosTraz || tramosTraz.length === 0) {
+    noTramosRow.style.display = ""; // muestra la fila "No has agregado tramos"
+    totalMontoBadgeTraz.textContent = utilTraz.money(0);
+    return;
+  }
+  noTramosRow.style.display = "none";
 
-        const btnEliminar = esExistente
-          ? `<button type="button" class="btn btn-sm btn-outline-secondary" title="No editable" disabled>
-               <i data-feather="lock"></i>
-             </button>`
-          : `<button type="button" class="btn btn-sm btn-outline-danger" data-idx="${idx}" title="Eliminar">
-               <i data-feather="trash-2"></i>
-             </button>`;
+  let total = 0;
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${idx + 1}</td>
-          <td>${t.origen_nombre || "-"}</td>
-          <td>${t.destino_nombre || "-"}</td>
-          <td>${t.transportista_nombre || "-"}</td>
-          <td class="text-end">${utilTraz.money(t.monto)}</td>
-          <td>${t.comentario ? t.comentario : ""}</td>
-          <td class="text-center">${btnEliminar}</td>
-        `;
-        tbodyTramosTraz.appendChild(tr);
-      });
+  tramosTraz.forEach((t, idx) => {
+    // 🔹 CAMBIO CRÍTICO: Priorizar monto_vigente sobre monto histórico
+    // Si viene monto_vigente del servidor (edición), usarlo
+    // Si no (nuevo tramo en carrito), usar el monto ingresado
+    const montoMostrar = (typeof t.monto_vigente === "number" && t.monto_vigente !== null)
+      ? t.monto_vigente
+      : utilTraz.toNumber(t.monto);
 
-      totalMontoBadgeTraz.textContent = utilTraz.money(total);
-      feather?.replace();
+    total += montoMostrar;
 
-      // delegar eliminar (solo en filas nuevas, las que traen data-idx)
-      tbodyTramosTraz.querySelectorAll("button[data-idx]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = Number(btn.getAttribute("data-idx"));
-          if (!Number.isInteger(i) || i < 0 || i >= tramosTraz.length) return;
-          tramosTraz.splice(i, 1);
-          utilTraz.render();
-          utilTraz.syncPayload();
-          // encadenar origen del siguiente tramo
-          setNextOriginFromLastTraz();
-          setOrigenReadonlyByState(); 
-        });
-      });
-    },
+    const esExistente = !!t.id_tramo && isEditTraz;
+
+    const btnEliminar = esExistente
+      ? `<button type="button" class="btn btn-sm btn-outline-secondary" title="No editable" disabled>
+           <i data-feather="lock"></i>
+         </button>`
+      : `<button type="button" class="btn btn-sm btn-outline-danger" data-idx="${idx}" title="Eliminar">
+           <i data-feather="trash-2"></i>
+         </button>`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${t.origen_nombre || "-"}</td>
+      <td>${t.destino_nombre || "-"}</td>
+      <td>${t.transportista_nombre || "-"}</td>
+      <td class="text-end">
+        <strong>${utilTraz.money(montoMostrar)}</strong>
+        ${esExistente && t.monto_historico && t.monto_historico !== montoMostrar 
+          ? `<br><small class="text-muted">(Original: ${utilTraz.money(t.monto_historico)})</small>` 
+          : ''}
+      </td>
+      <td>${t.comentario ? utilTraz.safeText(t.comentario) : ""}</td>
+      <td class="text-center">${btnEliminar}</td>
+    `;
+    tbodyTramosTraz.appendChild(tr);
+  });
+
+  // Actualiza el total del pie de tabla
+  totalMontoBadgeTraz.textContent = utilTraz.money(total);
+
+  // Volver a dibujar los íconos de feather
+  if (window.feather && typeof feather.replace === "function") {
+    feather.replace();
+  }
+
+  // Delegar eliminar (solo en filas nuevas)
+  tbodyTramosTraz.querySelectorAll("button[data-idx]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.getAttribute("data-idx"));
+      if (!Number.isInteger(i) || i < 0 || i >= tramosTraz.length) return;
+      tramosTraz.splice(i, 1);
+      utilTraz.render();
+      utilTraz.syncPayload();
+      setNextOriginFromLastTraz();
+      setOrigenReadonlyByState(); 
+    });
+  });
+},
   };
 
   // Encadena: ORIGEN del siguiente tramo = DESTINO del último

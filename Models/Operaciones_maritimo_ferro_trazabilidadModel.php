@@ -897,6 +897,130 @@ public function getTotalTransporteActualPorFO(int $operacionFerroId): float
     ", [$operacionFerroId]);
     return $row ? (float)$row['total'] : 0.0;
 }
+public function getCostosTransporteVigentesPorFOOrdenados(int $operacionFerroId): array
+{
+    $sql = "
+        SELECT id_costo_ferro AS id_costo, monto
+        FROM costos_operacion_ferro
+        WHERE operacion_ferro_id = ?
+          AND tipo_movimiento_id = 23
+          AND estatus = 1
+        ORDER BY id_costo_ferro ASC
+    ";
+    return $this->selectAll($sql, [$operacionFerroId]) ?: [];
+}
 
+
+// ============================================
+// AGREGAR ESTE MÉTODO AL MODELO
+// Operaciones_maritimo_ferro_trazabilidadModel
+// ============================================
+
+/**
+ * Obtiene el mapeo de costos vigentes por tramo
+ * Retorna un array asociativo: [id_tramo => monto_vigente]
+ * 
+ * La lógica es:
+ * 1. Para cada tramo de una ruta específica (ordenado por `orden`)
+ * 2. Buscar el costo correspondiente en costos_operacion_ferro (ordenado por id_costo_ferro)
+ * 3. El primer tramo se empareja con el primer costo, el segundo con el segundo, etc.
+ */
+public function getCostosVigentesPorRutaConMapeo(int $rutaId, int $operacionFerroId): array
+{
+    // 1) Obtener tramos ordenados por 'orden' ASC
+    $sqlTramos = "
+        SELECT id_tramo
+        FROM rutas_ferro_tramos
+        WHERE ruta_id = ? AND estatus = 1
+        ORDER BY orden ASC, id_tramo ASC
+    ";
+    $tramos = $this->selectAll($sqlTramos, [$rutaId]) ?: [];
+
+    // 2) Obtener costos de transporte vigentes ordenados por id_costo_ferro ASC
+    $sqlCostos = "
+        SELECT id_costo_ferro, monto
+        FROM costos_operacion_ferro
+        WHERE operacion_ferro_id = ?
+          AND tipo_movimiento_id = 23
+          AND estatus = 1
+        ORDER BY id_costo_ferro ASC
+    ";
+    $costos = $this->selectAll($sqlCostos, [$operacionFerroId]) ?: [];
+
+    // 3) Mapear por índice: tramo[i] -> costo[i]
+    $mapeo = [];
+    $totalCostos = count($costos);
+    
+    foreach ($tramos as $idx => $tramo) {
+        $idTramo = (int)$tramo['id_tramo'];
+        
+        // Si hay un costo disponible en la misma posición, lo usamos
+        if ($idx < $totalCostos) {
+            $mapeo[$idTramo] = (float)$costos[$idx]['monto'];
+        } else {
+            // Si no hay más costos, usamos 0.00 o podrías dejarlo sin mapear
+            $mapeo[$idTramo] = 0.00;
+        }
+    }
+
+    return $mapeo;
+}
+
+/**
+ * Versión mejorada de getTramosPorRutaConNombres que incluye el monto vigente
+ */
+public function getTramosPorRutaConNombresYCostosVigentes(int $rutaId, int $operacionFerroId): array
+{
+    // 1) Obtener tramos básicos
+    $sql = "
+        SELECT 
+            t.id_tramo,
+            t.ruta_id,
+            t.orden,
+            t.origen_id,
+            co.nombre_ciudad   AS origen_nombre,
+            t.destino_id,
+            cd.nombre_ciudad   AS destino_nombre,
+            t.transportista_id,
+            tr.nombre          AS transportista_nombre,
+            t.monto            AS monto_historico,
+            t.comentario,
+            t.created_at
+        FROM rutas_ferro_tramos t
+        LEFT JOIN ciudades       co ON co.id_ciudad = t.origen_id
+        LEFT JOIN ciudades       cd ON cd.id_ciudad = t.destino_id
+        LEFT JOIN transportistas tr ON tr.id_transportista = t.transportista_id
+        WHERE t.ruta_id = ? AND t.estatus = 1
+        ORDER BY t.orden ASC, t.id_tramo ASC
+    ";
+    $tramos = $this->selectAll($sql, [$rutaId]) ?: [];
+
+    // 2) Obtener mapeo de costos vigentes
+    $mapeo = $this->getCostosVigentesPorRutaConMapeo($rutaId, $operacionFerroId);
+
+    // 3) Enriquecer cada tramo con su monto vigente
+    foreach ($tramos as &$tramo) {
+        $idTramo = (int)$tramo['id_tramo'];
+        
+        // Asignar monto vigente desde el mapeo, o usar el histórico si no existe
+        $tramo['monto_vigente'] = isset($mapeo[$idTramo]) 
+            ? $mapeo[$idTramo] 
+            : (float)$tramo['monto_historico'];
+        
+        // También mantener el monto original para referencia
+        $tramo['monto'] = $tramo['monto_vigente']; // Para compatibilidad
+    }
+
+    return $tramos;
+}
+
+/**
+ * Calcula el total actual sumando los costos vigentes (no los históricos de tramos)
+ */
+public function getTotalTransporteActualPorRuta(int $rutaId, int $operacionFerroId): float
+{
+    $mapeo = $this->getCostosVigentesPorRutaConMapeo($rutaId, $operacionFerroId);
+    return array_sum($mapeo);
+}
 
 }
