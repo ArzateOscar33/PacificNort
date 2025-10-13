@@ -120,7 +120,7 @@
                                 <input type="hidden" id="modalDocumentosContTipo" name="contenedor_tipo">
                                 <!-- 'F' o 'M' -->
                                 <input type="text" id="modalDocumentosContNombre" class="form-control"
-                                    placeholder="Escribe para buscar (FXE..., EMCU...)" autocomplete="off">
+                                    placeholder="Escribe para buscar (FXE..., EMCU...)" autocomplete="off" readonly>
                                 <div id="modalDocumentosContSugerencias" class="list-group"
                                     style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                             </div>

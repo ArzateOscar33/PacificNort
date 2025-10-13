@@ -10,7 +10,8 @@
         </div>
 
         <div class="ms-auto col-md-12 d-flex justify-content-end mb-3">
-          <button class="btn btn-success" id="costosOperacionBtnNuevo" data-bs-toggle="modal" data-bs-target="#modalCostoOperacion">
+          <button class="btn btn-success" id="costosOperacionBtnNuevo" data-bs-toggle="modal"
+            data-bs-target="#modalCostoOperacion">
             <i data-feather="plus"></i> Añadir Costo
           </button>
         </div>
@@ -21,7 +22,8 @@
           <div class="row justify-content-end align-items-center mb-2">
             <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
               <div class="d-flex gap-2">
-                <input type="text" class="form-control form-control-sm" id="costosOperacionBuscar" placeholder="Buscar concepto o comentario…">
+                <input type="text" class="form-control form-control-sm" id="costosOperacionBuscar"
+                  placeholder="Buscar concepto o comentario…">
                 <!-- ELIMINADO: costosOperacionFiltroOrigen -->
                 <select id="costosOperacionFiltroMoneda" class="form-control form-control-sm" style="max-width:140px;">
                   <option value="">Moneda: Todas</option>
@@ -58,29 +60,28 @@
               <label for="costosOperacionFiltroOpNombre" class="form-label mb-1">Operación</label>
               <div class="position-relative">
                 <input type="hidden" id="costosOperacionFiltroOpId">
-                <input type="text" id="costosOperacionFiltroOpNombre" class="form-control" placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
-                <div id="costosOperacionFiltroOpSugerencias" class="list-group" style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                <input type="text" id="costosOperacionFiltroOpNombre" class="form-control"
+                  placeholder="Escribe para buscar (ej. JL-05)" autocomplete="off">
+                <div id="costosOperacionFiltroOpSugerencias" class="list-group"
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               </div>
               <div class="form-text" id="costosOperacionFiltroOpMeta"></div>
             </div>
           </div>
           <!-- Sugerencia de Ferro/Caja (opcional, filtrará por ferro si tu backend lo soporta) -->
-<div class="row flex-wrap gap-2 align-items-center mb-2">
-  <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
-    <label for="costosOperacionFiltroFerroNombre" class="form-label mb-1">Contenedor</label>
-    <div class="position-relative">
-      <input type="hidden" id="costosOperacionFiltroFerroId">
-      <input type="text" id="costosOperacionFiltroFerroNombre" class="form-control"
-             placeholder="Escribe para buscar (ej. CAJA-1234) — sugiere por operación"
-             autocomplete="off">
-      <div id="costosOperacionFiltroFerroSugerencias"
-           class="list-group"
-           style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-    </div>
-    <div class="form-text" id="costosOperacionFiltroFerroMeta"></div>
-  </div>
-</div>
-
+          <div class="row flex-wrap gap-2 align-items-center mb-2">
+            <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
+              <label for="costosOperacionFiltroFerroNombre" class="form-label mb-1">Contenedor</label>
+              <div class="position-relative">
+                <input type="hidden" id="costosOperacionFiltroFerroId">
+                <input type="text" id="costosOperacionFiltroFerroNombre" class="form-control"
+                  placeholder="Escribe para buscar (ej. CAJA-1234) — sugiere por operación" autocomplete="off" readonly>
+                <div id="costosOperacionFiltroFerroSugerencias" class="list-group"
+                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+              </div>
+              <div class="form-text" id="costosOperacionFiltroFerroMeta"></div>
+            </div>
+          </div>
 
           <!-- Configuración de vista de totales -->
           <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
@@ -96,7 +97,8 @@
                 <label class="form-label small mb-1">Tipo de cambio</label>
                 <div class="input-group input-group-sm" style="width:160px;">
                   <span class="input-group-text">$</span>
-                  <input type="number" step="0.0001" min="0" id="costosOperacionTipoCambio" class="form-control mt-1" value="17.00">
+                  <input type="number" step="0.0001" min="0" id="costosOperacionTipoCambio" class="form-control mt-1"
+                    value="17.00">
                 </div>
               </div>
             </div>
@@ -168,14 +170,18 @@
             </tr>
           </thead>
           <tbody id="tbodyCostosOperacionCombined">
-            <tr><td colspan="6" class="text-center text-muted py-4">Selecciona una operación para ver sus costos.</td></tr>
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">Selecciona una operación para ver sus costos.</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <div class="d-flex justify-content-between align-items-center">
         <div class="text-muted small" id="costosOperacionMeta">Mostrando 0-0 de 0</div>
-        <nav><ul id="costosOperacionPaginacion" class="pagination pagination-sm mb-0"></ul></nav>
+        <nav>
+          <ul id="costosOperacionPaginacion" class="pagination pagination-sm mb-0"></ul>
+        </nav>
       </div>
 
     </div>
@@ -183,7 +189,8 @@
 </div>
 
 <!-- Modal: Agregar / Editar Costo por Operación (sin cambios) -->
-<div class="modal fade" id="modalCostoOperacion" tabindex="-1" aria-labelledby="modalCostoOperacionLabel" aria-hidden="true">
+<div class="modal fade" id="modalCostoOperacion" tabindex="-1" aria-labelledby="modalCostoOperacionLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-md">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -193,7 +200,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-     <form id="formAgregarCostoContenedores">
+      <form id="formAgregarCostoContenedores">
         <div class="modal-body">
           <input type="hidden" id="row_id" name="row_id">
 
@@ -212,10 +219,10 @@
           <div class="mb-3">
             <div class="position-relative">
               <!-- Contenedor físico -->
-              <label class="form-label">Contenedor Físico</label>
+              <label class="form-label">Contenedor</label>
               <input type="hidden" id="costosContenedorContenedorId" name="costosContenedorContenedorId">
               <input type="text" id="costosContenedorContenedorNombre" name="costosContenedorContenedorNombre"
-                class="form-control" placeholder="Escribe para buscar contenedor..." autocomplete="off">
+                class="form-control" placeholder="Escribe para buscar contenedor..." autocomplete="off" readonly>
               <div id="sugerenciasCostosContenedor" class="list-group"
                 style="position:absolute; z-index:1061; width:100%; display:none;"></div>
               <small class="text-muted">Sugerencia: escribe parte del número (ej. FXE...).</small>
@@ -236,8 +243,8 @@
           </div>
 
           <div class="mb-3">
-            <label for="costosContenedoresMoneda" class="form-label">Modneda</label>
-            <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control">
+            <label for="costosContenedoresMoneda" class="form-label">Modeda</label>
+            <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control"  readonly disabled>
               <option value="">Seleccione</option>
             </select>
           </div>
@@ -254,16 +261,18 @@
           <button type="button" class="btn btn-secondary" id="btnCancelarCostoContenedor" data-bs-dismiss="modal">
             <i data-feather="x"></i> Cancelar
           </button>
-          <button type="submit" id="btnSubmitCostoContenedor" class="btn btn-success">
+          <button type="submit" id="btnGuardarCostoOperacion" class="btn btn-success">
             <i data-feather="save"></i> Guardar
           </button>
         </div>
       </form>
 
-
     </div>
   </div>
 </div>
 
-<script>feather.replace();</script>
+<script>
+  feather.replace();
+</script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_catalogo.js"></script>
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_registrar.js"></script>
