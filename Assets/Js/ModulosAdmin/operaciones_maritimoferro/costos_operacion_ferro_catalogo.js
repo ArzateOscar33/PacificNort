@@ -202,7 +202,7 @@ function loadTiposMovimiento(fuente, selectEl, selectedId = null, done = null) {
       const badgeNat = nat
         ? `<span class="badge ${isAbono ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} ms-1">${nat}</span>`
         : "";
-
+const isTransporte = Number(r.tipo_movimiento_id) === 23;
       // dataset para modal (solo mostrar)
       tr.dataset.rowId   = r.row_id || "";
       tr.dataset.opId    = r.operacion_id || r.operacion_ferro_id || "";
@@ -214,22 +214,24 @@ function loadTiposMovimiento(fuente, selectEl, selectedId = null, done = null) {
       tr.dataset.coment  = r.comentario || "";
       tr.dataset.fuente  = r.fuente || fuenteSel;
 
-      tr.innerHTML = `
-        <td>${fmtFecha(r.fecha)}</td>
-        <td>${safe(r.concepto || "")}${badgeNat}</td>
-        <td>${prettyMoneda(r.moneda || "")}</td>
-        <td class="text-end ${montoCls}">${montoConSigno}</td>
-        <td>${safe(r.comentario || "")}</td>
-        <td class="text-center">
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Ver / Editar (solo lectura)">
-              <i data-feather="edit-2"></i>
-            </button>
-            <button class="btn btn-outline-danger btnEliminarCostoOperacion" title="Eliminar (solo lectura)">
-              <i data-feather="trash-2"></i>
-            </button>
-          </div>
-        </td>`;
+tr.innerHTML = `
+  <td>${fmtFecha(r.fecha)}</td>
+  <td>${safe(r.concepto || "")}${badgeNat}</td>
+  <td>${prettyMoneda(r.moneda || "")}</td>
+  <td class="text-end ${montoCls}">${montoConSigno}</td>
+  <td>${safe(r.comentario || "")}</td>
+  <td class="text-center">
+    <div class="btn-group btn-group-sm">
+      <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Ver / Editar">
+        <i data-feather="edit-2"></i>
+      </button>
+      <button class="btn btn-outline-danger btnEliminarCostoOperacion"
+              title="${isTransporte ? 'Eliminar deshabilitado para Transporte' : 'Eliminar'}"
+              ${isTransporte ? 'disabled aria-disabled="true"' : ''}>
+        <i data-feather="trash-2"></i>
+      </button>
+    </div>
+  </td>`;
       tbody.appendChild(tr);
     });
     window.feather?.replace?.();
@@ -734,17 +736,27 @@ if (btnDel) {
   const tr = btnDel.closest("tr");
   if (!tr) return;
 
+  // 🔒 Nuevo: bloquear si es Transporte (id 23)
+  const tipoId = parseInt(tr.dataset.tipoId || "0", 10);
+  if (tipoId === 23) {
+    if (window.Swal) {
+      Swal.fire({
+        icon: "info",
+        title: "No permitido",
+        text: "Los costos de tipo Transporte no pueden eliminarse. Edítalos desde aquí.",
+        confirmButtonText: "Entendido"
+      });
+    } else {
+      alert("Los costos de tipo Transporte no pueden eliminarse. Edítalos desde aquí.");
+    }
+    return; // 🚫 no seguimos con la eliminación
+  }
+
   const rowId   = parseInt(tr.dataset.rowId || "0", 10) || 0;
   const fuente  = (tr.dataset.fuente || "F").toUpperCase();
   const tipoNom = (tr.dataset.tipoNom || tr.querySelector("td:nth-child(2)")?.textContent || "").trim();
   const moneda  = (tr.dataset.moneda || "").toUpperCase();
   const monto   = tr.dataset.monto || "";
-
-  if (rowId <= 0) {
-    if (window.Swal) Swal.fire({ icon:"warning", title:"ID inválido", text:"No se pudo detectar el costo." });
-    else alert("ID inválido");
-    return;
-  }
 
   // Confirmación
   const confirmar = () => {
