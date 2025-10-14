@@ -42,10 +42,10 @@
 
         <!-- Exportaciones -->
         <div class="col-md-4 d-flex gap-2">
-          <button class="btn btn-sm btn-outline-success w-100" id="btnExportarExcelEventosLogisticos">
+          <button class="btn btn-sm btn-outline-success w-100" id="btnExportarExcelEventosLogisticosMar">
             <i data-feather="file-text" class="me-1"></i> Excel
           </button>
-          <button class="btn btn-sm btn-outline-warning w-100" id="btnExportarPDFEventosLogisticos">
+          <button class="btn btn-sm btn-outline-warning w-100" id="btnExportarPDFEventosLogisticosMar">
             <i data-feather="file" class="me-1"></i> PDF
           </button>
         </div>

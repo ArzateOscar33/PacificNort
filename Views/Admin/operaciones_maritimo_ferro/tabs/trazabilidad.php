@@ -60,7 +60,7 @@
 
   <div class="card-body pt-2">
     <div class="table-responsive">
-      <table class="table table-bordered table-hover align-middle mb-0">
+      <table class="table table-bordered table-hover align-middle mb-0" id="tablaRutas">
         <thead class="table-light">
           <tr>
             <th style="min-width:140px;">Operación</th>

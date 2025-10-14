@@ -691,3 +691,29 @@
   // ---- Init ----
   init();
 })();
+// ===============================
+// Exportaciones
+// ===============================
+document.getElementById("btnExportarExcelEventosLogisticosFer")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "tablaEventosFer",
+    formato: "xlsx",
+    nombre: "EventosFerro.xlsx",
+    columnasOcultas: [],
+    soloVisibles: true,
+    sheetName: "Contenedores En Operacion",
+  });
+});
+
+document.getElementById("btnExportarPDFEventosLogisticosFer")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "#tablaEventosFer",
+    formato: "pdf",
+    nombre: "EventosFerro.pdf",
+    titulo: "Eventos Logísticos Ferro",
+    orientacion: "landscape",
+    formatoPagina: "letter",
+    columnasOcultas: [],
+    soloVisibles: true,
+  });
+});

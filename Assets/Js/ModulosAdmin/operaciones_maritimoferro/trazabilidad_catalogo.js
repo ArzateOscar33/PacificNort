@@ -445,16 +445,28 @@ window.renderRutaClientes = (list) => ui.renderClientes(list);
 
   // Export (si tus endpoints existen)
   btnXls?.addEventListener('click', function(){
-    const qs = new URLSearchParams({
-      q: inpQ?.value || '', desde: inpIni?.value || '', hasta: inpFin?.value || ''
-    });
-    window.open(BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_export_excel?' + qs.toString(), '_blank');
+    ExportarTablas.exportar({
+    ref: "tablaRutas",
+    formato: "xlsx",
+    nombre: "TrazabilidadFerroviaria.xlsx",
+    columnasOcultas: [8],
+    soloVisibles: true,
+    sheetName: "Contenedores En Operacion",
+  });
   });
   btnPdf?.addEventListener('click', function(){
-    const qs = new URLSearchParams({
-      q: inpQ?.value || '', desde: inpIni?.value || '', hasta: inpFin?.value || ''
-    });
-    window.open(BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_export_pdf?' + qs.toString(), '_blank');
+      ExportarTablas.exportar({
+    ref: "#tablaRutas",
+    formato: "pdf",
+    nombre: "TrazabilidadFerroviaria.pdf",
+    titulo: "Trazabilidad Ferroviaria",
+    orientacion: "landscape",
+    formatoPagina: "letter",
+    columnasOcultas: [8],
+    soloVisibles: true,
+  });
+
+
   });
 
   // ----- Helpers para eliminar -----

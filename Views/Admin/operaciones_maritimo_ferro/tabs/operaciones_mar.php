@@ -30,10 +30,10 @@
           placeholder="Buscar por código, BL o contenedor">
 
         <div class="col-md-2">
-          <button class="btn btn-sm btn-outline-success" id="maritimo_ferro_btnExportarExcel">
+          <button class="btn btn-sm btn-outline-success" id="operaciones_mar_ExportarExcel">
             <i data-feather="file-text" class="me-1"></i> Excel
           </button>
-          <button class="btn btn-sm btn-outline-warning" id="maritimo_ferro_btnExportarPDF">
+          <button class="btn btn-sm btn-outline-warning" id="operaciones_mar_ExportarPDF">
             <i data-feather="file" class="me-1"></i> PDF
           </button>
         </div>
@@ -67,7 +67,7 @@
 
       <!-- Tabla -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle" id="maritimo_ferro_tablaExportar">
+        <table class="table table-hover align-middle" id="operaciones_mar_TablaExportar">
           <thead class="table-success">
             <tr class="text-center">
               <th style="width:140px;">Código</th>

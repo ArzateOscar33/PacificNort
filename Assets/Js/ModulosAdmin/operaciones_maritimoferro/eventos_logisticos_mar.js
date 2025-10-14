@@ -826,3 +826,29 @@ modalEl?.addEventListener('hidden.bs.modal', () => {
     window.refreshEventosMF && window.refreshEventosMF({ keepPage: false });
   });
 })();
+  // ---------------------- Exportación (opcional, solo lectura) ----------------------
+  document.getElementById('btnExportarExcelEventosLogisticosMar')?.addEventListener('click', () => {
+     
+    ExportarTablas.exportar({
+      ref: 'tablaEventosMar',
+      formato: 'xlsx',
+      nombre: `Eventos Logisticos(Maritimos) .xlsx`,
+      columnasOcultas: [10],
+      soloVisibles: true,
+      sheetName: `Eventos Logisticos(Maritimos)`
+    });
+  });
+
+  document.getElementById('btnExportarPDFEventosLogisticosMar')?.addEventListener('click', () => {
+    const tag = (window.fuenteSel === 'MF') ? 'MF' : 'FO';
+    ExportarTablas.exportar({
+      ref: '#tablaEventosMar',
+      formato: 'pdf',
+      nombre: `Eventos Logisticos(Maritimos).pdf`,
+      titulo: `Eventos Logisticos(Maritimos)`,
+      orientacion: 'landscape',
+      formatoPagina: 'letter',
+      columnasOcultas: [10],
+      soloVisibles: true
+    });
+  });

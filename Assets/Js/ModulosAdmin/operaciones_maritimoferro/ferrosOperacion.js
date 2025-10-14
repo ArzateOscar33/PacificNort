@@ -795,7 +795,7 @@ document.getElementById("btnExcelFerroOP")?.addEventListener("click", () => {
     ref: "tablaFerroOP",
     formato: "xlsx",
     nombre: "FerrosEnOperacion.xlsx",
-    columnasOcultas: [6],
+    columnasOcultas: [9],
     soloVisibles: true,
     sheetName: "Contenedores En Operacion",
   });
@@ -809,8 +809,9 @@ document.getElementById("btnPdfFerroOP")?.addEventListener("click", () => {
     titulo: "Ferros En Operacion",
     orientacion: "landscape",
     formatoPagina: "letter",
-    columnasOcultas: [6],
+    columnasOcultas: [9],
     soloVisibles: true,
   });
 });
+ 
  

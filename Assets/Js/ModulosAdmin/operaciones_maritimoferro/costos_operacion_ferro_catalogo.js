@@ -850,7 +850,7 @@ if (btnDel) {
       ref: 'tablaCostosOperacionExportar',
       formato: 'xlsx',
       nombre: `CostosOperacion_${tag}.xlsx`,
-      columnasOcultas: [],
+      columnasOcultas: [5],
       soloVisibles: true,
       sheetName: `Costos ${tag}`
     });
@@ -865,7 +865,7 @@ if (btnDel) {
       titulo: `Costos Operación ${tag}`,
       orientacion: 'landscape',
       formatoPagina: 'letter',
-      columnasOcultas: [],
+      columnasOcultas: [5],
       soloVisibles: true
     });
   });
