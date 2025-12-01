@@ -19,7 +19,9 @@
     <link href="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
     <!-- Custom CSS -->
-    <script src="https://unpkg.com/feather-icons"></script> 
+   <!-- <script src="https://unpkg.com/feather-icons"></script>  -->
+    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/feather.min.js"></script>
+
     <link href="<?php echo BASE_URL; ?>/dist/css/style.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -467,10 +469,13 @@
 </script>
 
 <!-- Chartist CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css">
+<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css"> -->
+<link href="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartist.min.css" rel="stylesheet">
+
 
 <!-- Chartist JS -->
-<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script> -->
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartist.min.js"></script>
 
 <!-- Luego tu dashboard -->
 <script src="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.js"></script>

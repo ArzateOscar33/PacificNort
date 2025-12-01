@@ -768,3 +768,29 @@ btnGuardarOp?.addEventListener('click', (e)=>{
 });
 
 })();
+// ===============================
+// Exportaciones
+// ===============================
+document.getElementById("operaciones_mar_ExportarExcel")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "operaciones_mar_TablaExportar",
+    formato: "xlsx",
+    nombre: "OperacionesMaritimas.xlsx",
+    columnasOcultas: [10],
+    soloVisibles: true,
+    sheetName: "Contenedores En Operacion",
+  });
+});
+
+document.getElementById("operaciones_mar_ExportarPDF")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "#operaciones_mar_TablaExportar",
+    formato: "pdf",
+    nombre: "OperacionesMaritimas.pdf",
+    titulo: "OperacionesMaritimas",
+    orientacion: "landscape",
+    formatoPagina: "letter",
+    columnasOcultas: [10],
+    soloVisibles: true,
+  });
+});

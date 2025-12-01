@@ -92,10 +92,14 @@
         });
     });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> -->
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/xlsx.full.min.js"></script>
+
 
  
-<script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script> -->
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/jspdf.umd.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script> -->
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/jspdf.plugin.autotable.min.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/exportarTablas.js"></script>
 <?php include 'Views/Template/admin_footer.php'; ?>
