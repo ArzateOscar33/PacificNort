@@ -113,13 +113,21 @@ window.editarTransportista = function (id) {
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4) {
-      if (this.status !== 200) { console.error("Error obtener:", this.responseText); Swal.fire("Error", "No se pudo cargar el transportista", "error"); return; }
+      if (this.status !== 200) { /* ... */ return; }
       let data;
-      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); Swal.fire("Error", "Respuesta no válida", "error"); return; }
+      try { data = JSON.parse(this.responseText); } catch (e) { /* ... */ return; }
 
       fldId.value     = data.id_transportista;
       fldNombre.value = data.nombre || "";
-      fldTipo.value   = data.tipo || "";
+
+      let tipo = (data.tipo || "").toString().toLowerCase();
+      if (tipo === "terrestre" || tipo === "1") {
+        fldTipo.value = "Terrestre";
+      } else if (tipo === "ferroviario" || tipo === "2") {
+        fldTipo.value = "Ferroviario";
+      } else {
+        fldTipo.value = ""; // por si viene algo raro
+      }
 
       document.getElementById("modalRegistrarTransportistaLabel").textContent = "Editar Transportista";
       const btnSubmit = document.getElementById("btnSubmit");
@@ -129,6 +137,7 @@ window.editarTransportista = function (id) {
     }
   };
 };
+
 
 // =============== ELIMINAR (LÓGICO) ===============
 window.eliminarTransportista = function (id) {
