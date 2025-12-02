@@ -1,302 +1,810 @@
-// Referencias
-const tablaDetallesLogisticos = document.getElementById("tbodyDetallesLogisticos");
-const fldContenedorTipoEventosLogisticos = document.getElementById("eventoContenedorTipo");
+/* ===========================================================
+   MODAL - Registrar / Editar Evento (Operación MARÍTIMA)
+   Versión clon del módulo MF, pero apuntando a
+   operaciones_maritimas_eventos/*
+   =========================================================== */
+(function evMarModal() {
+  "use strict";
 
-const perPageEventosLogisticos    = document.getElementById("detPerPage");
-const paginacionEventosLogisticos = document.getElementById("paginacionDetalles");
-const resumenEventosLogisticos    = document.getElementById("detMetaResumen");
-const filtroOpIdEventosLogisticos   = document.getElementById("eventosFiltroOpId");
-const filtroContIdEventosLogisticos = document.getElementById("eventosFiltroContenedorId");
-const buscarEventosLogisticos       = document.getElementById("buscarDetalles");
+  // ---------- Refs del modal ----------
+  const modalEl     = document.getElementById("modalDetallesLogisticos");
+  const formEl      = document.getElementById("formEventosLogisticos");
+  const tituloEl    = document.getElementById("modalTituloDetalles");
+  const btnSubmit   = document.getElementById("btnSubmitEventoLogistico") || (formEl ? formEl.querySelector('[type="submit"]') : null);
 
-// El contenedor visible del modal: SIEMPRE readonly
-const contTxtModal = document.getElementById("eventoContenedorNombre");
-if (contTxtModal) {
-  contTxtModal.readOnly = true;
-  contTxtModal.placeholder = "Se autollenará al elegir la operación";
-}
+  // Campos formulario
+  const fldIdEvento       = document.getElementById("idEvento"); // hidden
+  const inpOpNombre       = document.getElementById("eventoOperacionNombre");
+  const hidOpId           = document.getElementById("eventoOperacionId");
+  const opSugBox          = document.getElementById("eventoOperacionSugerencias");
+  const opMeta            = document.getElementById("eventoOperacionMeta");
 
-let paginaEventosLogisticos = 1; // página actual
+  const inpContNom        = document.getElementById("eventoContenedorNombre");
+  const hidContOpId       = document.getElementById("eventoContenedorOperacionId"); // cmo.id
+  const contSugBox        = document.getElementById("eventoContenedorSugerencias");
+  const hidContTipo       = document.getElementById("eventoContenedorTipo"); // 'MARITIMO'
 
-listarEventoLogistico();
+  const selTipoEvt        = document.getElementById("tipoEventoId");
+  const inpFecha          = document.getElementById("fechaEventoLogistico");
+  const inpComentario     = document.getElementById("comentarioEventoLogistico");
 
-// LISTAR (GET)
-function listarEventoLogistico() {
-  const perPage = parseInt(perPageEventosLogisticos.value || "10", 10);
-  const opId    = filtroOpIdEventosLogisticos.value || "";
-  const contId  = filtroContIdEventosLogisticos.value || "";
-  const q       = buscarEventosLogisticos.value ? buscarEventosLogisticos.value.trim() : "";
+  // ---------- Utils ----------
+  function xhrGet(url, cbOk, cbErr) {
+    const http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
+      if (this.status === 200) {
+        let json;
+        try { json = JSON.parse(this.responseText); }
+        catch { cbErr && cbErr("JSON inválido"); return; }
+        cbOk && cbOk(json);
+      } else {
+        cbErr && cbErr(this.responseText || "HTTP error");
+      }
+    };
+    http.send();
+  }
 
-  const params = [];
-  params.push("page=" + paginaEventosLogisticos);
-  params.push("per_page=" + perPage);
-  if (opId)   params.push("op_id=" + encodeURIComponent(opId));
-  if (contId) params.push("cont_id=" + encodeURIComponent(contId));
-  if (q)      params.push("q=" + encodeURIComponent(q));
+  function xhrPost(url, formData, cbOk, cbErr) {
+    const http = new XMLHttpRequest();
+    http.open("POST", url, true);
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
+      if (this.status === 200) {
+        let json;
+        try { json = JSON.parse(this.responseText); }
+        catch { cbErr && cbErr("JSON inválido"); return; }
+        cbOk && cbOk(json);
+      } else {
+        cbErr && cbErr(this.responseText || "HTTP error");
+      }
+    };
+    http.send(formData);
+  }
 
-  const http = new XMLHttpRequest();
-  http.open("GET", base_url + "operaciones_maritimas_eventos/listar?" + params.join("&"), true);
-  http.onreadystatechange = function () {
-    if (this.readyState !== 4) return;
-    if (this.status !== 200) { console.error(this.responseText); return; }
-
-    let res;
-    try { res = JSON.parse(this.responseText); }
-    catch { res = { data: [], total: 0, page: 1, per_page: perPage }; }
-
-    renderTablaEventoLogistico(res.data || []);
-    renderPaginacionEventosLogisticos(res.total || 0, res.page || 1, res.per_page || perPage);
-  };
-  http.send();
-}
-
-function renderPaginacionEventosLogisticos(total, page, perPage) {
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
-  const start = total === 0 ? 0 : ((page - 1) * perPage + 1);
-  const end   = Math.min(total, page * perPage);
-  resumenEventosLogisticos.textContent = `Mostrando ${start}–${end} de ${total}`;
-
-  paginacionEventosLogisticos.innerHTML = "";
-
-  function addItemEventosLogisticos(label, targetPage, disabled, active) {
-    const li = document.createElement("li");
-    li.className = "page-item" + (disabled ? " disabled" : "") + (active ? " active" : "");
-    const a = document.createElement("a");
-    a.className = "page-link";
-    a.href = "#";
-    a.textContent = label;
-    if (!disabled && !active) {
-      a.addEventListener("click", function (e) {
-        e.preventDefault();
-        paginaEventosLogisticos = targetPage;
-        listarEventoLogistico();
-      });
+  function renderSugerencias(listEl, items, onPick) {
+    listEl.innerHTML = "";
+    if (!Array.isArray(items) || items.length === 0) {
+      listEl.style.display = "none";
+      return;
     }
-    li.appendChild(a);
-    paginacionEventosLogisticos.appendChild(li);
-  }
-
-  addItemEventosLogisticos("«", Math.max(1, page - 1), page === 1, false);
-
-  const windowSize = 5;
-  let startPage = Math.max(1, page - Math.floor(windowSize / 2));
-  let endPage   = Math.min(totalPages, startPage + windowSize - 1);
-  if (endPage - startPage < windowSize - 1) startPage = Math.max(1, endPage - windowSize + 1);
-
-  for (let p = startPage; p <= endPage; p++) {
-    addItemEventosLogisticos(String(p), p, false, p === page);
-  }
-
-  addItemEventosLogisticos("»", Math.min(totalPages, page + 1), page === totalPages, false);
-}
-
-// RENDER
-function renderTablaEventoLogistico(data) {
-  tablaDetallesLogisticos.innerHTML = "";
-  if (!Array.isArray(data) || data.length === 0) {
-    tablaDetallesLogisticos.innerHTML = "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
-    return;
-  }
-  data.forEach((item) => {
-    const tr = document.createElement("tr");
-    tr.classList.add("text-center");
-    tr.innerHTML = `
-      <td>${item.evento ?? ""}</td>
-      <td>${item.fecha ?? ""}</td>
-      <td>${item.operacion ?? ""}</td> 
-      <td>${item.contenedor ?? ""}</td>
-      <td>${item.comentario ?? ""}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-secondary me-1" onclick="editarEvento(${item.id_evento})">
-          <i data-feather="edit"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="eliminarEvento(${item.id_evento})">
-          <i data-feather="x"></i>
-        </button>
-      </td>
-    `;
-    tablaDetallesLogisticos.appendChild(tr);
-  });
-  if (window.feather) feather.replace();
-}
-
-// ===============================
-// Utilidades (sufijo: detallesLogisticos)
-// ===============================
-function renderSugerenciasDetallesLogisticos(listEl, items, onPick) {
-  listEl.innerHTML = "";
-  if (!Array.isArray(items) || items.length === 0) {
-    listEl.style.display = "none";
-    return;
-  }
-  items.forEach(function (it) {
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
-    btn.innerHTML =
-      "<span>" + (it.label || "") + "</span>" +
-      (it.meta ? '<small class="text-muted">' + it.meta + "</small>"
-               : (it.tipo ? '<small class="text-muted">' + it.tipo + "</small>" : ""));
-    btn.addEventListener("click", function () { onPick(it); });
-    listEl.appendChild(btn);
-  });
-  listEl.style.display = "block";
-}
-
-function xhrGetDetallesLogisticos(url, cb) {
-  const http = new XMLHttpRequest();
-  http.open("GET", url, true);
-  http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      try { cb(JSON.parse(this.responseText)); } catch { cb([]); }
-    }
-  };
-  http.send();
-}
-
-// ===============================
-// AUTOCOMPLETE: MODAL -> Operación
-// ===============================
-(function setupOperacionModalAutocompleteDetallesLogisticos(){
-  const input   = document.getElementById("eventoOperacionNombre");
-  const hidden  = document.getElementById("eventoOperacionId");
-  const list    = document.getElementById("eventoOperacionSugerencias");
-  const meta    = document.getElementById("eventoOperacionMeta");
-
-  if (!input || !list) return;
-
-  let lastTermDetallesLogisticos = "";
-  input.addEventListener("input", () => {
-    if (input.disabled) return;
-    const term = input.value.trim();
-    hidden.value = "";
-    if (term.length < 1) { list.style.display = "none"; return; }
-    if (term === lastTermDetallesLogisticos) return;
-    lastTermDetallesLogisticos = term;
-
-    const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
-    xhrGetDetallesLogisticos(url, (rows) => {
-      renderSugerenciasDetallesLogisticos(list, rows, (it) => {
-        // 1) Seteamos la operación
-        input.value  = it.label;
-        hidden.value = it.id;
-        list.style.display = "none";
-        meta && (meta.textContent = it.meta || "");
-
-        // 2) Reset y readonly del contenedor visible
-        const hiddenCont = document.getElementById("eventoContenedorOperacionId");
-        if (hiddenCont) hiddenCont.value = "";
-        if (contTxtModal) {
-          contTxtModal.value = "";
-          contTxtModal.readOnly = true; // mantiene readonly
-        }
-        if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
-
-        // 3) Traer el contenedor marítimo asociado a la operación y autollenar
-        const urlC = base_url + "operaciones_maritimas_eventos/contenedor_maritimo_de_operacion?operacion_id=" + it.id;
-        xhrGetDetallesLogisticos(urlC, (cont) => {
-          if (cont && cont.id) {
-            if (hiddenCont) hiddenCont.value = cont.id;               // cmo.id
-            if (contTxtModal) contTxtModal.value = cont.label || "";  // número contenedor
-            if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "MARITIMO";
-
-            // Catálogo tipos de evento para marítimo
-            cargarTiposEventoPorContenedorUI("MARITIMO");
-            if (contTxtModal) contTxtModal.readOnly = true;
-          } else {
-            // Si no hay, seguimos readonly por regla de negocio
-            if (contTxtModal) contTxtModal.readOnly = true;
-          }
-        });
-      });
+    items.forEach(it => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+      btn.innerHTML =
+        `<span>${it.label || ""}</span>` +
+        (it.meta ? `<small class="text-muted">${it.meta}</small>`
+                  : (it.tipo ? `<small class="text-muted">${it.tipo}</small>` : ""));
+      btn.addEventListener("click", () => onPick(it));
+      listEl.appendChild(btn);
     });
+    listEl.style.display = "block";
+  }
+
+  function fillTiposEvento(lista, preselectId = null) {
+    if (!selTipoEvt) return;
+    let html = '<option value="">Selecciona...</option>';
+    if (Array.isArray(lista)) {
+      for (const r of lista) {
+        const id  = r.id ?? r.id_tipo_evento;
+        const nom = r.nombre ?? "";
+        const sel = preselectId && String(preselectId) === String(id) ? ' selected' : '';
+        html += `<option value="${id}"${sel}>${nom}</option>`;
+      }
+    }
+    selTipoEvt.innerHTML = html;
+    selTipoEvt.disabled = false;
+  }
+
+  function cargarCatalogoTiposEvento(preselectId = null) {
+    // Para Marítimo usamos tipo_operacion_id = 1
+    const url = base_url + "operaciones_maritimas_eventos/tipos_evento?tipo_operacion_id=1";
+    xhrGet(
+      url,
+      (rows) => fillTiposEvento(rows, preselectId),
+      () => fillTiposEvento([])
+    );
+  }
+
+  function limpiarContenedor() {
+    if (inpContNom)  inpContNom.value = "";
+    if (hidContOpId) hidContOpId.value = "";
+    if (hidContTipo) hidContTipo.value = "";
+  }
+
+  function setBtnSubmitting(flag) {
+    if (!btnSubmit) return;
+    btnSubmit.disabled = !!flag;
+    btnSubmit.innerHTML = flag
+      ? '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...'
+      : '<i data-feather="save" class="me-1"></i> Guardar';
+    if (window.feather) feather.replace();
+  }
+
+  // ---------- Estado inicial del input de contenedor ----------
+  if (inpContNom) {
+    inpContNom.readOnly = true; // bloqueado
+    inpContNom.placeholder = "Se autollenará al elegir la operación";
+  }
+
+  // ---------- Autocomplete: Operación MARÍTIMA ----------
+  if (inpOpNombre && opSugBox) {
+    let tmrOp = null, lastTermOp = "";
+
+    inpOpNombre.addEventListener("input", () => {
+      const term = inpOpNombre.value.trim();
+
+      // Reset selección y contenedor dependiente
+      hidOpId.value = "";
+      if (opMeta) opMeta.textContent = "";
+      limpiarContenedor();
+      fillTiposEvento([]); // limpiar catálogo mientras no haya contenedor
+
+      if (term.length === 0) {
+        opSugBox.style.display = "none";
+        return;
+      }
+
+      clearTimeout(tmrOp);
+      tmrOp = setTimeout(() => {
+        if (term === lastTermOp) return;
+        lastTermOp = term;
+
+        const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
+        xhrGet(url, (rows) => {
+          renderSugerencias(opSugBox, rows, (it) => {
+            // Selección de operación
+            inpOpNombre.value = it.label || "";
+            hidOpId.value     = it.id || "";
+            opSugBox.style.display = "none";
+            if (opMeta) opMeta.textContent = it.meta || "";
+
+            // Autollenar contenedor marítimo de esa operación
+            const urlCont = base_url + "operaciones_maritimas_eventos/contenedor_maritimo_de_operacion?operacion_id=" + encodeURIComponent(it.id);
+            xhrGet(urlCont, (cont) => {
+              if (Array.isArray(cont)) cont = cont[0] || null; // tolerante
+
+              // asegurar que no esté disabled
+              if (inpContNom) inpContNom.disabled = false;
+
+              if (cont && cont.id) {
+                inpContNom.value  = cont.label || "";  // número contenedor
+                hidContOpId.value = cont.id;           // cmo.id
+                hidContTipo.value = "MARITIMO";
+
+                // Catálogo marítimo
+                cargarCatalogoTiposEvento();
+              } else {
+                limpiarContenedor();
+                fillTiposEvento([]);
+              }
+            }, () => {
+              limpiarContenedor();
+              fillTiposEvento([]);
+            });
+          });
+        }, () => { opSugBox.style.display = "none"; });
+      }, 250);
+    });
+
+    // Cierra la caja de sugerencias si haces click fuera
+    document.addEventListener("click", (e) => {
+      if (!opSugBox.contains(e.target) && e.target !== inpOpNombre) {
+        opSugBox.style.display = "none";
+      }
+    });
+  }
+
+  // ---------- Desactivar autocomplete del contenedor (está readOnly) ----------
+  // Si en el futuro decides permitir búsqueda manual, quita el readOnly y activa esto.
+  if (inpContNom && contSugBox && hidOpId && !inpContNom.readOnly) {
+    let tmrCont = null, lastTermCont = "";
+    inpContNom.addEventListener("input", () => {
+      const term = inpContNom.value.trim();
+      const opId = parseInt(hidOpId.value || "0", 10);
+
+      // reset selección al tipear
+      if (hidContOpId) hidContOpId.value = "";
+      if (hidContTipo) hidContTipo.value = "";
+
+      if (!opId) { contSugBox.style.display = "none"; return; }
+      if (term.length === 0) { contSugBox.style.display = "none"; return; }
+
+      clearTimeout(tmrCont);
+      tmrCont = setTimeout(() => {
+        if (term === lastTermCont) return;
+        lastTermCont = term;
+
+        const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
+        xhrGet(url, (rows) => {
+          renderSugerencias(contSugBox, rows, (it) => {
+            inpContNom.value  = it.label || "";
+            hidContOpId.value = it.id || "";
+            hidContTipo.value = it.tipo || "MARITIMO";
+            contSugBox.style.display = "none";
+            cargarCatalogoTiposEvento();
+          });
+        }, () => { contSugBox.style.display = "none"; });
+      }, 250);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!contSugBox.contains(e.target) && e.target !== inpContNom) {
+        contSugBox.style.display = "none";
+      }
+    });
+  }
+
+  // ---------- Submit (Registrar / Actualizar desde el modal principal) ----------
+  if (formEl) {
+    formEl.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const idEvento   = (fldIdEvento?.value || "").trim();
+      const operacionId= (hidOpId.value || "").trim();
+      const cmoId      = (hidContOpId.value || "").trim();
+      const tipoEvtId  = (selTipoEvt.value || "").trim();
+      const fecha      = (inpFecha.value || "").trim();
+      const comentario = (inpComentario.value || "").trim();
+
+      if (!operacionId) { return Swal?.fire("Campos requeridos", "Selecciona una operación marítima.", "warning"); }
+      if (!cmoId)       { return Swal?.fire("Campos requeridos", "No hay contenedor marítimo para la operación.", "warning"); }
+      if (!tipoEvtId)   { return Swal?.fire("Campos requeridos", "Selecciona un tipo de evento marítimo.", "warning"); }
+      if (!fecha)       { return Swal?.fire("Campos requeridos", "Indica la fecha del evento.", "warning"); }
+
+      const fd = new FormData();
+      if (idEvento) fd.append("id_evento", idEvento);
+      fd.append("operacion_id", operacionId);
+      fd.append("cont_maritimo_operacion_id", cmoId);
+      fd.append("tipo_evento_id", tipoEvtId);
+      fd.append("fecha", fecha);
+      fd.append("comentario", comentario);
+
+      const url = base_url + "operaciones_maritimas_eventos/" + (idEvento ? "actualizar" : "registrar");
+
+      setBtnSubmitting(true);
+      xhrPost(
+        url,
+        fd,
+        (res) => {
+          setBtnSubmitting(false);
+          const icon = res.status === "success" ? "success" : (res.status === "warning" ? "warning" : "error");
+          Swal?.fire(res.status === "success" ? "Éxito" : "Atención", res.msg || "Respuesta recibida.", icon);
+
+          if (res.status === "success") {
+            formEl.reset();
+            limpiarContenedor();
+            fillTiposEvento([]);
+            if (tituloEl) tituloEl.textContent = "Registrar Evento";
+            if (window.feather) feather.replace();
+
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.hide();
+
+            // Refrescar listado principal (dejamos la página actual)
+            window.refreshEventosMar && window.refreshEventosMar({ keepPage: true });
+          }
+        },
+        (err) => {
+          setBtnSubmitting(false);
+          console.error("Registrar/Actualizar evento Mar (err):", err);
+          Swal?.fire("Error", "No fue posible guardar el evento.", "error");
+        }
+      );
+    });
+  }
+
+  // ---------- Ajustes de UI ----------
+  if (window.feather) feather.replace();
+
+  // Botón principal para abrir modal "limpio"
+  document.getElementById("btnAbrirModalDetalles")?.addEventListener("click", () => {
+    if (formEl) formEl.reset();
+    if (tituloEl) tituloEl.textContent = "Registrar Evento";
+    limpiarContenedor();
+    fillTiposEvento([]);
+    if (inpContNom) {
+      inpContNom.readOnly = true;
+      inpContNom.disabled = false;
+      inpContNom.placeholder = "Se autollenará al elegir la operación";
+    }
+    if (window.feather) feather.replace();
   });
 
-  document.addEventListener("click", (e) => {
-    if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
-  });
 })();
 
-// ===============================
-// AUTOCOMPLETE: MODAL -> Contenedor
-// ===============================
-(function setupContenedorModalAutocompleteDetallesLogisticos(){
-  const input   = document.getElementById("eventoContenedorNombre");
-  const hiddenF = document.getElementById("eventoContenedorOperacionId");
-  const list    = document.getElementById("eventoContenedorSugerencias");
-  const opHidden= document.getElementById("eventoOperacionId");
+/* ===============================================================
+   Listado MARÍTIMO con columnas dinámicas (pivot por evento)
+   IDs usados en la vista marítima:
+   - thead: <tr id="theadDetallesLogisticos">
+   - tbody: <tbody id="tbodyDetallesLogisticos">
+   - per-page: <select id="detPerPage">
+   - paginación: <ul id="paginacionDetalles">
+   - meta: <span id="detMetaResumen">
+   - buscador: <input id="buscarDetalles">
+   - filtros: eventosFiltroOpId, eventosFiltroContenedorId
+   =============================================================== */
+(function evMarListPivot() {
+  "use strict";
 
-  if (!input || !list || !opHidden) return;
+  // ---- Refs UI ----
+  const theadRow = document.getElementById("theadDetallesLogisticos");
+  const tbody    = document.getElementById("tbodyDetallesLogisticos");
+  const pagBox   = document.getElementById("paginacionDetalles");
+  const metaBox  = document.getElementById("detMetaResumen");
+  const perPageSel = document.getElementById("detPerPage");
+  const buscarEl   = document.getElementById("buscarDetalles");
+  const filtroOpId   = document.getElementById("eventosFiltroOpId");
+  const filtroContId = document.getElementById("eventosFiltroContenedorId");
 
-  // Como es readonly, no montamos el autocomplete.
-  if (input.readOnly) return;
+  // ---- Estado ----
+  let COLS = [];               // [{id, nombre, key}]
+  let currentPage = 1;
+  let perPage = parseInt(perPageSel?.value || "10", 10);
+  let totalRows = 0;
 
-  // (Si en el futuro decides habilitarlo, aquí quedaría el autocomplete)
-})();
+  // ---- Utils ----
+  function xhrGet(url, ok, err) {
+    const http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
+      if (this.status === 200) {
+        try { ok && ok(JSON.parse(this.responseText)); }
+        catch { err && err("JSON inválido"); }
+      } else err && err(this.responseText || "HTTP error");
+    };
+    http.send();
+  }
 
-// ======================================
-// AUTOCOMPLETE: FILTROS SUPERIORES -> Operación
-// ======================================
-(function setupOperacionFiltroAutocompleteDetallesLogisticos(){
-  const input   = document.getElementById("eventosFiltroOpNombre");
-  const hidden  = document.getElementById("eventosFiltroOpId");
-  const list    = document.getElementById("eventosFiltroOpSugerencias");
-  const meta    = document.getElementById("eventosFiltroOpMeta");
-  const contTxt = document.getElementById("eventosFiltroContenedorNombre");
-  const contHid = document.getElementById("eventosFiltroContenedorId");
-  const contList= document.getElementById("eventosFiltroContenedorSugerencias");
+  // Construye THEAD con columnas fijas + dinámicas
+  function buildHead() {
+    if (!theadRow) return;
+    theadRow.innerHTML = `
+      <th style="min-width:140px">Operación</th>
+      <th style="min-width:180px">Contenedor marítimo</th>
+    `;
+    for (const c of COLS) {
+      const th = document.createElement("th");
+      th.setAttribute("data-evt-id", c.id);
+      th.textContent = c.nombre;
+      th.className = "text-center";
+      theadRow.appendChild(th);
+    }
+  }
 
-  if (!input || !list) return;
+  // Agrupa y pivotea
+  function pivotRows(rows) {
+    const byEvtId = new Map(COLS.map(c => [String(c.id), c]));
+    const groups = new Map(); // key => {operacion, contenedor, operacion_id, cmo_id, cells{}}
 
-  let lastTermDetallesLogisticos = "";
-  input.addEventListener("input", () => {
-    const term = input.value.trim();
+    (rows || []).forEach(r => {
+      const opId  = r.operacion_id;
+      const cmoId = r.cont_maritimo_operacion_id;
+      const key = `${opId}||${cmoId}`;
+      if (!groups.has(key)) {
+        const cells = {};
+        for (const c of COLS) cells[c.key] = "Sin registrar";
+        groups.set(key, {
+          operacion: r.operacion || "",
+          contenedor: r.contenedor || "",
+          operacion_id: opId,
+          cmo_id: cmoId,
+          cells
+        });
+      }
+      const g = groups.get(key);
+      const c = byEvtId.get(String(r.tipo_evento_id));
+      if (c) {
+        const prev = g.cells[c.key];
+        const val  = r.fecha || "Sin registrar";
+        if (prev === "Sin registrar" || String(val) > String(prev)) {
+          g.cells[c.key] = val;
+        }
+      }
+    });
 
-    if (term.length === 0) {
-      hidden.value = "";
-      if (meta)    meta.textContent = "";
-      if (contTxt) contTxt.value = "";
-      if (contHid) contHid.value = "";
-      if (contList) contList.style.display = "none";
-      list.style.display = "none";
-      paginaEventosLogisticos = 1;
-      listarEventoLogistico();
+    return Array.from(groups.values()).sort((a, b) => {
+      const ao = (a.operacion || "").localeCompare(b.operacion || "");
+      if (ao !== 0) return ao;
+      return (a.contenedor || "").localeCompare(b.contenedor || "");
+    });
+  }
+
+  // Renderiza TBODY
+  function renderBody(pivoted) {
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (!Array.isArray(pivoted) || pivoted.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${2 + COLS.length}" class="text-center text-muted py-3">No hay registros</td></tr>`;
       return;
     }
 
-    hidden.value = "";
-    if (term === lastTermDetallesLogisticos) return;
-    lastTermDetallesLogisticos = term;
+    for (const row of pivoted) {
+      const tr = document.createElement("tr");
+      tr.dataset.oplabel  = row.operacion || "";
+      tr.dataset.ctnlabel = row.contenedor || "";
+      let html = `
+        <td class="text-center">${row.operacion}</td>
+        <td class="text-center">${row.contenedor}</td>
+      `;
+      for (const c of COLS) {
+        const val = row.cells[c.key] || "Sin registrar";
+        html += `
+          <td class="text-center evmar-cell"
+              data-op="${row.operacion_id}"
+              data-cmo="${row.cmo_id}"
+              data-evt="${c.id}"
+              data-evtname="${c.nombre}">
+            ${val}
+          </td>`;
+      }
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    }
+    if (window.feather) feather.replace();
+  }
 
-    const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
-    xhrGetDetallesLogisticos(url, (rows) => {
-      renderSugerenciasDetallesLogisticos(list, rows, (it) => {
-        input.value = it.label;
-        hidden.value = it.id;
-        list.style.display = "none";
-        meta && (meta.textContent = it.meta || "");
+  function renderPagination(page, total, perPage) {
+    if (!pagBox) return;
+    pagBox.innerHTML = "";
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (totalPages <= 1) return;
 
-        // reset contenedor (depende de operación)
-        if (contTxt) contTxt.value = "";
-        if (contHid) contHid.value = "";
-        if (contList) contList.style.display = "none";
+    const mk = (p, label, disabled = false, active = false) => {
+      const li = document.createElement("li");
+      li.className = `page-item${disabled ? " disabled" : ""}${active ? " active" : ""}`;
+      const a = document.createElement("a");
+      a.className = "page-link";
+      a.href = "#";
+      a.innerHTML = label;
+      if (!disabled && !active) {
+        a.addEventListener("click", e => { e.preventDefault(); currentPage = p; listar(); });
+      }
+      li.appendChild(a);
+      pagBox.appendChild(li);
+    };
 
-        // aplicar filtro
-        paginaEventosLogisticos = 1;
-        listarEventoLogistico();
-      });
+    mk(Math.max(1, page - 1), "&laquo;", page === 1, false);
+    const win = 5;
+    let s = Math.max(1, page - Math.floor(win / 2));
+    let e = Math.min(totalPages, s + win - 1);
+    if (e - s + 1 < win) s = Math.max(1, e - win + 1);
+    for (let p = s; p <= e; p++) mk(p, String(p), false, p === page);
+    mk(Math.min(totalPages, page + 1), "&raquo;", page === totalPages, false);
+  }
+
+  function renderMeta(page, total, perPage) {
+    if (!metaBox) return;
+    if (total === 0) { metaBox.textContent = "Mostrando 0 de 0"; return; }
+    const start = (page - 1) * perPage + 1;
+    const end   = Math.min(page * perPage, total);
+    metaBox.textContent = `Mostrando ${start}–${end} de ${total}`;
+  }
+
+  // ---- Core: pedir datos y pintar ----
+  function listar() {
+    const q = buscarEl?.value?.trim() || "";
+    const opId   = filtroOpId?.value || "";
+    const contId = filtroContId?.value || "";
+
+    const url = `${base_url}operaciones_maritimas_eventos/listar?page=${currentPage}&per_page=${perPage}`
+              + (opId   ? `&op_id=${encodeURIComponent(opId)}`   : "")
+              + (contId ? `&cont_id=${encodeURIComponent(contId)}`: "")
+              + (q      ? `&q=${encodeURIComponent(q)}`           : "");
+
+    xhrGet(url, (res) => {
+      const pivoted = pivotRows(res.data || []);
+      renderBody(pivoted);
+      totalRows = res.total || pivoted.length || 0;
+      renderPagination(currentPage, totalRows, perPage);
+      renderMeta(currentPage, totalRows, perPage);
+    }, (err) => {
+      console.error("Listar Mar:", err);
+      tbody.innerHTML = `<tr><td colspan="${2 + COLS.length }" class="text-center text-danger py-3">Error al obtener datos</td></tr>`;
     });
+  }
+
+  // refresco público
+  window.refreshEventosMar = function (opts = { keepPage: true }) {
+    if (!opts.keepPage) currentPage = 1;
+    listar();
+  };
+
+  // ---- Cargar columnas y luego listar ----
+  function init() {
+    if (Array.isArray(window.__evMarCols) && window.__evMarCols.length > 0) {
+      COLS = window.__evMarCols;
+      buildHead();
+      listar();
+      return;
+    }
+    xhrGet(
+      `${base_url}operaciones_maritimas_eventos/eventos_maritimos_columnas`,
+      (json) => {
+        const cols = (json && json.columns) ? json.columns : [];
+        COLS = Array.isArray(cols) ? cols : [];
+        window.__evMarCols = COLS;
+        buildHead();
+        listar();
+      },
+      () => {
+        COLS = [];
+        buildHead();
+        listar();
+      }
+    );
+  }
+
+  // ---- Eventos UI ----
+  perPageSel?.addEventListener("change", () => {
+    perPage = parseInt(perPageSel.value || "10", 10);
+    currentPage = 1;
+    listar();
   });
 
-  document.addEventListener("click", (e) => {
-    if (!list.contains(e.target) && e.target !== input) list.style.display = "none";
+  let tmr;
+  buscarEl?.addEventListener("input", () => {
+    clearTimeout(tmr);
+    tmr = setTimeout(() => { currentPage = 1; listar(); }, 300);
+  });
+
+  document.getElementById("eventosFiltroOpNombre")?.addEventListener("change", () => { currentPage = 1; listar(); });
+  document.getElementById("eventosFiltroContenedorNombre")?.addEventListener("change", () => { currentPage = 1; listar(); });
+
+  // ---- Init ----
+  init();
+
+  /* ===========================================================
+     Modal de Celda (editar directo desde la matriz)
+     =========================================================== */
+  (function evMarCellModal(){
+    let cellDirty = false;
+    const modalEl = document.getElementById('modalEvtCell');
+    const formEl  = document.getElementById('formEvtCell');
+
+    const fldOpId = document.getElementById('cellOpId');
+    const fldCmoId= document.getElementById('cellCmoId');
+    const fldEvtId= document.getElementById('cellEvtId');
+    const fldIdEv = document.getElementById('cellIdEvento');
+
+    const opTxt   = document.getElementById('cellOpTxt');
+    const ctnTxt  = document.getElementById('cellCtnTxt');
+    const evtTxt  = document.getElementById('cellEvtTxt');
+    const fecha   = document.getElementById('cellFecha');
+    const comenta = document.getElementById('cellComentario');
+    const btnDel  = document.getElementById('btnCellDelete');
+
+    // 1) Abrir modal desde una celda
+    document.addEventListener('click', (e) => {
+      const td = e.target.closest('.evmar-cell');
+      if (!td) return;
+
+      const opId  = +td.dataset.op;
+      const cmoId = +td.dataset.cmo;
+      const evtId = +td.dataset.evt;
+      const evtName = td.dataset.evtname || '';
+
+      document.getElementById('modalEvtCellTitle').textContent = evtName;
+
+      const tr = td.parentElement;
+      if (opTxt)  opTxt.value  = tr.dataset.oplabel  || "";
+      if (ctnTxt) ctnTxt.value = tr.dataset.ctnlabel || "";
+      if (evtTxt) evtTxt.value = evtName;
+
+      fldOpId.value  = opId;
+      fldCmoId.value = cmoId;
+      fldEvtId.value = evtId;
+      fldIdEv.value  = '';
+
+      const url = `${base_url}operaciones_maritimas_eventos/obtener_por_clave?operacion_id=${opId}&cont_maritimo_operacion_id=${cmoId}&tipo_evento_id=${evtId}`;
+      const http = new XMLHttpRequest();
+      http.open('GET', url, true);
+      http.onreadystatechange = function(){
+        if (this.readyState !== 4) return;
+        if (this.status === 200){
+          let data = null; try { data = JSON.parse(this.responseText); } catch {}
+          if (data && data.id_evento){
+            fldIdEv.value = data.id_evento;
+            if (fecha)   fecha.value   = (data.fecha || '').substring(0,10);
+            if (comenta) comenta.value = data.comentario || '';
+            btnDel?.classList.remove('d-none');
+          } else {
+            if (fecha)   fecha.value = '';
+            if (comenta) comenta.value = '';
+            btnDel?.classList.add('d-none');
+          }
+          new bootstrap.Modal(modalEl).show();
+        }
+      };
+      http.send();
+    });
+
+    // 2) Guardar (crear/actualizar)
+    formEl?.addEventListener('submit', function(e){
+      e.preventDefault();
+
+      const idEv = (fldIdEv.value || "").trim();
+      const fd = new FormData();
+      if (idEv) fd.append('id_evento', idEv);
+      fd.append('operacion_id', fldOpId.value);
+      fd.append('cont_maritimo_operacion_id', fldCmoId.value);
+      fd.append('tipo_evento_id', fldEvtId.value);
+      fd.append('fecha', fecha.value);
+      fd.append('comentario', comenta.value);
+
+      const url = base_url + 'operaciones_maritimas_eventos/' + (idEv ? 'actualizar' : 'registrar');
+      const http = new XMLHttpRequest();
+      http.open('POST', url, true);
+      http.onreadystatechange = function(){
+        if (this.readyState !== 4) return;
+        if (this.status === 200){
+          let res=null; try{res=JSON.parse(this.responseText);}catch{}
+          Swal?.fire(res?.status==='success'?'Éxito':'Atención', res?.msg||'Listo', res?.status||'success');
+          cellDirty = true;
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+          window.refreshEventosMar && window.refreshEventosMar({ keepPage: true });
+        }
+      };
+      http.send(fd);
+    });
+
+    // 3) Eliminar (baja lógica)
+    btnDel?.addEventListener('click', function(){
+      const idEv = (fldIdEv.value || "").trim();
+      if (!idEv) return;
+      Swal?.fire({title:'¿Eliminar evento?', icon:'warning', showCancelButton:true}).then(r=>{
+        if (!r.isConfirmed) return;
+        const fd = new FormData();
+        fd.append('id_evento', idEv);
+        const http = new XMLHttpRequest();
+        http.open('POST', base_url+'operaciones_maritimas_eventos/eliminar', true);
+        http.onreadystatechange = function(){
+          if (this.readyState !== 4) return;
+          let res=null; try{res=JSON.parse(this.responseText);}catch{}
+          Swal?.fire(res?.status==='success'?'Eliminado':'Atención', res?.msg||'Listo', res?.status==='success'?'success':'warning');
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+          window.refreshEventosMar && window.refreshEventosMar({ keepPage: true });
+        };
+        http.send(fd);
+      });
+    });
+
+    modalEl?.addEventListener('hidden.bs.modal', () => {
+      if (cellDirty) {
+        window.refreshEventosMar && window.refreshEventosMar({ keepPage: true });
+        cellDirty = false;
+      }
+    });
+
+  })();
+
+})();
+
+/* ===========================================================
+   Filtro superior: Operación (con sugerencias) – MARÍTIMO
+   =========================================================== */
+(function evMarFilterOp(){
+  "use strict";
+
+  const inpOp   = document.getElementById("eventosFiltroOpNombre");
+  const hidOpId = document.getElementById("eventosFiltroOpId");
+  const box     = document.getElementById("eventosFiltroOpSugerencias");
+  const meta    = document.getElementById("eventosFiltroOpMeta");
+
+  if (!inpOp || !hidOpId || !box) return;
+
+  function xhrGet(url, ok, err){
+    const http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      if (this.status === 200){
+        let json=null; try{ json = JSON.parse(this.responseText); }catch{}
+        ok && ok(json || []);
+      } else {
+        err && err(this.responseText || "HTTP error");
+      }
+    };
+    http.send();
+  }
+
+  function renderSugerencias(listEl, items, onPick){
+    listEl.innerHTML = "";
+    if (!Array.isArray(items) || items.length === 0){
+      listEl.style.display = "none";
+      return;
+    }
+    items.forEach(it => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+      btn.innerHTML =
+        `<span>${it.label || ""}</span>` +
+        (it.meta ? `<small class="text-muted">${it.meta}</small>` : "");
+      btn.addEventListener("click", () => onPick(it));
+      listEl.appendChild(btn);
+    });
+    listEl.style.display = "block";
+  }
+
+  function pickOperacion(it){
+    inpOp.value   = it.label || "";
+    hidOpId.value = it.id || "";
+    if (meta) meta.textContent = it.meta || "";
+    box.style.display = "none";
+
+    // refrescar lista con filtro
+    inpOp.dispatchEvent(new Event("change"));
+    window.refreshEventosMar && window.refreshEventosMar({ keepPage: false });
+  }
+
+  function clearSeleccion(){
+    hidOpId.value = "";
+    if (meta) meta.textContent = "";
+  }
+
+  let tmr = null, lastTerm = "";
+  inpOp.addEventListener("input", () => {
+    const term = (inpOp.value || "").trim();
+
+    clearSeleccion();
+
+    if (term.length === 0){
+      box.style.display = "none";
+      window.refreshEventosMar && window.refreshEventosMar({ keepPage: false });
+      return;
+    }
+
+    clearTimeout(tmr);
+    tmr = setTimeout(() => {
+      if (term === lastTerm) return;
+      lastTerm = term;
+      const url = `${base_url}operaciones_maritimas_eventos/sugerir_operaciones?term=${encodeURIComponent(term)}&limit=10`;
+      xhrGet(url, (rows) => {
+        renderSugerencias(box, rows, pickOperacion);
+      }, () => { box.style.display = "none"; });
+    }, 250);
+  });
+
+  inpOp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter"){
+      e.preventDefault();
+      const first = box.querySelector(".list-group-item");
+      if (first){
+        first.click();
+      }else{
+        clearSeleccion();
+        window.refreshEventosMar && window.refreshEventosMar({ keepPage: false });
+      }
+    } else if (e.key === "Escape"){
+      box.style.display = "none";
+    }
+  });
+
+  document.addEventListener("click", (ev) => {
+    if (!box.contains(ev.target) && ev.target !== inpOp){
+      box.style.display = "none";
+    }
+  });
+
+  inpOp.addEventListener("change", () => {
+    if (!(hidOpId.value || "").trim()){
+      if (meta) meta.textContent = "";
+    }
+    window.refreshEventosMar && window.refreshEventosMar({ keepPage: false });
   });
 })();
 
-// ======================================
-// AUTOCOMPLETE: FILTROS SUPERIORES -> Contenedor
-// ======================================
-(function setupContenedorFiltroAutocompleteDetallesLogisticos(){
+/* ===========================================================
+   Filtro superior: Contenedor (depende de operación)
+   =========================================================== */
+(function evMarFilterCont(){
+  "use strict";
+
   const input   = document.getElementById("eventosFiltroContenedorNombre");
   const hidden  = document.getElementById("eventosFiltroContenedorId");
   const list    = document.getElementById("eventosFiltroContenedorSugerencias");
@@ -304,35 +812,67 @@ function xhrGetDetallesLogisticos(url, cb) {
 
   if (!input || !list || !opHidden) return;
 
-  let lastTermDetallesLogisticos = "";
+  function xhrGet(url, ok, err){
+    const http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.onreadystatechange = function(){
+      if (this.readyState !== 4) return;
+      if (this.status === 200){
+        let json=null; try{ json = JSON.parse(this.responseText); }catch{}
+        ok && ok(json || []);
+      } else {
+        err && err(this.responseText || "HTTP error");
+      }
+    };
+    http.send();
+  }
+
+  function renderSugerencias(listEl, items, onPick){
+    listEl.innerHTML = "";
+    if (!Array.isArray(items) || items.length === 0){
+      listEl.style.display = "none";
+      return;
+    }
+    items.forEach(it => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+      btn.innerHTML =
+        `<span>${it.label || ""}</span>` +
+        (it.tipo ? `<small class="text-muted">${it.tipo}</small>` : "");
+      btn.addEventListener("click", () => onPick(it));
+      listEl.appendChild(btn);
+    });
+    listEl.style.display = "block";
+  }
+
+  let lastTerm = "";
   input.addEventListener("input", () => {
     const term = input.value.trim();
 
     if (term.length === 0) {
       hidden.value = "";
       list.style.display = "none";
-      paginaEventosLogisticos = 1;
-      listarEventoLogistico();
+      window.refreshEventosMar && window.refreshEventosMar({ keepPage: false });
       return;
     }
 
     hidden.value = "";
     const opId = parseInt(opHidden.value || "0", 10);
     if (!opId) { list.style.display = "none"; return; }
-    if (term === lastTermDetallesLogisticos) return;
-    lastTermDetallesLogisticos = term;
+    if (term === lastTerm) return;
+    lastTerm = term;
 
     const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
-    xhrGetDetallesLogisticos(url, (rows) => {
-      renderSugerenciasDetallesLogisticos(list, rows, (it) => {
+    xhrGet(url, (rows) => {
+      renderSugerencias(list, rows, (it) => {
         input.value  = it.label;
         hidden.value = it.id; // cmo.id
         list.style.display = "none";
 
-        paginaEventosLogisticos = 1;
-        listarEventoLogistico();
+        window.refreshEventosMar && window.refreshEventosMar({ keepPage: false });
       });
-    });
+    }, () => { list.style.display = "none"; });
   });
 
   document.addEventListener("click", (e) => {
@@ -340,310 +880,17 @@ function xhrGetDetallesLogisticos(url, cb) {
   });
 })();
 
-const formDetalles = document.getElementById("formEventosLogisticos");
-const modalDetalles = document.getElementById("modalDetallesLogisticos");
-const btnAgregarDetalles = document.getElementById("btnAbrirModalDetalles");
-
-// Campos del formulario
-const fldIdEventoDetallesLogisticos    = document.getElementById("idEvento");
-const fldOperacionIdDetallesLogisticos = document.getElementById("eventoOperacionId");
-const fldContenedorIdDetallesLogisticos= document.getElementById("eventoContenedorOperacionId");
-const fldTipoEventoIdDetallesLogisticos= document.getElementById("tipoEventoId");
-const fldFechaDetallesLogisticos       = document.getElementById("fechaEventoLogistico");
-const fldComentarioDetallesLogisticos  = document.getElementById("comentarioEventoLogistico");
-
-formDetalles.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  const idEvento    = fldIdEventoDetallesLogisticos.value.trim();
-  const operacionId = fldOperacionIdDetallesLogisticos.value.trim();
-  const contenedorId= fldContenedorIdDetallesLogisticos.value.trim();
-  const tipoEventoId= fldTipoEventoIdDetallesLogisticos.value.trim();
-  const fecha       = fldFechaDetallesLogisticos.value.trim();
-  const comentario  = fldComentarioDetallesLogisticos.value.trim();
-
-  if (!operacionId || !tipoEventoId || !fecha) {
-    Swal.fire("Campos requeridos", "Debes seleccionar operación, tipo de evento y fecha", "warning");
-    return;
-  }
-
-  const fd = new FormData();
-  if (idEvento !== "") fd.append("id_evento", idEvento);
-  fd.append("operacion_id", operacionId);
-
-  const contTipo = (fldContenedorTipoEventosLogisticos && fldContenedorTipoEventosLogisticos.value) || "";
-  if (contenedorId) {
-    if (contTipo === "MARITIMO") {
-      fd.append("cont_maritimo_operacion_id", contenedorId);
-    } else {
-      fd.append("contenedor_operacion_id", contenedorId);
-    }
-  }
-  fd.append("tipo_evento_id", tipoEventoId);
-  fd.append("fecha", fecha);
-  fd.append("comentario", comentario);
-
-  const url = base_url + (idEvento === "" 
-    ? "operaciones_maritimas_eventos/registrar" 
-    : "operaciones_maritimas_eventos/actualizar");
-
-  const http = new XMLHttpRequest();
-  http.open("POST", url, true);
-  http.send(fd);
-  http.onreadystatechange = function () {
-    if (this.readyState === 4) {
-      if (this.status !== 200) {
-        console.error("Error guardar:", this.responseText);
-        Swal.fire("Error", "No se pudo guardar el evento", "error");
-        return;
-      }
-
-      let res;
-      try { res = JSON.parse(this.responseText); }
-      catch {
-        console.error("JSON inválido:", this.responseText);
-        Swal.fire("Error", "Respuesta no válida del servidor", "error");
-        return;
-      }
-
-      Swal.fire(
-        res.status === "success" ? "Éxito" : "Atención",
-        res.msg,
-        res.status
-      );
-
-      if (res.status === "success") {
-        formDetalles.reset();
-        fldIdEventoDetallesLogisticos.value = "";
-        if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
-
-        // Re-habilitar operación si veníamos de editar (contenedor se queda readonly)
-        document.getElementById("eventoOperacionNombre").disabled = false;
-
-        bootstrap.Modal.getInstance(modalDetalles).hide();
-        listarEventoLogistico();
-        document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
-        const btnSubmit = formDetalles.querySelector('button[type="submit"]');
-        btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-        feather.replace();
-      }
-    }
-  };
-});
-
-// ===== Botón Agregar =====
-btnAgregarDetalles.addEventListener("click", () => {
-  formDetalles.reset();
-  if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
-  fldIdEventoDetallesLogisticos.value = "";
-
-  // Operación editable
-  document.getElementById("eventoOperacionNombre").disabled = false;
-
-  // Contenedor: SIEMPRE readonly y limpio (lo llenará la operación)
-  if (contTxtModal) { 
-    contTxtModal.disabled = false; // se ve normal
-    contTxtModal.readOnly = true;
-    contTxtModal.value = "";
-  }
-  fldOperacionIdDetallesLogisticos.value = "";
-  fldContenedorIdDetallesLogisticos.value = "";
-
-  document.getElementById("modalTituloDetalles").textContent = "Registrar Evento";
-  const btnSubmit = formDetalles.querySelector('button[type="submit"]');
-  btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-  feather.replace();
-
-  setTiposEventoLoading(false);
-  fillTiposEventoOptions([]);
-  selectTipoEvento.disabled = true;
-});
-
-// ===== Editar =====
-function editarEvento(id) {
-  const http = new XMLHttpRequest();
-  http.open("GET", base_url + "operaciones_maritimas_eventos/editar/" + id, true);
-  http.send();
-
-  http.onreadystatechange = function () {
-    if (this.readyState !== 4) return;
-
-    if (this.status !== 200) {
-      console.error("Error editar:", this.responseText);
-      Swal.fire("Error", "No se pudo cargar el evento", "error");
-      return;
-    }
-
-    let data;
-    try { data = JSON.parse(this.responseText); }
-    catch { Swal.fire("Error", "Respuesta no válida del servidor", "error"); return; }
-
-    if (!data || !data.id_evento) {
-      Swal.fire("Atención", "No se encontró el evento", "warning");
-      return;
-    }
-
-    // ==== Rellenar campos ====
-    fldIdEventoDetallesLogisticos.value    = data.id_evento || ""; 
-    fldOperacionIdDetallesLogisticos.value = data.operacion_id || "";
-
-    // Limpia contenedor (hidden + visible + tipo)
-    fldContenedorIdDetallesLogisticos.value = "";
-    if (contTxtModal) contTxtModal.value = "";
-    if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "";
-
-    // MARÍTIMO (tu módulo es marítimo)
-    if (data.cont_maritimo_operacion_id) {
-      fldContenedorIdDetallesLogisticos.value = data.cont_maritimo_operacion_id;
-      if (contTxtModal) contTxtModal.value = data.contenedor_label || "";
-      if (fldContenedorTipoEventosLogisticos) fldContenedorTipoEventosLogisticos.value = "MARITIMO";
-    }
-
-    document.getElementById("eventoOperacionNombre").value = data.operacion_label || "";
-    fldTipoEventoIdDetallesLogisticos.value = data.tipo_evento_id || "";
-    fldFechaDetallesLogisticos.value        = (data.fecha || "").substring(0, 10);
-    fldComentarioDetallesLogisticos.value   = data.comentario || "";
-
-    // Bloquear operación; contenedor visible readonly (no editable)
-    document.getElementById("eventoOperacionNombre").disabled = true;
-    if (contTxtModal) { 
-      contTxtModal.disabled = false;
-      contTxtModal.readOnly = true;
-    }
-
-    // Cargar catálogo acorde
-    cargarTiposEventoPorContenedorUI("MARITIMO", data.tipo_evento_id);
-
-    // UI modal
-    document.getElementById("modalTituloDetalles").textContent = "Actualizar Evento";
-    const btnSubmit = formDetalles.querySelector('button[type="submit"]');
-    btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
-    if (window.feather) feather.replace();
-
-    new bootstrap.Modal(modalDetalles).show();
-  };
-}
-
-function eliminarEvento(id) {
-  Swal.fire({
-    title: "¿Eliminar evento?",
-    text: "Se desactivará (eliminado lógico).",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar"
-  }).then((r) => {
-    if (!r.isConfirmed) return;
-
-    const fdEventosLogisticosData = new FormData();
-    fdEventosLogisticosData.append("id_evento", id);
-
-    const http = new XMLHttpRequest();
-    http.open("POST", base_url + "operaciones_maritimas_eventos/eliminar", true);
-    http.onreadystatechange = function () {
-      if (this.readyState !== 4) return;
-
-      if (this.status !== 200) {
-        console.error("Error eliminar:", this.responseText);
-        Swal.fire("Error", "No se pudo eliminar", "error");
-        return;
-      }
-
-      let res;
-      try { res = JSON.parse(this.responseText); }
-      catch { Swal.fire("Error", "Respuesta no válida del servidor", "error"); return; }
-
-      Swal.fire(
-        res.status === "success" ? "Eliminado" : "Atención",
-        res.msg,
-        res.status === "success" ? "success" : (res.status || "info")
-      );
-
-      if (res.status === "success") {
-        listarEventoLogistico();
-      }
-    };
-    http.send(fdEventosLogisticosData);
-  });
-}
-
-// per-page
-perPageEventosLogisticos.addEventListener("change", function () {
-  paginaEventosLogisticos = 1;
-  listarEventoLogistico();
-});
-
-// buscador con pequeño debounce
-let buscarTimerEventosLogisticos = null;
-buscarEventosLogisticos.addEventListener("input", function () {
-  clearTimeout(buscarTimerEventosLogisticos);
-  buscarTimerEventosLogisticos = setTimeout(function () {
-    paginaEventosLogisticos = 1;
-    listarEventoLogistico();
-  }, 300);
-});
-
-// ===== Tipos de evento (catálogo dinámico) =====
-const selectTipoEvento = document.getElementById("tipoEventoId");
-
-function setTiposEventoLoading(flag) {
-  if (!selectTipoEvento) return;
-  selectTipoEvento.disabled = !!flag;
-  selectTipoEvento.innerHTML = flag
-    ? '<option value="">Cargando...</option>'
-    : '<option value="">Selecciona...</option>';
-}
-
-function fillTiposEventoOptions(lista, preselectId = null) {
-  if (!selectTipoEvento) return;
-  let html = '<option value="">Selecciona...</option>';
-  if (Array.isArray(lista)) {
-    for (const r of lista) {
-      const id = r.id ?? r.id_tipo_evento;
-      const nom = r.nombre ?? '';
-      const sel = preselectId && String(preselectId) === String(id) ? ' selected' : '';
-      html += `<option value="${id}"${sel}>${nom}</option>`;
-    }
-  }
-  selectTipoEvento.innerHTML = html;
-  selectTipoEvento.disabled = false;
-}
-
-/**
- * MARITIMO -> 1 (marítima)
- * FISICO/FERRO -> 2 (terrestre)
- */
-function mapTipoUIToTipoOperacionId(tipoUI) {
-  const t = (tipoUI || '').toUpperCase();
-  if (t === 'FISICO' || t === 'FÍSICO' || t === 'FERRO' || t === 'TERRESTRE') return 2;
-  return 1; // default marítimo
-}
-
-/** Carga catálogo según tipo de contenedor (UI) */
-function cargarTiposEventoPorContenedorUI(tipoUI, preselectId = null) {
-  const tipoOperacionId = mapTipoUIToTipoOperacionId(tipoUI);
-  setTiposEventoLoading(true);
-  const http = new XMLHttpRequest();
-  http.open("GET", base_url + "operaciones_maritimas_eventos/tipos_evento?tipo_operacion_id=" + encodeURIComponent(tipoOperacionId), true);
-  http.onreadystatechange = function(){
-    if (this.readyState !== 4) return;
-    if (this.status !== 200) { fillTiposEventoOptions([]); return; }
-    let data;
-    try { data = JSON.parse(this.responseText); } catch { data = []; }
-    fillTiposEventoOptions(Array.isArray(data) ? data : [], preselectId);
-  };
-  http.send();
-}
-
-// Exportaciones
+/* ===========================================================
+   Exportar tabla (solo lectura)
+   =========================================================== */
 document.getElementById('btnExportarExcelEventosLogisticos')?.addEventListener('click', () => {
   ExportarTablas.exportar({
     ref: 'tablaDetallesLogisticos',
     formato: 'xlsx',
-    nombre: 'DetallesLogisticos.xlsx',
-    columnasOcultas: [5],
+    nombre: 'Eventos Logisticos(Maritimos).xlsx',
+    columnasOcultas: [],
     soloVisibles: true,
-    sheetName: 'Eventos Logisticos'
+    sheetName: 'Eventos Logisticos(Maritimos)'
   });
 });
 
@@ -651,11 +898,11 @@ document.getElementById('btnExportarPDFEventosLogisticos')?.addEventListener('cl
   ExportarTablas.exportar({
     ref: '#tablaDetallesLogisticos',
     formato: 'pdf',
-    nombre: 'EventosLogisticos.pdf',
-    titulo: 'Eventos Logisticos',
+    nombre: 'Eventos Logisticos(Maritimos).pdf',
+    titulo: 'Eventos Logisticos(Maritimos)',
     orientacion: 'landscape',
     formatoPagina: 'letter',
-    columnasOcultas: [5],
+    columnasOcultas: [],
     soloVisibles: true
   });
 });
