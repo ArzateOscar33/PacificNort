@@ -6,7 +6,7 @@ const selectContenedorResumen            = document.getElementById("selectConten
 const inpBuscarOpResumen                 = document.getElementById("buscarOperacionResumen");
 const boxSugsOpResumen                   = document.getElementById("sugerenciasOperacionResumen");
 const btnRefResumen                      = document.getElementById("btnRefrescarResumen");
-
+const ferroMaritimosWrap = document.getElementById('ferroMaritimosWrap');
 // Estado  
 let operacionIdActivoResumen   = null;
 let lastXHRContenedoresResumen = null;
@@ -393,19 +393,18 @@ function consultarDetallesContenedorResumen() {
   const tipoUIResumen = (optResumen.dataset.tipo || '').toUpperCase();
   const tipoFMResumen = mapTipoToFMResumen(tipoUIResumen, optResumen.dataset.fm); // 'M' | 'F'
 
-  // 🔑 ID BASE (id_contenedor_maritimo | id_fisico)
   const idBaseResumen = optResumen.dataset.baseId || optResumen.value;
   const numeroResumen = optResumen.dataset.numero || optResumen.textContent || '—';
 
-  // Cabecera contenedor en “Detalle”
   document.getElementById('nombreContenedorResumen').textContent = numeroResumen;
 
-  // Mostrar/ocultar bloques por tipo UI
   const esMaritimoResumen = (tipoFMResumen === 'M');
   document.getElementById('bloqueMaritimo').classList.toggle('d-none', !esMaritimoResumen);
   document.getElementById('bloqueFerro').classList.toggle('d-none', esMaritimoResumen);
 
-  // Limpia y pone "Cargando…" en el panel
+  // 🔹 siempre limpia listado de marítimos del ferro al cambiar de contenedor
+  limpiarMaritimosFerroResumen();
+
   limpiarDetalleUIResumen();
   setDetalleLoadingResumen();
 
@@ -414,11 +413,16 @@ function consultarDetallesContenedorResumen() {
   // === COSTOS (solo Físico) ===
   if (tipoUI.startsWith('FERRO')) {
     const operacionId = operacionIdActivoResumen;
+    const idFisico    = optResumen.dataset.idFisico || idBaseResumen;
 
     if (origenOpResumen === 'FO') {
       // 👉 FO: costos por operación ferroviaria
       fetchCostosTotalesOperacionFerro(operacionId);
       fetchCostosDesglosadosOperacionFerro(operacionId);
+
+      // 👉 NUEVO: breakdown de contenedores marítimos dentro de este ferro
+      fetchMaritimosDeFerroResumen(operacionId, idFisico);
+
       if (window.CostosChart) {
         CostosChart.update({
           tipo: 'FO',
@@ -426,10 +430,10 @@ function consultarDetallesContenedorResumen() {
         });
       }
     } else {
-      // 👉 Operación normal (lo que ya tenías)
-      const idFisico = optResumen.dataset.idFisico || idBaseResumen;
+      // 👉 Operación normal
       fetchCostosTotalesFisico(operacionId, idFisico);
       fetchCostosDesglosadosFisico(operacionId, idFisico);
+
       if (window.CostosChart) {
         CostosChart.update({
           tipo: 'F',
@@ -875,3 +879,95 @@ function fetchEventosProgresoResumen(operacionId, tipoUi, idBase){
 }
 
 
+function limpiarMaritimosFerroResumen() {
+  if (!ferroMaritimosWrap) return;
+  ferroMaritimosWrap.innerHTML =
+    '<span class="text-muted small">Sin información…</span>';
+}
+
+function setMaritimosFerroLoadingResumen() {
+  if (!ferroMaritimosWrap) return;
+  ferroMaritimosWrap.innerHTML =
+    '<span class="text-muted small">Cargando contenedores marítimos…</span>';
+}
+
+function renderMaritimosFerroResumen(lista) {
+  if (!ferroMaritimosWrap) return;
+
+  const data = Array.isArray(lista) ? lista : [];
+  if (!data.length) {
+    ferroMaritimosWrap.innerHTML =
+      '<span class="text-muted small">Este ferro no tiene contenedores marítimos asignados.</span>';
+    return;
+  }
+
+  let totalAsignados = 0;
+  const itemsHtml = data.map(row => {
+    const num  = row.numero_contenedor || '—';
+    const asig = Number(row.bultos_asignados || 0);
+    const tot  = row.bultos_contenedor != null
+      ? Number(row.bultos_contenedor)
+      : null;
+
+    totalAsignados += asig;
+
+    let infoBultos;
+    if (tot != null && !isNaN(tot)) {
+      infoBultos = `${asig} / ${tot} bultos`;
+    } else {
+      infoBultos = `${asig} bultos`;
+    }
+
+    return `
+      <li class="d-flex justify-content-between small">
+        <span>${num}</span>
+        <span class="text-muted">${infoBultos}</span>
+      </li>
+    `;
+  }).join('');
+
+  ferroMaritimosWrap.innerHTML = `
+    <ul class="list-unstyled mb-1">
+      ${itemsHtml}
+    </ul>
+    <div class="small text-muted">
+      Bultos asignados al ferro en total: ${totalAsignados}
+    </div>
+  `;
+}
+function fetchMaritimosDeFerroResumen(operacionFerroId, contenedorFisicoId) {
+  if (!ferroMaritimosWrap) return;
+
+  setMaritimosFerroLoadingResumen();
+
+  const xhr = new XMLHttpRequest();
+  const url = `${base_url}operaciones_maritimo_ferro_resumen/contenedores_maritimos_ferro` +
+              `?operacion_ferro_id=${encodeURIComponent(operacionFerroId)}` +
+              `&contenedor_fisico_id=${encodeURIComponent(contenedorFisicoId)}`;
+
+  xhr.open('GET', url, true);
+
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) return;
+
+    if (xhr.status !== 200) {
+      ferroMaritimosWrap.innerHTML =
+        '<span class="text-danger small">Error al cargar los contenedores marítimos.</span>';
+      return;
+    }
+
+    let res;
+    try {
+      res = JSON.parse(xhr.responseText);
+    } catch (e) {
+      ferroMaritimosWrap.innerHTML =
+        '<span class="text-danger small">Respuesta inválida del servidor.</span>';
+      return;
+    }
+
+    const data = Array.isArray(res.data) ? res.data : [];
+    renderMaritimosFerroResumen(data);
+  };
+
+  xhr.send();
+}

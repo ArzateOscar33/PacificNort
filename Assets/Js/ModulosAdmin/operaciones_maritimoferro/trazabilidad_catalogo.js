@@ -246,8 +246,15 @@ inpTransNom.addEventListener("input", debounce(function(){
   if(term.length === 0) return;
 
   const xhr = new XMLHttpRequest();
-  xhr.open("GET", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/sugerencias_transportistas?q=" + encodeURIComponent(term) + "&tipo=ferroviario&limit=10", true);
-  xhr.onreadystatechange = function(){
+  xhr.open(
+  "GET",
+  BASE_URL
+    + "operaciones_maritimo_ferro_trazabilidad/sugerencias_transportistas"
+    + "?q=" + encodeURIComponent(term)
+    + "&tipo=ferroviario,terrestre"
+    + "&limit=10",
+  true
+);xhr.onreadystatechange = function(){
     if(xhr.readyState !== 4) return;
     if(xhr.status !== 200) return;
     let res;
@@ -271,6 +278,7 @@ inpTransNom.addEventListener("input", debounce(function(){
   };
   xhr.send();
 },250));
+
 
 
 

@@ -200,7 +200,7 @@ class Operaciones_maritimo_ferro_contenedores extends Controller
         if (!empty($_GET['tipo'])) {
             $tipos = array_values(array_filter(array_map('trim', explode(',', $_GET['tipo']))));
         } else {
-            $tipos = ['ferroviario']; // ← default coherente para ferros
+            $tipos = ['ferroviario','terrestre']; 
         }
 
         try {

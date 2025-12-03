@@ -62,17 +62,24 @@
                              </div>
                          </div>
 
-                         <!-- ===== Vista FÍSICO / FERRO ===== -->
-                         <div id="bloqueFerro" class="mt-2 d-none">
-                             <div class="mb-2">
-                                 <div class="small text-muted">Arribo a puerto</div>
-                                 <div id="arriboPuerto">—</div>
-                             </div>
-                             <div class="mb-2">
-                                 <div class="small text-muted">Bultos</div>
-                                 <div id="bultos">—</div>
-                             </div>
-                         </div>
+<div id="bloqueFerro" class="mt-2 d-none">
+    <div class="mb-2">
+        <div class="small text-muted">Arribo a puerto</div>
+        <div id="arriboPuerto">—</div>
+    </div>
+    <div class="mb-2">
+        <div class="small text-muted">Bultos (total en ferro)</div>
+        <div id="bultos">—</div>
+    </div>
+
+    <!-- NUEVO: contenedores marítimos que van en este ferro -->
+    <div class="mb-2">
+        <div class="small text-muted">Contenedores marítimos en este ferro</div>
+        <div id="ferroMaritimosWrap">
+            <span class="text-muted small">Sin información…</span>
+        </div>
+    </div>
+</div>
 
                          <div class="d-flex flex-wrap gap-2 mt-3">
                              <button class="btn btn-sm btn-outline-warning" id="btnExportPdfResumen">

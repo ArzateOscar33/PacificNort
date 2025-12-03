@@ -308,23 +308,24 @@ function onPickOp(it){
     }
 
     let lastXHR = null, deb = null;
-    function fetchSug(q){
-      if (lastXHR && lastXHR.abort) lastXHR.abort();
-      const x = new XMLHttpRequest(); lastXHR = x;
-      const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_transportistas'
-                + `?term=${encodeURIComponent(q)}&limit=15&tipo=ferroviario`;
-      x.open('GET', url, true);
-      x.onload = ()=>{
-        if (x.status !== 200) return hideList();
-        try {
-          const resp = JSON.parse(x.responseText||'{}');
-          if (resp.ok !== true) return hideList();
-          render(resp.items||[]);
-        } catch { hideList(); }
-      };
-      x.onerror = ()=> hideList();
-      x.send();
-    }
+function fetchSug(q){
+  if (lastXHR && lastXHR.abort) lastXHR.abort();
+  const x = new XMLHttpRequest(); lastXHR = x;
+  const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_transportistas'
+            + `?term=${encodeURIComponent(q)}&limit=15`;   // 👈 SIN &tipo=
+  x.open('GET', url, true);
+  x.onload = ()=>{
+    if (x.status !== 200) return hideList();
+    try {
+      const resp = JSON.parse(x.responseText||'{}');
+      if (resp.ok !== true) return hideList();
+      render(resp.items||[]);
+    } catch { hideList(); }
+  };
+  x.onerror = ()=> hideList();
+  x.send();
+}
+
 
     inp.addEventListener('input', ()=>{
       const q = inp.value.trim();

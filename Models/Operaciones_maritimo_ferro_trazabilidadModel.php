@@ -201,37 +201,65 @@ public function getDatosModalTrazabilidad(int $operacionFerroId): array
      * TRANSPORTISTAS
      * ================= */
 
-    /**
-     * Transportistas activos filtrados por término y tipo.
-     * Para trazabilidad ferroviaria es común usar tipo='ferroviario'.
-     * Acepta: 'terrestre' | 'maritimo' | 'ferroviario'
-     */
-    public function buscarTransportistas(string $term, string $tipo = 'ferroviario', int $limit = 10): array
-    {
-        $like  = '%' . trim($term) . '%';
-        $tipo  = in_array($tipo, ['terrestre', 'maritimo', 'ferroviario'], true) ? $tipo : 'ferroviario';
-        $limit = max(1, min(50, (int)$limit));
+/**
+ * Búsqueda de transportistas.
+ * Ahora acepta uno o varios tipos separados por coma:
+ *  - "ferroviario"
+ *  - "terrestre"
+ *  - "ferroviario,terrestre"
+ *  - "maritimo,terrestre", etc.
+ */
+public function buscarTransportistas(string $term, string $tipo = 'ferroviario', int $limit = 10): array
+{
+    $like  = '%' . trim($term) . '%';
+    $limit = max(1, min(50, (int)$limit));
 
-        $sql = "
-            SELECT 
-                t.id_transportista AS id,
-                t.nombre           AS nombre,
-                t.tipo             AS tipo
-            FROM transportistas t
-            WHERE t.estatus = 1
-              AND t.tipo = ?
-              AND t.nombre LIKE ?
-            ORDER BY t.nombre ASC
-            LIMIT $limit
-        ";
-        return $this->selectAll($sql, [$tipo, $like]) ?: [];
+    // Normalizar tipos desde CSV
+    $allowed = ['terrestre', 'maritimo', 'ferroviario'];
+    $tipos = array_values(array_filter(array_map(function ($t) use ($allowed) {
+        $t = trim(mb_strtolower($t, 'UTF-8'));
+        return in_array($t, $allowed, true) ? $t : null;
+    }, explode(',', $tipo))));
+
+    // Si no vino ningún tipo válido, conservar comportamiento anterior por defecto
+    if (empty($tipos)) {
+        $tipos = ['ferroviario'];
     }
 
-    /** Azúcar sintáctica para ferroviarios (default del módulo) */
-    public function buscarTransportistasFerro(string $term, int $limit = 10): array
-    {
-        return $this->buscarTransportistas($term, 'ferroviario', $limit);
+    // Armar condición IN dinámicamente
+    $whereTipos = '';
+    $params = [];
+
+    if (!empty($tipos)) {
+        $in = implode(',', array_fill(0, count($tipos), '?'));
+        $whereTipos = " AND t.tipo IN ($in) ";
+        $params = array_merge($params, $tipos);
     }
+
+    $params[] = $like;
+
+    $sql = "
+        SELECT 
+            t.id_transportista AS id,
+            t.nombre           AS nombre,
+            t.tipo             AS tipo
+        FROM transportistas t
+        WHERE t.estatus = 1
+        {$whereTipos}
+          AND t.nombre LIKE ?
+        ORDER BY t.nombre ASC
+        LIMIT $limit
+    ";
+
+    return $this->selectAll($sql, $params) ?: [];
+}
+
+/** Azúcar sintáctica para ferroviarios (default del módulo) */
+public function buscarTransportistasFerro(string $term, int $limit = 10): array
+{
+    return $this->buscarTransportistas($term, 'ferroviario', $limit);
+}
+
     //REGISTRAR
     public function crearRutaFerro(int $operacionFerroId, int $contenedorFisicoId, ?string $comentario = null): int
     {

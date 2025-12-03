@@ -311,7 +311,7 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
 
 
 
-    public function sugerenciasTransportistas(string $q = '', int $limit = 15, array $tipos = ['ferroviario']): array
+    public function sugerenciasTransportistas(string $q = '', int $limit = 15, array $tipos = ['ferroviario','terrestre']): array
     {
         $q = trim($q);
         $limit = max(1, (int)$limit);
