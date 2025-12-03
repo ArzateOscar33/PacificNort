@@ -260,9 +260,7 @@
                           <!--      <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
                                         class="sidebar-link"><i data-feather="layers"></i><span
                                             class="hide-menu">Contenedores en Operación</span></a></li> -->
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedor_maritimo_ferro"
-                                        class="sidebar-link"><i data-feather="layers"></i><span
-                                            class="hide-menu">Contenedores en Maritimo - Ferro</span></a></li>
+                              
                                <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>trazabilidad" class="sidebar-link"><i
                                             data-feather="trending-up"></i><span
                                             class="hide-menu">Trazabilidad</span></a></li> -->

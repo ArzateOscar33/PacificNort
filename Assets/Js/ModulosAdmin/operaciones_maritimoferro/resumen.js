@@ -14,6 +14,7 @@ let lastXHRSugerenciasResumen  = null;
 let lastXHRFaltantesResumen    = null;
 let debounceTimerResumen       = null;
 let opLabelSeleccionadaResumen = null;
+let origenOpResumen            = 'OP';
 
 // =========================
 // Helpers UI
@@ -55,6 +56,7 @@ function setDetalleLoadingResumen() {
 function resetOperacionSeleccionResumen(){
   // 1) Estado
   operacionIdActivoResumen = null;
+  origenOpResumen          = 'OP'; 
   try { lastXHRContenedoresResumen?.abort(); } catch(e){}
   try { lastXHRSugerenciasResumen?.abort(); } catch(e){}
   try { lastXHRFaltantesResumen?.abort(); } catch(e){}
@@ -123,9 +125,13 @@ function renderSugerenciasResumen(itemsResumen) {
   boxSugsOpResumen.innerHTML = '';
   itemsResumen.forEach(rowResumen => {
     const aResumen = document.createElement('a');
-    aResumen.className   = 'list-group-item list-group-item-action';
-    aResumen.href        = '#';
-    aResumen.textContent = rowResumen.label; // "EN-06 — Cliente X"
+    aResumen.className = 'list-group-item list-group-item-action';
+    aResumen.href      = '#';
+
+    const origen = (rowResumen.origen || 'OP').toUpperCase();
+    const tag    = origen === 'FO' ? '[FO]' : '[OP]';
+
+    aResumen.textContent = `${tag} ${rowResumen.label}`; // p.e. [FO] FO-01 — Cliente X
     aResumen.addEventListener('click', (e) => {
       e.preventDefault();
       seleccionarSugerenciaResumen(rowResumen);
@@ -134,6 +140,7 @@ function renderSugerenciasResumen(itemsResumen) {
   });
   boxSugsOpResumen.style.display = 'block';
 }
+
 
 function normStrResumen(s){
   return String(s || '')
@@ -214,18 +221,27 @@ inpBuscarOpResumen.addEventListener('keydown', (e) => {
 
 // Elegir operación de las sugerencias
 function seleccionarSugerenciaResumen(rowResumen) {
-  inpBuscarOpResumen.value     = rowResumen.label;
-  operacionIdActivoResumen     = String(rowResumen.id);
-  opLabelSeleccionadaResumen   = rowResumen.label;
+  inpBuscarOpResumen.value   = rowResumen.label;
+  operacionIdActivoResumen   = String(rowResumen.id);
+  opLabelSeleccionadaResumen = rowResumen.label;
+  origenOpResumen            = (rowResumen.origen || 'OP').toUpperCase(); // <--- NUEVO
+
   cargarContenedoresResumen(operacionIdActivoResumen);
   clearSugerenciasResumen();
   setExportPdfEnabledResumen(true);
 }
 
+
 // =========================
 // Contenedores por operación
 // =========================
 function cargarContenedoresResumen(operacionIdResumen) {
+  // Delegar por origen de operación
+  if (origenOpResumen === 'FO') {
+    return cargarContenedoresResumenFerro(operacionIdResumen);
+  }
+
+  // --- LO QUE YA TENÍAS PARA OPERACIONES normales (OP) ---
   if (lastXHRContenedoresResumen) { try { lastXHRContenedoresResumen.abort(); } catch(e){} }
   setContenedoresLoadingResumen();
 
@@ -234,7 +250,8 @@ function cargarContenedoresResumen(operacionIdResumen) {
 
   httpResumen.open(
     "GET",
-    base_url + "operaciones_maritimo_ferro_resumen/listarContenedoresPorOperacion?id_operacion=" + encodeURIComponent(operacionIdResumen),
+    base_url + "operaciones_maritimo_ferro_resumen/listarContenedoresPorOperacion?id_operacion=" 
+      + encodeURIComponent(operacionIdResumen),
     true
   );
   httpResumen.onreadystatechange = function () {
@@ -252,6 +269,67 @@ function cargarContenedoresResumen(operacionIdResumen) {
       setContenedoresEmptyResumen('Error al cargar contenedores');
     }
   };
+  httpResumen.send();
+}
+function cargarContenedoresResumenFerro(operacionFerroId) {
+  if (lastXHRContenedoresResumen) { try { lastXHRContenedoresResumen.abort(); } catch(e){} }
+  setContenedoresLoadingResumen();
+
+  const httpResumen = new XMLHttpRequest();
+  lastXHRContenedoresResumen = httpResumen;
+
+  httpResumen.open(
+    "GET",
+    base_url + "operaciones_maritimo_ferro_resumen/listarContenedoresPorOperacionFerro"
+      + "?operacion_ferro_id=" + encodeURIComponent(operacionFerroId),
+    true
+  );
+
+  httpResumen.onreadystatechange = function () {
+    if (this.readyState !== 4) return;
+
+    if (this.status === 200) {
+      let resResumen;
+      try { resResumen = JSON.parse(this.responseText); } catch { resResumen = null; }
+
+      if (!resResumen || resResumen.status !== 'ok') {
+        setContenedoresEmptyResumen('Sin contenedores FO');
+        return;
+      }
+
+      selectContenedorResumen.innerHTML = "";
+      const dataResumen = Array.isArray(resResumen.contenedores) ? resResumen.contenedores : [];
+
+      if (!dataResumen.length) {
+        setContenedoresEmptyResumen('Sin contenedores FO');
+        return;
+      }
+
+      dataResumen.forEach(cResumen => {
+        const optionResumen = document.createElement("option");
+        const tipoUI = (cResumen.tipo_contenedor || 'Ferro').toUpperCase();
+
+        optionResumen.value          = cResumen.id_contenedor ?? '';
+        optionResumen.textContent    = `${cResumen.tipo_contenedor} · ${cResumen.numero_contenedor}`;
+        optionResumen.dataset.tipo   = tipoUI;            // 'FERRO'
+        optionResumen.dataset.fm     = 'F';               // Físico
+        optionResumen.dataset.numero = cResumen.numero_contenedor || '';
+        optionResumen.dataset.baseId = cResumen.id_contenedor ?? '';
+
+        optionResumen.dataset.idFisico = cResumen.id_contenedor ?? '';
+
+        selectContenedorResumen.appendChild(optionResumen);
+      });
+
+      if (selectContenedorResumen.options.length > 0) {
+        selectContenedorResumen.selectedIndex = 0;
+        consultarDetallesContenedorResumen();
+      }
+    } else {
+      setContenedoresEmptyResumen('Error cargando contenedores FO');
+    }
+  };
+
   httpResumen.send();
 }
 
@@ -335,17 +413,30 @@ function consultarDetallesContenedorResumen() {
 
   // === COSTOS (solo Físico) ===
   if (tipoUI.startsWith('FERRO')) {
-    const idFisico    = optResumen.dataset.idFisico || idBaseResumen; // baseId YA es id_fisico
     const operacionId = operacionIdActivoResumen;
 
-    fetchCostosTotalesFisico(operacionId, idFisico);
-    fetchCostosDesglosadosFisico(operacionId, idFisico);
-    if (window.CostosChart) {
-      CostosChart.update({
-        tipo: 'F',
-        operacionId: Number(operacionIdActivoResumen),
-        idFisico: Number(idFisico)
-      });
+    if (origenOpResumen === 'FO') {
+      // 👉 FO: costos por operación ferroviaria
+      fetchCostosTotalesOperacionFerro(operacionId);
+      fetchCostosDesglosadosOperacionFerro(operacionId);
+      if (window.CostosChart) {
+        CostosChart.update({
+          tipo: 'FO',
+          operacionId: Number(operacionId)
+        });
+      }
+    } else {
+      // 👉 Operación normal (lo que ya tenías)
+      const idFisico = optResumen.dataset.idFisico || idBaseResumen;
+      fetchCostosTotalesFisico(operacionId, idFisico);
+      fetchCostosDesglosadosFisico(operacionId, idFisico);
+      if (window.CostosChart) {
+        CostosChart.update({
+          tipo: 'F',
+          operacionId: Number(operacionId),
+          idFisico: Number(idFisico)
+        });
+      }
     }
   } else {
     // Marítimo: no hay costos por contenedor
@@ -363,10 +454,12 @@ function consultarDetallesContenedorResumen() {
 
   // === 1) DETALLE DEL CONTENEDOR ===
   const httpResumen = new XMLHttpRequest();
-  const urlResumen = `${base_url}operaciones_maritimo_ferro_resumen/detalles_contenedor`
-    + `?operacion_id=${encodeURIComponent(operacionIdActivoResumen)}`
-    + `&tipo=${encodeURIComponent(esMaritimoResumen ? 'MARITIMO' : 'FERRO')}`
-    + `&id_contenedor=${encodeURIComponent(idBaseResumen)}`; // ✅ SIEMPRE ID BASE
+const urlResumen = `${base_url}operaciones_maritimo_ferro_resumen/detalles_contenedor`
+  + `?operacion_id=${encodeURIComponent(operacionIdActivoResumen)}`
+  + `&tipo=${encodeURIComponent(esMaritimoResumen ? 'MARITIMO' : 'FERRO')}`
+  + `&id_contenedor=${encodeURIComponent(idBaseResumen)}`
+  + `&origen=${encodeURIComponent(origenOpResumen)}`;  // <--- NUEVO
+
 
   httpResumen.open('GET', urlResumen, true);
   httpResumen.onreadystatechange = function() {
@@ -404,12 +497,26 @@ function pintarDetalleContenedorResumen(tipoResumen, dataResumen) {
     document.getElementById('blContenedor').textContent            = dataResumen.bl || '—';
     document.getElementById('comentarioContenedor').textContent    = dataResumen.comentarios || '—';
   } else {
-    document.getElementById('nombreContenedorResumen').textContent = dataResumen.numero_ferro || '—';
-    document.getElementById('arriboPuerto').textContent            = dataResumen.arribo_puerto || 'Falta Registrar Arribo';
-    document.getElementById('bultos').textContent                  = (dataResumen.bultos != null ? dataResumen.bultos : '—');
-    document.getElementById('comentarioContenedor').textContent    = dataResumen.comentarios || '—';
+    // Físico / Ferro (OPERACIÓN NORMAL O FO)
+    const numeroFerro   = dataResumen.numero_ferro || dataResumen.numero_contenedor || '—';
+    const arriboPuerto  = dataResumen.arribo_puerto 
+                       || dataResumen.arribo_a_puerto 
+                       || dataResumen.fecha_operacion 
+                       || 'Falta Registrar Arribo';
+    const bultosVal     = (dataResumen.bultos != null ? dataResumen.bultos 
+                       : (dataResumen.bultos_total != null ? dataResumen.bultos_total : null));
+    const comentariosFx = dataResumen.comentarios 
+                       || dataResumen.comentarios_contenedor 
+                       || dataResumen.comentarios_operacion 
+                       || '—';
+
+    document.getElementById('nombreContenedorResumen').textContent = numeroFerro;
+    document.getElementById('arriboPuerto').textContent            = arriboPuerto;
+    document.getElementById('bultos').textContent                  = (bultosVal != null ? bultosVal : '—');
+    document.getElementById('comentarioContenedor').textContent    = comentariosFx;
   }
 }
+
 
 // =========================
 // Faltantes (card + lista)
@@ -492,7 +599,8 @@ function cargarFaltantesResumen(operacionIdResumen, tipoFMResumen, idBaseResumen
   const urlResumen = `${base_url}operaciones_maritimo_ferro_resumen/faltantes`
     + `?operacion_id=${encodeURIComponent(operacionIdResumen)}`
     + `&contenedor_id=${encodeURIComponent(idBaseResumen)}` // ✅ BASE (id_fisico | id_contenedor_maritimo)
-    + `&tipo=${encodeURIComponent(tipoFMResumen)}`;
+    + `&tipo=${encodeURIComponent(tipoFMResumen)}`
+    + `&origen=${encodeURIComponent(origenOpResumen)}`;     // 👈 NUEVO
 
   httpResumen.open('GET', urlResumen, true);
   httpResumen.onreadystatechange = function(){
@@ -508,6 +616,7 @@ function cargarFaltantesResumen(operacionIdResumen, tipoFMResumen, idBaseResumen
   };
   httpResumen.send();
 }
+
 
 // =========================
 // Costos contenedor físico
@@ -568,6 +677,42 @@ function fetchCostosDesglosadosFisico(operacionId, idFisico){
   };
   xhr.send();
 }
+function fetchCostosTotalesOperacionFerro(operacionFerroId){
+  setTotalCostos('…');
+  const url = `${base_url}operaciones_maritimo_ferro_resumen/costos_totales_operacion_ferro`
+    + `?operacion_ferro_id=${encodeURIComponent(operacionFerroId)}`;
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200) { setTotalCostos('—'); return; }
+    let r; try { r = JSON.parse(xhr.responseText); } catch { setTotalCostos('—'); return; }
+    if (r.status !== 'ok') { setTotalCostos('—'); return; }
+    const data = r.data || {};
+    const totalFmt = data.total_fmt ?? (Number(data.total||0).toFixed(2));
+    setTotalCostos(totalFmt);
+  };
+  xhr.send();
+}
+
+function fetchCostosDesglosadosOperacionFerro(operacionFerroId){
+  if (listaCostos) {
+    listaCostos.innerHTML = '<li class="list-group-item text-muted">Cargando…</li>';
+  }
+  const url = `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_operacion_ferro`
+    + `?operacion_ferro_id=${encodeURIComponent(operacionFerroId)}`;
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200) { renderCostosDesglosados([]); return; }
+    let r; try { r = JSON.parse(xhr.responseText); } catch { renderCostosDesglosados([]); return; }
+    if (r.status !== 'ok') { renderCostosDesglosados([]); return; }
+    renderCostosDesglosados(r.data);
+  };
+  xhr.send();
+}
+
 
 // Moneda / tipo de cambio para el gráfico de costos
 const selMoneda = document.getElementById('costosResumenMonedaVista');
@@ -634,15 +779,16 @@ function renderEventosResumen(rows){
   tbodyEventosResumen.innerHTML = '';
   tbodyEventosResumen.appendChild(frag);
 }
-
 function buildUrlEventosResumen(operacionId, tipoUi, idBase){
   const t = (tipoUi || '').toUpperCase();
   const tipoParam = (t.startsWith('F')) ? 'Ferro' : 'Maritimo';
   return `${base_url}operaciones_maritimo_ferro_resumen/eventos_contenedor`
        + `?operacion_id=${encodeURIComponent(operacionId)}`
        + `&tipo=${encodeURIComponent(tipoParam)}`
-       + `&id_contenedor=${encodeURIComponent(idBase)}`; // id_fisico o id_contenedor_maritimo
+       + `&id_contenedor=${encodeURIComponent(idBase)}`
+       + `&origen=${encodeURIComponent(origenOpResumen)}`;   // 👈 NUEVO
 }
+
 
 function cargarEventosResumen(operacionId, tipoUi, idBase){
   if (!tbodyEventosResumen) return;
@@ -690,11 +836,11 @@ function setEventosBadgeResumen(completados, total){
 }
 
 function buildUrlEventosProgresoResumen(operacionId, tipoUi, idBase){
-  // tipoUi: 'M' | 'F'
   return `${base_url}operaciones_maritimo_ferro_resumen/eventos_progreso`
        + `?operacion_id=${encodeURIComponent(operacionId)}`
        + `&tipo=${encodeURIComponent(tipoUi)}`
-       + `&id_contenedor=${encodeURIComponent(idBase)}`;
+       + `&id_contenedor=${encodeURIComponent(idBase)}`
+       + `&origen=${encodeURIComponent(origenOpResumen)}`;   // 👈 NUEVO
 }
 
 function fetchEventosProgresoResumen(operacionId, tipoUi, idBase){
@@ -702,6 +848,9 @@ function fetchEventosProgresoResumen(operacionId, tipoUi, idBase){
     setEventosBadgeResumen(0,0);
     return;
   }
+
+  // 👇 YA NO HACEMOS RETURN PARA FO
+  // El backend ahora sabe manejar origen=FO
   const xhr = new XMLHttpRequest();
   xhr.open('GET', buildUrlEventosProgresoResumen(operacionId, tipoUi, idBase), true);
   xhr.onreadystatechange = function(){
@@ -724,3 +873,5 @@ function fetchEventosProgresoResumen(operacionId, tipoUi, idBase){
   };
   xhr.send();
 }
+
+

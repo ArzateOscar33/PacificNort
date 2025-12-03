@@ -147,16 +147,17 @@ function renderLegend(labels, data, colors) {
     xhr.send();
   }
 
-  function buildUrlDesgloseFisico(operacionId, idFisico) {
-    return `${base_url}operaciones_maritimas_resumen/costos_desglosados_contenedor_fisico`
-         + `?operacion_id=${encodeURIComponent(operacionId)}`
-         + `&id_fisico=${encodeURIComponent(idFisico)}`;
-  }
+function buildUrlDesgloseFisico(operacionId, idFisico) {
+  return `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_contenedor_fisico`
+       + `?operacion_id=${encodeURIComponent(operacionId)}`
+       + `&id_fisico=${encodeURIComponent(idFisico)}`;
+}
 
-  function buildUrlDesgloseOperacion(operacionId) {
-    return `${base_url}operaciones_maritimas_resumen/costos_desglosados_operacion`
-         + `?operacion_id=${encodeURIComponent(operacionId)}`;
-  }
+function buildUrlDesgloseOperacion(operacionId) {
+  return `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_operacion`
+       + `?operacion_id=${encodeURIComponent(operacionId)}`;
+}
+
 
   // ---- API pública
   const CostosChart = {
@@ -191,35 +192,64 @@ function renderLegend(labels, data, colors) {
     /**
      * @param {{tipo: 'F'|'M', operacionId: number, idFisico?: number}} opts
      */
-    update: function (opts) {
-      if (!chart || !$canvas) return;
-      setChart(['Cargando'], [1]);
+update: function (opts) {
+  if (!chart || !$canvas) return;
+  setChart(['Cargando'], [1]);
 
-      const tipo = (opts.tipo || '').toUpperCase();
-      if (tipo === 'F') {
-        const url = buildUrlDesgloseFisico(opts.operacionId, opts.idFisico);
-        fetchJSON(url, (rows) => {
-          lastRows = Array.isArray(rows) ? rows : [];
-          const { labels, data, total } = agruparPorTipo(lastRows);
-          if (labels.length === 0) setChart(['Sin costos'], [1]);
-          else setChart(labels, data);
-          if (typeof CostosChart.onTotalChanged === 'function') {
-            CostosChart.onTotalChanged(fmtMoney(total));
-          }
-        }, () => setChart(['Error'], [1]));
+  const tipo = (opts.tipo || '').toUpperCase(); // 'F' | 'M' | 'FO'
+
+  // === F: contenedor físico en operación normal ===
+  if (tipo === 'F') {
+    const url = buildUrlDesgloseFisico(opts.operacionId, opts.idFisico);
+    fetchJSON(url, (rows) => {
+      lastRows = Array.isArray(rows) ? rows : [];
+      const { labels, data, total } = agruparPorTipo(lastRows);
+      if (labels.length === 0) {
+        setChart(['Sin costos'], [1]);
       } else {
-        const url = buildUrlDesgloseOperacion(opts.operacionId);
-        fetchJSON(url, (rows) => {
-          lastRows = Array.isArray(rows) ? rows : [];
-          const { labels, data, total } = agruparPorTipo(lastRows);
-          if (labels.length === 0) setChart(['Sin costos'], [1]);
-          else setChart(labels, data);
-          if (typeof CostosChart.onTotalChanged === 'function') {
-            CostosChart.onTotalChanged(fmtMoney(total));
-          }
-        }, () => setChart(['Error'], [1]));
+        setChart(labels, data);
       }
-    },
+      if (typeof CostosChart.onTotalChanged === 'function') {
+        CostosChart.onTotalChanged(fmtMoney(total));
+      }
+    }, () => setChart(['Error'], [1]));
+
+  // === FO: operación ferroviaria (FO-xx) ===
+  } else if (tipo === 'FO') {
+    const url = `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_operacion_ferro`
+              + `?operacion_ferro_id=${encodeURIComponent(opts.operacionId)}`;
+
+    fetchJSON(url, (rows) => {
+      lastRows = Array.isArray(rows) ? rows : [];
+      const { labels, data, total } = agruparPorTipo(lastRows);
+      if (labels.length === 0) {
+        setChart(['Sin costos'], [1]);
+      } else {
+        setChart(labels, data);
+      }
+      if (typeof CostosChart.onTotalChanged === 'function') {
+        CostosChart.onTotalChanged(fmtMoney(total));
+      }
+    }, () => setChart(['Error'], [1]));
+
+  // === M: costos por operación normal (marítimo) ===
+  } else {
+    const url = buildUrlDesgloseOperacion(opts.operacionId);
+    fetchJSON(url, (rows) => {
+      lastRows = Array.isArray(rows) ? rows : [];
+      const { labels, data, total } = agruparPorTipo(lastRows);
+      if (labels.length === 0) {
+        setChart(['Sin costos'], [1]);
+      } else {
+        setChart(labels, data);
+      }
+      if (typeof CostosChart.onTotalChanged === 'function') {
+        CostosChart.onTotalChanged(fmtMoney(total));
+      }
+    }, () => setChart(['Error'], [1]));
+  }
+},
+
     
 
     setDisplayCurrency: function(moneda, tipoCambio){

@@ -79,162 +79,327 @@ class Operaciones_maritimo_ferro_resumen extends Controller
         ], JSON_UNESCAPED_UNICODE);
         die();
     }
+    // GET /operaciones_maritimo_ferro_resumen/listarContenedoresPorOperacionFerro?operacion_ferro_id=1
+public function listarContenedoresPorOperacionFerro()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-    public function detalles_contenedor()
-    {
-        header('Content-Type: application/json; charset=utf-8');
-
-        if (empty($_SESSION['nombre_usuario'])) {
-            echo json_encode([
-                'status'  => 'warning',
-                'data'    => [],
-                'message' => 'Sesión expirada'
-            ], JSON_UNESCAPED_UNICODE);
-            die();
-        }
-
-        $operacionId   = isset($_GET['operacion_id'])   ? (int)$_GET['operacion_id']   : 0;
-        $tipoRaw       = isset($_GET['tipo'])           ? trim($_GET['tipo'])           : '';
-        $contenedorId  = isset($_GET['id_contenedor'])  ? (int)$_GET['id_contenedor']  : 0;
-
-        if ($operacionId <= 0 || $contenedorId <= 0 || $tipoRaw === '') {
-            echo json_encode([
-                'status'  => 'warning',
-                'data'    => [],
-                'message' => 'Parámetros inválidos (operacion_id, tipo, id_contenedor)'
-            ], JSON_UNESCAPED_UNICODE);
-            die();
-        }
-
-        // 🔧 Normalización corregida (antes se “reseteaba” y nunca entraba a MARITIMO si venía 'M')
-        $tipo = mb_strtoupper($tipoRaw, 'UTF-8');
-
-        if ($tipo === 'FISICO' || $tipo === 'FÍSICO' || $tipo === 'F') {
-            $tipo = 'FERRO';
-        }
-        if ($tipo === 'MARITIMO' || $tipo === 'MARÍTIMO' || $tipo === 'M') {
-            $tipo = 'MARITIMO';
-        }
-
-        try {
-            if ($tipo === 'MARITIMO') {
-                // id_contenedor = id_contenedor_maritimo (cm.id_contenedor_maritimo)
-                $row = $this->model->getDetalleContenedorMaritimo($operacionId, $contenedorId);
-                if (!$row) {
-                    echo json_encode([
-                        'status' => 'ok',
-                        'tipo'   => 'MARITIMO',
-                        'data'   => [],
-                        'message'=> 'Sin datos'
-                    ], JSON_UNESCAPED_UNICODE);
-                    die();
-                }
-
-                if (is_array($row) && isset($row[0]) && is_array($row[0])) {
-                    $row = $row[0];
-                } elseif (is_object($row)) {
-                    $row = (array)$row;
-                }
-
-                $data = [
-                    'numero_contenedor' => (string)($row['numero_contenedor'] ?? ''),
-                    'puerto'            => (string)($row['puerto'] ?? ''),
-                    'eta'               => (string)($row['eta'] ?? ''),
-                    'etd'               => (string)($row['etd'] ?? ''),
-                    'bl'                => (string)($row['numero_bl'] ?? ''),
-                    'comentarios'       => (string)($row['comentarios_operacion'] ?? ($row['observaciones_contenedor'] ?? ''))
-                ];
-
-                echo json_encode([
-                    'status' => 'ok',
-                    'tipo'   => 'MARITIMO',
-                    'data'   => $data,
-                    'meta'   => [
-                        'operacion_id'  => $operacionId,
-                        'id_contenedor' => $contenedorId
-                    ]
-                ], JSON_UNESCAPED_UNICODE);
-                die();
-            }
-
-            if ($tipo === 'FERRO') {
-                // id_contenedor = id_fisico (cf.id_fisico)
-                $row = $this->model->getDetalleContenedorFisico($operacionId, $contenedorId);
-                if (!$row) {
-                    echo json_encode([
-                        'status'  => 'ok',
-                        'tipo'    => 'FERRO',
-                        'data'    => [],
-                        'message' => 'Sin datos para ese contenedor'
-                    ], JSON_UNESCAPED_UNICODE);
-                    die();
-                }
-
-                if (is_array($row) && isset($row[0]) && (is_array($row[0]) || is_object($row[0]))) {
-                    $row = $row[0];
-                }
-                if (is_object($row)) {
-                    $row = (array)$row;
-                }
-
-                $data = [
-                    'numero_ferro'  => (string)($row['numero_ferro'] ?? $row['NUMERO_FERRO'] ?? $row['numeroFerro'] ?? ''),
-                    'arribo_puerto' => (string)($row['arribo_a_puerto'] ?? $row['arribo_puerto'] ?? $row['ARRIBO_A_PUERTO'] ?? ''),
-                    'bultos'        => (int)   ($row['bultos'] ?? $row['BULTOS'] ?? 0),
-                    'comentarios'   => (string)($row['comentarios_contenedor'] ?? $row['comentarios'] ?? '')
-                ];
-
-                echo json_encode([
-                    'status' => 'ok',
-                    'tipo'   => 'FERRO',
-                    'data'   => $data,
-                    'meta'   => [
-                        'operacion_id'  => $operacionId,
-                        'id_contenedor' => $contenedorId
-                    ]
-                ], JSON_UNESCAPED_UNICODE);
-                die();
-            }
-
-            echo json_encode([
-                'status'  => 'warning',
-                'data'    => [],
-                'message' => 'Tipo no soportado. Use MARITIMO o FERRO.'
-            ], JSON_UNESCAPED_UNICODE);
-            die();
-        } catch (Throwable $e) {
-            echo json_encode([
-                'status'  => 'error',
-                'data'    => [],
-                'message' => 'Error al obtener detalles: ' . $e->getMessage()
-            ], JSON_UNESCAPED_UNICODE);
-            die();
-        }
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode([
+            'status'       => 'warning',
+            'contenedores' => [],
+            'message'      => 'Sesión expirada'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
     }
 
-    public function faltantes()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
+    $idFerro = isset($_GET['operacion_ferro_id']) ? (int)$_GET['operacion_ferro_id'] : 0;
+    if ($idFerro <= 0) {
+        echo json_encode([
+            'status'       => 'warning',
+            'contenedores' => [],
+            'message'      => 'Parámetro operacion_ferro_id inválido'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
 
-        $operacionId = (int)($_GET['operacion_id'] ?? 0);
-        $idPivot     = (int)($_GET['contenedor_id'] ?? 0);
-        $fm          = strtoupper(trim($_GET['tipo'] ?? '')); // 'F' | 'M'
+    try {
+        $rows = $this->model->getContenedoresPorOperacionFerro($idFerro);
 
-        // OJO: con el modelo actual, contenedor_id = id_fisico (F) o id_contenedor_maritimo (M)
-        if ($operacionId <= 0 || $idPivot <= 0 || !in_array($fm, ['F', 'M'], true)) {
-            echo json_encode([]);
+        echo json_encode([
+            'status'       => 'ok',
+            'contenedores' => is_array($rows) ? $rows : [],
+            'meta'         => [
+                'operacion_ferro_id' => $idFerro,
+                'total'              => is_array($rows) ? count($rows) : 0
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    } catch (Throwable $e) {
+        error_log("LISTAR_CONTENEDORES_FO: " . $e->getMessage());
+        echo json_encode([
+            'status'       => 'error',
+            'contenedores' => [],
+            'message'      => 'Error interno al listar contenedores FO'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+}
+// GET /operaciones_maritimo_ferro_resumen/contenedores_maritimos_ferro?operacion_ferro_id=1&contenedor_fisico_id=2
+public function contenedores_maritimos_ferro()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode([
+            'status' => 'warning',
+            'data'   => [],
+            'message'=> 'Sesión expirada'
+        ], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $operacionFerroId  = (int)($_GET['operacion_ferro_id']   ?? 0);
+    $contenedorFisicoId= (int)($_GET['contenedor_fisico_id'] ?? 0);
+
+    if ($operacionFerroId <= 0 || $contenedorFisicoId <= 0) {
+        echo json_encode([
+            'status' => 'warning',
+            'data'   => [],
+            'message'=> 'Parámetros inválidos (operacion_ferro_id, contenedor_fisico_id)'
+        ], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    try {
+        // Método de modelo: getContenedoresMaritimosDeFerro($operacionFerroId, $contenedorFisicoId)
+        $rows = $this->model->getContenedoresMaritimosDeFerro($operacionFerroId, $contenedorFisicoId);
+
+        echo json_encode([
+            'status' => 'ok',
+            'data'   => is_array($rows) ? $rows : [],
+            'meta'   => [
+                'operacion_ferro_id'   => $operacionFerroId,
+                'contenedor_fisico_id' => $contenedorFisicoId,
+                'total'                => is_array($rows) ? count($rows) : 0
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+        error_log("ERR contenedores_maritimos_ferro: " . $e->getMessage());
+        echo json_encode([
+            'status' => 'error',
+            'data'   => [],
+            'message'=> 'No fue posible obtener los contenedores marítimos del ferro'
+        ], JSON_UNESCAPED_UNICODE);
+    }
+}
+
+
+public function detalles_contenedor()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode([
+            'status'  => 'warning',
+            'data'    => [],
+            'message' => 'Sesión expirada'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    $operacionId  = isset($_GET['operacion_id'])  ? (int)$_GET['operacion_id']  : 0;
+    $tipoRaw      = isset($_GET['tipo'])          ? trim($_GET['tipo'])         : '';
+    $contenedorId = isset($_GET['id_contenedor']) ? (int)$_GET['id_contenedor'] : 0;
+    $origen       = isset($_GET['origen'])        ? strtoupper(trim($_GET['origen'])) : 'OP'; // 'OP' | 'FO'
+
+    if ($operacionId <= 0 || $contenedorId <= 0 || $tipoRaw === '') {
+        echo json_encode([
+            'status'  => 'warning',
+            'data'    => [],
+            'message' => 'Parámetros inválidos (operacion_id, tipo, id_contenedor)'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+    // Normalización de tipo
+    $tipo = mb_strtoupper($tipoRaw, 'UTF-8');
+
+    if ($tipo === 'FISICO' || $tipo === 'FÍSICO' || $tipo === 'F') {
+        $tipo = 'FERRO';
+    }
+    if ($tipo === 'MARITIMO' || $tipo === 'MARÍTIMO' || $tipo === 'M') {
+        $tipo = 'MARITIMO';
+    }
+
+    try {
+        // ============================
+        // 1) Operaciones FO (origen = 'FO')
+        // ============================
+        if ($origen === 'FO') {
+            // Para FO tratamos como contenedor físico ligado a operaciones_ferroviarias
+            // Método esperado en el modelo: getDetalleContenedorFerroFO($operacionFerroId, $idFisico)
+            $row = $this->model->getDetalleContenedorFerroFO($operacionId, $contenedorId);
+
+            if (!$row) {
+                echo json_encode([
+                    'status'  => 'ok',
+                    'tipo'    => 'FERRO',
+                    'data'    => [],
+                    'message' => 'Sin datos para ese contenedor FO'
+                ], JSON_UNESCAPED_UNICODE);
+                die();
+            }
+
+            if (is_array($row) && isset($row[0]) && (is_array($row[0]) || is_object($row[0]))) {
+                $row = $row[0];
+            }
+            if (is_object($row)) {
+                $row = (array)$row;
+            }
+
+            $data = [
+                'numero_contenedor'      => (string)($row['numero_contenedor'] ?? $row['numero_ferro'] ?? ''),
+                'fecha_operacion'        => (string)($row['fecha_operacion'] ?? ''),
+                'bultos_total'           => (int)   ($row['bultos_total'] ?? 0),
+                'comentarios_operacion'  => (string)($row['comentarios_operacion'] ?? ''),
+                'comentarios_contenedor' => (string)($row['comentarios_contenedor'] ?? '')
+            ];
+
+            echo json_encode([
+                'status' => 'ok',
+                'tipo'   => 'FERRO',
+                'data'   => $data,
+                'meta'   => [
+                    'origen'        => 'FO',
+                    'operacion_id'  => $operacionId,
+                    'id_contenedor' => $contenedorId
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            die();
+        }
+
+        // ============================
+        // 2) Operaciones normales (origen = 'OP')
+        // ============================
+
+        if ($tipo === 'MARITIMO') {
+            // id_contenedor = id_contenedor_maritimo (cm.id_contenedor_maritimo)
+            $row = $this->model->getDetalleContenedorMaritimo($operacionId, $contenedorId);
+            if (!$row) {
+                echo json_encode([
+                    'status'  => 'ok',
+                    'tipo'    => 'MARITIMO',
+                    'data'    => [],
+                    'message' => 'Sin datos'
+                ], JSON_UNESCAPED_UNICODE);
+                die();
+            }
+
+            if (is_array($row) && isset($row[0]) && is_array($row[0])) {
+                $row = $row[0];
+            } elseif (is_object($row)) {
+                $row = (array)$row;
+            }
+
+            $data = [
+                'numero_contenedor' => (string)($row['numero_contenedor'] ?? ''),
+                'puerto'            => (string)($row['puerto'] ?? ''),
+                'eta'               => (string)($row['eta'] ?? ''),
+                'etd'               => (string)($row['etd'] ?? ''),
+                'bl'                => (string)($row['numero_bl'] ?? ''),
+                'comentarios'       => (string)($row['comentarios_operacion'] ?? ($row['observaciones_contenedor'] ?? ''))
+            ];
+
+            echo json_encode([
+                'status' => 'ok',
+                'tipo'   => 'MARITIMO',
+                'data'   => $data,
+                'meta'   => [
+                    'origen'        => 'OP',
+                    'operacion_id'  => $operacionId,
+                    'id_contenedor' => $contenedorId
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            die();
+        }
+
+        if ($tipo === 'FERRO') {
+            // id_contenedor = id_fisico (cf.id_fisico)
+            $row = $this->model->getDetalleContenedorFisico($operacionId, $contenedorId);
+            if (!$row) {
+                echo json_encode([
+                    'status'  => 'ok',
+                    'tipo'    => 'FERRO',
+                    'data'    => [],
+                    'message' => 'Sin datos para ese contenedor'
+                ], JSON_UNESCAPED_UNICODE);
+                die();
+            }
+
+            if (is_array($row) && isset($row[0]) && (is_array($row[0]) || is_object($row[0]))) {
+                $row = $row[0];
+            }
+            if (is_object($row)) {
+                $row = (array)$row;
+            }
+
+            $data = [
+                'numero_ferro'  => (string)($row['numero_ferro'] ?? $row['NUMERO_FERRO'] ?? $row['numeroFerro'] ?? ''),
+                'arribo_puerto' => (string)($row['arribo_a_puerto'] ?? $row['arribo_puerto'] ?? $row['ARRIBO_A_PUERTO'] ?? ''),
+                'bultos'        => (int)   ($row['bultos'] ?? $row['BULTOS'] ?? 0),
+                'comentarios'   => (string)($row['comentarios_contenedor'] ?? $row['comentarios'] ?? '')
+            ];
+
+            echo json_encode([
+                'status' => 'ok',
+                'tipo'   => 'FERRO',
+                'data'   => $data,
+                'meta'   => [
+                    'origen'        => 'OP',
+                    'operacion_id'  => $operacionId,
+                    'id_contenedor' => $contenedorId
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            die();
+        }
+
+        echo json_encode([
+            'status'  => 'warning',
+            'data'    => [],
+            'message' => 'Tipo no soportado. Use MARITIMO o FERRO.'
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+
+    } catch (Throwable $e) {
+        echo json_encode([
+            'status'  => 'error',
+            'data'    => [],
+            'message' => 'Error al obtener detalles: ' . $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+        die();
+    }
+}
+
+
+public function faltantes()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $operacionId = (int)($_GET['operacion_id'] ?? 0);
+    $idPivot     = (int)($_GET['contenedor_id'] ?? 0);
+    $fm          = strtoupper(trim($_GET['tipo'] ?? '')); // 'F' | 'M'
+    $origen      = strtoupper(trim($_GET['origen'] ?? 'OP')); // 'OP' | 'FO'
+    $busca       = isset($_GET['q']) ? trim($_GET['q']) : null; // 👈 usar también en FO
+
+    // Validación
+    if ($operacionId <= 0 || $idPivot <= 0) {
+        echo json_encode([]);
+        return;
+    }
+
+    try {
+        // 🚨 Operación ferroviaria (FO)
+        if ($origen === 'FO') {
+            $rows = $this->model->faltantesPorOperacionFerro($operacionId, $idPivot, $busca);
+            echo json_encode($rows, JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        try {
-            $busca = isset($_GET['q']) ? trim($_GET['q']) : null;
-            $rows  = $this->model->faltantesPorContenedor($operacionId, $idPivot, $fm, true, $busca);
-            echo json_encode($rows, JSON_UNESCAPED_UNICODE);
-        } catch (Throwable $e) {
-            error_log("FALTANTES_RESUMEN: " . $e->getMessage());
-            echo json_encode([]);
-        }
+        // ✔ Operaciones normales
+        $rows = $this->model->faltantesPorContenedor($operacionId, $idPivot, $fm, true, $busca);
+
+        echo json_encode($rows, JSON_UNESCAPED_UNICODE);
+
+    } catch (Throwable $e) {
+        error_log("FALTANTES_RESUMEN: " . $e->getMessage());
+        echo json_encode([]);
     }
+}
+
+
+
+
 
     // COSTOS totales por contenedor FÍSICO
     public function costos_totales_contenedor_fisico()
@@ -335,78 +500,147 @@ class Operaciones_maritimo_ferro_resumen extends Controller
         }
     }
 
-    public function eventos_contenedor()
-    {
-        header('Content-Type: application/json; charset=utf-8');
+public function eventos_contenedor()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-        if (empty($_SESSION['nombre_usuario'])) {
-            echo json_encode(['status' => 'warning', 'data' => [], 'message' => 'Sesión expirada'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-
-        $operacionId  = (int)($_GET['operacion_id'] ?? 0);
-        $tipoRaw      = trim($_GET['tipo'] ?? '');
-        $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
-
-        if ($operacionId <= 0 || $idContenedor <= 0 || $tipoRaw === '') {
-            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-
-        $t = mb_strtoupper($tipoRaw, 'UTF-8');
-        if ($t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') $t = 'FERRO';
-        if ($t === 'M') $t = 'MARITIMO';
-
-        try {
-            $rows = $this->model->getEventosLogisticosPorContenedor($operacionId, $t, $idContenedor);
-            echo json_encode([
-                'status' => 'ok',
-                'data'   => is_array($rows) ? $rows : [],
-                'meta'   => [
-                    'operacion_id'  => $operacionId,
-                    'tipo'          => $t,
-                    'id_contenedor' => $idContenedor,
-                    'total'         => is_array($rows) ? count($rows) : 0
-                ]
-            ], JSON_UNESCAPED_UNICODE);
-        } catch (Throwable $e) {
-            error_log("ERR eventos_contenedor: " . $e->getMessage());
-            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'No fue posible obtener los eventos'], JSON_UNESCAPED_UNICODE);
-        }
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode(['status' => 'warning', 'data' => [], 'message' => 'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+        return;
     }
 
-    public function eventos_progreso()
-    {
-        header('Content-Type: application/json; charset=utf-8');
+    $operacionId  = (int)($_GET['operacion_id'] ?? 0);
+    $tipoRaw      = trim($_GET['tipo'] ?? '');
+    $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
+    $origen       = strtoupper(trim($_GET['origen'] ?? 'OP')); // 👈 NUEVO
 
-        if (empty($_SESSION['nombre_usuario'])) {
-            echo json_encode(['status' => 'warning', 'data' => [], 'message' => 'Sesión expirada'], JSON_UNESCAPED_UNICODE);
-            return;
+    if ($operacionId <= 0 || $idContenedor <= 0 || $tipoRaw === '') {
+        echo json_encode(['status' => 'error', 'data' => [], 'message' => 'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $t = mb_strtoupper($tipoRaw, 'UTF-8');
+    if ($t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') $t = 'FERRO';
+    if ($t === 'M') $t = 'MARITIMO';
+
+    try {
+        if ($origen === 'FO') {
+            // 👇 usa eventos_ferroviarios
+            $rows = $this->model->getEventosFerroviariosPorContenedor($operacionId, $idContenedor);
+        } else {
+            // 👇 lógica original (eventos_logisticos)
+            $rows = $this->model->getEventosLogisticosPorContenedor($operacionId, $t, $idContenedor);
         }
 
-        $operacionId  = (int)($_GET['operacion_id'] ?? 0);
-        $tipoRaw      = trim($_GET['tipo'] ?? '');
-        $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
+        echo json_encode([
+            'status' => 'ok',
+            'data'   => is_array($rows) ? $rows : [],
+            'meta'   => [
+                'operacion_id'  => $operacionId,
+                'tipo'          => $t,
+                'origen'        => $origen,
+                'id_contenedor' => $idContenedor,
+                'total'         => is_array($rows) ? count($rows) : 0
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+        error_log("ERR eventos_contenedor: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'data' => [], 'message' => 'No fue posible obtener los eventos'], JSON_UNESCAPED_UNICODE);
+    }
+}
 
-        if ($operacionId <= 0 || $idContenedor <= 0 || $tipoRaw === '') {
-            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
 
-        $t = mb_strtoupper($tipoRaw,'UTF-8');
-        if ($t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') $t = 'F';
-        if ($t === 'MARITIMO' || $t === 'MARÍTIMO' || $t === 'M') $t = 'M';
+public function eventos_progreso()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-        try {
+    if (empty($_SESSION['nombre_usuario'])) {
+        echo json_encode(['status' => 'warning', 'data' => [], 'message' => 'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $operacionId  = (int)($_GET['operacion_id'] ?? 0);
+    $tipoRaw      = trim($_GET['tipo'] ?? '');
+    $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
+    $origen       = strtoupper(trim($_GET['origen'] ?? 'OP')); // 👈 NUEVO
+
+    if ($operacionId <= 0 || $idContenedor <= 0 || $tipoRaw === '') {
+        echo json_encode(['status' => 'error', 'data' => [], 'message' => 'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $t = mb_strtoupper($tipoRaw,'UTF-8');
+    if ($t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') $t = 'F';
+    if ($t === 'MARITIMO' || $t === 'MARÍTIMO' || $t === 'M') $t = 'M';
+
+    try {
+        // 👉 Si viene de una operación ferroviaria (FO) usamos la función nueva
+        if ($origen === 'FO') {
+            $data = $this->model->getEventosProgresoFerroFO($operacionId, $idContenedor);
+        } else {
+            // 👉 Lógica original para operaciones normales
             if ($t === 'F') {
                 $data = $this->model->getEventosProgresoFisico($operacionId, $idContenedor);
             } else {
                 $data = $this->model->getEventosProgresoMaritimo($operacionId, $idContenedor);
             }
-            echo json_encode(['status' => 'ok', 'data' => $data], JSON_UNESCAPED_UNICODE);
+        }
+
+        echo json_encode(['status' => 'ok', 'data' => $data], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+        error_log("ERR eventos_progreso: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'data' => [], 'message' => 'No fue posible obtener el progreso'], JSON_UNESCAPED_UNICODE);
+    }
+}
+
+
+        // COSTOS totales por operación FERROVIARIA (FO)
+    public function costos_totales_operacion_ferro()
+    {
+        $operacionFerroId = isset($_GET['operacion_ferro_id']) ? (int)$_GET['operacion_ferro_id'] : 0;
+
+        if ($operacionFerroId <= 0) {
+            echo json_encode(['status' => 'error', 'msg' => 'Parámetro operacion_ferro_id inválido']);
+            return;
+        }
+
+        try {
+            $total = $this->model->getCostosTotalesOperacionFerro($operacionFerroId);
+            echo json_encode([
+                'status' => 'ok',
+                'data'   => [
+                    'origen'             => 'FO',
+                    'operacion_ferro_id' => $operacionFerroId,
+                    'total'              => $total,
+                    'total_fmt'          => number_format($total, 2)
+                ]
+            ]);
         } catch (Throwable $e) {
-            error_log("ERR eventos_progreso: " . $e->getMessage());
-            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'No fue posible obtener el progreso'], JSON_UNESCAPED_UNICODE);
+            error_log("ERR costos_totales_operacion_ferro: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible calcular el total']);
         }
     }
+
+    // COSTOS desglosados por operación FERROVIARIA (FO)
+    public function costos_desglosados_operacion_ferro()
+    {
+        $operacionFerroId = isset($_GET['operacion_ferro_id']) ? (int)$_GET['operacion_ferro_id'] : 0;
+
+        if ($operacionFerroId <= 0) {
+            echo json_encode(['status' => 'error', 'msg' => 'Parámetro operacion_ferro_id inválido']);
+            return;
+        }
+
+        try {
+            $rows = $this->model->getCostosDesglosadosOperacionFerro($operacionFerroId);
+            echo json_encode([
+                'status' => 'ok',
+                'data'   => $rows
+            ]);
+        } catch (Throwable $e) {
+            error_log("ERR costos_desglosados_operacion_ferro: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible obtener el desglose']);
+        }
+    }
+
 }

@@ -7,38 +7,133 @@ class Operaciones_maritimo_ferro_resumenModel extends Query
      *  - 11 = Maritimo-Ferroviario
      *  - 2  = Terrestre
      */
-    public function buscarOperacionesConContenedores(string $term): array
-    {
-        // Normaliza el término de búsqueda
-        $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
+   public function buscarOperacionesConContenedores(string $term): array
+{
+    // Normaliza el término de búsqueda
+    $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
 
-        $sql = "
-            /* SUGERENCIAS sin duplicados, solo Marítimo-Ferroviario y Terrestre */
-            SELECT 
-              o.id_operacion     AS id,
-              o.numero_operacion AS numero,
-              cl.nombre          AS cliente,
-              CONCAT(o.numero_operacion, ' — ', cl.nombre) AS label
-            FROM operaciones o
-            JOIN clientes cl ON cl.id_cliente = o.cliente_id
-            WHERE 
-              o.tipo_operacion_id IN (11, 2)  -- 11 = Maritimo-Ferroviario, 2 = Terrestre
-              AND (
-                LOWER(o.numero_operacion) LIKE CONCAT('%', LOWER(?), '%')
-                OR LOWER(cl.nombre)       LIKE CONCAT('%', LOWER(?), '%')
-              )
-            ORDER BY 
-              CASE 
-                WHEN LOWER(o.numero_operacion) LIKE CONCAT(LOWER(?), '%') THEN 1  -- prefijo primero
-                ELSE 2
-              END,
-              o.numero_operacion
-            LIMIT 10;
-        ";
+    $sql = "
+        /* SUGERENCIAS sin duplicados:
+           - OP: operaciones (LBMF / LBS / etc.)
+           - FO: operaciones_ferroviarias (FO-xx)
+        */
+        SELECT 
+          o.id_operacion     AS id,
+          o.numero_operacion AS numero,
+          cl.nombre          AS cliente,
+          CONCAT(o.numero_operacion, ' — ', cl.nombre) AS label,
+          'OP'               AS origen,
+          o.tipo_operacion_id
+        FROM operaciones o
+        JOIN clientes cl ON cl.id_cliente = o.cliente_id
+        WHERE 
+          o.tipo_operacion_id IN (11, 2)  -- 11 = Marítimo/Ferro, 2 = Terrestre
+          AND (
+            LOWER(o.numero_operacion) LIKE CONCAT('%', LOWER(?), '%')
+            OR LOWER(cl.nombre)       LIKE CONCAT('%', LOWER(?), '%')
+          )
 
-        // Orden de parámetros: (contains, contains, prefix)
-        return $this->selectAll($sql, [$needle, $needle, $term]);
-    }
+        UNION ALL
+
+        SELECT
+          of.id_operacion_ferro AS id,
+          of.numero_operacion   AS numero,
+          cl.nombre             AS cliente,
+          CONCAT(of.numero_operacion, ' — ', cl.nombre) AS label,
+          'FO'                  AS origen,
+          of.tipo_operacion_id
+        FROM operaciones_ferroviarias of
+        JOIN clientes cl ON cl.id_cliente = of.cliente_id
+        WHERE 
+          of.tipo_operacion_id = 2   -- Terrestre
+          AND (
+            LOWER(of.numero_operacion) LIKE CONCAT('%', LOWER(?), '%')
+            OR LOWER(cl.nombre)        LIKE CONCAT('%', LOWER(?), '%')
+          )
+
+        ORDER BY 
+          CASE 
+            WHEN LOWER(numero) LIKE CONCAT(LOWER(?), '%') THEN 1  -- prefijo primero
+            ELSE 2
+          END,
+          numero
+        LIMIT 10;
+    ";
+
+    // Orden de parámetros:
+    //  1-2: contains en operaciones
+    //  3-4: contains en operaciones_ferroviarias
+    //  5  : prefijo para ORDER BY
+    return $this->selectAll($sql, [
+        $needle, $needle,   // operaciones
+        $needle, $needle,   // operaciones_ferroviarias
+        $term               // prefijo
+    ]);
+}
+/**
+ * Contenedores ligados a una operación FERROVIARIA (FO-xx)
+ * Se apoya en contenedor_maritimo_ferro → contenedores_fisicos
+ */
+public function getContenedoresPorOperacionFerro(int $idOperacionFerro): array
+{
+    $sql = "
+        SELECT
+          of.id_operacion_ferro AS id_operacion,
+          of.numero_operacion   AS numero_operacion,
+          cl.nombre             AS nombre_cliente,
+          'Ferro'               AS tipo_contenedor,
+          cf.id_fisico          AS id_contenedor,
+          cf.numero_ferro       AS numero_contenedor
+        FROM operaciones_ferroviarias of
+        JOIN clientes cl
+          ON cl.id_cliente = of.cliente_id
+        JOIN contenedor_maritimo_ferro cmf
+          ON cmf.operacion_ferro_id = of.id_operacion_ferro
+        JOIN contenedores_fisicos cf
+          ON cf.id_fisico = cmf.contenedor_fisico_id
+        WHERE of.id_operacion_ferro = ?
+          AND cmf.estatus = 1
+        GROUP BY
+          of.id_operacion_ferro,
+          of.numero_operacion,
+          cl.nombre,
+          cf.id_fisico,
+          cf.numero_ferro
+        ORDER BY cf.numero_ferro;
+    ";
+
+    return $this->selectAll($sql, [$idOperacionFerro]) ?: [];
+}
+
+/**
+ * Detalle de CONTENEDOR FÍSICO en una operación FO (operaciones_ferroviarias)
+ * Se usa cuando origen = 'FO' en el módulo de resumen.
+ */
+public function getDetalleContenedorFerroFO(int $operacionFerroId, int $idFisico): array
+{
+    $sql = "
+        SELECT
+          of.id_operacion_ferro            AS operacion_id,
+          of.numero_operacion,
+          of.fecha                         AS fecha_operacion,
+          of.bultos_total,
+          of.comentarios                   AS comentarios_operacion,
+          cf.id_fisico,
+          cf.numero_ferro                  AS numero_contenedor
+        FROM operaciones_ferroviarias of
+        JOIN contenedor_maritimo_ferro cmf
+          ON cmf.operacion_ferro_id = of.id_operacion_ferro
+        JOIN contenedores_fisicos cf
+          ON cf.id_fisico = cmf.contenedor_fisico_id
+        WHERE of.id_operacion_ferro = ?
+          AND cf.id_fisico          = ?
+        LIMIT 1;
+    ";
+
+    $row = $this->select($sql, [$operacionFerroId, $idFisico]);
+    return $row ? [$row] : [];
+}
+
 
     /**
      * Lista de contenedores ligados a una operación.
@@ -469,4 +564,175 @@ class Operaciones_maritimo_ferro_resumenModel extends Query
             'restantes'   => max($total - $completados, 0),
         ];
     }
+
+
+        /**
+     * Contenedores marítimos que viajan en un FERRO concreto
+     * (operacion_ferro_id + contenedor_fisico_id).
+     *
+     * Devuelve: id_relacion, id_contenedor_maritimo, numero_contenedor,
+     *           bultos_asignados (en el ferro) y, si existe, bultos del contenedor marítimo.
+     */
+    public function getContenedoresMaritimosDeFerro(int $operacionFerroId, int $contenedorFisicoId): array
+    {
+        $sql = "
+            SELECT
+              cmf.id                      AS id_relacion,
+              cmf.contenedor_maritimo_id,
+              cmf.cont_maritimo_operacion_id,
+              cm.numero_contenedor,
+              cmf.bultos_asignados,
+              cmo.bultos                  AS bultos_contenedor
+            FROM contenedor_maritimo_ferro cmf
+            JOIN contenedores_maritimos cm
+              ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+            LEFT JOIN contenedores_maritimos_operacion cmo
+              ON cmo.id = cmf.cont_maritimo_operacion_id
+            WHERE cmf.operacion_ferro_id   = ?
+              AND cmf.contenedor_fisico_id = ?
+              AND cmf.estatus              = 1
+            ORDER BY cm.numero_contenedor ASC
+        ";
+
+        return $this->selectAll($sql, [$operacionFerroId, $contenedorFisicoId]) ?: [];
+    }
+    /**
+     * Eventos ferroviarios de un contenedor FÍSICO dentro de una operación ferroviaria.
+     * Usa eventos_ferroviarios + tipos_evento_logistico.
+     */
+public function getEventosFerroviariosPorContenedor(int $operacionFerroId, int $contenedorFisicoId): array
+{
+    $sql = "
+        SELECT
+          ef.id_evento           AS id_evento,
+          ef.operacion_ferro_id,
+          ef.contenedor_fisico_id,
+          ef.tipo_evento_id,
+          tel.nombre             AS nombre_evento,
+          ef.fecha,
+          ef.comentario,
+          ef.estatus
+        FROM eventos_ferroviarios ef
+        JOIN tipos_evento_logistico tel
+          ON tel.id_tipo_evento = ef.tipo_evento_id
+        WHERE ef.operacion_ferro_id   = ?
+          AND ef.contenedor_fisico_id = ?
+          AND ef.estatus              = 1
+        ORDER BY (ef.fecha IS NULL), ef.fecha ASC, ef.id_evento ASC
+    ";
+
+    return $this->selectAll($sql, [$operacionFerroId, $contenedorFisicoId]) ?: [];
+}
+
+/**
+ * Documentos FALTANTES para una operación ferroviaria en un contenedor físico concreto.
+ *
+ * Se apoya en tipos_documento.aplica_sobre IN ('contenedor_fisico','cualquiera')
+ * y documentos_operacion (operacion_id = operacion_ferro_id, contenedor_operacion_id = id_fisico).
+ */
+public function faltantesPorOperacionFerro(int $operacionFerroId, int $contenedorFisicoId, ?string $busqueda = null): array
+{
+    $params = [$operacionFerroId, $contenedorFisicoId];
+
+    $filtroBusqueda = '';
+    if ($busqueda !== null && $busqueda !== '') {
+        $like = '%' . $busqueda . '%';
+        $filtroBusqueda = " AND (td.nombre LIKE ? OR td.descripcion LIKE ?) ";
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $sql = "
+        SELECT 
+          td.id_tipo_documento     AS id_tipo,
+          td.nombre                AS nombre,
+          td.aplica_sobre,
+          COUNT(do.id_documento)   AS docs_cargados
+        FROM tipos_documento td
+        LEFT JOIN documentos_operacion do
+          ON do.tipo_documento_id      = td.id_tipo_documento
+         AND do.operacion_id           = ?
+         AND (do.contenedor_operacion_id = ? OR do.contenedor_operacion_id IS NULL)
+        WHERE td.activo = 1                         
+          AND td.aplica_sobre IN ('contenedor_fisico','cualquiera')
+          {$filtroBusqueda}
+        GROUP BY td.id_tipo_documento, td.nombre, td.aplica_sobre
+        HAVING docs_cargados = 0
+        ORDER BY td.nombre ASC
+    ";
+
+    return $this->selectAll($sql, $params) ?: [];
+}
+
+        /** TOTAL de costos de una operación ferroviaria (solo GASTO) */
+    public function getCostosTotalesOperacionFerro(int $operacionFerroId): float
+    {
+        $sql = "
+            SELECT SUM(cf.monto) AS total
+            FROM costos_operacion_ferro cf
+            LEFT JOIN tipos_movimiento tm
+              ON tm.id_tipo_movimiento = cf.tipo_movimiento_id
+            WHERE cf.operacion_ferro_id = ?
+              AND cf.estatus           = 1
+              AND tm.tipo              = 'GASTO'
+        ";
+        $row = $this->select($sql, [$operacionFerroId]);
+        return isset($row['total']) ? (float)$row['total'] : 0.0;
+    }
+
+    /** DESGLOSE de costos de una operación ferroviaria (solo GASTO) */
+    public function getCostosDesglosadosOperacionFerro(int $operacionFerroId): array
+    {
+        $sql = "
+            SELECT 
+              cf.id_costo_ferro       AS id_costo_operacion,
+              cf.tipo_movimiento_id,
+              tm.nombre               AS nombre_movimiento,
+              cf.monto,
+              tm.moneda               AS moneda,
+              cf.comentario,
+              cf.fecha_creacion
+            FROM costos_operacion_ferro cf
+            LEFT JOIN tipos_movimiento tm
+              ON tm.id_tipo_movimiento = cf.tipo_movimiento_id
+            WHERE cf.operacion_ferro_id = ?
+              AND cf.estatus            = 1
+              AND tm.tipo               = 'GASTO'
+            ORDER BY cf.fecha_creacion ASC, cf.id_costo_ferro ASC
+        ";
+        return $this->selectAll($sql, [$operacionFerroId]) ?: [];
+    }
+/** Progreso de eventos para contenedor FÍSICO en operación FERROVIARIA (FO) */
+public function getEventosProgresoFerroFO(int $operacionFerroId, int $contenedorFisicoId): array
+{
+    // Completados: cuántos tipos de evento distintos tiene ese contenedor físico en eventos_ferroviarios
+    $sqlDone = "
+        SELECT COUNT(DISTINCT ef.tipo_evento_id) AS completados
+        FROM eventos_ferroviarios ef
+        WHERE ef.operacion_ferro_id   = ?
+          AND ef.contenedor_fisico_id = ?
+          AND ef.estatus              = 1
+    ";
+    $rowDone = $this->select($sqlDone, [$operacionFerroId, $contenedorFisicoId]);
+    $completados = (int)($rowDone['completados'] ?? 0);
+
+    // Totales: tipos de evento activos para operaciones TERRESTRES (id_tipo_operacion = 2)
+    // (los mismos que usas para contenedor físico normal)
+    $sqlTotal = "
+        SELECT COUNT(*) AS total
+        FROM tipos_evento_logistico tel
+        WHERE tel.estatus           = 1
+          AND tel.id_tipo_operacion = 2
+    ";
+    $rowTotal = $this->select($sqlTotal, []);
+    $total = (int)($rowTotal['total'] ?? 0);
+
+    return [
+        'completados' => $completados,
+        'total'       => $total,
+        'restantes'   => max($total - $completados, 0),
+    ];
+}
+
+
 }
