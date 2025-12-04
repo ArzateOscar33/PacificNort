@@ -5,6 +5,8 @@ const elEvtHechos = document.getElementById("kpiEventosHechos");
 const elEvtTotal = document.getElementById("kpiEventosTotal");
 const elEvtPct = document.getElementById("kpiEventosPct");
 const elDocsFaltantes = document.getElementById("kpiDocsFaltantes");
+const elOpsActivasFO = document.getElementById("kpiOpsActivasFO");
+const elOpsFODetalle = document.getElementById("kpiOpsFODetalle");
 
 const btnRefAlertas = document.getElementById("btnRefrescarAlertas");
 const ulAlertas = document.getElementById("listaAlertas");
@@ -48,14 +50,26 @@ function renderKPIs(payload) {
   const d = payload?.data || {};
   const eventos = d.eventos || { hechos: 0, total: 0, pct: 0 };
 
+  // Marítimas
   setText(elOpsActivas, fmtInt(d.ops_activas));
+
+ 
+  setText(elOpsActivasFO, fmtInt(d.ops_activas_fo || 0));
+ 
+
   setText(elContActivos, fmtInt(d.cont_activos));
   setText(elEvtHechos, fmtInt(eventos.hechos));
   setText(elEvtTotal, fmtInt(eventos.total));
   setText(elEvtPct, `${n(eventos.pct).toFixed(2)}%`);
-  setText(elDocsFaltantes, fmtInt(d.docs_faltantes));
 
-  if (window.feather) feather.replace(); // refresca iconos por si cambia algo
+  //  
+  setText(elDocsFaltantes, fmtInt(d.docs_faltantes || 0));
+
+  // Otros KPIs  
+  setText(elClientesActivos, fmtInt(d.clientes_activos || 0));
+  setText(elOpsProxETA, fmtInt(d.ops_prox_eta || 0));
+
+  if (window.feather) feather.replace();
 }
 
 /* ====== Carga: KPIs ====== */
@@ -146,24 +160,7 @@ if (btnRefAlertas) {
 const elClientesActivos = document.getElementById("kpiClientesActivos");
 const elOpsProxETA = document.getElementById("kpiOpsProxETA");
 
-// En renderKPIs(...) agrega:
-function renderKPIs(payload) {
-  const d = payload?.data || {};
-  const eventos = d.eventos || { hechos: 0, total: 0, pct: 0 };
-
-  setText(elOpsActivas, fmtInt(d.ops_activas));
-  setText(elContActivos, fmtInt(d.cont_activos));
-  setText(elEvtHechos, fmtInt(eventos.hechos));
-  setText(elEvtTotal, fmtInt(eventos.total));
-  setText(elEvtPct, `${n(eventos.pct).toFixed(2)}%`);
-
-  // nuevos:
-  setText(elClientesActivos, fmtInt(d.clientes_activos));
-  setText(elOpsProxETA, fmtInt(d.ops_prox_eta));
-
-  if (window.feather) feather.replace();
-}
-
+ 
 // ====== Utils ======
 function xhrGET(url, onOk, onErr) {
   const http = new XMLHttpRequest();

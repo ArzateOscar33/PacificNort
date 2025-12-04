@@ -5,6 +5,8 @@ class DashboardModel extends Query
     {
         parent::__construct();
     }
+
+    // Operaciones marítimas activas (tabla operaciones)
     public function kpiOperacionesActivas(): int
     {
         $sql = "SELECT COUNT(*) AS n
@@ -13,6 +15,17 @@ class DashboardModel extends Query
         $row = $this->select($sql);
         return $row ? (int)$row['n'] : 0;
     }
+
+    // ✅ NUEVO: Operaciones FO (ferro/terrestres) activas (tabla operaciones_ferroviarias)
+    public function kpiOperacionesFOActivas(): int
+    {
+        $sql = "SELECT COUNT(*) AS n
+                FROM operaciones_ferroviarias
+                WHERE estatus_id IN (1,5,9)"; // mismos estatus activos que marítimo
+        $row = $this->select($sql);
+        return $row ? (int)$row['n'] : 0;
+    }
+
     public function kpiContenedoresActivos(): int
     {
         $sql = "
@@ -34,12 +47,13 @@ class DashboardModel extends Query
         $row = $this->select($sql);
         return $row ? (int)$row['total'] : 0;
     }
+
     public function kpiEventosHechosTotal(): array
     {
         $sql = "
 SELECT
   SUM(CASE WHEN e.estatus = 1 THEN 1 ELSE 0 END)                           AS hechos,
-  SUM(CASE WHEN e.estatus IN (0,1) THEN 1 ELSE 0 END)                       AS total -- 👈 ajusta IN(...)
+  SUM(CASE WHEN e.estatus IN (0,1) THEN 1 ELSE 0 END)                       AS total
 FROM eventos_logisticos e
 JOIN operaciones o ON o.id_operacion = e.operacion_id
 WHERE o.estatus_id IN (1,5,9);
@@ -50,7 +64,6 @@ WHERE o.estatus_id IN (1,5,9);
             'total'  => (int)($row['total'] ?? 0),
         ];
     }
-
 
     // Nº de clientes distintos con operaciones activas
     public function kpiClientesActivos(): int
@@ -73,9 +86,10 @@ WHERE o.estatus_id IN (1,5,9);
         $row = $this->select($sql, [$dias]);
         return $row ? (int)$row['n'] : 0;
     }
+
     public function chartOpsPorSubtipo(): array
-{
-    $sql = "
+    {
+        $sql = "
         SELECT 
             s.id_subtipo,
             s.nombre,
@@ -88,11 +102,12 @@ WHERE o.estatus_id IN (1,5,9);
         GROUP BY s.id_subtipo, s.nombre, s.prefijo_codigo
         ORDER BY total DESC
     ";
-    return $this->selectAll($sql);
-}
-public function chartPuntualidadEntregasSemana(int $semanas = 8): array
-{
-    $sql = "
+        return $this->selectAll($sql);
+    }
+
+    public function chartPuntualidadEntregasSemana(int $semanas = 8): array
+    {
+        $sql = "
       SELECT
         DATE_FORMAT(DATE_SUB(e.fecha, INTERVAL WEEKDAY(e.fecha) DAY), '%Y-%m-%d') AS semana_inicio,
         DATE_FORMAT(DATE_ADD(DATE_SUB(e.fecha, INTERVAL WEEKDAY(e.fecha) DAY), INTERVAL 6 DAY), '%Y-%m-%d') AS semana_fin,
@@ -112,17 +127,15 @@ public function chartPuntualidadEntregasSemana(int $semanas = 8): array
         DATE_FORMAT(e.fecha, '%x-W%v')
       ORDER BY semana_inicio ASC
     ";
-    return $this->selectAll($sql, [$semanas]);
-}
+        return $this->selectAll($sql, [$semanas]);
+    }
 
- public function costosVsAbonosPorMes(
-  int $meses = 12, 
-  string $monedaDestino = 'MXN', 
-  float $tcUsdMxn = 17.00
-): array {
-  // $monedaDestino: 'MXN' | 'USD'
-  // $tcUsdMxn: MXN por 1 USD
-  $sql = "
+    public function costosVsAbonosPorMes(
+        int $meses = 12,
+        string $monedaDestino = 'MXN',
+        float $tcUsdMxn = 17.00
+    ): array {
+        $sql = "
     SELECT
       DATE_FORMAT(mes, '%Y-%m') AS anio_mes,
       ROUND(SUM(CASE WHEN tipo = 'GASTO' THEN monto_conv ELSE 0 END), 2)  AS gastos,
@@ -163,17 +176,16 @@ public function chartPuntualidadEntregasSemana(int $semanas = 8): array
     ORDER BY anio_mes ASC
   ";
 
-  return $this->selectAll($sql, [
-    $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses,
-    $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses
-  ]);
-}
+        return $this->selectAll($sql, [
+            $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses,
+            $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses
+        ]);
+    }
 
-// Devuelve operaciones activas con su ventana ETD→ETA y llegada real (arribo_sd si existe)
-// $dias: ventana alrededor de hoy para limitar el resultado (ej. 60 días)
-public function timelineETD_ETA(int $dias = 60): array
-{
-    $sql = "
+    // Timeline ETD→ETA
+    public function timelineETD_ETA(int $dias = 60): array
+    {
+        $sql = "
         SELECT
             o.id_operacion,
             o.numero_operacion,
@@ -201,13 +213,10 @@ public function timelineETD_ETA(int $dias = 60): array
         ORDER BY o.etd ASC
     ";
 
-    // OJO: hay 4 ? en este WHERE (dos para o.etd y dos para COALESCE(...))
-    // Si usas solo 3, fallará. Aquí pasamos los 4.
-    return $this->selectAll($sql, [$dias, $dias, $dias, $dias]) ?: [];
-}
+        return $this->selectAll($sql, [$dias, $dias, $dias, $dias]) ?: [];
+    }
 
-
- public function alertasFinalizadaSinEntrega(int $estatusFinalizadaId, int $limit = 20): array
+    public function alertasFinalizadaSinEntrega(int $estatusFinalizadaId, int $limit = 20): array
     {
         $limit = max(1, (int)$limit);
 
@@ -226,7 +235,7 @@ public function timelineETD_ETA(int $dias = 60): array
               FROM eventos_logisticos e
               WHERE e.operacion_id = o.id_operacion
                 AND e.estatus = 1
-                AND e.tipo_evento_id IN (6,10) -- Entrega (ajusta si tus IDs son otros)
+                AND e.tipo_evento_id IN (6,10)
             )
           ORDER BY COALESCE(o.eta, o.etd) DESC
           LIMIT {$limit}";
@@ -235,13 +244,13 @@ public function timelineETD_ETA(int $dias = 60): array
         return is_array($rows) ? $rows : [];
     }
 
-public function alertasEtaProximasOVencidas(int $window = 7, int $past = 7, int $limit = 50): array
-{
-    $limit  = max(1, (int)$limit);
-    $window = max(0, (int)$window);
-    $past   = max(0, (int)$past);
+    public function alertasEtaProximasOVencidas(int $window = 7, int $past = 7, int $limit = 50): array
+    {
+        $limit  = max(1, (int)$limit);
+        $window = max(0, (int)$window);
+        $past   = max(0, (int)$past);
 
-    $sql = "
+        $sql = "
       SELECT
         o.id_operacion,
         o.numero_operacion,
@@ -250,18 +259,13 @@ public function alertasEtaProximasOVencidas(int $window = 7, int $past = 7, int 
         DATEDIFF(DATE(o.eta), CURDATE()) AS dias_restantes
       FROM operaciones o
       LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
-      WHERE o.estatus_id IN (1,5,9)         -- activas
+      WHERE o.estatus_id IN (1,5,9)
         AND o.eta IS NOT NULL
         AND DATEDIFF(DATE(o.eta), CURDATE()) BETWEEN -? AND ?
       ORDER BY dias_restantes ASC, o.eta ASC
       LIMIT {$limit}";
 
-    $rows = $this->selectAll($sql, [$past, $window]);
-    return is_array($rows) ? $rows : [];
-}
-
-
-
-
-
+        $rows = $this->selectAll($sql, [$past, $window]);
+        return is_array($rows) ? $rows : [];
+    }
 }

@@ -57,7 +57,10 @@
         /* rojo/alarma */
     }
 
-    /* NUEVO */
+    /* NUEVO: color para FO (Ferro / Terrestre) */
+    .bg-fo {
+        background: linear-gradient(135deg, #0f766e, #22c55e);
+    }
 
     /* Grid 5 columnas responsive */
     .kpi-grid {
@@ -124,19 +127,35 @@
         <div class="text-muted">Visión global de operaciones, contenedores, eventos, clientes y costos.</div>
     </div>
 
-    <!-- KPIs en color (5 en la misma fila) -->
+    <!-- KPIs en color -->
     <div class="kpi-grid mb-4">
+
+        <!-- Operaciones activas MARÍTIMO (actual) -->
         <div class="kpi-card bg-pacific p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
-                    <div class="subtle small">Operaciones activas</div>
+                    <div class="subtle small">Operaciones activas (Marítimo)</div>
                     <div id="kpiOpsActivas" class="display-6 kpi-value">0</div>
                 </div>
                 <i data-feather="anchor" class="kpi-icon"></i>
             </div>
-            <div class="small subtle mt-2" id="kpiOpsDetalle">Marítimas y terrestres</div>
+            <!-- Ajustamos el texto para que refleje solo marítimas -->
+            <div class="small subtle mt-2" id="kpiOpsDetalle">Solo operaciones marítimas</div>
         </div>
 
+        <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
+        <div class="kpi-card bg-fo p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Operaciones activas (FO)</div>
+                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="truck" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2" id="kpiOpsFODetalle">Ferroviarias y terrestres</div>
+        </div>
+
+        <!-- Contenedores activos -->
         <div class="kpi-card bg-emerald p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
@@ -148,6 +167,7 @@
             <div class="small subtle mt-2" id="kpiContDetalle">Marítimos / Ferro</div>
         </div>
 
+        <!-- Eventos (hechos/total) -->
         <div class="kpi-card bg-sunset p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
@@ -161,6 +181,7 @@
             </div>
         </div>
 
+        <!-- Clientes activos -->
         <div class="kpi-card bg-indigo p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
@@ -172,7 +193,7 @@
             <div class="small subtle mt-2">Con operaciones en curso</div>
         </div>
 
-        <!-- NUEVO color para diferenciar Ops próximas a ETA -->
+        <!-- Ops próximas a ETA -->
         <div class="kpi-card bg-royal p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
@@ -183,6 +204,8 @@
             </div>
             <div class="small subtle mt-2">Ventana de llegada inmediata</div>
         </div>
+
+        <!-- Alertas -->
         <div class="kpi-card bg-rose p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
@@ -204,8 +227,7 @@
                         <h5 class="section-title mb-0">Operaciones por subtipo</h5>
                         <i data-feather="pie-chart"></i>
                     </div>
-                    <canvas id="chartOpsPorSubtipo" height="50" aria-label="Distribución por subtipo"
-                        role="img"></canvas>
+                    <canvas id="chartOpsPorSubtipo" height="50" aria-label="Distribución por subtipo" role="img"></canvas>
                     <div class="small text-muted mt-2" id="legendOpsPorSubtipo">
                     </div>
                 </div>
@@ -238,7 +260,7 @@
                         <div class="input-group input-group-sm" style="width:600px;">
                             <span class="input-group-text">$</span>
                             <input type="number" step="0.0001" min="0" id="costosDashboardTipoCambio"
-                                class="form-control mt-1" value="17.00">
+                                   class="form-control mt-1" value="17.00">
                         </div>
                     </div>
                     <canvas id="chartCostos" height="240" aria-label="Costos" role="img"></canvas>
@@ -274,7 +296,7 @@
                 <!-- Rellenar dinámicamente -->
             </ul>
             <div id="alertasVacio" class="text-muted small mt-2" style="display:none;">
-                No hay alertas por ahora 🎉
+                No hay alertas por ahora 
             </div>
         </div>
     </div>
@@ -291,8 +313,9 @@
 <!--<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline@3.1.0"></script> -->
+<script src="<?php echo BASE_URL; ?>assets/Js/ModulosAdmin/dashboardprincipal.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart443.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-adapter-date-fns.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-chart-timeline.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/Js/ModulosAdmin/dashboardprincipal.js"></script>
+
