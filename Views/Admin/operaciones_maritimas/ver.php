@@ -8,7 +8,7 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
 
     <ul class="nav nav-tabs" id="operacionTabs" role="tablist">
         <li class="nav-item">
-            <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true"><i data-feather="bar-chart"></i> Resumen</a>
+            <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true"><i data-feather="zap"></i> Resumen</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="activity"></i> Operaciones</a>

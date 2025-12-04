@@ -254,7 +254,8 @@ inpTransNom.addEventListener("input", debounce(function(){
     + "&tipo=ferroviario,terrestre"
     + "&limit=10",
   true
-);xhr.onreadystatechange = function(){
+);
+xhr.onreadystatechange = function(){
     if(xhr.readyState !== 4) return;
     if(xhr.status !== 200) return;
     let res;
