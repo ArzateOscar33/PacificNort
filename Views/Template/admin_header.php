@@ -158,13 +158,19 @@
                                 <span class="hide-menu">Catálogos</span>
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>departamentos" class="sidebar-link"><i
+                                  <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                            <li class="sidebar-item"><a href="<?= BASE_URL ?>departamentos" class="sidebar-link"><i
                                             data-feather="grid"></i><span class="hide-menu">Departamentos</span></a>
                                 </li>
+                                 <?php endif; ?>
+                                   <?php if ($_SESSION['rol_usuario'] == 1): ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>puestos" class="sidebar-link"><i
                                             data-feather="briefcase"></i><span class="hide-menu">Puestos</span></a></li>
+                                <?php endif; ?>
+                                   <?php if ($_SESSION['rol_usuario'] == 1): ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>roles" class="sidebar-link"><i
                                             data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
+                                            <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
                                         class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
                                             de Operación</span></a></li>
@@ -182,9 +188,11 @@
                                             class="hide-menu">Tipos de Documento</span></a></li>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
                                             data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
+                                          <?php if ($_SESSION['rol_usuario'] == 1): ?>   
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>permisos" class="sidebar-link"><i
                                             data-feather="key"></i><span class="hide-menu">Permisos de
                                             Operación</span></a></li>
+                                            <?php endif; ?>
                             </ul>
                         </li>
 
@@ -211,8 +219,10 @@
                                 <span class="hide-menu">Clientes y Usuarios</span>
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>usuarios" class="sidebar-link"><i
                                             data-feather="user"></i><span class="hide-menu">Usuarios</span></a></li>
+                                            <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>clientes" class="sidebar-link"><i
                                             data-feather="users"></i><span class="hide-menu">Clientes</span></a></li>
                             </ul>
@@ -324,12 +334,14 @@
                         </li>-->
 
                         <!-- AUDITORÍA -->
+                         <?php if ($_SESSION['rol_usuario'] == 1): ?>
                         <li class="sidebar-item">
                             <a class="sidebar-link" href="<?= BASE_URL ?>bitacora">
                                 <i data-feather="clipboard" class="feather-icon"></i>
                                 <span class="hide-menu">Bitácora</span>
                             </a>
                         </li>
+                        <?php endif; ?>
 
                     </ul>
                 </nav>

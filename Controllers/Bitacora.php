@@ -9,7 +9,11 @@ class Bitacora extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        //$this->validarSesionInactividad();
+        //$this->validarSesionUnica();
+        $this->requireAdmin();            
     }
+ 
 
     public function index()
     {
