@@ -32,6 +32,8 @@
             <li><a href="#galeria">Galería</a></li>
             <li><a href="#contacto">Contacto</a></li>
             <li><a href="#ubicacion">Ubicación</a></li>
+            
+            <li><a href="#rastreo">Rastreo</a></li>
 
             <li><a href="<?php echo BASE_URL.'admin'; ?>">Iniciar Sesión</a></li>
         </ul>

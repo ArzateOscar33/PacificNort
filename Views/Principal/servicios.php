@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-
+ 
  
 
  <!-- Servicios -->
@@ -61,17 +59,19 @@
           <a href="#contacto" class="btn btn-outline-primary">Saber más</a>
         </div>
       </div>
-      <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
-        <div class="service-card">
-          <div class="service-icon">
-            <i class="bi bi-shield-check"></i>
-          </div>
-          <h4>Seguros de Carga</h4>
-          <p>Protección integral para tus mercancías durante todo el proceso de transporte, desde origen hasta destino
-            final.</p>
-          <a href="#contacto" class="btn btn-outline-primary">Saber más</a>
-        </div>
-      </div>
+<div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
+  <div class="service-card">
+    <div class="service-icon">
+      <!-- Icono más relacionado con rastreo -->
+      <i class="bi bi-geo-alt"></i>
+    </div>
+    <h4>Rastreo de Carga</h4>
+    <p>Consulta  el estatus y ubicación de tus envíos durante todo el trayecto.</p>
+    <!-- Cambiamos el texto del botón -->
+    <a href="#rastreo" class="btn btn-outline-primary">Rastrear</a>
+  </div>
+</div>
+
       <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="700">
         <div class="service-card">
           <div class="service-icon">
@@ -93,6 +93,4 @@
  
 
  
-
-</html>
-</footer>
+ 

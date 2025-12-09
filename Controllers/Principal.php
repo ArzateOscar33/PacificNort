@@ -20,7 +20,9 @@ class Principal extends Controller
 //     $data['title'] = 'Titulo';
 //     $this->views->getView('principal', "nombreVista", $data);
 // }    
-    //vista lista deseos
+ 
+  
+
  
  
  

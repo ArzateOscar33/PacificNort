@@ -10,7 +10,9 @@
     <li class="nav-item"><a class="nav-link" href="">Servicios</a></li>
     <li class="nav-item"><a class="nav-link" href="#galeria">Galería</a></li>
     <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
+        <li class="nav-item"><a class="nav-link" href="#rastreo">Rastreo</a></li>
     <li class="nav-item"><a class="nav-link" href="#ubicacion">Ubicacion</a></li>
+    
   </ul>
 </div>
 </div>
@@ -38,6 +40,7 @@
 <?php include_once 'Views/Principal/contacto.php'; ?>
 <!-- Ubicación -->
 <?php include_once 'Views/Principal/ubicacion.php'; ?>
+
 
 <!-- Footer -->
 <?php include_once 'Views/Template/principal_footer.php'; ?>

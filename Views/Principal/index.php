@@ -1,6 +1,3 @@
-<!DOCTYPE html>
-<html lang="es">
-
 <?php include_once 'Views/Template/principal_header.php'; ?>
 
 <div class="collapse navbar-collapse" id="navbarNav">
@@ -9,11 +6,12 @@
     <li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li>
     <li class="nav-item"><a class="nav-link" href="#servicios">Servicios</a></li>
     <li class="nav-item"><a class="nav-link" href="#galeria">Galería</a></li>
+    <li class="nav-item"><a class="nav-link" href="#rastreo">Rastreo</a></li>
     <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
   </ul>
 </div>
-</div>
-</nav>
+
+
 
 <!-- Hero -->
 <section class="hero-section" id="hero">
@@ -27,22 +25,25 @@
 </section>
 
 <!-- Nosotros -->
- <?php include_once 'Views/Principal/nosotros.php'; ?>
- <!-- Servicios -->
- <?php include_once 'Views/Principal/servicios.php'; ?>
 
- <!-- Galería -->
- <?php include_once 'Views/Principal/galeria.php'; ?>
- <!-- Contacto -->
- <?php include_once 'Views/Principal/contacto.php'; ?>
-  <!-- Ubicación -->
- <?php include_once 'Views/Principal/ubicacion.php'; ?>
- <!-- Footer -->
+<?php include_once 'Views/Principal/nosotros.php'; ?>
+<!-- Servicios -->
+<?php include_once 'Views/Principal/servicios.php'; ?>
+
+<!-- Galería -->
+<?php include_once 'Views/Principal/galeria.php'; ?>
+<!-- Contacto -->
+<?php include_once 'Views/Principal/contacto.php'; ?>
+
+<!-- Ubicación -->
+<?php include_once 'Views/Principal/ubicacion.php'; ?>
+ 
+ <!-- rastreo -->
+ <?php include_once 'Views/Principal/rastreo.php'; ?>
+
+<!-- Footer -->
 <?php include_once 'Views/Template/principal_footer.php'; ?>
 
 <script src="<?php echo BASE_URL; ?>assets/js/bootstrap.bundle.min.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/aos.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/index.js"></script>
-
-</html>
-</footer>

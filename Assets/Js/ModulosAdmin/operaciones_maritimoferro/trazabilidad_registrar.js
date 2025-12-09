@@ -328,7 +328,7 @@ render() {
           ? `<br><small class="text-muted">(Original: ${utilTraz.money(t.monto_historico)})</small>` 
           : ''}
       </td>
-      <td>${t.comentario ? utilTraz.safeText(t.comentario) : ""}</td>
+      
       <td class="text-center">${btnEliminar}</td>
     `;
     tbodyTramosTraz.appendChild(tr);
