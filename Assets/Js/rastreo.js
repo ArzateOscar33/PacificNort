@@ -200,12 +200,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   btnRastrearEnvio.addEventListener("click", function () {
     buscarOperacion();
+    btnRastrearEnvio.classList.add("disabled");
+    inputNumeroGuia.disabled = true;
   });
 
   // Buscar al presionar Enter en el input
   inputNumeroGuia.addEventListener("keyup", function (e) {
     if (e.key === "Enter" || e.keyCode === 13) {
       buscarOperacion();
+          btnRastrearEnvio.classList.add("disabled");
+    inputNumeroGuia.disabled = true;
+
     }
   });
 
@@ -224,5 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
     inicializarVista();
     ocultarBloqueRutas();
     inputNumeroGuia.focus();
+        btnRastrearEnvio.classList.remove("disabled");
+    inputNumeroGuia.disabled = false;
   });
 });
