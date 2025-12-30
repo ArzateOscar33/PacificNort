@@ -2,7 +2,7 @@
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
-        <i data-feather="file-text" class="me-1"></i> Eventos Logísticos (Marítimo)
+        <i data-feather="file-text" class="me-1"></i> Eventos Marítimos
       </h5>
       <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos"
         id="btnAbrirModalDetalles">

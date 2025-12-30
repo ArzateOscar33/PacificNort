@@ -9,10 +9,10 @@
         </li>
          <!--  MARITIMA -->
          <li class="nav-item">
-            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Crear Operación Maritima-Ferroviaria</a>
+            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operación Maritima</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos Logisticos Maritimos</a>
+            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos  Maritimos</a>
         </li>
 
          <!-- FIN MARITMA -->
@@ -21,10 +21,13 @@
         </li> -->
         <!-- FERRO/TERRESTRE -->
         <li class="nav-item">
-            <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false"><i data-feather="truck"></i>Ferros en Operación</a>
+            <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false"><i data-feather="truck"></i>En Transito</a>
         </li> 
         <li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false"><i data-feather="calendar"></i>Eventos Logisticos Ferroviarios/Terrestres</a>
+            <a class="nav-link" id="en-piso-tab" data-bs-toggle="tab" href="#en-piso" role="tab" aria-controls="en-piso" aria-selected="false"><i data-feather="codepen"></i>En Piso</a>
+        </li> 
+        <li class="nav-item">
+            <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false"><i data-feather="calendar"></i>Eventos  Terrestres</a>
         </li> 
           <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
@@ -78,6 +81,9 @@
         <div class="tab-pane fade" id="detalles-logisticos" role="tabpanel" aria-labelledby="detalles-logisticos-tab">
             <?php include 'tabs/detalles_logisticos.php'; ?>
         </div> 
+        <div class="tab-pane fade" id="en-piso" role="tabpanel" aria-labelledby="en-piso-tab">
+            <?php include 'tabs/en_piso.php'; ?>
+        </div>
     </div>
 </div>
 

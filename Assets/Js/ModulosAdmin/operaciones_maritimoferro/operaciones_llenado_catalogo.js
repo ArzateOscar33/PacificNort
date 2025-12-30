@@ -283,6 +283,8 @@
     setSelectValue(selForwarder, '');
     setSelectValue(selShipper,   '');
     setSelectValue(selPuerto,    '');
+    if (chkISF) chkISF.checked = false;
+    if (inpCitaPuerto) inpCitaPuerto.value = '';
 
     resetRepeater();
     if (btnGuardarOp) btnGuardarOp.setAttribute('disabled','disabled');
@@ -618,7 +620,7 @@ selSubtipo?.addEventListener('change', async ()=>{
       if (hidCliente)    hidCliente.value = op.cliente_id || '';
       if (inpClienteNom) inpClienteNom.value = op.cliente_nombre || '';
       if (txtNotas) txtNotas.value = op.notas || '';
-      if (chkISF) chkISF.checked = !!op.isf;
+      if (chkISF) chkISF.checked = (Number(op.isf) === 1);
      if (inpCitaPuerto) {
   const raw = (op.cita_puerto || '').toString().trim();
   inpCitaPuerto.value = raw ? raw.slice(0, 10) : ''; // toma YYYY-MM-DD
@@ -646,7 +648,7 @@ selSubtipo?.addEventListener('change', async ()=>{
         });
       }
       mf_setContenedoresReadonly(true);
-      modalInstance?.show();
+      //modalInstance?.show();
       const el = document.getElementById('modalMaritimoFerro');
 const modal = (el && window.bootstrap) ? bootstrap.Modal.getOrCreateInstance(el) : null;
 modal?.show();

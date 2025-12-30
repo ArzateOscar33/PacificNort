@@ -1,6 +1,6 @@
 <div class="container py-4 col-md-12">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4><i data-feather="box" class="me-2"></i>Operaciones Ferroviarias</h4>
+    <h4><i data-feather="box" class="me-2"></i>Operaciones Terrestres</h4>
     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalFerroOP">
       <i data-feather="plus"></i>Nueva Operación Ferroviaria
     </button>

@@ -159,12 +159,12 @@
         <div class="kpi-card bg-emerald p-3">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="me-3">
-                    <div class="subtle small">Contenedores activos</div>
+                    <div class="subtle small">Contenedores En Agua</div>
                     <div id="kpiContActivos" class="display-6 kpi-value">0</div>
                 </div>
                 <i data-feather="package" class="kpi-icon"></i>
             </div>
-            <div class="small subtle mt-2" id="kpiContDetalle">Marítimos / Ferro</div>
+            <div class="small subtle mt-2" id="kpiContDetalle">Maritimos</div>
         </div>
 
         <!-- Eventos (hechos/total) -->
@@ -216,7 +216,57 @@
             </div>
             <div id="kpiAlertasDetalle" class="small subtle mt-2">—</div>
         </div>
+        <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
+        <div class="kpi-card bg-fo p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Cajas/Ferros en Transito</div>
+                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="truck" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2" id="kpiOpsFODetalle">Cajas Activas</div>
+        </div>
+
+        <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
+        <div class="kpi-card bg-fo p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Contenedores en Bodega</div>
+                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="truck" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2" id="kpiOpsFODetalle">Contenedores en Bodegas</div>
+        </div>
+
+                <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
+        <div class="kpi-card bg-fo p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Operaciones Sin ISF</div>
+                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="truck" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2" id="kpiOpsFODetalle">Operaciones Martiimas</div>
+        </div>
+
+                <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
+        <div class="kpi-card bg-fo p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="me-3">
+                    <div class="subtle small">Operaciones Sin Cita en Puerto</div>
+                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
+                </div>
+                <i data-feather="truck" class="kpi-icon"></i>
+            </div>
+            <div class="small subtle mt-2" id="kpiOpsFODetalle">Operaciones Martiimas</div>
+        </div>
+
     </div>
+
+    
 
     <!-- Gráficos principales -->
     <div class="row g-3 mb-4">
