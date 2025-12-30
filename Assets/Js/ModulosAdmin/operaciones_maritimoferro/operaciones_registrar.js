@@ -25,6 +25,9 @@ const selShipperMF    = document.getElementById('shipperId_mf');
 const hidClienteMF    = document.getElementById('clienteId_mf');
 const inpClienteMF    = document.getElementById('clienteNombre_mf');
 const helpFolioMF     = document.getElementById('folioHelp_mf');
+const chkISF_MF      = document.getElementById('chkIsf');          // checkbox o select
+const inpCita_MF     = document.getElementById('cita_puerto');   // input date/datetime
+
 
 // Repeater MF
 const repeaterMF      = document.getElementById('contenedoresRepeater_mf');
@@ -171,6 +174,9 @@ function guardarOperacionMF(){
     fd.append('maritimo_ferro_forwarderId',     selForwarderMF?.value || '');
     fd.append('maritimo_ferro_shipperId',       selShipperMF?.value || '');
     fd.append('maritimo_ferro_notas',           (document.getElementById('notas_mf')?.value || '').trim());
+    fd.append('maritimo_ferro_isf', chkISF_MF?.checked ? '1' : '0');
+    fd.append('maritimo_ferro_cita_puerto', inpCita_MF?.value || '');
+ 
 
     // Recolectar contenedores (arrays) como espera tu controlador MF
     const conts = collectContenedoresMF();

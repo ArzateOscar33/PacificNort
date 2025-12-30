@@ -43,6 +43,8 @@
   const boxSugCliente   = document.getElementById('sugerenciasCliente_mf');
 
   const txtNotas        = document.getElementById('notas_mf');
+  const chkISF      = document.getElementById('chkIsf');          // checkbox 
+  const inpCitaPuerto     = document.getElementById('cita_puerto');   // input date
 
   // Repeater (contenedores marítimos)
   const repeater        = document.getElementById('contenedoresRepeater_mf');
@@ -73,7 +75,7 @@
     if (!tablaBody) return;
     tablaBody.innerHTML = `
       <tr>
-        <td colspan="11" class="text-center text-muted py-4">Cargando resultados...</td>
+        <td colspan="13" class="text-center text-muted py-4">Cargando resultados...</td>
       </tr>`;
   }
 
@@ -81,7 +83,7 @@
     if (!tablaBody) return;
     tablaBody.innerHTML = '';
     if (!Array.isArray(rows) || rows.length === 0){
-      tablaBody.innerHTML = "<tr><td colspan='11' class='text-center'>No se encontraron resultados</td></tr>";
+      tablaBody.innerHTML = "<tr><td colspan='13' class='text-center'>No se encontraron resultados</td></tr>";
       return;
     }
     rows.forEach(item=>{
@@ -98,6 +100,8 @@
         <td>${safe(item.naviera)}</td>
         <td>${safe(item.forwarder)}</td>
         <td>${safe(item.estatus)}</td>
+        <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
+        <td>${safe(item.cita_puerto) || '-'}</td>
         <td>
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
             <i data-feather="edit"></i>
@@ -614,6 +618,12 @@ selSubtipo?.addEventListener('change', async ()=>{
       if (hidCliente)    hidCliente.value = op.cliente_id || '';
       if (inpClienteNom) inpClienteNom.value = op.cliente_nombre || '';
       if (txtNotas) txtNotas.value = op.notas || '';
+      if (chkISF) chkISF.checked = !!op.isf;
+     if (inpCitaPuerto) {
+  const raw = (op.cita_puerto || '').toString().trim();
+  inpCitaPuerto.value = raw ? raw.slice(0, 10) : ''; // toma YYYY-MM-DD
+}
+
       setSelectValue(selNaviera,   op.naviera_id);
       setSelectValue(selForwarder, op.forwarder_id);
       setSelectValue(selShipper,   op.shipper_id);
@@ -656,7 +666,7 @@ if (window.feather) feather.replace();
 
 
 function guardarEdicionMF(){
-  const id = parseInt(inpIdOperacion?.value || '0', 10);
+  const id = parseInt(document.getElementById('id_operacion_mf')?.value || '0', 10);
   if (!id){
     Swal?.fire('Error','Falta id de la operación.','error');
     return;
@@ -664,56 +674,61 @@ function guardarEdicionMF(){
 
   const fd = new FormData();
   fd.append('id_operacion_mf', String(id));
-  fd.append('maritimo_ferro_subtipo',        selSubtipo?.value || '');
-  const bl = (inpBL?.value || '').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  fd.append('maritimo_ferro_numeroBL',       bl);
-  fd.append('maritimo_ferro_estatus',        selEstatus?.value || '');
-  fd.append('maritimo_ferro_etd',            inpETD?.value || '');
-  fd.append('maritimo_ferro_eta',            inpETA?.value || '');
-  fd.append('maritimo_ferro_clienteId',      hidCliente?.value || '');
-  fd.append('maritimo_ferro_navieraId',      selNaviera?.value || '');
-  fd.append('maritimo_ferro_forwarderId',    selForwarder?.value || '');
-  fd.append('maritimo_ferro_shipperId',      selShipper?.value || '');
-  fd.append('maritimo_ferro_notas',          (txtNotas?.value || '').trim());
 
-  // ===== NUEVO: empujar ids + bultos del repeater =====
-  if (repeater){
-    const rows = repeater.querySelectorAll('.contenedor-item');
-    rows.forEach(row=>{
-      const idInp   = row.querySelector('.contenedor-id_mf');
-      const bInp    = row.querySelector('.contenedor-bultos_mf');
-      const cid     = (idInp?.value || '').trim();
-      const bultos  = (bInp?.value || '').trim();
-      if (cid){ // solo si existe vínculo
-        fd.append('maritimo_ferro_contenedores_ids[]', cid);
-        fd.append('maritimo_ferro_contenedores_bultos[]', bultos); // '' => NULL
-      }
-    });
-  }
+  fd.append('maritimo_ferro_subtipo',     document.getElementById('subtipoOperacion_mf')?.value || '');
+  fd.append('maritimo_ferro_estatus',     document.getElementById('estatusId_mf')?.value || '');
+  fd.append('maritimo_ferro_etd',         document.getElementById('etd_mf')?.value || '');
+  fd.append('maritimo_ferro_eta',         document.getElementById('eta_mf')?.value || '');
+
+  const bl = (document.getElementById('numeroBL_mf')?.value || '')
+    .replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  fd.append('maritimo_ferro_numeroBL', bl);
+
+  fd.append('maritimo_ferro_clienteId',   document.getElementById('clienteId_mf')?.value || '');
+  fd.append('maritimo_ferro_navieraId',   document.getElementById('navieraId_mf')?.value || '');
+  fd.append('maritimo_ferro_forwarderId', document.getElementById('forwarderId_mf')?.value || '');
+  fd.append('maritimo_ferro_shipperId',   document.getElementById('shipperId_mf')?.value || '');
+  fd.append('maritimo_ferro_notas',       (document.getElementById('notas_mf')?.value || '').trim());
+
+  // === NUEVOS CAMPOS ===
+ 
+fd.append('isf', chkISF?.checked ? '1' : '0');
+fd.append('cita_puerto', (inpCitaPuerto?.value || '').trim());
+
+  // === BULTOS (si aplica en edición) ===
+  document.querySelectorAll('#contenedoresRepeater_mf .contenedor-item').forEach(row=>{
+    const idInp = row.querySelector('.contenedor-id_mf');
+    const bInp  = row.querySelector('.contenedor-bultos_mf');
+    const cid   = (idInp?.value || '').trim();
+    const bul   = (bInp?.value || '').trim();
+    if (cid){
+      fd.append('maritimo_ferro_contenedores_ids[]', cid);
+      fd.append('maritimo_ferro_contenedores_bultos[]', bul); // '' => NULL (tu controlador ya lo soporta)
+    }
+  });
 
   const x = new XMLHttpRequest();
   x.open('POST', base_url + 'Operaciones_maritimo_ferro/actualizar', true);
-  x.timeout = 20000;
-  x.onerror = x.onabort = x.ontimeout = ()=> Swal?.fire('Error de red','No se pudo actualizar la operación.','error');
   x.onreadystatechange = function(){
     if (x.readyState !== 4) return;
-    if (x.status !== 200){
-      console.error('actualizar error:', x.responseText);
-      Swal?.fire('Error','No se pudo actualizar la operación.','error');
+
+    let res=null; try{ res=JSON.parse(x.responseText||'{}'); }catch(e){}
+    if (!res || x.status !== 200){
+      Swal?.fire('Error','No se pudo actualizar.','error');
       return;
     }
-    let res = {};
-    try { res = JSON.parse(x.responseText); } catch(e){ res = {}; }
-    if (res.status !== 'success'){
-      Swal?.fire('Aviso', res.msg || 'No se pudo actualizar','warning');
-      return;
+
+    if (res.status === 'success'){
+      Swal?.fire('Actualizado', res.data?.msg || 'Operación actualizada','success');
+      bootstrap?.Modal.getOrCreateInstance(document.getElementById('modalMaritimoFerro'))?.hide();
+      try { listar?.(); } catch(e){}
+    } else {
+      Swal?.fire('Error', res.msg || 'No se pudo actualizar','error');
     }
-    Swal?.fire('Actualizada', res.data?.msg || 'Operación actualizada','success');
-    (window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl).hide() : null);
-    listar();
   };
   x.send(fd);
 }
+
 
   // Habilitar/deshabilitar Guardar cuando cambian campos clave
   [selSubtipo, selNaviera, selForwarder].forEach(el=>{

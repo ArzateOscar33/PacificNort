@@ -362,6 +362,8 @@ class Operaciones_maritimo_ferroModel extends Query
                 c.nombre   AS cliente,
                 o.etd, o.eta,
                 e.nombre   AS estatus,
+                o.isf,
+                o.cita_puerto,
                 GROUP_CONCAT(DISTINCT cm.numero_contenedor
                              ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
             FROM operaciones o
@@ -376,7 +378,8 @@ class Operaciones_maritimo_ferroModel extends Query
             LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
             $where
             GROUP BY o.id_operacion, o.numero_operacion, st.nombre, st.tipo_operacion_id,
-                     o.numero_bl, p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre
+            o.numero_bl, p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre,
+            o.isf, o.cita_puerto
             ORDER BY o.id_operacion DESC
             LIMIT $limit OFFSET $off
         ";
@@ -431,22 +434,24 @@ class Operaciones_maritimo_ferroModel extends Query
 
             // C) Insert en operaciones
             $sqlOp = "INSERT INTO operaciones
-                (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
-                 cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+            (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
+            cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             $paramsOp = [
-                trim($op['numero_operacion']),
-                (int)$st['tipo_operacion_id'],                // <- derivado
-                (int)$op['subtipo_operacion_id'],
-                $op['etd'] ?? null,
-                $op['eta'] ?? null,
-                $op['numero_bl'] ?? null,
-                (int)$op['cliente_id'],
-                (int)($op['estatus_id'] ?? 9),
-                !empty($op['naviera_id'])   ? (int)$op['naviera_id']   : null,
-                !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
-                !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null,
-                $op['notas'] ?? null,
+            trim($op['numero_operacion']),
+            (int)$st['tipo_operacion_id'],
+            (int)$op['subtipo_operacion_id'],
+            $op['etd'] ?? null,
+            $op['eta'] ?? null,
+            $op['numero_bl'] ?? null,
+            (int)$op['cliente_id'],
+            (int)($op['estatus_id'] ?? 9),
+            !empty($op['naviera_id'])   ? (int)$op['naviera_id']   : null,
+            !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
+            !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null, 
+            $op['notas'] ?? null,
+            (int)($op['isf'] ?? 0),
+            (!empty($op['cita_puerto']) ? $op['cita_puerto'] : null),
             ];
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
             if ($opId <= 0) {
@@ -547,6 +552,8 @@ class Operaciones_maritimo_ferroModel extends Query
                 o.etd, o.eta,
                 o.estatus_id,
                 e.nombre AS estatus_nombre,
+                o.isf,
+                o.cita_puerto,
                 o.notas
             FROM operaciones o
             LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
@@ -576,23 +583,31 @@ class Operaciones_maritimo_ferroModel extends Query
                     naviera_id            = ?,
                     forwarder_id          = ?,
                     shipper_id            = ?,
+                    isf                   = ?,
+                    cita_puerto           = ?,
                     notas                 = ?
                 WHERE id_operacion = ?
                 LIMIT 1";
-        $args = [
-            (int)$st['tipo_operacion_id'],
-            (int)($d['subtipo_operacion_id'] ?? 0),
-            !empty($d['etd']) ? $d['etd'] : null,
-            !empty($d['eta']) ? $d['eta'] : null,
-            trim($d['numero_bl'] ?? ''),
-            !empty($d['cliente_id'])  ? (int)$d['cliente_id']  : null,
-            !empty($d['estatus_id'])  ? (int)$d['estatus_id']  : null,
-            ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
-            ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
-            ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
-            ($d['notas'] ?? null),
-            (int)$d['id_operacion'],
-        ];
+                $args = [
+                (int)$st['tipo_operacion_id'],
+                (int)($d['subtipo_operacion_id'] ?? 0),
+                !empty($d['etd']) ? $d['etd'] : null,
+                !empty($d['eta']) ? $d['eta'] : null,
+                trim($d['numero_bl'] ?? ''),
+                !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
+                !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
+                ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
+                ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
+                ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
+
+                // ORDEN CORRECTO para: isf=?, cita_puerto=?, notas=?, id_operacion=?
+                (int)($d['isf'] ?? 0),
+                ($d['cita_puerto'] ?? null),
+                ($d['notas'] ?? null),
+                (int)$d['id_operacion'],
+                ];
+
+
         $res = $this->save($sql, $args);
         return $res !== false;
     }

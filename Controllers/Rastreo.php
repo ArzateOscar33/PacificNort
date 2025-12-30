@@ -5,7 +5,6 @@ class Rastreo extends Controller
     {
         parent::__construct();
         session_start();
-        // NOTA: Aquí NO validamos sesión ni rol porque es un módulo público para clientes.
     }
 
     /**
@@ -78,8 +77,7 @@ class Rastreo extends Controller
             $encabezado = [
                 'numero_operacion' => $first['numero_operacion'] ?? $numeroOperacion,
                 'contenedor'       => $first['numero_ferro'] ?? '',   // Contenedor/caja
-                // Si luego quieres, aquí puedes agregar más info de cabecera
-                // como cliente, destino final, etc.
+
             ];
 
             echo json_encode([
@@ -94,8 +92,7 @@ class Rastreo extends Controller
             echo json_encode([
                 'ok'  => false,
                 'msg' => 'Ocurrió un error al consultar la operación.',
-                // En producción normalmente no mandas el detalle del error
-                //'error' => $e->getMessage()
+
             ]);
         }
     }

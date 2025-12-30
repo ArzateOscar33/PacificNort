@@ -175,6 +175,15 @@ class Operaciones_maritimo_ferro extends Controller
     $shipperId   = (int)($_POST['maritimo_ferro_shipperId'] ?? 0);
     $notas       = trim((string)($_POST['maritimo_ferro_notas'] ?? '')) ?: null;
 
+ 
+
+    $citaRaw = trim((string)($_POST['maritimo_ferro_cita_puerto'] ?? ''));
+    $cita = null;
+    if ($citaRaw !== '') {
+        $cita = str_replace('T', ' ', $citaRaw);
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $cita)) $cita .= ':00';
+    }
+    $isf = (int)($_POST['maritimo_ferro_isf'] ?? 0);
     // ====== 2) Armar payload para el modelo ======
     $op = [
         'numero_operacion'      => $numeroOp,          // '' => el modelo genera folio
@@ -188,6 +197,8 @@ class Operaciones_maritimo_ferro extends Controller
         'forwarder_id'          => $forwarderId ?: null,
         'shipper_id'            => $shipperId ?: null,
         'notas'                 => $notas,
+        'isf'                   => $isf,    
+        'cita_puerto'           => $cita,
     ];
 
     // ====== 3) Contenedores (ids / numeros / bultos) ======
@@ -272,6 +283,12 @@ public function actualizar()
     $navieraId   = $_POST['maritimo_ferro_navieraId']   ?? $actual['naviera_id']   ?? '';
     $forwarderId = $_POST['maritimo_ferro_forwarderId'] ?? $actual['forwarder_id'] ?? '';
     $shipperId   = $_POST['maritimo_ferro_shipperId']   ?? $actual['shipper_id']   ?? '';
+    $citaRaw = trim((string)($_POST['cita_puerto'] ?? ''));
+    $cita = null;
+    if ($citaRaw !== '') {
+        $cita = str_replace('T', ' ', $citaRaw);
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $cita)) $cita .= ':00';
+    }
 
     $op = [
         'id_operacion'          => $id,
@@ -285,6 +302,9 @@ public function actualizar()
         'forwarder_id'          => ($forwarderId !== '') ? (int)$forwarderId : null,
         'shipper_id'            => ($shipperId   !== '') ? (int)$shipperId   : null,
         'notas'                 => trim((string)($_POST['maritimo_ferro_notas'] ?? $actual['notas'] ?? '')) ?: null,
+        'isf' => (int)($_POST['isf'] ?? ($actual['isf'] ?? 0)),
+ 
+        'cita_puerto' => $cita,
     ];
 
     // ======= NUEVO: recoger arrays de IDs y BULTOS desde el form de edición =======

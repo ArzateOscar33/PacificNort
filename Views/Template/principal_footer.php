@@ -16,6 +16,7 @@
            <li><a href="#servicios"><i class="bi bi-chevron-right"></i> Servicios</a></li>
            <li><a href="#galeria"><i class="bi bi-chevron-right"></i> Galería</a></li>
            <li><a href="#contacto"><i class="bi bi-chevron-right"></i> Contacto</a></li>
+           <li><a href="#rastreo"><i class="bi bi-chevron-right"></i> Rastreo</a></li>
          </ul>
        </div>
        <div class="col-lg-3 col-md-6 mb-5">
@@ -25,7 +26,7 @@
            <li><a href="#"><i class="bi bi-chevron-right"></i> Gestiones Aduanales</a></li>
            <li><a href="#"><i class="bi bi-chevron-right"></i> Consultoría Empresarial</a></li>
            <li><a href="#"><i class="bi bi-chevron-right"></i> Almacenaje y Distribución</a></li>
-           <li><a href="#"><i class="bi bi-chevron-right"></i> Seguros de Carga</a></li>
+           <li><a href="#"><i class="bi bi-chevron-right"></i> Rastreo</a></li>
          </ul>
        </div>
        <div class="col-lg-3 col-md-6 mb-5">

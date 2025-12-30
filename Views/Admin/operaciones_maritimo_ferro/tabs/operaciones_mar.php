@@ -1,6 +1,15 @@
+<style>
+  .form-check-input {
+    width: 1.3em;
+    height: 1.3em;
+    accent-color: var(--bs-primary);
+    cursor: pointer;
+  }
+</style>
+
 <div class="container py-4 col-md-12">
   <div class="card shadow-sm">
- 
+
     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
         <i data-feather="anchor" class="me-1"></i> Operaciones Marítimas-Ferroviarias
@@ -15,14 +24,15 @@
 
       <!-- Filtros -->
       <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <select id="maritimo_ferro_filtroSubtipo" name="maritimo_ferro_filtroSubtipo" class="form-control" style="max-width:240px;">
+        <select id="maritimo_ferro_filtroSubtipo" name="maritimo_ferro_filtroSubtipo" class="form-control"
+          style="max-width:240px;">
           <option value="">Subtipo (Todos)</option>
           <?php if (!empty($data['subtipos'])): ?>
-            <?php foreach ($data['subtipos'] as $st): ?>
-              <option value="<?= (int)$st['id_subtipo']; ?>">
-                <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-              </option>
-            <?php endforeach; ?>
+          <?php foreach ($data['subtipos'] as $st): ?>
+          <option value="<?= (int)$st['id_subtipo']; ?>">
+            <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+          </option>
+          <?php endforeach; ?>
           <?php endif; ?>
         </select>
 
@@ -80,6 +90,8 @@
               <th>Naviera</th>
               <th>Forwarder</th>
               <th>Estatus</th>
+              <th>ISF </th>
+              <th>Cita en Puerto </th>
               <th style="width:120px;">Acciones</th>
             </tr>
           </thead>
@@ -99,7 +111,6 @@
   </div>
 </div>
 
- 
 <!-- MODAL: Operación Marítimo-Ferroviaria -->
 <div class="modal fade" id="modalMaritimoFerro" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -123,11 +134,11 @@
               <select id="subtipoOperacion_mf" name="subtipo_operacion_id_mf" class="form-control" required>
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['subtipos'])): ?>
-                  <?php foreach ($data['subtipos'] as $st): ?>
-                    <option value="<?= (int)$st['id_subtipo']; ?>">
-                      <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
+                <?php foreach ($data['subtipos'] as $st): ?>
+                <option value="<?= (int)$st['id_subtipo']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+                <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
@@ -135,7 +146,8 @@
             <!-- Número de Operación -->
             <div class="col-md-4">
               <label class="form-label">Número de Operación</label>
-              <input type="text" id="numeroOperacion_mf" name="numero_operacion_mf" class="form-control" placeholder="JL-61" >
+              <input type="text" id="numeroOperacion_mf" name="numero_operacion_mf" class="form-control"
+                placeholder="JL-61">
               <small id="folioHelp_mf" class="text-muted d-block mt-1">Folio Preliminar</small>
             </div>
 
@@ -145,11 +157,11 @@
               <select id="estatusId_mf" name="estatus_id_mf" class="form-control" required>
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['estatus'])): ?>
-                  <?php foreach ($data['estatus'] as $es): ?>
-                    <option value="<?= (int)$es['id_estatus']; ?>">
-                      <?= htmlspecialchars($es['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
+                <?php foreach ($data['estatus'] as $es): ?>
+                <option value="<?= (int)$es['id_estatus']; ?>">
+                  <?= htmlspecialchars($es['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+                <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
@@ -167,22 +179,22 @@
             <!-- BL -->
             <div class="col-md-3">
               <label class="form-label">BL</label>
-              <input type="text" id="numeroBL_mf" name="numero_bl_mf" class="form-control"
-                     autocomplete="off" maxlength="40" pattern="[A-Za-z0-9]+"
-                     title="Solo letras y números, sin espacios ni caracteres especiales.">
+              <input type="text" id="numeroBL_mf" name="numero_bl_mf" class="form-control" autocomplete="off"
+                maxlength="40" pattern="[A-Za-z0-9]+"
+                title="Solo letras y números, sin espacios ni caracteres especiales.">
             </div>
 
             <!-- Puerto -->
             <div class="col-md-3">
               <label class="form-label">Puerto de Arribo</label>
-              <select id="puertoArribo_mf" name="puerto_arribo_id_mf" class="form-control"  >
+              <select id="puertoArribo_mf" name="puerto_arribo_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['puertos'])): ?>
-                  <?php foreach ($data['puertos'] as $p): ?>
-                    <option value="<?= (int)$p['id_puerto']; ?>">
-                      <?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
+                <?php foreach ($data['puertos'] as $p): ?>
+                <option value="<?= (int)$p['id_puerto']; ?>">
+                  <?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+                <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
@@ -191,9 +203,10 @@
             <div class="col-md-6">
               <label class="form-label">Cliente</label>
               <input type="hidden" id="clienteId_mf" name="cliente_id_mf">
-              <input type="text" id="clienteNombre_mf" class="form-control" placeholder="Escribe para buscar cliente...">
+              <input type="text" id="clienteNombre_mf" class="form-control"
+                placeholder="Escribe para buscar cliente...">
               <div id="sugerenciasCliente_mf" class="list-group"
-                   style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                style="position:absolute; z-index:1055; width:100%; display:none;"></div>
             </div>
 
             <!-- Naviera -->
@@ -202,11 +215,11 @@
               <select id="navieraId_mf" name="naviera_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['navieras'])): ?>
-                  <?php foreach ($data['navieras'] as $n): ?>
-                    <option value="<?= (int)$n['id_naviera']; ?>">
-                      <?= htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
+                <?php foreach ($data['navieras'] as $n): ?>
+                <option value="<?= (int)$n['id_naviera']; ?>">
+                  <?= htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+                <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
@@ -217,18 +230,18 @@
               <select id="forwarderId_mf" name="forwarder_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['forwarders'])): ?>
-                  <?php foreach ($data['forwarders'] as $fw): ?>
-                    <option value="<?= (int)$fw['id_forwarder']; ?>">
-                      <?= htmlspecialchars($fw['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
+                <?php foreach ($data['forwarders'] as $fw): ?>
+                <option value="<?= (int)$fw['id_forwarder']; ?>">
+                  <?= htmlspecialchars($fw['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+                <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
 
             <!-- Contenedores -->
             <div class="col-6">
-               
+
               <div id="contenedoresRepeater_mf" class="vstack gap-2">
                 <div class="contenedor-item position-relative border rounded p-2">
                   <input type="hidden" class="contenedor-id_mf">
@@ -237,7 +250,7 @@
                       <label class="form-label">Contenedor Maritimo</label>
                       <input type="text" class="form-control contenedor-input_mf" placeholder="Ej. MSKU1234567">
                       <div class="list-group sugerencias-contenedor_mf"
-                           style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                        style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                     </div>
                     <div class="col-md-4">
                       <label class="form-label">Bultos</label>
@@ -254,7 +267,7 @@
                       <label class="form-label">Contenedor</label>
                       <input type="text" class="form-control contenedor-input_mf" placeholder="Ej. MSKU1234567">
                       <div class="list-group sugerencias-contenedor_mf"
-                           style="position:absolute; z-index:1055; width:100%; display:none;"></div>
+                        style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                     </div>
                     <div class="col-md-4">
                       <label class="form-label">Bultos</label>
@@ -271,20 +284,44 @@
               <select id="shipperId_mf" name="shipper_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['shippers'])): ?>
-                  <?php foreach ($data['shippers'] as $s): ?>
-                    <option value="<?= (int)$s['id_shipper']; ?>">
-                      <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
+                <?php foreach ($data['shippers'] as $s): ?>
+                <option value="<?= (int)$s['id_shipper']; ?>">
+                  <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+                <?php endforeach; ?>
                 <?php endif; ?>
               </select>
+            </div>
+            <div class="col-3 ">
+
+              <div class="row text-center">
+                <!-- CITA EN PUERTO -->
+                <div class="col-8" >
+                  <label class="form-label mb-1">
+                    Cita en Puerto
+                  </label>
+                   
+                    <input type="date" id="cita_puerto" name="cita_puerto" class="form-control ">
+                 
+                </div>
+                <!-- ISF -->
+                <div class="col-3 mt-1"  >
+                  <label class="form-label mb-1">
+                    ISF
+                  </label>
+                  <div class="form-check d-flex justify-content-center ">
+                    <input class="form-check-input" type="checkbox" id="chkIsf" name="isf" value="1">
+                  </div>
+                </div>
+
+              </div>
             </div>
 
             <!-- Notas -->
             <div class="col-md-12">
               <label class="form-label">Notas</label>
               <textarea id="notas_mf" name="notas_mf" class="form-control" rows="2"
-                        placeholder="Observaciones generales"></textarea>
+                placeholder="Observaciones generales"></textarea>
             </div>
           </div>
         </form>
@@ -302,6 +339,6 @@
       </div>
     </div>
   </div>
-</div> 
+</div>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/operaciones_llenado_catalogo.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/operaciones_registrar.js"></script>

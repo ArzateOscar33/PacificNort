@@ -129,6 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (numeroOperacion === "") {
       Swal.fire("Aviso", "Debes ingresar un número de operación.", "warning");
+      inputNumeroGuia.disabled=false;
       return;
     }
 
@@ -174,7 +175,8 @@ document.addEventListener("DOMContentLoaded", function () {
             // Éxito
             actualizarEncabezado(res.encabezado || null);
             renderTablaTramos(res.tramos || []);
-
+            inputNumeroGuia.disabled=true;
+            btnRastrearEnvio.classList.add("disabled");
             Swal.fire(
               "Listo",
               (res.msg || "Rutas encontradas correctamente.").toUpperCase(),
@@ -200,16 +202,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
   btnRastrearEnvio.addEventListener("click", function () {
     buscarOperacion();
-    btnRastrearEnvio.classList.add("disabled");
-    inputNumeroGuia.disabled = true;
+    //btnRastrearEnvio.classList.add("disabled");
+    //inputNumeroGuia.disabled = true;
   });
 
   // Buscar al presionar Enter en el input
   inputNumeroGuia.addEventListener("keyup", function (e) {
     if (e.key === "Enter" || e.keyCode === 13) {
       buscarOperacion();
-          btnRastrearEnvio.classList.add("disabled");
-    inputNumeroGuia.disabled = true;
+      
+   // inputNumeroGuia.disabled = true;
 
     }
   });
