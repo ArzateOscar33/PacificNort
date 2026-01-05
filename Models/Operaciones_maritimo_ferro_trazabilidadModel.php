@@ -1051,4 +1051,22 @@ public function getTotalTransporteActualPorRuta(int $rutaId, int $operacionFerro
     return array_sum($mapeo);
 }
 
+/**
+ * Verifica si una operación ferro ya tiene una ruta activa
+ */
+public function operacionFerroTieneRutaActiva(int $operacionFerroId): bool
+{
+    $sql = "
+        SELECT 1
+        FROM rutas_ferro
+        WHERE operacion_ferro_id = ?
+          AND estatus = 1
+        LIMIT 1
+    ";
+    $row = $this->select($sql, [$operacionFerroId]);
+    return (bool)$row;
+}
+
+
+
 }
