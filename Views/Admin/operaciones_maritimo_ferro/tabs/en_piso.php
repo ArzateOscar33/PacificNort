@@ -3,21 +3,24 @@
      <!-- Encabezado -->
      <div class="d-flex justify-content-between align-items-center mb-3">
          <h4 class="mb-0">
-             <i data-feather="layers" class="me-2"></i>Mercancía en Piso
+             <i data-feather="layers" class="me-2"></i>Mercancía en Bodegas
          </h4>
 
          <!-- Solo informativo: sin botón de alta -->
-         <div class="d-flex gap-2">
-             <span class="badge bg-light text-dark border" id="mercanciaPisoBadgeTotal">
-                 Total: <span class="fw-semibold" id="mercanciaPisoTotal">0</span>
-             </span>
-             <span class="badge bg-info" id="mercanciaPisoBadgeTJ">
-                 BODEGA TJ: <span class="fw-semibold" id="mercanciaPisoTotalTJ">0</span>
-             </span>
-             <span class="badge bg-primary" id="mercanciaPisoBadgeSD">
-                 BODEGA SD: <span class="fw-semibold" id="mercanciaPisoTotalSD">0</span>
-             </span>
-         </div>
+         
+  <div class="d-flex gap-2 align-items-center">
+ 
+
+    <span class="badge bg-light text-dark border" id="mercanciaPisoBadgeTotal">
+      Total: <span class="fw-semibold" id="mercanciaPisoTotal">0</span>
+    </span>
+    <span class="badge bg-info text-white" id="mercanciaPisoBadgeTJ">
+      BODEGA TJ: <span class="fw-semibold" id="mercanciaPisoTotalTJ">0</span>
+    </span>
+    <span class="badge bg-primary text-white" id="mercanciaPisoBadgeSD">
+      BODEGA SD: <span class="fw-semibold" id="mercanciaPisoTotalSD">0</span>
+    </span>
+  </div>
      </div>
 
      <!-- Filtros -->
@@ -27,7 +30,7 @@
              <label for="mercanciaPisoBuscar" class="form-label">
                  Buscar (Cliente / Contenedor Marítimo)
              </label>
-             <input type="text" id="mercanciaPisoBuscar" class="form-control" placeholder="Ej. Toyota, MSKU1234567">
+             <input type="text" id="mercanciaPisoBuscar" class="form-control" placeholder="Ej.  MSKU1234567">
          </div>
 
          <div class="col-12 col-md-3">
@@ -60,6 +63,9 @@
                      <button class="btn btn-sm btn-outline-warning" id="mercanciaPisoBtnPdf" type="button">
                          <i data-feather="file" class="me-1"></i> PDF
                      </button>
+                       <button class="btn btn-sm btn-outline-primary" id="mercanciaPisoBtnActualizar" type="button">
+                        <i data-feather="refresh-cw" class="me-1"></i> Actualizar
+                    </button>
                  </div>
 
                  <div class="d-flex align-items-center ms-md-2">
@@ -83,25 +89,25 @@
              <thead class="table-light">
                  <tr>
                      <th>Bodega</th>
+                     <th>Operacion</th>
                      <th>Cliente</th>
                      <th>Contenedor Marítimo</th>
                      <th>Bultos</th>
-                     <th>Restantes</th>
-                     <th class="text-center">Detalle</th>
+                     <th>Restantes</th> 
                  </tr>
              </thead>
              <tbody id="mercanciaPisoTbody">
 
                  <tr>
                      <td>
-                         <span class="badge bg-info">BODEGA TJ</span>
+                         <span class="badge bg-info  text-white">BODEGA TJ</span>
                      </td>
                      <td>WALDOS</td>
                      <td>
                          <span class="fw-semibold">MSKU1234567</span>
                      </td>
                      <td>
-                         <span class="badge bg-primary">120</span>
+                         <span class="badge bg-primary  text-white">120</span>
                      </td>
                      <td>
                          <span class="badge bg-warning text-dark">45</span>
@@ -115,17 +121,17 @@
 
                  <tr>
                      <td>
-                         <span class="badge bg-primary">BODEGA SD</span>
+                         <span class="badge bg-primary  text-white">BODEGA SD</span>
                      </td>
                      <td>TOMMER</td>
                      <td>
                          <span class="fw-semibold">TGHU7654321</span>
                      </td>
                      <td>
-                         <span class="badge bg-primary">80</span>
+                         <span class="badge bg-primary text-white">80</span>
                      </td>
                      <td>
-                         <span class="badge bg-success">80</span>
+                         <span class="badge bg-success text-white">80</span>
                      </td>
                      <td class="text-center">
                          <button class="btn btn-sm btn-outline-secondary" disabled>
@@ -136,17 +142,17 @@
 
                  <tr>
                      <td>
-                         <span class="badge bg-info">BODEGA TJ</span>
+                         <span class="badge bg-info  text-white">BODEGA TJ</span>
                      </td>
                      <td>HUSSNI</td>
                      <td>
                          <span class="fw-semibold">OOLU9988776</span>
                      </td>
                      <td>
-                         <span class="badge bg-primary">150</span>
+                         <span class="badge bg-primary text-white">150</span>
                      </td>
                      <td>
-                         <span class="badge bg-danger">10</span>
+                         <span class="badge bg-danger text-white">10</span>
                      </td>
                      <td class="text-center">
                          <button class="btn btn-sm btn-outline-secondary" disabled>
@@ -169,21 +175,7 @@
          </div>
      </div>
 
-     <!-- Nota informativa -->
-     <div class="alert alert-light border mt-4 mb-0" role="alert" id="mercanciaPisoInfo">
-         <div class="d-flex">
-             <div class="me-3">
-                 <i data-feather="info"></i>
-             </div>
-             <div>
-                 <div class="fw-semibold">Nota</div>
-                 <div class="text-muted">
-                     Este módulo es únicamente informativo. Los registros se listan a partir del estatus de bodega
-                     (<span class="fw-semibold">BODEGA TJ</span> / <span class="fw-semibold">BODEGA SD</span>).
-                 </div>
-             </div>
-         </div>
-     </div>
+ 
 
  </div>
 
@@ -191,6 +183,7 @@
      feather.replace();
      const BASE_URL = "<?= BASE_URL ?>";
  </script>
+ <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/en_piso.js"></script>
 
  <!-- JS del módulo (cuando lo implementes) -->
  <!-- <script src="<?= BASE_URL ?>assets/js/modulosAdmin/mercancia_piso/mercanciaPiso.js"></script> -->
