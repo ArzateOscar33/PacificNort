@@ -95,7 +95,7 @@
         </div>
         <i data-feather="file-minus" class="kpi-icon"></i>
       </div>
-      <div class="small subtle mt-2" id="kpiOpsSinISFDetalle">No aplica en subtipo Lázaro</div>
+      <div class="small subtle mt-2" id="kpiOpsSinISFDetalle">Operaciones sin ISF</div>
     </div>
 
     <!-- Operaciones sin cita en puerto (EXCEPTO subtipo Lázaro) -->
@@ -107,7 +107,7 @@
         </div>
         <i data-feather="calendar" class="kpi-icon"></i>
       </div>
-      <div class="small subtle mt-2" id="kpiOpsSinCitaPuertoDetalle">No aplica en subtipo Lázaro</div>
+      <div class="small subtle mt-2" id="kpiOpsSinCitaPuertoDetalle">Operaciones sin cita en puerto</div>
     </div>
 
     <!-- Cerca de su cita en puerto -->
@@ -254,10 +254,10 @@
 
 <!--<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline@3.1.0"></script> -->
-<script src="<?php echo BASE_URL; ?>assets/Js/ModulosAdmin/dashboardprincipal.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline@3.1.0"></script> 
+<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart.js"></script>-->
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart443.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-adapter-date-fns.js"></script>
 <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-chart-timeline.js"></script>
 
+<script src="<?php echo BASE_URL; ?>assets/Js/ModulosAdmin/dashboardprincipal.js"></script>

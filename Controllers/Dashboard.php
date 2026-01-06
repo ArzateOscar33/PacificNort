@@ -55,7 +55,10 @@ public function kpis()
         $opsCitaProx = (int)$this->model->kpiCitaPuertoProxima($citaDays);  // excluye Lázaro
 
         // ✅ KPI: Contenedores en Bodega
-        $contBodega = (int)$this->model->kpiContenedoresEnBodega();
+        $bodega = $this->model->kpiContenedoresBodegaPendientes();
+
+        //Alertas Alta Prioridad
+        $alertasAlta = $this->model->alertasAltaPrioridadISFyCita(20);
 
         // ✅ (opcional) detalle TJ/SD
         $contBodegaDetalle = null;
@@ -65,6 +68,16 @@ public function kpis()
             if (!is_array($contBodegaDetalle)) $contBodegaDetalle = null;
         }
 
+            // Alertas existentes
+$alertasAltaBase = $this->model->alertasAltaPrioridadISFyCita(15);
+
+// Alertas Cita Puerto (media y alta)
+$alertasCitaProx = $this->model->alertasCitaPuertoProximas($citaDays, 15); // prioridad 2
+$alertasCitaVenc = $this->model->alertasCitaPuertoVencidas(7, 15);         // prioridad 1
+
+// Consolidación: alta incluye vencidas de cita + ISF/cita faltante
+$alertasAlta = array_merge($alertasCitaVenc, $alertasAltaBase);
+$alertasMedia = $alertasCitaProx;
         echo json_encode([
             'status' => 'ok',
             'meta'   => [
@@ -82,8 +95,16 @@ public function kpis()
                 'cont_activos'    => $contActivos,
 
                 // ✅ Bodega
-                'cont_bodega'     => $contBodega,
-                'cont_bodega_det' => $contBodegaDetalle, // {tj, sd, total} o null
+    'cont_bodega'     => $bodega['total'],
+    'cont_bodega_tj'  => $bodega['tj'],
+    'cont_bodega_sd'  => $bodega['sd'],
+
+    // ✅ lo que tu JS ya intenta leer
+    'cont_bodega_det' => [
+      'tj'    => $bodega['tj'],
+      'sd'    => $bodega['sd'],
+      'total' => $bodega['total'],
+      ],
 
                 // Eventos
                 'eventos' => [
@@ -99,7 +120,10 @@ public function kpis()
                 // Reglas ISF / Cita puerto
                 'ops_sin_isf'             => $opsSinISF,
                 'ops_sin_cita_puerto'     => $opsSinCita,
-                'ops_cita_puerto_proxima' => $opsCitaProx
+                'ops_cita_puerto_proxima' => $opsCitaProx,
+
+                // Alertas Alta Prioridad
+                'alertas_alta' => $alertasAlta
             ]
         ], JSON_UNESCAPED_UNICODE);
         die();
@@ -210,8 +234,6 @@ public function kpis()
             die();
         }
     }
-
-    // ---- Los demás endpoints (charts, timeline, costos) pueden quedarse como ya los tienes ----
 
     public function ops_por_subtipo()
     {

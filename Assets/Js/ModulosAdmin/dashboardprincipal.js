@@ -12,13 +12,7 @@ const btnRefAlertas = document.getElementById("btnRefrescarAlertas");
 const ulAlertas = document.getElementById("listaAlertas");
 const emptyAlertas = document.getElementById("alertasVacio");
 
-// ====== Alertas (nueva vista: 2 listas) ======
-const ulAlertasProx = document.getElementById("listaAlertasProximas");
-const ulAlertasVenc = document.getElementById("listaAlertasVencidas");
-const badgeProx = document.getElementById("badgeAlertasProximas");
-const badgeVenc = document.getElementById("badgeAlertasVencidas");
-const emptyProx = document.getElementById("alertasProximasVacio");
-const emptyVenc = document.getElementById("alertasVencidasVacio");
+ 
 
 const elOpsSinISF = document.getElementById("kpiOpsSinISF");
 const elOpsSinCitaPuerto = document.getElementById("kpiOpsSinCitaPuerto");
@@ -38,26 +32,7 @@ function setText(el, val) {
 }
 
 
-function xhrGET(url, onOk, onErr) {
-  const http = new XMLHttpRequest();
-  http.open("GET", url, true);
-  http.send();
-  http.onreadystatechange = function () {
-    if (this.readyState !== 4) return;
-    if (this.status !== 200) {
-      onErr?.(this.responseText);
-      return;
-    }
-    let data;
-    try {
-      data = JSON.parse(this.responseText);
-    } catch (e) {
-      onErr?.("JSON inválido: " + this.responseText);
-      return;
-    }
-    onOk?.(data);
-  };
-}
+ 
 
 /* ====== Render: KPIs ====== */
 function renderKPIs(payload) {
@@ -90,20 +65,33 @@ function renderKPIs(payload) {
   setText(elOpsSinCitaPuerto, fmtInt(d.ops_sin_cita_puerto || 0));
   setText(elOpsCitaPuertoProxima, fmtInt(d.ops_cita_puerto_proxima || 0));
 
-  // ✅ Contenedores en bodega (BODEGA TJ + BODEGA SD)
-setText(elContBodega, fmtInt(d.cont_bodega || 0));
+// =========================
+// Contenedores en bodega
+// Soporta:
+//  - formato nuevo: cont_bodega, cont_bodega_tj, cont_bodega_sd
+//  - formato anterior: cont_bodega_det {tj, sd, total}
+// =========================
+const det = d.cont_bodega_det || {
+  tj: d.cont_bodega_tj,
+  sd: d.cont_bodega_sd,
+  total: d.cont_bodega
+};
 
-// Opcional: texto detalle (si el backend manda breakdown)
+const tj = n(det.tj);
+const sd = n(det.sd);
+const total = n(det.total || (tj + sd));
+
+setText(elContBodega, fmtInt(total));
+
 if (elContBodegaDetalle) {
-  // Si tu backend manda algo como { cont_bodega_tj: X, cont_bodega_sd: Y }
-  const tj = n(d.cont_bodega_tj);
-  const sd = n(d.cont_bodega_sd);
-
   elContBodegaDetalle.textContent =
     (tj || sd)
       ? `BODEGA TJ: ${fmtInt(tj)} · BODEGA SD: ${fmtInt(sd)}`
       : "BODEGA TJ + BODEGA SD";
 }
+
+
+
 
 
   if (window.feather) feather.replace();
@@ -156,6 +144,11 @@ function renderAlertas(items) {
   if (window.feather) feather.replace();
 }*/
 
+
+ 
+
+
+
 function renderAlertasList(ul, emptyEl, badgeEl, items) {
   if (!ul) return;
   ul.innerHTML = "";
@@ -184,15 +177,7 @@ function renderAlertasList(ul, emptyEl, badgeEl, items) {
   if (window.feather) feather.replace();
 }
 
-function escapeHtml(s) {
-  return String(s).replace(
-    /[&<>"']/g,
-    (m) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
-        m
-      ])
-  );
-}
+ 
 function iconoPorTipo(t) {
   const map = {
     eta: "clock",
@@ -205,10 +190,27 @@ function iconoPorTipo(t) {
   return `<i data-feather="${icon}" class="me-2"></i>`;
 }
 function badgePorPrioridad(p) {
-  const v = (p || "").toLowerCase();
-  if (v === "alta") return "bg-danger";
+  const v = String(p || "").toLowerCase();
+
+  // numérico
+  if (v === "1") return "bg-danger text-white";                 // Alta
+  if (v === "2") return "bg-warning text-dark";                 // Media
+  if (v === "3") return "bg-secondary text-white";              // Baja
+
+  // texto
+  if (v === "alta")  return "bg-danger text-white";
   if (v === "media") return "bg-warning text-dark";
+  if (v === "baja")  return "bg-secondary text-white";
+
   return "bg-secondary";
+}
+
+function labelPrioridad(p){
+  const v = String(p || "").toLowerCase();
+  if (v === "1" || v === "alta") return "Alta";
+  if (v === "2" || v === "media") return "Media";
+  if (v === "3" || v === "baja") return "Baja";
+  return "Baja";
 }
 
  
@@ -236,7 +238,7 @@ function xhrGET(url, onOk, onErr) {
       onErr?.(this.responseText);
       return;
     }
-    console.log(this.responseText);
+   // console.log(this.responseText);
     let data;
     try {
       data = JSON.parse(this.responseText);
@@ -386,17 +388,7 @@ function cargarOpsPorSubtipo() {
 }
 
  
-function xhrGET(url, onOk, onErr){
-  const http = new XMLHttpRequest();
-  http.open('GET', url, true);
-  http.send();
-  http.onreadystatechange = function(){
-    if (this.readyState !== 4) return;
-    if (this.status !== 200) { onErr?.(this.responseText); return; }
-    let data; try { data = JSON.parse(this.responseText); } catch(e){ onErr?.('JSON inválido'); return; }
-    onOk?.(data);
-  };
-}
+ 
  
  /* =========================
    PUNTUALIDAD POR SEMANA
@@ -968,31 +960,42 @@ const onResizeTimeline = debounce(()=> { cargarTimelineOperaciones(30, 50); }, 2
 window.addEventListener('resize', onResizeTimeline);
 
 // Init
- 
 function cargarAlertas() {
   xhrGET(
-    base_url + "dashboard/alertas?limit=20",
+    base_url + "dashboard/kpis",
     (res) => {
-      if (res?.status !== "ok" || !res.data) {
-        renderAlertasList(ulAlertasProx, emptyProx, badgeProx, []);
-        renderAlertasList(ulAlertasVenc, emptyVenc, badgeVenc, []);
+      if (res?.status !== "ok") {
+        console.warn("[Alertas] Respuesta no OK:", res);
+        renderAlertasAlta([]);
         return;
       }
 
-      // ✅ controlador nuevo: data = { proximas, vencidas, finalizada_sin_entrega }
-      const proximas = res.data.proximas || [];
-      const vencidas = res.data.vencidas || [];
+      const d = res?.data || {};
 
-      renderAlertasList(ulAlertasProx, emptyProx, badgeProx, proximas);
-      renderAlertasList(ulAlertasVenc, emptyVenc, badgeVenc, vencidas);
+      // Flexible: si mañana agregas alertas_media / alertas_baja, esto ya funciona
+      const alta  = Array.isArray(d.alertas_alta)  ? d.alertas_alta  : [];
+      const media = Array.isArray(d.alertas_media) ? d.alertas_media : [];
+      const baja  = Array.isArray(d.alertas_baja)  ? d.alertas_baja  : [];
+
+      // Unificadas y ordenadas por prioridad (1 primero)
+      const all = [].concat(alta, media, baja).sort((a,b) => {
+        const pa = Number(a.prioridad || 99);
+        const pb = Number(b.prioridad || 99);
+        return pa - pb;
+      });
+
+      renderAlertasAlta(all);
     },
     (err) => {
-      console.error("[alertas]", err);
-      renderAlertasList(ulAlertasProx, emptyProx, badgeProx, []);
-      renderAlertasList(ulAlertasVenc, emptyVenc, badgeVenc, []);
+      console.error("[Alertas] Error:", err);
+      renderAlertasAlta([]);
     }
   );
 }
+
+
+
+
  
 // ====== Refs nuevas ======
 const elKpiAlertas = document.getElementById('kpiAlertas');
@@ -1001,7 +1004,7 @@ const elKpiAlertasDetalle = document.getElementById('kpiAlertasDetalle');
 // ====== Cargar KPI: Alertas ======
 function cargarKPIAlertas() {
   xhrGET(
-    base_url + "dashboard/alertas?limit=200",
+    base_url + "dashboard/alertas?limit=20",
     (res) => {
       if (res?.status !== "ok" || !res.data) {
         setText(elKpiAlertas, "0");
@@ -1035,6 +1038,46 @@ function cargarKPIAlertas() {
   );
 }
 
+function renderAlertasAlta(items) {
+  const ul = ulAlertas;
+  const emptyEl = emptyAlertas;
+  if (!ul) return;
+
+  ul.innerHTML = "";
+
+  const arr = Array.isArray(items) ? items : [];
+  if (emptyEl) emptyEl.style.display = arr.length ? "none" : "";
+
+  arr.forEach((a) => {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+
+    const pr = String(a.prioridad ?? "1"); // tu backend manda "1"
+    const icon = (pr === "1") ? "alert-triangle" : (pr === "2" ? "alert-circle" : "info");
+
+    // Mensaje ya viene bien: "LBS-124 Sin ISF y Sin Cita en puerto"
+    const msg = a.mensaje || `${a.numero_operacion || ""}`;
+
+    li.innerHTML = `
+      <span class="d-flex align-items-start">
+        <i data-feather="${icon}" class="me-2 mt-1"></i>
+        <span>
+          <div class="fw-semibold">${escapeHtml(a.numero_operacion || "")}</div>
+          <div class="small text-muted">${escapeHtml(a.cliente || "")}</div>
+          <div class="small">${escapeHtml(msg)}</div>
+        </span>
+      </span>
+      <span class="badge rounded-pill ${badgePorPrioridad(pr)}">
+        ${labelPrioridad(pr)}
+      </span>
+    `;
+
+    ul.appendChild(li);
+  });
+
+  if (window.feather) feather.replace();
+}
+
 
  
 document.addEventListener("DOMContentLoaded", function () {
@@ -1044,4 +1087,5 @@ document.addEventListener("DOMContentLoaded", function () {
   cargarTimelineOperaciones(30, 50);
   cargarAlertas();
   cargarKPIAlertas(); // si lo usas
+   loadCostosVsAbonos();
 });
