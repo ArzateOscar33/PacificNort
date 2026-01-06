@@ -347,24 +347,25 @@ public function getEstatusIdsByNombre(array $nombres): array
      * KPI: Operaciones activas SIN cita en puerto (cita_puerto NULL),
      * excluyendo subtipo Lázaro.
      */
-    public function kpiOperacionesSinCitaPuerto(): int
-    {
-        $lazaroIds = $this->getSubtipoLazaroIds();
-        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+public function kpiOperacionesSinCitaPuerto(): int
+{
+    $lazaroIds = $this->getSubtipoLazaroIds();
+    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
 
-        $sql = "
-            SELECT COUNT(*) AS n
-            FROM operaciones o
-            WHERE o.estatus_id IN (1,5,9)
-              AND o.cita_puerto IS NULL
-              AND (
-                    " . (empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro") . "
-                  )
-        ";
+    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
 
-        $row = $this->select($sql, $paramsL);
-        return $row ? (int)$row['n'] : 0;
-    }
+    $sql = "
+        SELECT COUNT(*) AS n
+        FROM operaciones o
+        WHERE o.estatus_id = 11
+          AND o.cita_puerto IS NULL
+          AND $whereNoLazaro
+    ";
+
+    $row = $this->select($sql, $paramsL);
+    return $row ? (int)$row['n'] : 0;
+}
+
 
         /**
      * KPI: Operaciones activas con cita_puerto dentro de los próximos N días,
@@ -532,13 +533,14 @@ public function kpiContenedoresBodegaPendientes(): array
 }
 
 /**
- * Alertas Alta Prioridad:
- * - Sin ISF (isf NULL o 0) excluyendo Lázaro
- * - Sin Cita en Puerto (cita_puerto NULL) excluyendo Lázaro
+ * Alertas Alta Prioridad (reglas nuevas):
+ * - Sin ISF (isf NULL o 0) excluyendo Lázaro => ALTA
+ * - Sin Cita en Puerto (cita_puerto NULL) SOLO si estatus_id = 11 (PUERTO), excluyendo Lázaro => ALTA
+ *
  * Devuelve filas consolidadas:
- *   NT-01 Sin ISF y Sin Cita en puerto
+ *   NT-01 Sin ISF y Sin Cita en puerto (solo si está en puerto)
  *   NT-02 Sin ISF
- *   NT-03 Sin Cita en puerto
+ *   NT-03 Sin Cita en puerto (solo si está en puerto)
  */
 public function alertasAltaPrioridadISFyCita(int $limit = 15): array
 {
@@ -555,38 +557,41 @@ public function alertasAltaPrioridadISFyCita(int $limit = 15): array
             o.id_operacion,
             o.numero_operacion,
             COALESCE(c.nombre,'') AS cliente,
+            o.estatus_id,
 
-            -- Flags
+            -- Flags (regla nueva)
             CASE WHEN (o.isf IS NULL OR o.isf = 0) THEN 1 ELSE 0 END AS falta_isf,
-            CASE WHEN (o.cita_puerto IS NULL) THEN 1 ELSE 0 END AS falta_cita,
+            CASE WHEN (o.estatus_id = 11 AND o.cita_puerto IS NULL) THEN 1 ELSE 0 END AS falta_cita,
 
             -- Texto consolidado
             CASE
-                WHEN (o.isf IS NULL OR o.isf = 0) AND (o.cita_puerto IS NULL)
+                WHEN (o.isf IS NULL OR o.isf = 0) AND (o.estatus_id = 11 AND o.cita_puerto IS NULL)
                     THEN CONCAT(o.numero_operacion,' Sin ISF y Sin Cita en puerto')
                 WHEN (o.isf IS NULL OR o.isf = 0)
                     THEN CONCAT(o.numero_operacion,' Sin ISF')
-                WHEN (o.cita_puerto IS NULL)
+                WHEN (o.estatus_id = 11 AND o.cita_puerto IS NULL)
                     THEN CONCAT(o.numero_operacion,' Sin Cita en puerto')
                 ELSE CONCAT(o.numero_operacion,' OK')
             END AS mensaje,
 
             -- Para ordenar por prioridad
             CASE
-                WHEN (o.isf IS NULL OR o.isf = 0) AND (o.cita_puerto IS NULL) THEN 1
+                WHEN (o.isf IS NULL OR o.isf = 0) AND (o.estatus_id = 11 AND o.cita_puerto IS NULL) THEN 1
                 WHEN (o.isf IS NULL OR o.isf = 0) THEN 2
-                WHEN (o.cita_puerto IS NULL) THEN 2
+                WHEN (o.estatus_id = 11 AND o.cita_puerto IS NULL) THEN 1
                 ELSE 9
             END AS prioridad
         FROM operaciones o
         LEFT JOIN clientes c
             ON c.id_cliente = o.cliente_id
-        WHERE o.estatus_id IN (1,5,9)
-          AND $whereNoLazaro
-          AND (
+        WHERE
+            -- Importante: incluir PUERTO (11) para que puedan salir las alertas de cita
+            o.estatus_id IN (1,5,9,11)
+            AND $whereNoLazaro
+            AND (
                 (o.isf IS NULL OR o.isf = 0)
-             OR (o.cita_puerto IS NULL)
-          )
+                OR (o.estatus_id = 11 AND o.cita_puerto IS NULL)
+            )
         ORDER BY
             prioridad ASC,
             o.id_operacion DESC
@@ -596,96 +601,8 @@ public function alertasAltaPrioridadISFyCita(int $limit = 15): array
     $rows = $this->selectAll($sql, $paramsL);
     return is_array($rows) ? $rows : [];
 }
-/**
- * Alertas: Cita en puerto próxima a vencer (0..window días)
- * - SOLO estatus EN AGUA (9)
- * - Excluye subtipos Lázaro
- * - prioridad = 2 (MEDIA)
- */
-public function alertasCitaPuertoProximas(int $window = 5, int $limit = 50): array
-{
-    $window = max(0, (int)$window);
-    $limit  = max(1, (int)$limit);
 
-    $estatusEnAgua = 9; // según tu tabla estatus del dump
-
-    $lazaroIds = $this->getSubtipoLazaroIds();
-    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
-    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
-
-    $sql = "
-        SELECT
-            o.id_operacion,
-            o.numero_operacion,
-            COALESCE(c.nombre,'') AS cliente,
-            DATE(o.cita_puerto) AS cita_fecha,
-            DATEDIFF(DATE(o.cita_puerto), CURDATE()) AS dias_restantes,
-            CONCAT(o.numero_operacion, ' Cita puerto vence en ', DATEDIFF(DATE(o.cita_puerto), CURDATE()), ' día(s)') AS mensaje,
-            2 AS prioridad,
-            'cita_puerto' AS tipo
-        FROM operaciones o
-        LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
-        WHERE o.estatus_id = ?
-          AND o.cita_puerto IS NOT NULL
-          AND $whereNoLazaro
-          AND DATEDIFF(DATE(o.cita_puerto), CURDATE()) BETWEEN 0 AND ?
-        ORDER BY dias_restantes ASC, o.cita_puerto ASC
-        LIMIT {$limit}
-    ";
-
-    $params = array_merge([$estatusEnAgua, $window], $paramsL);
-    $rows = $this->selectAll($sql, $params);
-    return is_array($rows) ? $rows : [];
-}
-
-/**
- * Alertas: Cita en puerto ya vencida (-past..-1 días)
- * - SOLO estatus EN AGUA (9)
- * - Excluye subtipos Lázaro
- * - prioridad = 1 (ALTA)
- *
- * Nota: si la operación ya NO está EN AGUA, no saldrá (cumple tu regla).
- */
-public function alertasCitaPuertoVencidas(int $past = 365, int $limit = 15): array
-{
-    $past  = max(0, (int)$past);
-    $limit = max(1, (int)$limit);
-
-    $estatusEnAgua = 9; // según tu tabla estatus del dump
-
-    $lazaroIds = $this->getSubtipoLazaroIds();
-    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
-    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
-
-    $sql = "
-        SELECT
-            o.id_operacion,
-            o.numero_operacion,
-            COALESCE(c.nombre,'') AS cliente,
-            DATE(o.cita_puerto) AS cita_fecha,
-            DATEDIFF(DATE(o.cita_puerto), CURDATE()) AS dias_restantes,
-            CONCAT(
-                o.numero_operacion,
-                ' Cita puerto VENCIDA hace ',
-                ABS(DATEDIFF(DATE(o.cita_puerto), CURDATE())),
-                ' día(s)'
-            ) AS mensaje,
-            1 AS prioridad,
-            'cita_puerto' AS tipo
-        FROM operaciones o
-        LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
-        WHERE o.estatus_id = ?
-          AND o.cita_puerto IS NOT NULL
-          AND $whereNoLazaro
-          AND DATEDIFF(DATE(o.cita_puerto), CURDATE()) BETWEEN -? AND -1
-        ORDER BY dias_restantes ASC, o.cita_puerto ASC
-        LIMIT {$limit}
-    ";
-
-    $params = array_merge([$estatusEnAgua, $past], $paramsL);
-    $rows = $this->selectAll($sql, $params);
-    return is_array($rows) ? $rows : [];
-}
+ 
 
  
 

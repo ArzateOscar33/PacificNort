@@ -69,15 +69,9 @@ public function kpis()
         }
 
             // Alertas existentes
-$alertasAltaBase = $this->model->alertasAltaPrioridadISFyCita(15);
+$alertasAlta = $this->model->alertasAltaPrioridadISFyCita(15);
 
-// Alertas Cita Puerto (media y alta)
-$alertasCitaProx = $this->model->alertasCitaPuertoProximas($citaDays, 15); // prioridad 2
-$alertasCitaVenc = $this->model->alertasCitaPuertoVencidas(7, 15);         // prioridad 1
 
-// Consolidación: alta incluye vencidas de cita + ISF/cita faltante
-$alertasAlta = array_merge($alertasCitaVenc, $alertasAltaBase);
-$alertasMedia = $alertasCitaProx;
         echo json_encode([
             'status' => 'ok',
             'meta'   => [

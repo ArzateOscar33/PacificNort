@@ -20,7 +20,7 @@ public function listarEventosMFPaginado(
     // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     // NUEVO FILTRO: excluir operaciones con estatus Cancelado(6) o Finalizada(7)
     // (catálogo 'estatus': 6=Cancelado, 7=Finalizada)
-    $where[] = "o.estatus_id NOT IN (6, 7)";
+    //$where[] = "o.estatus_id NOT IN (5,6)";
     // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     if (!empty($opId)) {

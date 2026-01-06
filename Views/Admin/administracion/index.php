@@ -110,7 +110,7 @@
       <div class="small subtle mt-2" id="kpiOpsSinCitaPuertoDetalle">Operaciones sin cita en puerto</div>
     </div>
 
-    <!-- Cerca de su cita en puerto -->
+    <!-- Cerca de su cita en puerto 
     <div class="kpi-card bg-rose p-3">
       <div class="d-flex align-items-center justify-content-between">
         <div class="me-3">
@@ -120,7 +120,7 @@
         <i data-feather="alert-triangle" class="kpi-icon"></i>
       </div>
       <div class="small subtle mt-2" id="kpiOpsCitaPuertoProximaDetalle">Cita en puerto próxima</div>
-    </div>
+    </div>-->
 
     <!-- (Opcional) contenedores activos / eventos / clientes etc: conserva los tuyos 
     <div class="kpi-card bg-slate p-3">

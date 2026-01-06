@@ -16,7 +16,7 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
                 FROM contenedores_maritimos_operacion
                 GROUP BY operacion_id
             ) AS cnt_mar ON cnt_mar.operacion_id = o.id_operacion
-            WHERE o.estatus_id IN (1,5,9)
+            WHERE o.estatus_id IN (1,5,6,7,9,10,11,12)
               AND o.tipo_operacion_id = 11
               AND LOWER(o.numero_operacion) LIKE ?
             UNION ALL
@@ -30,7 +30,7 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
                 )                       AS contenedores,
                 'F'                     AS fuente
             FROM operaciones_ferroviarias ofe
-            WHERE ofe.estatus_id IN (1,5,9)
+            WHERE ofe.estatus_id IN (1,5,6,7,9,10,11,12)
               AND LOWER(ofe.numero_operacion) LIKE ?
             ORDER BY label DESC
             LIMIT 20

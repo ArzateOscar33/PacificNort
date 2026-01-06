@@ -224,6 +224,7 @@
 
       renderTabla(rows);
       renderSubidos(rows);
+      cargarFaltantes();
       if (window.feather) feather.replace();
     };
   }
@@ -359,6 +360,8 @@
 
   // Exponer para acciones globales
   window.listarDocumentosMF = listarDocumentos;
+  window.cargarFaltantesMF = cargarFaltantes;
+
 
   // ---------- Ver / Eliminar ----------
   window.documentosVerDocumentoMF = function(id){
@@ -666,6 +669,7 @@
         const inst = bootstrap.Modal.getInstance(modalEl); inst?.hide();
         form.reset();
         if (window.listarDocumentosMF) window.listarDocumentosMF();
+        if (window.cargarFaltantesMF) window.cargarFaltantesMF();
         if (window.feather) feather.replace();
       }
     };
