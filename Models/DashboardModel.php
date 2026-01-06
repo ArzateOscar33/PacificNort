@@ -268,4 +268,290 @@ WHERE o.estatus_id IN (1,5,9);
         $rows = $this->selectAll($sql, [$past, $window]);
         return is_array($rows) ? $rows : [];
     }
+
+
+        /**
+     * Obtiene los IDs de estatus por nombre (comparación case-insensitive).
+     * Ej: ["BODEGA TJ","BODEGA SD"]
+     */
+public function getEstatusIdsByNombre(array $nombres): array
+{
+    $nombres = array_values(array_filter(array_map('trim', $nombres)));
+    if (empty($nombres)) return [];
+
+    $placeholders = implode(',', array_fill(0, count($nombres), '?'));
+
+    $sql = "SELECT id_estatus
+            FROM estatus
+            WHERE UPPER(TRIM(nombre)) IN ($placeholders)";
+
+    $params = array_map(fn($x) => mb_strtoupper(trim($x), 'UTF-8'), $nombres);
+    $rows = $this->selectAll($sql, $params);
+
+    if (!is_array($rows)) return [];
+    return array_map('intval', array_column($rows, 'id_estatus'));
+}
+
+
+    /**
+     * Obtiene IDs de subtipos que correspondan a "Lázaro" sin hardcodear.
+     * Busca por clave, nombre o prefijo.
+     */
+    public function getSubtipoLazaroIds(): array
+    {
+        $sql = "SELECT id_subtipo
+                FROM subtipos_operacion
+                WHERE UPPER(clave) LIKE '%LAZARO%'
+                   OR UPPER(nombre) LIKE '%LÁZARO%'
+                   OR UPPER(nombre) LIKE '%LAZARO%'
+                   OR UPPER(prefijo_codigo) IN ('LC','LAZ','LAZARO')";
+        $rows = $this->selectAll($sql);
+        if (!is_array($rows)) return [];
+        return array_map('intval', array_column($rows, 'id_subtipo'));
+    }
+
+    /**
+     * Crea una lista de placeholders para IN() y devuelve [sql_in, params]
+     */
+    private function buildIn(array $values): array
+    {
+        $values = array_values(array_filter($values, fn($v)=>$v!==null && $v!==''));
+        if (empty($values)) return ['(NULL)', []];
+        $ph = '(' . implode(',', array_fill(0, count($values), '?')) . ')';
+        return [$ph, $values];
+    }
+    /**
+     * KPI: Operaciones activas SIN ISF (isf=0), excluyendo subtipo Lázaro.
+     */
+    public function kpiOperacionesSinISF(): int
+    {
+        $lazaroIds = $this->getSubtipoLazaroIds();
+        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+
+        // Si no encontró Lázaro, no excluimos nada (pero idealmente sí existirá).
+        $sql = "
+            SELECT COUNT(*) AS n
+            FROM operaciones o
+            WHERE o.estatus_id IN (1,5,9)
+              AND (o.isf IS NULL OR o.isf = 0)
+              AND (
+                    " . (empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro") . "
+                  )
+        ";
+
+        $row = $this->select($sql, $paramsL);
+        return $row ? (int)$row['n'] : 0;
+    }
+
+        /**
+     * KPI: Operaciones activas SIN cita en puerto (cita_puerto NULL),
+     * excluyendo subtipo Lázaro.
+     */
+    public function kpiOperacionesSinCitaPuerto(): int
+    {
+        $lazaroIds = $this->getSubtipoLazaroIds();
+        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+
+        $sql = "
+            SELECT COUNT(*) AS n
+            FROM operaciones o
+            WHERE o.estatus_id IN (1,5,9)
+              AND o.cita_puerto IS NULL
+              AND (
+                    " . (empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro") . "
+                  )
+        ";
+
+        $row = $this->select($sql, $paramsL);
+        return $row ? (int)$row['n'] : 0;
+    }
+
+        /**
+     * KPI: Operaciones activas con cita_puerto dentro de los próximos N días,
+     * excluyendo subtipo Lázaro.
+     */
+    public function kpiCitaPuertoProxima(int $dias = 5): int
+    {
+        $dias = max(0, (int)$dias);
+
+        $lazaroIds = $this->getSubtipoLazaroIds();
+        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+
+        $sql = "
+            SELECT COUNT(*) AS n
+            FROM operaciones o
+            WHERE o.estatus_id IN (1,5,9)
+              AND o.cita_puerto IS NOT NULL
+              AND DATE(o.cita_puerto) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+              AND (
+                    " . (empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro") . "
+                  )
+        ";
+
+        $params = array_merge([$dias], $paramsL);
+        $row = $this->select($sql, $params);
+        return $row ? (int)$row['n'] : 0;
+    }
+
+        /**
+     * Alertas: ETA próximas a vencer (0..window días).
+     */
+    public function alertasEtaProximas(int $window = 7, int $limit = 50): array
+    {
+        $window = max(0, (int)$window);
+        $limit  = max(1, (int)$limit);
+
+        $sql = "
+            SELECT
+              o.id_operacion,
+              o.numero_operacion,
+              c.nombre AS cliente,
+              DATE(o.eta) AS eta_fecha,
+              DATEDIFF(DATE(o.eta), CURDATE()) AS dias_restantes
+            FROM operaciones o
+            LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+            WHERE o.estatus_id IN (1,5,9)
+              AND o.eta IS NOT NULL
+              AND DATEDIFF(DATE(o.eta), CURDATE()) BETWEEN 0 AND ?
+            ORDER BY dias_restantes ASC, o.eta ASC
+            LIMIT {$limit}
+        ";
+
+        $rows = $this->selectAll($sql, [$window]);
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
+     * Alertas: ETA ya vencidas (-past..-1 días).
+     */
+    public function alertasEtaVencidas(int $past = 7, int $limit = 50): array
+    {
+        $past  = max(0, (int)$past);
+        $limit = max(1, (int)$limit);
+
+        $sql = "
+            SELECT
+              o.id_operacion,
+              o.numero_operacion,
+              c.nombre AS cliente,
+              DATE(o.eta) AS eta_fecha,
+              DATEDIFF(DATE(o.eta), CURDATE()) AS dias_restantes
+            FROM operaciones o
+            LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+            WHERE o.estatus_id IN (1,5,9)
+              AND o.eta IS NOT NULL
+              AND DATEDIFF(DATE(o.eta), CURDATE()) BETWEEN -? AND -1
+            ORDER BY dias_restantes ASC, o.eta ASC
+            LIMIT {$limit}
+        ";
+
+        $rows = $this->selectAll($sql, [$past]);
+        return is_array($rows) ? $rows : [];
+    }
+// ✅ NUEVO: KPI FO en tránsito (estatus = EN CAMINO)
+// Cuenta operaciones_ferroviarias cuyo estatus sea "EN CAMINO"
+public function kpiOperacionesFOEnCamino(): int
+{
+    // 1) Intento exacto (tolerante a TRIM por el cambio de arriba)
+    $ids = $this->getEstatusIdsByNombre([
+        'CAMINO A DESTINO',
+        'EN CAMINO',
+        'EN TRANSITO',
+        'EN TRÁNSITO'
+    ]);
+
+    // 2) Fallback por LIKE si no encontró nada (por variantes raras)
+    if (empty($ids)) {
+        $sqlIds = "
+            SELECT id_estatus
+            FROM estatus
+            WHERE UPPER(TRIM(nombre)) LIKE '%CAMINO%'
+               OR UPPER(TRIM(nombre)) LIKE '%TRANSIT%'
+               OR UPPER(TRIM(nombre)) LIKE '%TRÁNSIT%'
+        ";
+        $rows = $this->selectAll($sqlIds);
+        $ids = is_array($rows) ? array_map('intval', array_column($rows, 'id_estatus')) : [];
+    }
+
+    if (empty($ids)) return 0;
+
+    [$in, $params] = $this->buildIn($ids);
+
+    $sql = "
+        SELECT COUNT(*) AS n
+        FROM operaciones_ferroviarias
+        WHERE estatus_id IN $in
+    ";
+
+    $row = $this->select($sql, $params);
+    return $row ? (int)$row['n'] : 0;
+}
+
+/**
+ * KPI: Contenedores en Bodega (BODEGA TJ + BODEGA SD)
+ * Suma:
+ *  - contenedores_operacion (cajas/FO) activos (co.estatus=1) cuya operación esté en Bodega
+ *  - contenedores_maritimos_operacion (marítimos) cuya operación esté en Bodega
+ */
+public function kpiContenedoresEnBodega(): int
+{
+    $bodegaIds = $this->getEstatusIdsByNombre(['BODEGA TJ', 'BODEGA SD']);
+    if (empty($bodegaIds)) return 0;
+
+    [$inBodega, $params] = $this->buildIn($bodegaIds);
+
+    $sql = "
+        SELECT
+          COALESCE((
+            SELECT COUNT(*)
+            FROM contenedores_operacion co
+            JOIN operaciones o ON o.id_operacion = co.operacion_id
+            WHERE co.estatus = 1
+              AND o.estatus_id IN {$inBodega}
+          ),0)
+          +
+          COALESCE((
+            SELECT COUNT(*)
+            FROM contenedores_maritimos_operacion cmo
+            JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+            WHERE o.estatus_id IN {$inBodega}
+          ),0) AS total
+    ";
+
+    $row = $this->select($sql, $params);
+    return $row ? (int)$row['total'] : 0;
+}
+public function kpiContenedoresEnBodegaDetalle(): array
+{
+    $idTJ = $this->getEstatusIdsByNombre(['BODEGA TJ']);
+    $idSD = $this->getEstatusIdsByNombre(['BODEGA SD']);
+
+    $tj = !empty($idTJ) ? (int)$this->countContenedoresByEstatusOperacion($idTJ[0]) : 0;
+    $sd = !empty($idSD) ? (int)$this->countContenedoresByEstatusOperacion($idSD[0]) : 0;
+
+    return ['tj' => $tj, 'sd' => $sd, 'total' => ($tj + $sd)];
+}
+
+private function countContenedoresByEstatusOperacion(int $estatusId): int
+{
+    $sql = "
+        SELECT
+          COALESCE((
+            SELECT COUNT(*)
+            FROM contenedores_operacion co
+            JOIN operaciones o ON o.id_operacion = co.operacion_id
+            WHERE co.estatus = 1 AND o.estatus_id = ?
+          ),0)
+          +
+          COALESCE((
+            SELECT COUNT(*)
+            FROM contenedores_maritimos_operacion cmo
+            JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+            WHERE o.estatus_id = ?
+          ),0) AS total
+    ";
+    $row = $this->select($sql, [$estatusId, $estatusId]);
+    return $row ? (int)$row['total'] : 0;
+}
+
 }

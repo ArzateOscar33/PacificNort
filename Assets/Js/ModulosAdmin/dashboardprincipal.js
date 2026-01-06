@@ -5,13 +5,27 @@ const elEvtHechos = document.getElementById("kpiEventosHechos");
 const elEvtTotal = document.getElementById("kpiEventosTotal");
 const elEvtPct = document.getElementById("kpiEventosPct");
 const elDocsFaltantes = document.getElementById("kpiDocsFaltantes");
-const elOpsActivasFO = document.getElementById("kpiOpsActivasFO");
+const elOpsActivasFO = document.getElementById("kpiFOActivasTransito");
 const elOpsFODetalle = document.getElementById("kpiOpsFODetalle");
 
 const btnRefAlertas = document.getElementById("btnRefrescarAlertas");
 const ulAlertas = document.getElementById("listaAlertas");
 const emptyAlertas = document.getElementById("alertasVacio");
 
+// ====== Alertas (nueva vista: 2 listas) ======
+const ulAlertasProx = document.getElementById("listaAlertasProximas");
+const ulAlertasVenc = document.getElementById("listaAlertasVencidas");
+const badgeProx = document.getElementById("badgeAlertasProximas");
+const badgeVenc = document.getElementById("badgeAlertasVencidas");
+const emptyProx = document.getElementById("alertasProximasVacio");
+const emptyVenc = document.getElementById("alertasVencidasVacio");
+
+const elOpsSinISF = document.getElementById("kpiOpsSinISF");
+const elOpsSinCitaPuerto = document.getElementById("kpiOpsSinCitaPuerto");
+const elOpsCitaPuertoProxima = document.getElementById("kpiOpsCitaPuertoProxima");
+
+const elContBodega = document.getElementById("kpiContenedoresBodega");
+const elContBodegaDetalle = document.getElementById("kpiContenedoresBodegaDetalle");
 /* ====== Utils ====== */
 function n(x) {
   return Number(x || 0);
@@ -62,12 +76,35 @@ function renderKPIs(payload) {
   setText(elEvtTotal, fmtInt(eventos.total));
   setText(elEvtPct, `${n(eventos.pct).toFixed(2)}%`);
 
+
+
   //  
   setText(elDocsFaltantes, fmtInt(d.docs_faltantes || 0));
 
   // Otros KPIs  
   setText(elClientesActivos, fmtInt(d.clientes_activos || 0));
   setText(elOpsProxETA, fmtInt(d.ops_prox_eta || 0));
+
+    // ✅ Nuevos KPIs
+  setText(elOpsSinISF, fmtInt(d.ops_sin_isf || 0));
+  setText(elOpsSinCitaPuerto, fmtInt(d.ops_sin_cita_puerto || 0));
+  setText(elOpsCitaPuertoProxima, fmtInt(d.ops_cita_puerto_proxima || 0));
+
+  // ✅ Contenedores en bodega (BODEGA TJ + BODEGA SD)
+setText(elContBodega, fmtInt(d.cont_bodega || 0));
+
+// Opcional: texto detalle (si el backend manda breakdown)
+if (elContBodegaDetalle) {
+  // Si tu backend manda algo como { cont_bodega_tj: X, cont_bodega_sd: Y }
+  const tj = n(d.cont_bodega_tj);
+  const sd = n(d.cont_bodega_sd);
+
+  elContBodegaDetalle.textContent =
+    (tj || sd)
+      ? `BODEGA TJ: ${fmtInt(tj)} · BODEGA SD: ${fmtInt(sd)}`
+      : "BODEGA TJ + BODEGA SD";
+}
+
 
   if (window.feather) feather.replace();
 }
@@ -92,6 +129,7 @@ function cargarKPIs() {
 
 /* ====== Alertas (opcional: solo lectura) ====== */
 // Espera que /dashboard/alertas devuelva: {status:'ok', data:[{tipo, mensaje, prioridad}]}
+/*
 function renderAlertas(items) {
   ulAlertas.innerHTML = "";
   const arr = Array.isArray(items) ? items : [];
@@ -115,6 +153,34 @@ function renderAlertas(items) {
     `;
     ulAlertas.appendChild(li);
   });
+  if (window.feather) feather.replace();
+}*/
+
+function renderAlertasList(ul, emptyEl, badgeEl, items) {
+  if (!ul) return;
+  ul.innerHTML = "";
+
+  const arr = Array.isArray(items) ? items : [];
+  if (badgeEl) badgeEl.textContent = String(arr.length);
+
+  if (emptyEl) emptyEl.style.display = (arr.length === 0) ? "" : "none";
+
+  arr.forEach((a) => {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+
+    li.innerHTML = `
+      <span>
+        ${iconoPorTipo(a.tipo)}
+        ${escapeHtml(a.mensaje || "")}
+      </span>
+      <span class="badge rounded-pill text-white ${badgePorPrioridad(a.prioridad)}">
+        ${(a.prioridad || "media")}
+      </span>
+    `;
+    ul.appendChild(li);
+  });
+
   if (window.feather) feather.replace();
 }
 
@@ -145,14 +211,12 @@ function badgePorPrioridad(p) {
   return "bg-secondary";
 }
 
-/* ====== Init ====== */
-document.addEventListener("DOMContentLoaded", function () {
-  cargarKPIs();
-});
+ 
 
 if (btnRefAlertas) {
   btnRefAlertas.addEventListener("click", function (e) {
     e.preventDefault();
+    cargarAlertas();
   });
 }
 
@@ -321,10 +385,7 @@ function cargarOpsPorSubtipo() {
   );
 }
 
-// ====== Init ======
-document.addEventListener("DOMContentLoaded", function () {
-  cargarOpsPorSubtipo();
-});
+ 
 function xhrGET(url, onOk, onErr){
   const http = new XMLHttpRequest();
   http.open('GET', url, true);
@@ -510,10 +571,7 @@ function cargarPuntualidadSemana(weeks = 8){
   );
 }
 
-// Llama esto en tu init junto con los demás
-document.addEventListener('DOMContentLoaded', function () {
-  cargarPuntualidadSemana(8);
-});
+ 
 // === Costos mensuales ===
 const selCostosMoneda = document.getElementById('costosDashboard');              // <select MXN/USD>
 const inputCostosFx   = document.getElementById('costosDashboardTipoCambio');    // <input tipo cambio>
@@ -548,9 +606,7 @@ const debouncedReloadCostos = debounce(() => cargarCostosMensuales(12), 350);
 
 if (selCostosMoneda)  selCostosMoneda.addEventListener('change', () => cargarCostosMensuales(12));
 if (inputCostosFx)    inputCostosFx.addEventListener('input',  debouncedReloadCostos);
-document.addEventListener('DOMContentLoaded', function () {
-  cargarCostosMensuales(12);
-});
+ 
 // Promedio móvil simple k-periodos
 function sma(series, k = 3) {
   const out = new Array(series.length).fill(null);
@@ -656,10 +712,7 @@ async function loadCostosVsAbonos() {
   renderCostosVsAbonosMensuales(json.data, moneda);
 }
 
-// inicial
-document.addEventListener('DOMContentLoaded', () => {
-  loadCostosVsAbonos();
-});
+ 
 
 // reactivo
 document.getElementById('costosDashboard').addEventListener('change', loadCostosVsAbonos);
@@ -915,62 +968,80 @@ const onResizeTimeline = debounce(()=> { cargarTimelineOperaciones(30, 50); }, 2
 window.addEventListener('resize', onResizeTimeline);
 
 // Init
-document.addEventListener('DOMContentLoaded', function () {
-  cargarTimelineOperaciones(30, 50);
-});
+ 
 function cargarAlertas() {
-  xhrGET(base_url + "dashboard/alertas?limit=20",
+  xhrGET(
+    base_url + "dashboard/alertas?limit=20",
     (res) => {
-      if (res?.status !== "ok") { console.warn("alertas no OK", res); return; }
-      renderAlertas(res.data);
+      if (res?.status !== "ok" || !res.data) {
+        renderAlertasList(ulAlertasProx, emptyProx, badgeProx, []);
+        renderAlertasList(ulAlertasVenc, emptyVenc, badgeVenc, []);
+        return;
+      }
+
+      // ✅ controlador nuevo: data = { proximas, vencidas, finalizada_sin_entrega }
+      const proximas = res.data.proximas || [];
+      const vencidas = res.data.vencidas || [];
+
+      renderAlertasList(ulAlertasProx, emptyProx, badgeProx, proximas);
+      renderAlertasList(ulAlertasVenc, emptyVenc, badgeVenc, vencidas);
     },
-    (err) => console.error("[alertas]", err)
+    (err) => {
+      console.error("[alertas]", err);
+      renderAlertasList(ulAlertasProx, emptyProx, badgeProx, []);
+      renderAlertasList(ulAlertasVenc, emptyVenc, badgeVenc, []);
+    }
   );
 }
-document.addEventListener("DOMContentLoaded", function () {
-  cargarKPIs();
-  cargarOpsPorSubtipo();
-  cargarPuntualidadSemana(8);
-  cargarTimelineOperaciones(30, 50);
-  cargarAlertas(); // ⬅️
-});
+ 
 // ====== Refs nuevas ======
 const elKpiAlertas = document.getElementById('kpiAlertas');
 const elKpiAlertasDetalle = document.getElementById('kpiAlertasDetalle');
 
 // ====== Cargar KPI: Alertas ======
-function cargarKPIAlertas(limit = 500) {
+function cargarKPIAlertas() {
   xhrGET(
-    base_url + 'dashboard/alertas?limit=' + limit,
+    base_url + "dashboard/alertas?limit=200",
     (res) => {
-      if (res?.status !== 'ok' || !Array.isArray(res.data)) {
-        setText(elKpiAlertas, '0');
-        if (elKpiAlertasDetalle) elKpiAlertasDetalle.textContent = 'Sin alertas';
+      if (res?.status !== "ok" || !res.data) {
+        setText(elKpiAlertas, "0");
+        if (elKpiAlertasDetalle) elKpiAlertasDetalle.textContent = "Sin alertas";
         if (window.feather) feather.replace();
         return;
       }
-      const total = res.data.length;
-      const altas = res.data.filter(a => (a.prioridad || '').toLowerCase() === 'alta').length;
-      const medias = res.data.filter(a => (a.prioridad || '').toLowerCase() === 'media').length;
 
-      setText(elKpiAlertas, total.toLocaleString('es-MX'));
+      const proximas = Array.isArray(res.data.proximas) ? res.data.proximas : [];
+      const vencidas = Array.isArray(res.data.vencidas) ? res.data.vencidas : [];
+      const all = proximas.concat(vencidas);
+
+      const total = all.length;
+      const altas = all.filter(a => (a.prioridad || "").toLowerCase() === "alta").length;
+      const medias = all.filter(a => (a.prioridad || "").toLowerCase() === "media").length;
+
+      setText(elKpiAlertas, total.toLocaleString("es-MX"));
       if (elKpiAlertasDetalle) {
         elKpiAlertasDetalle.textContent = total > 0
           ? `Alta: ${altas} · Media: ${medias}`
-          : 'Sin alertas';
+          : "Sin alertas";
       }
       if (window.feather) feather.replace();
     },
     (err) => {
-      console.error('[kpi alertas]', err);
-      setText(elKpiAlertas, '0');
-      if (elKpiAlertasDetalle) elKpiAlertasDetalle.textContent = 'Error al cargar';
+      console.error("[kpi alertas]", err);
+      setText(elKpiAlertas, "0");
+      if (elKpiAlertasDetalle) elKpiAlertasDetalle.textContent = "Error al cargar";
       if (window.feather) feather.replace();
     }
   );
 }
 
-// Llamarlo en tu init junto a los demás
-document.addEventListener('DOMContentLoaded', function () {
-  cargarKPIAlertas(); // por defecto limit=500
+
+ 
+document.addEventListener("DOMContentLoaded", function () {
+  cargarKPIs();
+  cargarOpsPorSubtipo();
+  cargarPuntualidadSemana(8);
+  cargarTimelineOperaciones(30, 50);
+  cargarAlertas();
+  cargarKPIAlertas(); // si lo usas
 });

@@ -1,270 +1,162 @@
 <?php include_once 'Views/Template/admin_header.php'; ?>
 
 <style>
-    /* Mini tema PacificNort */
-    .kpi-card {
-        border: 0;
-        border-radius: 1rem;
-        color: #fff;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
-        transition: transform .12s ease, box-shadow .12s ease, filter .2s ease;
-    }
+  .kpi-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+  .kpi-card{
+    border-radius: 1rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    min-height: 112px;
+  }
+  .kpi-value{ font-weight: 800; letter-spacing: .2px; }
+  .kpi-icon{
+    opacity: .25;
+    width: 42px;
+    height: 42px;
+  }
+  .subtle{ opacity: .9; }
 
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, .10);
-    }
+  .card-soft{
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+  }
+  .section-title{
+    font-weight: 700;
+    letter-spacing: .2px;
+  }
 
-    .kpi-icon {
-        opacity: .9;
-        width: 40px;
-        height: 40px;
-    }
-
-    .kpi-value {
-        line-height: 1;
-        font-weight: 800;
-        letter-spacing: .3px;
-    }
-
-    .subtle {
-        opacity: .9;
-    }
-
-    /* Colores */
-    .bg-pacific {
-        background: linear-gradient(135deg, #1b2256, #2b4b9b);
-    }
-
-    .bg-emerald {
-        background: linear-gradient(135deg, #0ea5a3, #22c55e);
-    }
-
-    .bg-sunset {
-        background: linear-gradient(135deg, #f59e0b, #ef4444);
-    }
-
-    .bg-indigo {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    }
-
-    .bg-royal {
-        background: linear-gradient(135deg, #06b6d4, #3b82f6);
-    }
-
-    .bg-rose {
-        background: linear-gradient(135deg, #ef4444, #b91c1c);
-        /* rojo/alarma */
-    }
-
-    /* NUEVO: color para FO (Ferro / Terrestre) */
-    .bg-fo {
-        background: linear-gradient(135deg, #0f766e, #22c55e);
-    }
-
-    /* Grid 5 columnas responsive */
-    .kpi-grid {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(6, minmax(180px, 1fr));
-    }
-
-    @media (max-width: 1400px) {
-        .kpi-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    @media (max-width: 1200px) {
-        .kpi-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 500px) {
-        .kpi-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (min-width: 1400px) {
-        .kpi-grid {
-            grid-template-columns: repeat(6, 1fr) !important;
-        }
-    }
-
-    .card-soft {
-        border: 0;
-        border-radius: 1rem;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
-    }
-
-    .section-title {
-        font-weight: 700;
-        letter-spacing: .2px;
-    }
-
-    .legend-dot {
-        display: inline-block;
-        width: .75rem;
-        height: .75rem;
-        border-radius: 50%;
-        margin-right: .4rem;
-    }
+  /* Ajusta tus fondos existentes (si ya los tienes, puedes borrar esto) */
+  .bg-pacific{ background: linear-gradient(135deg, #1D4ED8 0%, #0EA5E9 100%); }
+  .bg-fo{ background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+  .bg-amber{ background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%); }
+  .bg-rose{ background: linear-gradient(135deg, #E11D48 0%, #FB7185 100%); }
+  .bg-slate{ background: linear-gradient(135deg, #334155 0%, #64748B 100%); }
 </style>
 
 <div class="container-fluid">
 
-    <!-- Encabezado / Hero -->
-    <div class="mb-3">
-        <h3 class="mb-1 fw-bold">Dashboard Principal</h3>
-        <div class="text-muted">Visión global de operaciones, contenedores, eventos, clientes y costos.</div>
+  <!-- Encabezado / Hero -->
+  <div class="mb-3">
+    <h3 class="mb-1 fw-bold">Dashboard Principal</h3>
+    <div class="text-muted">Visión global de operaciones, contenedores, eventos, clientes y alertas.</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid mb-4">
+
+    <!-- Operaciones activas (Marítimo) -->
+    <div class="kpi-card bg-pacific p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Operaciones activas (Marítimo)</div>
+          <div id="kpiOpsActivas" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="anchor" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2" id="kpiOpsDetalle">Solo operaciones marítimas</div>
     </div>
 
-    <!-- KPIs en color -->
-    <div class="kpi-grid mb-4">
-
-        <!-- Operaciones activas MARÍTIMO (actual) -->
-        <div class="kpi-card bg-pacific p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Operaciones activas (Marítimo)</div>
-                    <div id="kpiOpsActivas" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="anchor" class="kpi-icon"></i>
-            </div>
-            <!-- Ajustamos el texto para que refleje solo marítimas -->
-            <div class="small subtle mt-2" id="kpiOpsDetalle">Solo operaciones marítimas</div>
+    <!-- Cajas/Ferros en tránsito (FO activas) -->
+    <div class="kpi-card bg-fo p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Cajas/Ferros en tránsito</div>
+          <div id="kpiFOActivasTransito" class="display-6 kpi-value">0</div>
         </div>
-
-        <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
-        <div class="kpi-card bg-fo p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Operaciones activas (FO)</div>
-                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="truck" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2" id="kpiOpsFODetalle">Ferroviarias y terrestres</div>
-        </div>
-
-        <!-- Contenedores activos -->
-        <div class="kpi-card bg-emerald p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Contenedores En Agua</div>
-                    <div id="kpiContActivos" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="package" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2" id="kpiContDetalle">Maritimos</div>
-        </div>
-
-        <!-- Eventos (hechos/total) -->
-        <div class="kpi-card bg-sunset p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Eventos (hechos/total)</div>
-                    <div class="kpi-value">
-                        <span id="kpiEventosHechos" class="h2">0</span>/<span id="kpiEventosTotal" class="h2">0</span>
-                    </div>
-                    <div class="small subtle">Avance: <span id="kpiEventosPct">0%</span></div>
-                </div>
-                <i data-feather="check-circle" class="kpi-icon"></i>
-            </div>
-        </div>
-
-        <!-- Clientes activos -->
-        <div class="kpi-card bg-indigo p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Clientes activos</div>
-                    <div id="kpiClientesActivos" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="users" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2">Con operaciones en curso</div>
-        </div>
-
-        <!-- Ops próximas a ETA -->
-        <div class="kpi-card bg-royal p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Ops próximas a ETA (≤ 7 días)</div>
-                    <div id="kpiOpsProxETA" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="clock" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2">Ventana de llegada inmediata</div>
-        </div>
-
-        <!-- Alertas -->
-        <div class="kpi-card bg-rose p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Alertas</div>
-                    <div id="kpiAlertas" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="alert-triangle" class="kpi-icon"></i>
-            </div>
-            <div id="kpiAlertasDetalle" class="small subtle mt-2">—</div>
-        </div>
-        <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
-        <div class="kpi-card bg-fo p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Cajas/Ferros en Transito</div>
-                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="truck" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2" id="kpiOpsFODetalle">Cajas Activas</div>
-        </div>
-
-        <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
-        <div class="kpi-card bg-fo p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Contenedores en Bodega</div>
-                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="truck" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2" id="kpiOpsFODetalle">Contenedores en Bodegas</div>
-        </div>
-
-                <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
-        <div class="kpi-card bg-fo p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Operaciones Sin ISF</div>
-                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="truck" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2" id="kpiOpsFODetalle">Operaciones Martiimas</div>
-        </div>
-
-                <!-- NUEVO: Operaciones activas FO (Ferro / Terrestre) -->
-        <div class="kpi-card bg-fo p-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="me-3">
-                    <div class="subtle small">Operaciones Sin Cita en Puerto</div>
-                    <div id="kpiOpsActivasFO" class="display-6 kpi-value">0</div>
-                </div>
-                <i data-feather="truck" class="kpi-icon"></i>
-            </div>
-            <div class="small subtle mt-2" id="kpiOpsFODetalle">Operaciones Martiimas</div>
-        </div>
-
+        <i data-feather="truck" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2" id="kpiFOActivasTransitoDetalle">Operaciones FO activas</div>
     </div>
+
+    <!-- Contenedores en Bodega (BODEGA TJ / BODEGA SD) -->
+    <div class="kpi-card bg-slate p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Contenedores en Bodega</div>
+          <div id="kpiContenedoresBodega" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="package" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2" id="kpiContenedoresBodegaDetalle">BODEGA TJ + BODEGA SD</div>
+    </div>
+
+    <!-- Operaciones sin ISF (EXCEPTO subtipo Lázaro) -->
+    <div class="kpi-card bg-amber p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Operaciones sin ISF</div>
+          <div id="kpiOpsSinISF" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="file-minus" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2" id="kpiOpsSinISFDetalle">No aplica en subtipo Lázaro</div>
+    </div>
+
+    <!-- Operaciones sin cita en puerto (EXCEPTO subtipo Lázaro) -->
+    <div class="kpi-card bg-amber p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Sin cita en puerto</div>
+          <div id="kpiOpsSinCitaPuerto" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="calendar" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2" id="kpiOpsSinCitaPuertoDetalle">No aplica en subtipo Lázaro</div>
+    </div>
+
+    <!-- Cerca de su cita en puerto -->
+    <div class="kpi-card bg-rose p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Cita en puerto próxima</div>
+          <div id="kpiOpsCitaPuertoProxima" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="alert-triangle" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2" id="kpiOpsCitaPuertoProximaDetalle">Cita en puerto próxima</div>
+    </div>
+
+    <!-- (Opcional) contenedores activos / eventos / clientes etc: conserva los tuyos 
+    <div class="kpi-card bg-slate p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Contenedores activos</div>
+          <div id="kpiContActivos" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="box" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2">Marítimo + Contenedores operación</div>
+    </div>
+-->
+    <div class="kpi-card bg-pacific p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Clientes activos</div>
+          <div id="kpiClientesActivos" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="users" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2">Clientes con operaciones activas</div>
+    </div>
+
+    <div class="kpi-card bg-pacific p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="me-3">
+          <div class="subtle small">Operaciones próximas ETA</div>
+          <div id="kpiOpsProxETA" class="display-6 kpi-value">0</div>
+        </div>
+        <i data-feather="clock" class="kpi-icon"></i>
+      </div>
+      <div class="small subtle mt-2">Ventana configurable</div>
+    </div>
+
+  </div>
 
     
 
