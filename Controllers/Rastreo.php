@@ -7,35 +7,27 @@ class Rastreo extends Controller
         session_start();
     }
 
-    /**
-     * Muestra la página de rastreo (la vista pública con el input y la tabla).
-     * Views/Principal/rastreo.php
-     */
     public function index()
     {
         $data['title'] = 'Rastreo de Carga';
-        // Si tu vista está en Views/Principal/rastreo.php, el segundo parámetro es "rastreo"
-        // y el router ya se encarga de usar la carpeta correcta (según tu estructura).
         $this->views->getView($this, "rastreo", $data);
     }
 
     /**
-     * Endpoint AJAX para buscar una operación ferroviaria por número (FO-03, FO-10, etc.)
-     * y devolver los tramos de la ruta en formato JSON.
+     * Endpoint AJAX unificado:
+     * - FO-XX => retorna tramos (tipo=fo)
+     * - LBMF/LC/etc => retorna resumen marítimo (tipo=maritimo)
      *
-     * URL esperada desde JS:
-     *   base_url + "Rastreo/buscarOperacion"
-     *
+     * URL: base_url + "Rastreo/buscarOperacion"
      * Método: POST
-     * Parámetro: numero_operacion
+     * Param: numero_operacion
      */
     public function buscarOperacion()
     {
         header('Content-Type: application/json; charset=UTF-8');
 
-        // Solo permitimos POST para este endpoint
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405); // Method Not Allowed
+            http_response_code(405);
             echo json_encode([
                 'ok'  => false,
                 'msg' => 'Método no permitido.'
@@ -55,45 +47,81 @@ class Rastreo extends Controller
             return;
         }
 
-        // Normalizamos a mayúsculas (por si el usuario escribe fo-03)
+        // Normalizar
         $numeroOperacion = strtoupper($numeroOperacion);
 
         try {
-            // Obtenemos los tramos completos para esa operación (FO-XX)
-            $tramos = $this->model->getTramosPorNumeroOperacionFerro($numeroOperacion);
 
-            if (empty($tramos)) {
+            // =========================
+            // 1) FO (Ferro / Terrestre)
+            // =========================
+            if (strpos($numeroOperacion, 'FO-') === 0) {
+
+                $tramos = $this->model->getTramosPorNumeroOperacionFerro($numeroOperacion);
+
+                if (empty($tramos)) {
+                    echo json_encode([
+                        'ok'               => false,
+                        'tipo'             => 'fo',
+                        'msg'              => 'No se encontraron rutas para la operación indicada.',
+                        'numero_operacion' => $numeroOperacion
+                    ]);
+                    return;
+                }
+
+                $first = $tramos[0];
+
+                $encabezado = [
+                    'numero_operacion' => $first['numero_operacion'] ?? $numeroOperacion,
+                    'contenedor'       => $first['numero_ferro'] ?? '',
+                ];
+
+                echo json_encode([
+                    'ok'         => true,
+                    'tipo'       => 'fo',
+                    'msg'        => 'Rutas encontradas correctamente.',
+                    'encabezado' => $encabezado,
+                    'tramos'     => $tramos,
+                ]);
+                return;
+            }
+
+            // =========================
+            // 2) Marítimo (LBMF/LC/etc.)
+            // =========================
+            $rows = $this->model->getResumenOperacionMaritima($numeroOperacion);
+
+            if (empty($rows)) {
                 echo json_encode([
                     'ok'               => false,
-                    'msg'              => 'No se encontraron rutas para la operación indicada.',
+                    'tipo'             => 'maritimo',
+                    'msg'              => 'No se encontró la operación marítima indicada.',
                     'numero_operacion' => $numeroOperacion
                 ]);
                 return;
             }
 
-            // Usamos el primer tramo para armar el encabezado (operación + contenedor/caja)
-            $first = $tramos[0];
-
+            // Encabezado marítimo (solo operación)
             $encabezado = [
-                'numero_operacion' => $first['numero_operacion'] ?? $numeroOperacion,
-                'contenedor'       => $first['numero_ferro'] ?? '',   // Contenedor/caja
-
+                'numero_operacion' => $numeroOperacion,
             ];
 
             echo json_encode([
                 'ok'         => true,
-                'msg'        => 'Rutas encontradas correctamente.',
+                'tipo'       => 'maritimo',
+                'msg'        => 'Operación marítima encontrada correctamente.',
                 'encabezado' => $encabezado,
-                'tramos'     => $tramos,
+                'data'       => $rows,   // 1 fila por contenedor (o vacío si no hay contenedor ligado)
             ]);
+            return;
+
         } catch (Exception $e) {
-            // Manejo básico de error interno
             http_response_code(500);
             echo json_encode([
                 'ok'  => false,
                 'msg' => 'Ocurrió un error al consultar la operación.',
-
             ]);
+            return;
         }
     }
 }

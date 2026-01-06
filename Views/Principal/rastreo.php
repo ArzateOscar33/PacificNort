@@ -1,7 +1,7 @@
 <?php
 // Views/Principal/rastreo.php
 ?>
- 
+
 <section class="section" id="rastreo">
   <div class="container">
 
@@ -11,7 +11,7 @@
         <i class="bi bi-geo-alt me-2"></i>Rastreo de Carga
       </h2>
       <p class="section-subtitle mb-0">
-        Consulta  el estatus y ubicación de tus contenedores.
+        Consulta el estatus y ubicación de tus contenedores.
       </p>
     </div>
 
@@ -20,32 +20,33 @@
       <div class="col-lg-8 col-md-10" data-aos="fade-up" data-aos-delay="100">
 
         <div class="input-group mt-2">
-          
-          <!-- Icono -->
           <span class="input-group-text d-flex align-items-center">
             <i class="bi bi-upc-scan"></i>
           </span>
 
-          <!-- Input -->
           <input
             type="text"
             class="form-control"
             id="inputNumeroGuia"
-            placeholder="Ingresa tu número de operación (ej. FO-03)">
+            placeholder="Ingresa tu número de operación (ej. FO-03, LBMF-01, LC-02)">
 
-          <!-- Botón -->
           <button class="btn btn-primary d-flex align-items-center" type="button" id="btnRastrearEnvio">
             <i class="bi bi-search me-1"></i> Rastrear
           </button>
-
         </div>
+
+        <small class="text-muted d-block mt-2">
+          Puedes buscar operaciones FO (ferro/terrestre) o marítimas (LBMF, LC, etc.).
+        </small>
 
       </div>
     </div>
 
 
-    <!-- CONTENEDOR DE RUTAS (SIN CARD) -->
-    <div class="row mt-3">
+    <!-- ========================= -->
+    <!-- RESULTADO FO (RUTAS/TRAMOS) -->
+    <!-- ========================= -->
+    <div class="row mt-3" id="bloqueResultadoFO">
       <div class="col-lg-12">
 
         <!-- Encabezado simple -->
@@ -55,13 +56,13 @@
               <i class="bi bi-signpost-split me-2"></i>Rutas de la Operación
             </h5>
             <small class="text-muted" id="lblOperacionSeleccionada">
-              Operación: <span class="fw-semibold">FO-03</span> • Contenedor/Caja:
-              <span class="fw-semibold">585</span>
+              Operación: <span class="fw-semibold">—</span> • Contenedor/Caja:
+              <span class="fw-semibold">—</span>
             </small>
           </div>
         </div>
 
-        <!-- Tabla dentro de un contenedor responsive -->
+        <!-- Tabla dentro de contenedor responsive -->
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0" id="tablaRutasOperacion">
             <thead class="table-light">
@@ -70,33 +71,67 @@
                 <th>Origen</th>
                 <th>Destino</th>
                 <th>Transportista</th>
-                <th style="width: 150px;">Fecha / Hora</th>
+                <th style="width: 190px;">Fecha</th>
                 <th>Comentario</th>
               </tr>
             </thead>
             <tbody id="tbodyRutasOperacion">
-              <!-- EJEMPLOS ESTÁTICOS -->
               <tr>
-                <td>1</td>
-                <td>Pantaco</td>
-                <td>Mexicali</td>
-                <td>COMANDOS</td>
-                <td>2025-12-07 08:30</td>
-                <td>Salida de patio ferroviario.</td>
+                <td colspan="6" class="text-center text-muted">Sin datos para mostrar.</td>
               </tr>
-              <tr>
-                <td>2</td>
-                <td>Mexicali</td>
-                <td>Tijuana</td>
-                <td>TRANSP. NORTE</td>
-                <td>2025-12-08 11:10</td>
-                <td>Llegada a patio Tijuana.</td>
-              </tr>
-              <!-- FIN EJEMPLOS -->
             </tbody>
           </table>
         </div>
 
+      </div>
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- RESULTADO MARÍTIMO (ESTATUS ACTUAL) -->
+    <!-- ========================= -->
+    <div class="row mt-3 d-none" id="bloqueResultadoMaritimo">
+      <div class="col-lg-12">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0">
+              <i class="bi bi-ship me-2"></i>Estatus de la Operación Marítima
+            </h5>
+            <small class="text-muted" id="lblOperacionMaritima">
+              Operación: <span class="fw-semibold">—</span>
+            </small>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0" id="tablaOperacionMaritima">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 160px;">Operación</th>
+                <th style="width: 180px;">Contenedor</th>
+                <th style="width: 180px;">Estatus actual</th>
+                <th>Comentario</th> 
+              </tr>
+            </thead>
+            <tbody id="tbodyOperacionMaritima">
+              <tr>
+                <td colspan="5" class="text-center text-muted">Sin datos para mostrar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- Estado vacío general (opcional para cuando no hay búsqueda o no hay resultados) -->
+    <div class="row mt-3 d-none" id="rastreoVacio">
+      <div class="col-lg-12">
+        <div class="alert alert-light border text-muted mb-0">
+          Ingresa un número de operación para ver resultados.
+        </div>
       </div>
     </div>
 

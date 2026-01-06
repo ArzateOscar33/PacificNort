@@ -3,15 +3,29 @@
 document.addEventListener("DOMContentLoaded", function () {
   const inputNumeroGuia       = document.getElementById("inputNumeroGuia");
   const btnRastrearEnvio      = document.getElementById("btnRastrearEnvio");
+
+  // ====== BLOQUE FO ======
   const lblOperacionSeleccion = document.getElementById("lblOperacionSeleccionada");
   const tbodyRutasOperacion   = document.getElementById("tbodyRutasOperacion");
   const tablaRutas            = document.getElementById("tablaRutasOperacion");
 
-  // Contenedor de la tabla (el div.table-responsive)
-  const contenedorTabla = tablaRutas ? tablaRutas.closest(".table-responsive") : null;
-  // Contenedor del encabezado: el <div class="d-flex justify-content-between ...">
-  const headerRutas = lblOperacionSeleccion
+  // Contenedor de la tabla FO (el div.table-responsive)
+  const contenedorTablaFO = tablaRutas ? tablaRutas.closest(".table-responsive") : null;
+  // Contenedor del encabezado FO: el <div class="d-flex ...">
+  const headerRutasFO = lblOperacionSeleccion
     ? lblOperacionSeleccion.closest(".d-flex")
+    : null;
+
+  // Contenedor general del bloque FO (si existe en tu vista nueva)
+  const bloqueResultadoFO = document.getElementById("bloqueResultadoFO");
+
+  // ====== BLOQUE MARÍTIMO ======
+  const bloqueResultadoMaritimo = document.getElementById("bloqueResultadoMaritimo");
+  const lblOperacionMaritima    = document.getElementById("lblOperacionMaritima");
+  const tbodyOperacionMaritima  = document.getElementById("tbodyOperacionMaritima");
+  const tablaOperacionMaritima  = document.getElementById("tablaOperacionMaritima");
+  const contenedorTablaMar = tablaOperacionMaritima
+    ? tablaOperacionMaritima.closest(".table-responsive")
     : null;
 
   // Crear botón "Limpiar" dinámicamente y agregarlo al input-group
@@ -35,27 +49,34 @@ document.addEventListener("DOMContentLoaded", function () {
   inicializarVista();
 
   function inicializarVista() {
-    // Encabezado genérico
-    lblOperacionSeleccion.innerHTML =
-      'Operación: <span class="fw-semibold">—</span> • Contenedor/Caja: ' +
-      '<span class="fw-semibold">—</span>';
-
-    // Quitar cualquier fila estática y dejar "Sin datos"
-    renderTablaSinDatos();
-
-    // Ocultar tabla y encabezado hasta que se haga la primera búsqueda
-    if (contenedorTabla) {
-      contenedorTabla.classList.add("d-none");
+    // Reset FO
+    if (lblOperacionSeleccion) {
+      lblOperacionSeleccion.innerHTML =
+        'Operación: <span class="fw-semibold">—</span> • Contenedor/Caja: ' +
+        '<span class="fw-semibold">—</span>';
     }
-    if (headerRutas) {
-      headerRutas.classList.add("d-none");
+    renderTablaSinDatosFO();
+
+    // Reset Marítimo
+    if (lblOperacionMaritima) {
+      lblOperacionMaritima.innerHTML =
+        'Operación: <span class="fw-semibold">—</span>';
     }
+    renderTablaSinDatosMaritimo();
+
+    // Ocultar ambos bloques hasta búsqueda
+    ocultarBloqueFO();
+    ocultarBloqueMaritimo();
 
     // Ocultar botón limpiar
     btnLimpiar.classList.add("d-none");
   }
 
-  function renderTablaSinDatos() {
+  // =========================
+  // FO helpers
+  // =========================
+  function renderTablaSinDatosFO() {
+    if (!tbodyRutasOperacion) return;
     tbodyRutasOperacion.innerHTML = `
       <tr>
         <td colspan="6" class="text-center text-muted">
@@ -66,8 +87,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderTablaTramos(tramos) {
+    if (!tbodyRutasOperacion) return;
+
     if (!Array.isArray(tramos) || tramos.length === 0) {
-      renderTablaSinDatos();
+      renderTablaSinDatosFO();
       return;
     }
 
@@ -95,7 +118,9 @@ document.addEventListener("DOMContentLoaded", function () {
     tbodyRutasOperacion.innerHTML = html;
   }
 
-  function actualizarEncabezado(encabezado) {
+  function actualizarEncabezadoFO(encabezado) {
+    if (!lblOperacionSeleccion) return;
+
     const numeroOperacion =
       (encabezado && encabezado.numero_operacion) ? encabezado.numero_operacion : "—";
     const contenedor =
@@ -106,30 +131,102 @@ document.addEventListener("DOMContentLoaded", function () {
       '</span> • Contenedor/Caja: <span class="fw-semibold">' + contenedor + '</span>';
   }
 
-  function mostrarBloqueRutas() {
-    if (contenedorTabla) {
-      contenedorTabla.classList.remove("d-none");
-    }
-    if (headerRutas) {
-      headerRutas.classList.remove("d-none");
-    }
+  function mostrarBloqueFO() {
+    // Si tienes bloque contenedor, úsalo
+    if (bloqueResultadoFO) bloqueResultadoFO.classList.remove("d-none");
+
+    // Compatibilidad con tu lógica anterior (encabezado + table-responsive)
+    if (contenedorTablaFO) contenedorTablaFO.classList.remove("d-none");
+    if (headerRutasFO) headerRutasFO.classList.remove("d-none");
   }
 
-  function ocultarBloqueRutas() {
-    if (contenedorTabla) {
-      contenedorTabla.classList.add("d-none");
-    }
-    if (headerRutas) {
-      headerRutas.classList.add("d-none");
-    }
+  function ocultarBloqueFO() {
+    if (bloqueResultadoFO) bloqueResultadoFO.classList.add("d-none");
+
+    if (contenedorTablaFO) contenedorTablaFO.classList.add("d-none");
+    if (headerRutasFO) headerRutasFO.classList.add("d-none");
   }
 
+  // =========================
+  // Marítimo helpers
+  // =========================
+  function renderTablaSinDatosMaritimo() {
+    if (!tbodyOperacionMaritima) return;
+    tbodyOperacionMaritima.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-muted">
+          Sin datos para mostrar.
+        </td>
+      </tr>
+    `;
+  }
+
+  function actualizarEncabezadoMaritimo(encabezado) {
+    if (!lblOperacionMaritima) return;
+    const numeroOperacion =
+      (encabezado && encabezado.numero_operacion) ? encabezado.numero_operacion : "—";
+
+    lblOperacionMaritima.innerHTML =
+      'Operación: <span class="fw-semibold">' + numeroOperacion + '</span>';
+  }
+
+  function escapeHtml(value) {
+    const s = (value === null || value === undefined) ? "" : String(value);
+    return s
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function renderTablaMaritimo(rows) {
+    if (!tbodyOperacionMaritima) return;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      renderTablaSinDatosMaritimo();
+      return;
+    }
+
+    let html = "";
+    rows.forEach(function (r) {
+      const op    = escapeHtml(r.numero_operacion || "");
+      const cont  = escapeHtml(r.contenedor || "—");
+      const est   = escapeHtml(r.estatus_nombre || "");
+      const comen = escapeHtml(r.comentario || "");
+
+      html += `
+        <tr>
+          <td>${op}</td>
+          <td>${cont}</td>
+          <td>${est}</td>
+          <td>${comen}</td>
+        </tr>
+      `;
+    });
+
+    tbodyOperacionMaritima.innerHTML = html;
+  }
+
+  function mostrarBloqueMaritimo() {
+    if (bloqueResultadoMaritimo) bloqueResultadoMaritimo.classList.remove("d-none");
+    if (contenedorTablaMar) contenedorTablaMar.classList.remove("d-none");
+  }
+
+  function ocultarBloqueMaritimo() {
+    if (bloqueResultadoMaritimo) bloqueResultadoMaritimo.classList.add("d-none");
+    if (contenedorTablaMar) contenedorTablaMar.classList.add("d-none");
+  }
+
+  // =========================
+  // Buscar
+  // =========================
   function buscarOperacion() {
     const numeroOperacion = inputNumeroGuia.value.trim();
 
     if (numeroOperacion === "") {
       Swal.fire("Aviso", "Debes ingresar un número de operación.", "warning");
-      inputNumeroGuia.disabled=false;
+      inputNumeroGuia.disabled = false;
       return;
     }
 
@@ -143,9 +240,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     http.onreadystatechange = function () {
       if (this.readyState === 4) {
-        // Mostrar bloque (encabezado + tabla) aunque haya error,
-        // para que se vea "Sin datos"
-        mostrarBloqueRutas();
 
         if (this.status === 200) {
           let res;
@@ -154,43 +248,86 @@ document.addEventListener("DOMContentLoaded", function () {
           } catch (e) {
             console.error("Error al parsear JSON:", e, this.responseText);
             Swal.fire("Error", "Respuesta inválida del servidor.", "error");
-            actualizarEncabezado(null);
-            renderTablaSinDatos();
+
+            // Reset visual
+            ocultarBloqueFO();
+            ocultarBloqueMaritimo();
+            actualizarEncabezadoFO(null);
+            renderTablaSinDatosFO();
+            actualizarEncabezadoMaritimo(null);
+            renderTablaSinDatosMaritimo();
             return;
           }
 
+          // Antes de pintar, ocultamos ambos bloques y luego mostramos el correcto
+          ocultarBloqueFO();
+          ocultarBloqueMaritimo();
+
           if (!res.ok) {
-            // No se encontraron rutas o mensaje desde el backend
             Swal.fire(
               "Sin resultados",
-              (res.msg || "No se encontraron rutas.").toUpperCase(),
+              (res.msg || "No se encontraron resultados.").toUpperCase(),
               "info"
             );
-            actualizarEncabezado({
-              numero_operacion: res.numero_operacion || numeroOperacion,
-              contenedor: "—"
-            });
-            renderTablaSinDatos();
+
+            // Según el tipo, dejamos visible el bloque correspondiente con "sin datos"
+            const tipo = (res.tipo || "").toLowerCase();
+
+            if (tipo === "maritimo") {
+              mostrarBloqueMaritimo();
+              actualizarEncabezadoMaritimo({ numero_operacion: res.numero_operacion || numeroOperacion });
+              renderTablaSinDatosMaritimo();
+            } else {
+              // default FO
+              mostrarBloqueFO();
+              actualizarEncabezadoFO({
+                numero_operacion: res.numero_operacion || numeroOperacion,
+                contenedor: "—"
+              });
+              renderTablaSinDatosFO();
+            }
+
           } else {
-            // Éxito
-            actualizarEncabezado(res.encabezado || null);
-            renderTablaTramos(res.tramos || []);
-            inputNumeroGuia.disabled=true;
+            const tipo = (res.tipo || "").toLowerCase();
+
+            if (tipo === "maritimo") {
+              // Éxito Marítimo
+              mostrarBloqueMaritimo();
+              actualizarEncabezadoMaritimo(res.encabezado || { numero_operacion: numeroOperacion });
+              renderTablaMaritimo(res.data || []);
+
+            } else {
+              // Éxito FO
+              mostrarBloqueFO();
+              actualizarEncabezadoFO(res.encabezado || null);
+              renderTablaTramos(res.tramos || []);
+            }
+
+            // Bloquear inputs tras éxito
+            inputNumeroGuia.disabled = true;
             btnRastrearEnvio.classList.add("disabled");
+
             Swal.fire(
               "Listo",
-              (res.msg || "Rutas encontradas correctamente.").toUpperCase(),
+              (res.msg || "Consulta realizada correctamente.").toUpperCase(),
               "success"
             );
           }
 
           // Mostrar botón limpiar después de una búsqueda
           btnLimpiar.classList.remove("d-none");
+
         } else {
           console.error("Error HTTP:", this.status, this.responseText);
           Swal.fire("Error", "Ocurrió un error al consultar la operación.", "error");
-          actualizarEncabezado(null);
-          renderTablaSinDatos();
+
+          // Reset visual
+          ocultarBloqueFO();
+          ocultarBloqueMaritimo();
+          actualizarEncabezadoFO(null);
+          renderTablaSinDatosFO();
+          actualizarEncabezadoMaritimo(null);
+          renderTablaSinDatosMaritimo();
         }
       }
     };
@@ -199,39 +336,26 @@ document.addEventListener("DOMContentLoaded", function () {
   // =========================
   // Eventos
   // =========================
-
   btnRastrearEnvio.addEventListener("click", function () {
     buscarOperacion();
-    //btnRastrearEnvio.classList.add("disabled");
-    //inputNumeroGuia.disabled = true;
   });
 
-  // Buscar al presionar Enter en el input
   inputNumeroGuia.addEventListener("keyup", function (e) {
     if (e.key === "Enter" || e.keyCode === 13) {
       buscarOperacion();
-      
-   // inputNumeroGuia.disabled = true;
-
     }
   });
 
-  // Cuando el usuario empieza a escribir otra vez:
-  // ocultamos botón limpiar, pero dejamos oculto el encabezado+tabla
   inputNumeroGuia.addEventListener("input", function () {
     btnLimpiar.classList.add("d-none");
-    // No tocamos la tabla aquí para que el usuario pueda seguir viendo la info
-    // hasta que decida limpiar. Si quisieras ocultarla aquí, podríamos llamar:
-    // ocultarBloqueRutas();
+    // No ocultamos resultados automáticamente; solo cuando el usuario limpie.
   });
 
-  // Acción del botón limpiar
   btnLimpiar.addEventListener("click", function () {
     inputNumeroGuia.value = "";
     inicializarVista();
-    ocultarBloqueRutas();
     inputNumeroGuia.focus();
-        btnRastrearEnvio.classList.remove("disabled");
+    btnRastrearEnvio.classList.remove("disabled");
     inputNumeroGuia.disabled = false;
   });
 });
