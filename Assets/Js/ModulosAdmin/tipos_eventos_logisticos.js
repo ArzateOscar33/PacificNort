@@ -8,7 +8,7 @@ const sugerencias = document.getElementById("sugerenciasTipoEvento");
 // Listar
 function listarTiposEventos() {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_eventos_logisticos/listar", true);
+  http.open("GET", base_url + "Tipos_eventos_logisticos/listar", true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -57,7 +57,7 @@ document.getElementById("btnAgregarTipoEvento")?.addEventListener("click", () =>
 // Editar (cargar datos)
 function editarTipoEvento(id) {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_eventos_logisticos/editar/" + id, true);
+  http.open("GET", base_url + "Tipos_eventos_logisticos/editar/" + id, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -78,7 +78,7 @@ function editarTipoEvento(id) {
 form?.addEventListener("submit", function (e) {
   e.preventDefault();
   const http = new XMLHttpRequest();
-  http.open("POST", base_url + "tipos_eventos_logisticos/registrar", true);
+  http.open("POST", base_url + "Tipos_eventos_logisticos/registrar", true);
   http.send(new FormData(form));
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -108,7 +108,7 @@ function eliminarTipoEvento(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      http.open("GET", base_url + "tipos_eventos_logisticos/eliminar/" + id, true);
+      http.open("GET", base_url + "Tipos_eventos_logisticos/eliminar/" + id, true);
       http.send();
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
@@ -133,7 +133,7 @@ inputBuscar?.addEventListener("keyup", function () {
     return;
   }
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_eventos_logisticos/buscar?term=" + encodeURIComponent(term), true);
+  http.open("GET", base_url + "Tipos_eventos_logisticos/buscar?term=" + encodeURIComponent(term), true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {

@@ -8,7 +8,7 @@ listar();
 // Listar
 function listar() {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "subtipoOperacion/listar", true);
+  http.open("GET", base_url + "SubTipoOperacion/listar", true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -58,7 +58,7 @@ form.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const id = (document.getElementById("id").value || "").trim();
-  const url = base_url + "subtipoOperacion/" + (id ? "actualizar" : "registrar");
+  const url = base_url + "SubTipoOperacion/" + (id ? "actualizar" : "registrar");
 
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
@@ -86,7 +86,7 @@ form.addEventListener("submit", function (e) {
 
 function editar(id) {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "subtipoOperacion/editar/" + id, true);
+  http.open("GET", base_url + "SubTipoOperacion/editar/" + id, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {

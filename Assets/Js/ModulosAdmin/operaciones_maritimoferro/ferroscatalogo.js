@@ -99,7 +99,7 @@ this.dataset.prevLen = String(currLen);
     if (deb) clearTimeout(deb);
     deb = setTimeout(()=>{
       if (lastXHR && lastXHR.readyState !== 4) try{ lastXHR.abort(); }catch{}
-      const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/sugerencias_operaciones_maritimas'
+      const url = BASE_URL + 'Operaciones_maritimo_ferro_contenedores/sugerencias_operaciones_maritimas'
                 + '?q=' + encodeURIComponent(q) + '&limit=12';
       const x = new XMLHttpRequest(); lastXHR = x;
       x.open('GET', url, true);
@@ -198,7 +198,7 @@ function onPickOp(it){
       if (lastXHR && lastXHR.abort) lastXHR.abort();
       const x = new XMLHttpRequest();
       lastXHR = x;
-      const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_ferros'
+      const url = BASE_URL + 'Operaciones_maritimo_ferro_contenedores/buscar_ferros'
                 + '?term=' + encodeURIComponent(q) + '&limit=15';
       x.open('GET', url, true);
       x.onload = ()=>{
@@ -254,7 +254,7 @@ function onPickOp(it){
     function fetchSug(q){
       if (lastXHR && lastXHR.abort) lastXHR.abort();
       const x = new XMLHttpRequest(); lastXHR = x;
-      const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_destinos'
+      const url = BASE_URL + 'Operaciones_maritimo_ferro_contenedores/buscar_destinos'
                 + '?term=' + encodeURIComponent(q) + '&limit=15';
       x.open('GET', url, true);
       x.onload = ()=>{
@@ -311,7 +311,7 @@ function onPickOp(it){
 function fetchSug(q){
   if (lastXHR && lastXHR.abort) lastXHR.abort();
   const x = new XMLHttpRequest(); lastXHR = x;
-  const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/buscar_transportistas'
+  const url = BASE_URL + 'Operaciones_maritimo_ferro_contenedores/buscar_transportistas'
             + `?term=${encodeURIComponent(q)}&limit=15`;   // 👈 SIN &tipo=
   x.open('GET', url, true);
   x.onload = ()=>{
@@ -363,7 +363,7 @@ modal.addEventListener('shown.bs.modal', function(){
   // Solo en crear: pedir preview
   inpNumeroFO.value = '';
   const x = new XMLHttpRequest();
-  const url = BASE_URL + 'operaciones_maritimo_ferro_contenedores/numero_fo_preview';
+  const url = BASE_URL + 'Operaciones_maritimo_ferro_contenedores/numero_fo_preview';
   x.open('GET', url, true);
   x.onload = function(){
     if (x.status !== 200) return;

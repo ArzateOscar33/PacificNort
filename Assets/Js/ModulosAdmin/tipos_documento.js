@@ -8,7 +8,7 @@ listar();
 // Listar
 function listar() {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_documentos/listar", true);
+  http.open("GET", base_url + "Tipos_documentos/listar", true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -53,7 +53,7 @@ btnAgregarTipoDocumento.addEventListener("click", () => {
 form.addEventListener("submit", function (e) {
   e.preventDefault();
   const http = new XMLHttpRequest();
-  http.open("POST", base_url + "tipos_documentos/registrar", true);
+  http.open("POST", base_url + "Tipos_documentos/registrar", true);
   http.send(new FormData(form)); // incluye id_estatus + nombre
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -72,7 +72,7 @@ form.addEventListener("submit", function (e) {
 
 function editarTipoDocumento(id) {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_documentos/editar/" + id, true);
+  http.open("GET", base_url + "Tipos_documentos/editar/" + id, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -117,7 +117,7 @@ function eliminarTipoDocumento(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      const url=base_url + "tipos_documentos/eliminar/" + id;
+      const url=base_url + "Tipos_documentos/eliminar/" + id;
       http.open("GET", url, true);
       http.send();
       http.onreadystatechange = function () {
@@ -147,7 +147,7 @@ inputBuscar?.addEventListener("keyup", function () {
   }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "tipos_documentos/buscar?term=" + encodeURIComponent(term), true);
+  http.open("GET", base_url + "Tipos_documentos/buscar?term=" + encodeURIComponent(term), true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {

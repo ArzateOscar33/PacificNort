@@ -20,7 +20,7 @@ window.addEventListener("DOMContentLoaded", listarTipoOperaciones);
 
 function listarTipoOperaciones() {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Tipos_Operacion/listar", true);
+  http.open("GET", base_url + "Tipos_operacion/listar", true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {

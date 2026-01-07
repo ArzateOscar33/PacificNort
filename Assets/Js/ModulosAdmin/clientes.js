@@ -3,7 +3,7 @@ listar();
 // Listar
 function listar() {
   const http = new XMLHttpRequest();
-  const url=base_url + "clientes/listar";
+  const url=base_url + "Clientes/listar";
   http.open("GET", url, true);
   http.send();
   http.onreadystatechange = function () {

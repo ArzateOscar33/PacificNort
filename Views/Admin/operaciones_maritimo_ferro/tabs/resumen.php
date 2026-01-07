@@ -255,6 +255,6 @@
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/html2canvas.min.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
- 
+
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_exportar.js"></script>

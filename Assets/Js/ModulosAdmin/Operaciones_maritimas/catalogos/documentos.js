@@ -4,7 +4,7 @@
   const root = document.getElementById("documentosRoot");
   if (!root) return;
 
-  const docBase = base_url + "operaciones_maritimas_documentos/";
+  const docBase = base_url + "Operaciones_maritimas_documentos/";
 
   // -------- Refs (operación + contenedor) --------
   // Filtro (vista)
@@ -334,7 +334,7 @@ btnNotificar?.addEventListener("click", function(){
 
   // -------- Ver / Eliminar (global) --------
   window.documentosVerDocumento = function(id, btn){
-    const url     = base_url + "operaciones_maritimas_documentos/ver/" + encodeURIComponent(id);
+    const url     = base_url + "Operaciones_maritimas_documentos/ver/" + encodeURIComponent(id);
     const iframe  = document.getElementById('previewFrameDocumentos');
     const aDown   = document.getElementById('previewDownloadLinkDocumentos');
     const msg     = document.getElementById('previewUnavailableDocumentos');
@@ -436,7 +436,7 @@ function unlockCMOView(){
 // ================== MODAL: Agregar Documento (operación + contenedor) ==================
 (function(){
   "use strict";
-  const docBase = base_url + "operaciones_maritimas_documentos/";
+  const docBase = base_url + "Operaciones_maritimas_documentos/";
   const modalEl = document.getElementById("modalAgregarDocumentoDocumentos");
   const form    = document.getElementById("formAgregarDocumentoDocumentos");
 

@@ -95,7 +95,7 @@ if (opNombreConfirmado && (this.value || "") !== opNombreConfirmado) {
     if(term.length === 0){ return; }
 
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/sugerencias_operaciones_ferro?q=" + encodeURIComponent(term) + "&limit=10", true);
+    xhr.open("GET", BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/sugerencias_operaciones_ferro?q=" + encodeURIComponent(term) + "&limit=10", true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
       if(xhr.status !== 200){
@@ -147,7 +147,7 @@ if (opNombreConfirmado && (this.value || "") !== opNombreConfirmado) {
       return;
     }
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/datos_modal_trazabilidad?id=" + encodeURIComponent(String(opFerroId)), true);
+    xhr.open("GET", BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/datos_modal_trazabilidad?id=" + encodeURIComponent(String(opFerroId)), true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
       if(xhr.status !== 200){
@@ -182,7 +182,7 @@ if (opNombreConfirmado && (this.value || "") !== opNombreConfirmado) {
   if(term.length === 0) return;
 
   const xhr = new XMLHttpRequest();
-  xhr.open("GET", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/sugerencias_lugares?q=" + encodeURIComponent(term) + "&limit=10", true);
+  xhr.open("GET", BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/sugerencias_lugares?q=" + encodeURIComponent(term) + "&limit=10", true);
   xhr.onreadystatechange = function(){
     if(xhr.readyState !== 4) return;
     if(xhr.status !== 200) return;
@@ -214,7 +214,7 @@ inpDestinoNom.addEventListener("input", debounce(function(){
   if(term.length === 0) return;
 
   const xhr = new XMLHttpRequest();
-  xhr.open("GET", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/sugerencias_lugares?q=" + encodeURIComponent(term) + "&limit=10", true);
+  xhr.open("GET", BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/sugerencias_lugares?q=" + encodeURIComponent(term) + "&limit=10", true);
   xhr.onreadystatechange = function(){
     if(xhr.readyState !== 4) return;
     if(xhr.status !== 200) return;
@@ -249,7 +249,7 @@ inpTransNom.addEventListener("input", debounce(function(){
   xhr.open(
   "GET",
   BASE_URL
-    + "operaciones_maritimo_ferro_trazabilidad/sugerencias_transportistas"
+    + "Operaciones_maritimo_ferro_trazabilidad/sugerencias_transportistas"
     + "?q=" + encodeURIComponent(term)
     + "&tipo=ferroviario,terrestre"
     + "&limit=10",
@@ -408,7 +408,7 @@ window.renderRutaClientes = (list) => ui.renderClientes(list);
     });
 
     inflight = new XMLHttpRequest();
-    inflight.open('GET', BASE_URL + 'operaciones_maritimo_ferro_trazabilidad/rutas_list?' + params.toString(), true);
+    inflight.open('GET', BASE_URL + 'Operaciones_maritimo_ferro_trazabilidad/rutas_list?' + params.toString(), true);
 
     // loading
     if (tbody){
@@ -505,7 +505,7 @@ function postBajaRutaFerro(rutaId){
     // fd.append("transport_ids", JSON.stringify([23]));
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", BASE_URL + "operaciones_maritimo_ferro_trazabilidad/baja_ruta_ferro", true);
+    xhr.open("POST", BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/baja_ruta_ferro", true);
 
     // (Opcional) token CSRF si lo usas:
     // xhr.setRequestHeader("X-CSRF-Token", CSRF_TOKEN);

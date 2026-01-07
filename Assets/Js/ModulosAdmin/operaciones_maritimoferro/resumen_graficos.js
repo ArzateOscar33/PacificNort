@@ -148,13 +148,13 @@ function renderLegend(labels, data, colors) {
   }
 
 function buildUrlDesgloseFisico(operacionId, idFisico) {
-  return `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_contenedor_fisico`
+  return `${base_url}Operaciones_maritimo_ferro_resumen/costos_desglosados_contenedor_fisico`
        + `?operacion_id=${encodeURIComponent(operacionId)}`
        + `&id_fisico=${encodeURIComponent(idFisico)}`;
 }
 
 function buildUrlDesgloseOperacion(operacionId) {
-  return `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_operacion`
+  return `${base_url}Operaciones_maritimo_ferro_resumen/costos_desglosados_operacion`
        + `?operacion_id=${encodeURIComponent(operacionId)}`;
 }
 
@@ -216,7 +216,7 @@ update: function (opts) {
 
   // === FO: operación ferroviaria (FO-xx) ===
   } else if (tipo === 'FO') {
-    const url = `${base_url}operaciones_maritimo_ferro_resumen/costos_desglosados_operacion_ferro`
+    const url = `${base_url}Operaciones_maritimo_ferro_resumen/costos_desglosados_operacion_ferro`
               + `?operacion_ferro_id=${encodeURIComponent(opts.operacionId)}`;
 
     fetchJSON(url, (rows) => {

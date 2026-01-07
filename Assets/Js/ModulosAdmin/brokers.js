@@ -12,7 +12,7 @@ const fldContacto    = document.getElementById("contacto");
 listar();
 function listar() {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "brokers/listar", true);
+  http.open("GET", base_url + "Brokers/listar", true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4) {
@@ -62,7 +62,7 @@ form.addEventListener("submit", function (e) {
   fd.append("nombre", nombre);
   fd.append("contacto", contacto); 
 
-  const url = base_url + (id === "" ? "brokers/registrar" : "brokers/actualizar");
+  const url = base_url + (id === "" ? "Brokers/registrar" : "Brokers/actualizar");
 
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
@@ -103,7 +103,7 @@ btnAgregarBroker.addEventListener("click", () => {
 
 function editarBroker(id) {
   const http = new XMLHttpRequest();
-  const url= base_url + "brokers/editar/" + id;
+  const url= base_url + "Brokers/editar/" + id;
   http.open("GET",url, true);
   http.send();
   http.onreadystatechange = function () {

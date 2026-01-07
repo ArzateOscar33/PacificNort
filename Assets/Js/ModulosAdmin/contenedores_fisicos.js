@@ -33,7 +33,7 @@ function listar(page = 1) {
   const q = (inputBuscar?.value || "").trim();
 
   const http = new XMLHttpRequest();
-  const url = `${base_url}contenedores_fisicos/listar?page=${currentPage}&per_page=${perPage}&q=${encodeURIComponent(q)}`;
+  const url = `${base_url}Contenedores_fisicos/listar?page=${currentPage}&per_page=${perPage}&q=${encodeURIComponent(q)}`;
   http.open("GET", url, true);
   http.send();
   http.onreadystatechange = function () {
@@ -160,7 +160,7 @@ form?.addEventListener("submit", function (e) {
   fd.append("nombre", nombre);
   fd.append("numero_ferro_fisico", nombre);
 
-  const url = base_url + (id === "" ? "contenedores_fisicos/registrar" : "contenedores_fisicos/actualizar");
+  const url = base_url + (id === "" ? "Contenedores_fisicos/registrar" : "Contenedores_fisicos/actualizar");
 
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
@@ -210,7 +210,7 @@ btnAgregarContenedorFisico?.addEventListener("click", () => {
 // ====== EDITAR ======
 window.editarContenedor = function (id) {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "contenedores_fisicos/editar/" + id, true);
+  http.open("GET", base_url + "Contenedores_fisicos/editar/" + id, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState !== 4) return;
@@ -255,7 +255,7 @@ window.eliminarContenedor = function (id) {
     if (!r.isConfirmed) return;
 
     const http = new XMLHttpRequest();
-    http.open("GET", base_url + "contenedores_fisicos/eliminar/" + id, true);
+    http.open("GET", base_url + "Contenedores_fisicos/eliminar/" + id, true);
     http.send();
     http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
@@ -307,7 +307,7 @@ inputBuscar?.addEventListener("keyup", function (e) {
     }
 
     const http = new XMLHttpRequest();
-    http.open("GET", base_url + "contenedores_fisicos/buscar?term=" + encodeURIComponent(term), true);
+    http.open("GET", base_url + "Contenedores_fisicos/buscar?term=" + encodeURIComponent(term), true);
     http.send();
     http.onreadystatechange = function () {
       if (this.readyState !== 4) return;

@@ -101,7 +101,7 @@ if (elContBodegaDetalle) {
 function cargarKPIs() {
   // Puedes mostrar “loading” si quieres: setText(elOpsActivas, '…');
   xhrGET(
-    base_url + "dashboard/kpis",
+    base_url + "Dashboard/kpis",
     (res) => {
       if (res?.status !== "ok") {
         console.warn("KPIs no OK:", res);
@@ -116,7 +116,7 @@ function cargarKPIs() {
 }
 
 /* ====== Alertas (opcional: solo lectura) ====== */
-// Espera que /dashboard/alertas devuelva: {status:'ok', data:[{tipo, mensaje, prioridad}]}
+// Espera que /Dashboard/alertas devuelva: {status:'ok', data:[{tipo, mensaje, prioridad}]}
 /*
 function renderAlertas(items) {
   ulAlertas.innerHTML = "";
@@ -371,7 +371,7 @@ function renderOpsPorSubtipo(rows) {
 // ====== Carga (llamar al endpoint) ======
 function cargarOpsPorSubtipo() {
   xhrGET(
-    base_url + "/dashboard/ops_por_subtipo",
+    base_url + "/Dashboard/ops_por_subtipo",
     (res) => {
       if (res?.status !== "ok" || !Array.isArray(res.data)) {
         console.warn("[ops_por_subtipo] respuesta no OK:", res);
@@ -550,7 +550,7 @@ function renderPuntualidadSemana(rows, weeks) {
 }
 
 function cargarPuntualidadSemana(weeks = 8){
-  xhrGET(base_url + 'dashboard/puntualidad_semana?weeks=' + weeks,
+  xhrGET(base_url + 'Dashboard/puntualidad_semana?weeks=' + weeks,
     (res)=>{
       if (res?.status !== 'ok' || !Array.isArray(res.data)) {
         console.warn('[puntualidad_semana] respuesta no OK:', res);
@@ -578,7 +578,7 @@ function cargarCostosMensuales(months = 12) {
   let fx = parseFloat(inputCostosFx?.value);
   if (!isFinite(fx) || fx <= 0) fx = 17; // fallback por si dejan vacío
 
-  const url = base_url + `dashboard/costos_mensuales?months=${months}&currency=${encodeURIComponent(currency)}&fx=${encodeURIComponent(fx)}`;
+  const url = base_url + `Dashboard/costos_mensuales?months=${months}&currency=${encodeURIComponent(currency)}&fx=${encodeURIComponent(fx)}`;
 
   xhrGET(url, (res) => {
     if (res?.status !== 'ok' || !Array.isArray(res.data)) {
@@ -695,7 +695,7 @@ function renderCostosVsAbonosMensuales(rows, currency) {
 async function loadCostosVsAbonos() {
   const moneda = document.getElementById('costosDashboard').value || 'MXN';
   const tc     = Number(document.getElementById('costosDashboardTipoCambio').value || 17);
-  const url    = `${base_url}dashboard/costos_vs_abonos_mensual?meses=12&moneda=${encodeURIComponent(moneda)}&tc=${encodeURIComponent(tc)}`;
+  const url    = `${base_url}Dashboard/costos_vs_abonos_mensual?meses=12&moneda=${encodeURIComponent(moneda)}&tc=${encodeURIComponent(tc)}`;
 
   const res = await fetch(url);
   if (!res.ok) return;
@@ -938,7 +938,7 @@ function renderTimelineOperaciones(rows, days) {
 // Cargar desde el endpoint
 function cargarTimelineOperaciones(days = 30, limit = 50) {
   xhrGET(
-    base_url + `dashboard/timeline?days=${days}&limit=${limit}`,
+    base_url + `Dashboard/timeline?days=${days}&limit=${limit}`,
     (res) => {
       if (res?.status !== 'ok' || !Array.isArray(res.data)) {
         console.warn('[timeline] respuesta no OK:', res);
@@ -962,7 +962,7 @@ window.addEventListener('resize', onResizeTimeline);
 // Init
 function cargarAlertas() {
   xhrGET(
-    base_url + "dashboard/kpis",
+    base_url + "Dashboard/kpis",
     (res) => {
       if (res?.status !== "ok") {
         console.warn("[Alertas] Respuesta no OK:", res);
@@ -1004,7 +1004,7 @@ const elKpiAlertasDetalle = document.getElementById('kpiAlertasDetalle');
 // ====== Cargar KPI: Alertas ======
 function cargarKPIAlertas() {
   xhrGET(
-    base_url + "dashboard/alertas?limit=20",
+    base_url + "Dashboard/alertas?limit=20",
     (res) => {
       if (res?.status !== "ok" || !res.data) {
         setText(elKpiAlertas, "0");

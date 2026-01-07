@@ -134,7 +134,7 @@ async function cargarDepartamentosSelect() {
 
 // Funciones para manejar CRUD de puestos
 function listarPuestos() {
-  fetch(base_url + "puestos/listar")
+  fetch(base_url + "Puestos/listar")
     .then((res) => res.json())
     .then((data) => {
       console.log("Respuesta del servidor:", data); // 👈 Aquí lo ves en consola

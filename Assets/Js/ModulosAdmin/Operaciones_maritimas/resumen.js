@@ -144,7 +144,7 @@ function doSearchSugerenciasResumen(termResumen) {
   const httpResumen = new XMLHttpRequest();
   lastXHRSugerenciasResumen = httpResumen;
 
-  httpResumen.open("GET", base_url + "operaciones_maritimas_resumen/sugerencias?term=" + encodeURIComponent(termResumen), true);
+  httpResumen.open("GET", base_url + "Operaciones_maritimas_resumen/sugerencias?term=" + encodeURIComponent(termResumen), true);
   httpResumen.onreadystatechange = function() {
     if (this.readyState !== 4) return;
     if (this.status === 200) {
@@ -227,7 +227,7 @@ function cargarContenedoresResumen(operacionIdResumen) {
 
   httpResumen.open(
     "GET",
-    base_url + "operaciones_maritimas_resumen/listarContenedoresPorOperacion?id_operacion=" + encodeURIComponent(operacionIdResumen),
+    base_url + "Operaciones_maritimas_resumen/listarContenedoresPorOperacion?id_operacion=" + encodeURIComponent(operacionIdResumen),
     true
   );
   httpResumen.onreadystatechange = function () {
@@ -329,7 +329,7 @@ function consultarDetallesContenedorResumen() {
 
   // ====> 1) Detalle del contenedor
   const httpResumen = new XMLHttpRequest();
-  const urlResumen = `${base_url}operaciones_maritimas_resumen/detalles_contenedor`
+  const urlResumen = `${base_url}Operaciones_maritimas_resumen/detalles_contenedor`
     + `?operacion_id=${encodeURIComponent(operacionIdActivoResumen)}`
     + `&tipo=${encodeURIComponent(esMaritimoResumen ? 'MARITIMO' : 'FERRO')}`
     + `&id_contenedor=${encodeURIComponent(idPivotResumen)}`; // El endpoint debe aceptar pivot para resolver detalle
@@ -452,7 +452,7 @@ function cargarFaltantesResumen(operacionIdResumen, tipoFMResumen, idPivotResume
   const httpResumen = new XMLHttpRequest();
   lastXHRFaltantesResumen = httpResumen;
 
-  const urlResumen = `${base_url}operaciones_maritimas_resumen/faltantes`
+  const urlResumen = `${base_url}Operaciones_maritimas_resumen/faltantes`
     + `?operacion_id=${encodeURIComponent(operacionIdResumen)}`
     + `&contenedor_id=${encodeURIComponent(idPivotResumen)}` // PIVOT
     + `&tipo=${encodeURIComponent(tipoFMResumen)}`;
@@ -494,7 +494,7 @@ function renderCostosDesglosados(rows){
 
 function fetchCostosTotalesFisico(operacionId, idFisico){
   setTotalCostos('…');
-  const url = `${base_url}operaciones_maritimas_resumen/costos_totales_contenedor_fisico?operacion_id=${encodeURIComponent(operacionId)}&id_fisico=${encodeURIComponent(idFisico)}`;
+  const url = `${base_url}Operaciones_maritimas_resumen/costos_totales_contenedor_fisico?operacion_id=${encodeURIComponent(operacionId)}&id_fisico=${encodeURIComponent(idFisico)}`;
   const xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
   xhr.onreadystatechange = function(){
@@ -512,7 +512,7 @@ function fetchCostosTotalesFisico(operacionId, idFisico){
 
 function fetchCostosDesglosadosFisico(operacionId, idFisico){
   if (listaCostos) listaCostos.innerHTML = '<li class="list-group-item text-muted">Cargando…</li>';
-  const url = `${base_url}operaciones_maritimas_resumen/costos_desglosados_contenedor_fisico?operacion_id=${encodeURIComponent(operacionId)}&id_fisico=${encodeURIComponent(idFisico)}`;
+  const url = `${base_url}Operaciones_maritimas_resumen/costos_desglosados_contenedor_fisico?operacion_id=${encodeURIComponent(operacionId)}&id_fisico=${encodeURIComponent(idFisico)}`;
   const xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
   xhr.onreadystatechange = function(){
@@ -587,7 +587,7 @@ function buildUrlEventosResumen(operacionId, tipoUi, idBase){
   // Tu controlador normaliza: 'Ferro' / 'Maritimo'
   const t = (tipoUi || '').toUpperCase();
   const tipoParam = (t.startsWith('F')) ? 'Ferro' : 'Maritimo';
-  return `${base_url}operaciones_maritimas_resumen/eventos_contenedor`
+  return `${base_url}Operaciones_maritimas_resumen/eventos_contenedor`
        + `?operacion_id=${encodeURIComponent(operacionId)}`
        + `&tipo=${encodeURIComponent(tipoParam)}`
        + `&id_contenedor=${encodeURIComponent(idBase)}`; // id_fisico o id_contenedor_maritimo
@@ -626,7 +626,7 @@ function setEventosBadgeResumen(completados, total){
 
 function buildUrlEventosProgresoResumen(operacionId, tipoUi, idBase){
   // tipoUi: 'M' | 'F'
-  return `${base_url}operaciones_maritimas_resumen/eventos_progreso`
+  return `${base_url}Operaciones_maritimas_resumen/eventos_progreso`
        + `?operacion_id=${encodeURIComponent(operacionId)}`
        + `&tipo=${encodeURIComponent(tipoUi)}`
        + `&id_contenedor=${encodeURIComponent(idBase)}`;

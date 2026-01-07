@@ -59,7 +59,7 @@ function setOrigenReadonlyByState(){
 
   /**
    * Crea encabezado en rutas_ferro
-   * POST -> operaciones_maritimo_ferro_trazabilidad/crear_ruta_ferro
+   * POST -> Operaciones_maritimo_ferro_trazabilidad/crear_ruta_ferro
    */
   function crearRutaFerroTrazabilidad(opId, ferroId, comentario) {
     return new Promise((resolve) => {
@@ -73,7 +73,7 @@ function setOrigenReadonlyByState(){
       const xhr = new XMLHttpRequest();
       xhr.open(
         "POST",
-        BASE_URL + "operaciones_maritimo_ferro_trazabilidad/crear_ruta_ferro",
+        BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/crear_ruta_ferro",
         true
       );
       xhr.onreadystatechange = function () {
@@ -144,7 +144,7 @@ async function guardarTramosTrazabilidad(rutaId, operacionFerroId){
   }
 
   // 3) Usar SIEMPRE el endpoint existente diferencial (no el append)
-  const url = BASE_URL + "operaciones_maritimo_ferro_trazabilidad/guardar_tramos";
+  const url = BASE_URL + "Operaciones_maritimo_ferro_trazabilidad/guardar_tramos";
 
   // 4) Enviar
   return new Promise((resolve) => {
@@ -484,7 +484,7 @@ setOrigenReadonlyByState();
       xhr.open(
         "GET",
         BASE_URL +
-          "operaciones_maritimo_ferro_trazabilidad/ruta_detalle?id_ruta=" +
+          "Operaciones_maritimo_ferro_trazabilidad/ruta_detalle?id_ruta=" +
           encodeURIComponent(String(rutaId)),
         true
       );

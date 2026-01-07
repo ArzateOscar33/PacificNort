@@ -1,6 +1,6 @@
 // ============================================================
 // Gestión de Documentos (FO + LBMF) - Vista + Modal
-// Controller base: operaciones_maritimo_ferro_documentos/
+// Controller base: Operaciones_maritimo_ferro_documentos/
 // ============================================================
 (function(){
   "use strict";
@@ -8,7 +8,7 @@
   const root = document.getElementById("documentosRoot");
   if (!root) return;
 
-  const docBase = base_url + "operaciones_maritimo_ferro_documentos/";
+  const docBase = base_url + "Operaciones_maritimo_ferro_documentos/";
 
   // ---------- Refs (vista) ----------
   const opIdInput      = document.getElementById("documentosFiltroOpId");
@@ -365,7 +365,7 @@
 
   // ---------- Ver / Eliminar ----------
   window.documentosVerDocumentoMF = function(id){
-    const url     = base_url + "operaciones_maritimo_ferro_documentos/ver/" + encodeURIComponent(id);
+    const url     = base_url + "Operaciones_maritimo_ferro_documentos/ver/" + encodeURIComponent(id);
     const iframe  = document.getElementById('previewFrameDocumentos');
     const aDown   = document.getElementById('previewDownloadLinkDocumentos');
     const msg     = document.getElementById('previewUnavailableDocumentos');
@@ -446,7 +446,7 @@
 // ============================================================
 (function(){
   "use strict";
-  const docBase = base_url + "operaciones_maritimo_ferro_documentos/";
+  const docBase = base_url + "Operaciones_maritimo_ferro_documentos/";
   const modalEl = document.getElementById("modalAgregarDocumentoDocumentos");
   const form    = document.getElementById("formAgregarDocumentoDocumentos");
 

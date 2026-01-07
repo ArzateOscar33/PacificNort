@@ -148,13 +148,13 @@ function renderLegend(labels, data, colors) {
   }
 
   function buildUrlDesgloseFisico(operacionId, idFisico) {
-    return `${base_url}operaciones_maritimas_resumen/costos_desglosados_contenedor_fisico`
+    return `${base_url}Operaciones_maritimas_resumen/costos_desglosados_contenedor_fisico`
          + `?operacion_id=${encodeURIComponent(operacionId)}`
          + `&id_fisico=${encodeURIComponent(idFisico)}`;
   }
 
   function buildUrlDesgloseOperacion(operacionId) {
-    return `${base_url}operaciones_maritimas_resumen/costos_desglosados_operacion`
+    return `${base_url}Operaciones_maritimas_resumen/costos_desglosados_operacion`
          + `?operacion_id=${encodeURIComponent(operacionId)}`;
   }
 

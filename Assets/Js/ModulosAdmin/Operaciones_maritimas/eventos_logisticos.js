@@ -1,7 +1,7 @@
 /* ===========================================================
    MODAL - Registrar / Editar Evento (Operación MARÍTIMA)
    Versión clon del módulo MF, pero apuntando a
-   operaciones_maritimas_eventos/*
+   Operaciones_maritimas_eventos/*
    =========================================================== */
 (function evMarModal() {
   "use strict";
@@ -100,7 +100,7 @@
 
   function cargarCatalogoTiposEvento(preselectId = null) {
     // Para Marítimo usamos tipo_operacion_id = 1
-    const url = base_url + "operaciones_maritimas_eventos/tipos_evento?tipo_operacion_id=1";
+    const url = base_url + "Operaciones_maritimas_eventos/tipos_evento?tipo_operacion_id=1";
     xhrGet(
       url,
       (rows) => fillTiposEvento(rows, preselectId),
@@ -152,7 +152,7 @@
         if (term === lastTermOp) return;
         lastTermOp = term;
 
-        const url = base_url + "operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
+        const url = base_url + "Operaciones_maritimas_eventos/buscar_operaciones?term=" + encodeURIComponent(term);
         xhrGet(url, (rows) => {
           renderSugerencias(opSugBox, rows, (it) => {
             // Selección de operación
@@ -162,7 +162,7 @@
             if (opMeta) opMeta.textContent = it.meta || "";
 
             // Autollenar contenedor marítimo de esa operación
-            const urlCont = base_url + "operaciones_maritimas_eventos/contenedor_maritimo_de_operacion?operacion_id=" + encodeURIComponent(it.id);
+            const urlCont = base_url + "Operaciones_maritimas_eventos/contenedor_maritimo_de_operacion?operacion_id=" + encodeURIComponent(it.id);
             xhrGet(urlCont, (cont) => {
               if (Array.isArray(cont)) cont = cont[0] || null; // tolerante
 
@@ -217,7 +217,7 @@
         if (term === lastTermCont) return;
         lastTermCont = term;
 
-        const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
+        const url = base_url + "Operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
         xhrGet(url, (rows) => {
           renderSugerencias(contSugBox, rows, (it) => {
             inpContNom.value  = it.label || "";
@@ -262,7 +262,7 @@
       fd.append("fecha", fecha);
       fd.append("comentario", comentario);
 
-      const url = base_url + "operaciones_maritimas_eventos/" + (idEvento ? "actualizar" : "registrar");
+      const url = base_url + "Operaciones_maritimas_eventos/" + (idEvento ? "actualizar" : "registrar");
 
       setBtnSubmitting(true);
       xhrPost(
@@ -491,7 +491,7 @@
     const opId   = filtroOpId?.value || "";
     const contId = filtroContId?.value || "";
 
-    const url = `${base_url}operaciones_maritimas_eventos/listar?page=${currentPage}&per_page=${perPage}`
+    const url = `${base_url}Operaciones_maritimas_eventos/listar?page=${currentPage}&per_page=${perPage}`
               + (opId   ? `&op_id=${encodeURIComponent(opId)}`   : "")
               + (contId ? `&cont_id=${encodeURIComponent(contId)}`: "")
               + (q      ? `&q=${encodeURIComponent(q)}`           : "");
@@ -523,7 +523,7 @@
       return;
     }
     xhrGet(
-      `${base_url}operaciones_maritimas_eventos/eventos_maritimos_columnas`,
+      `${base_url}Operaciones_maritimas_eventos/eventos_maritimos_columnas`,
       (json) => {
         const cols = (json && json.columns) ? json.columns : [];
         COLS = Array.isArray(cols) ? cols : [];
@@ -600,7 +600,7 @@
       fldEvtId.value = evtId;
       fldIdEv.value  = '';
 
-      const url = `${base_url}operaciones_maritimas_eventos/obtener_por_clave?operacion_id=${opId}&cont_maritimo_operacion_id=${cmoId}&tipo_evento_id=${evtId}`;
+      const url = `${base_url}Operaciones_maritimas_eventos/obtener_por_clave?operacion_id=${opId}&cont_maritimo_operacion_id=${cmoId}&tipo_evento_id=${evtId}`;
       const http = new XMLHttpRequest();
       http.open('GET', url, true);
       http.onreadystatechange = function(){
@@ -636,7 +636,7 @@
       fd.append('fecha', fecha.value);
       fd.append('comentario', comenta.value);
 
-      const url = base_url + 'operaciones_maritimas_eventos/' + (idEv ? 'actualizar' : 'registrar');
+      const url = base_url + 'Operaciones_maritimas_eventos/' + (idEv ? 'actualizar' : 'registrar');
       const http = new XMLHttpRequest();
       http.open('POST', url, true);
       http.onreadystatechange = function(){
@@ -661,7 +661,7 @@
         const fd = new FormData();
         fd.append('id_evento', idEv);
         const http = new XMLHttpRequest();
-        http.open('POST', base_url+'operaciones_maritimas_eventos/eliminar', true);
+        http.open('POST', base_url+'Operaciones_maritimas_eventos/eliminar', true);
         http.onreadystatechange = function(){
           if (this.readyState !== 4) return;
           let res=null; try{res=JSON.parse(this.responseText);}catch{}
@@ -763,7 +763,7 @@
     tmr = setTimeout(() => {
       if (term === lastTerm) return;
       lastTerm = term;
-      const url = `${base_url}operaciones_maritimas_eventos/sugerir_operaciones?term=${encodeURIComponent(term)}&limit=10`;
+      const url = `${base_url}Operaciones_maritimas_eventos/sugerir_operaciones?term=${encodeURIComponent(term)}&limit=10`;
       xhrGet(url, (rows) => {
         renderSugerencias(box, rows, pickOperacion);
       }, () => { box.style.display = "none"; });
@@ -863,7 +863,7 @@
     if (term === lastTerm) return;
     lastTerm = term;
 
-    const url = base_url + "operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
+    const url = base_url + "Operaciones_maritimas_eventos/buscar_contenedores?operacion_id=" + opId + "&term=" + encodeURIComponent(term);
     xhrGet(url, (rows) => {
       renderSugerencias(list, rows, (it) => {
         input.value  = it.label;
