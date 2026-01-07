@@ -132,4 +132,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/subtipos_operacion.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/subtipos_operacion.js"></script>

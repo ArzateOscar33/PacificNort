@@ -215,5 +215,5 @@
         feather.replace();
        
     </script>
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script>
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>
+    <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script>
+    <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>

@@ -25,7 +25,7 @@
               <div class="holographic-container">
                 <div class="holographic-card">
                   <div class="card-body">
-                    <img class="img-fluid" src="<?= BASE_URL ?>assets/img/objetivo.png" alt="mision">
+                    <img class="img-fluid" src="<?= BASE_URL ?>Assets/img/objetivo.png" alt="mision">
                     <h2>Nuestra Misión</h2>
                     <p>Facilitar el comercio internacional de nuestros clientes a través de soluciones logísticas
                       integrales, brindando un servicio personalizado y de alta calidad.</p>
@@ -37,7 +37,7 @@
               <div class="holographic-container">
                 <div class="holographic-card">
                   <div class="card-body">
-                    <img class="img-fluid" src="<?= BASE_URL ?>assets/img/ojo.png" alt="vision">
+                    <img class="img-fluid" src="<?= BASE_URL ?>Assets/img/ojo.png" alt="vision">
                     <h2>Nuestra Visión</h2>
                     <p>Ser reconocidos como el socio estratégico preferido en comercio internacional, destacándonos 
                       por profesionalidad, innovación y compromiso.</p>
@@ -49,7 +49,7 @@
               <div class="holographic-container">
                 <div class="holographic-card">
                   <div class="card-body">
-                    <img class="img-fluid" src="<?= BASE_URL ?>assets/img/diamante.png" alt="valores">
+                    <img class="img-fluid" src="<?= BASE_URL ?>Assets/img/diamante.png" alt="valores">
                     <h2>Nuestros Valores</h2>
                     <ul>
                       <li>Integridad</li>
@@ -65,7 +65,7 @@
             </div> <!-- Cierra grid-container -->
 
             <div class="about-image" data-aos="fade-left" data-aos-delay="300">
-              <img class="img-fluid" src="<?= BASE_URL ?>assets/img/equipo01.jpg" alt="Nuestro equipo de trabajo">
+              <img class="img-fluid" src="<?= BASE_URL ?>Assets/img/equipo01.jpg" alt="Nuestro equipo de trabajo">
             </div>
 
           </div> <!-- Cierra about-text -->

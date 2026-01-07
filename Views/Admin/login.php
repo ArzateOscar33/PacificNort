@@ -8,17 +8,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link href="<?php echo BASE_URL; ?>assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
-    <link href="<?php echo BASE_URL; ?>assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+    <link href="<?php echo BASE_URL; ?>Assets/plugins/simplebar/Css/simplebar.css" rel="stylesheet" />
+    <link href="<?php echo BASE_URL; ?>Assets/plugins/metismenu/Css/metisMenu.min.css" rel="stylesheet" />
     <!-- loader-->
-    <link href="<?php echo BASE_URL; ?>assets/css/pace.min.css" rel="stylesheet" />
-    <script src="<?php echo BASE_URL; ?>assets/js/pace.min.js"></script>
+    <link href="<?php echo BASE_URL; ?>Assets/Css/pace.min.css" rel="stylesheet" />
+    <script src="<?php echo BASE_URL; ?>Assets/Js/pace.min.js"></script>
     <!-- Bootstrap CSS -->
-    <link href="<?php echo BASE_URL; ?>assets/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>assets/css/bootstrap-extended.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>Assets/Css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>Assets/Css/bootstrap-extended.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>assets/css/app.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>assets/css/icons.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>Assets/Css/app.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>Assets/Css/icons.css" rel="stylesheet">
     <!-- Favicon icon -->
     
     <link rel="apple-touch-icon" sizes="57x57" href="<?php echo BASE_URL; ?>/favicon/apple-icon-57x57.png">
@@ -62,14 +62,14 @@
         <!-- Login box.scss -->
         <!-- ============================================================== -->
         <div class="auth-wrapper d-flex no-block justify-content-center align-items-center position-relative"
-            style="background:url(<?php echo BASE_URL; ?>/assets/images/big/auth-bg.jpg) no-repeat center center;">
+            style="background:url(<?php echo BASE_URL; ?>/Assets/images/big/auth-bg.jpg) no-repeat center center;">
             <div class="auth-box row">
-                <div class="col-lg-7 col-md-5 modal-bg-img" style="background-image: url(<?php echo BASE_URL; ?>/assets/img/log4.jpg);">
+                <div class="col-lg-7 col-md-5 modal-bg-img" style="background-image: url(<?php echo BASE_URL; ?>/Assets/img/log4.jpg);">
                 </div>
                 <div class="col-lg-5 col-md-7 bg-white">
                     <div class="p-3">
                         <div class="text-center">
-                            <img src="<?php echo BASE_URL; ?>/assets/images/big/icon.png" alt="wrapkit">
+                            <img src="<?php echo BASE_URL; ?>/Assets/images/big/icon.png" alt="wrapkit">
                         </div>
                         <h2 class="mt-3 text-center">Iniciar Sesion</h2>
                          <div class="text-center">
@@ -117,16 +117,16 @@
  
     <!-- All Required js -->
  
-    <script src="<?php echo BASE_URL; ?>/assets/libs/jquery/dist/jquery.min.js "></script>
+    <script src="<?php echo BASE_URL; ?>/Assets/libs/jquery/dist/jquery.min.js "></script>
        <!-- Bootstrap JS -->
-    <script src="<?php echo BASE_URL; ?>assets/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>Assets/Js/bootstrap.bundle.min.js"></script>
     <!--plugins-->
-    <script src="<?php echo BASE_URL; ?>assets/js/jquery.min.js"></script>
-    <script src="<?php echo BASE_URL; ?>assets/plugins/simplebar/js/simplebar.min.js"></script>
-    <script src="<?php echo BASE_URL; ?>assets/plugins/metismenu/js/metisMenu.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>Assets/Js/jquery.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>Assets/plugins/simplebar/Js/simplebar.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>Assets/plugins/metismenu/Js/metisMenu.min.js"></script>
     <!-- Bootstrap tether Core JavaScript -->
-    <script src="<?php echo BASE_URL; ?>/assets/libs/popper.js/dist/umd/popper.min.js "></script>
-    <script src="<?php echo BASE_URL; ?>/assets/libs/bootstrap/dist/js/bootstrap.min.js "></script>
+    <script src="<?php echo BASE_URL; ?>Assets/libs/popper.js/dist/umd/popper.min.js "></script>
+    <script src="<?php echo BASE_URL; ?>Assets/libs/bootstrap/dist/js/bootstrap.min.js "></script>
     <!-- ============================================================== -->
     <!-- This page plugin js -->
     <!-- ============================================================== -->
@@ -139,6 +139,6 @@
    <script>
         const base_url = '<?php echo BASE_URL; ?>';
     </script>
-    <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
-        <script src="<?php echo BASE_URL; ?>assets/js/login.js"></script>
+    <script src="<?php echo BASE_URL; ?>Assets/Js/sweetalert2.all.min.js"></script>
+        <script src="<?php echo BASE_URL; ?>Assets/Js/login.js"></script>
 </html>

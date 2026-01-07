@@ -268,8 +268,8 @@
 
 
 
-<script src="<?php echo BASE_URL ?>/assets/js/modulosadmin/operaciones_maritimoferro/trazabilidad_catalogo.js"></script>
-<script src="<?php echo BASE_URL ?>/assets/js/modulosadmin/operaciones_maritimoferro/trazabilidad_registrar.js"></script>
+<script src="<?php echo BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/trazabilidad_catalogo.js"></script>
+<script src="<?php echo BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/trazabilidad_registrar.js"></script>
 <script>
   // Si no lo tienes en otro lado:
   // const BASE_URL = "<?= BASE_URL ?>";

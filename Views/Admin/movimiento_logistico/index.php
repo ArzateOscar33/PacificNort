@@ -157,4 +157,4 @@
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/tipos_movimiento.js'></script>
+<script src='<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/tipos_movimiento.js'></script>

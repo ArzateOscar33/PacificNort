@@ -187,4 +187,4 @@
     </div>
 
 </div>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/documentos_ferro.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/documentos_ferro.js"></script>

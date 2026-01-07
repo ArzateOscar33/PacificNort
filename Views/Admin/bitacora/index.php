@@ -161,5 +161,5 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/bitacora.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/exportarTablas.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/bitacora.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/exportarTablas.js"></script>

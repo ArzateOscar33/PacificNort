@@ -89,4 +89,4 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/tipos_operacion.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/tipos_operacion.js"></script>

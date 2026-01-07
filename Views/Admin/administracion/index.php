@@ -255,9 +255,9 @@
 <!--<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline@3.1.0"></script> 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart.js"></script>-->
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart443.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-adapter-date-fns.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-chart-timeline.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/modulosAdmin/librerias/chart.js"></script>-->
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chart443.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartjs-adapter-date-fns.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartjs-chart-timeline.js"></script>
 
-<script src="<?php echo BASE_URL; ?>assets/Js/ModulosAdmin/dashboardprincipal.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/dashboardprincipal.js"></script>

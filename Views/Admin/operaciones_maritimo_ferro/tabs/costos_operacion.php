@@ -274,5 +274,5 @@
 <script>
   feather.replace();
 </script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_catalogo.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_registrar.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_catalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_registrar.js"></script>

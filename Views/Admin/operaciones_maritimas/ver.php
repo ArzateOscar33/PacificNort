@@ -83,26 +83,26 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/operaciones_maritimas_llenado_catalogos.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/catalogos/operaciones_maritimas_llenado_catalogos.js">
 </script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/operaciones_maritimas_registrar_operaciones.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/operaciones_maritimas_registrar_operaciones.js">
 </script>
-<!--<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/contenedores_operacion.js">
+<!--<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/contenedores_operacion.js">
 </script> -->
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/costos_contenedor.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/costos_contenedor.js">
 </script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_contenedor_catalogos.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/catalogos/costos_contenedor_catalogos.js">
 </script>
 <!--<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> -->
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/xlsx.full.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/xlsx.full.min.js"></script>
  
 <!--<script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script> -->
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/jspdf.umd.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
 
 <!--<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script> -->
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/jspdf.plugin.autotable.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.plugin.autotable.min.js"></script>
 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/exportarTablas.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/exportarTablas.js">
 </script>
 
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title><?php echo TITLE . ' - Pagina no encontrada'; ?></title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>Assets/Css/bootstrap.min.css">
 </head>
  
 <body class="d-flex h-100 text-center text-white bg-dark">

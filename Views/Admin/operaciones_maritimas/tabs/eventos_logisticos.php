@@ -261,4 +261,4 @@
 </div>
 
 <script>feather.replace();</script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/eventos_logisticos.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/eventos_logisticos.js"></script>

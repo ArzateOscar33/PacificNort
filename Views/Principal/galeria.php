@@ -25,7 +25,7 @@
 
           <div class="carousel-inner">
             <div class="carousel-item active">
-              <img src="<?= BASE_URL ?>assets/img/log1.jpg" class="d-block w-100" alt="Soluciones logísticas">
+              <img src="<?= BASE_URL ?>Assets/img/log1.jpg" class="d-block w-100" alt="Soluciones logísticas">
               <div class="carousel-caption">
                 <h5>Transporte Terrestre</h5>
                 <p>Soluciones eficientes para el transporte de mercancías por carretera</p>
@@ -33,7 +33,7 @@
             </div>
 
             <div class="carousel-item">
-              <img src="<?= BASE_URL ?>assets/img/log2.jpg" class="d-block w-100" alt="Transporte marítimo">
+              <img src="<?= BASE_URL ?>Assets/img/log2.jpg" class="d-block w-100" alt="Transporte marítimo">
               <div class="carousel-caption">
                 <h5>Transporte Marítimo</h5>
                 <p>Conectamos negocios a través de los océanos</p>
@@ -41,7 +41,7 @@
             </div>
 
             <div class="carousel-item">
-              <img src="<?= BASE_URL ?>assets/img/log3.jpg" class="d-block w-100" alt="Almacenamiento">
+              <img src="<?= BASE_URL ?>Assets/img/log3.jpg" class="d-block w-100" alt="Almacenamiento">
               <div class="carousel-caption">
                 <h5>Almacenamiento y Distribución</h5>
                 <p>Infraestructura moderna para el manejo de mercancías</p>
@@ -49,7 +49,7 @@
             </div>
 
             <div class="carousel-item">
-              <img src="<?= BASE_URL ?>assets/img/log4.jpg" class="d-block w-100" alt="Consultoría">
+              <img src="<?= BASE_URL ?>Assets/img/log4.jpg" class="d-block w-100" alt="Consultoría">
               <div class="carousel-caption">
                 <h5>Consultoría Especializada</h5>
                 <p>Asesoría experta para optimizar tus operaciones internacionales</p>

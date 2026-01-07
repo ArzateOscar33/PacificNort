@@ -44,6 +44,6 @@
 <!-- Footer -->
 <?php include_once 'Views/Template/principal_footer.php'; ?>
 
-<script src="<?php echo BASE_URL; ?>assets/js/bootstrap.bundle.min.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/aos.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/index.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/aos.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/index.js"></script>

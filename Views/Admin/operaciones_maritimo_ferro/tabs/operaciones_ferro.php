@@ -297,9 +297,9 @@
   const BASE_URL = "<?= BASE_URL ?>";
 </script>
 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script> 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/editarFerros.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/ferroscatalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/ferrosOperacion.js"></script> 
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/editarFerros.js"></script>
 
 
 

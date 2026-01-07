@@ -57,13 +57,13 @@
         <!-- Login box.scss -->
         <!-- ============================================================== -->
         <div class="auth-wrapper d-flex no-block justify-content-center align-items-center position-relative"
-            style="background:url(<?php echo BASE_URL; ?>/assets/images/big/auth-bg.jpg) no-repeat center center;">
+            style="background:url(<?php echo BASE_URL; ?>/Assets/images/big/auth-bg.jpg) no-repeat center center;">
             <div class="auth-box row text-center">
-                <div class="col-lg-7 col-md-5 modal-bg-img" style="background-image: url(<?php echo BASE_URL; ?>/assets/img/log5.jpg);">
+                <div class="col-lg-7 col-md-5 modal-bg-img" style="background-image: url(<?php echo BASE_URL; ?>Assets/img/log5.jpg);">
                 </div>
                 <div class="col-lg-5 col-md-7 bg-white">
                     <div class="p-3">
-                        <img src="<?php echo BASE_URL; ?>/assets/images/big/icon.png" alt="wrapkit">
+                        <img src="<?php echo BASE_URL; ?>/Assets/images/big/icon.png" alt="wrapkit">
                         <h2 class="mt-3 text-center">Registrate Gratis</h2>
                         <form class="mt-4" id="frmRegistro" name="frmRegistro">
                             <div class="row">
@@ -107,10 +107,10 @@
             </div>
         </div> 
     </div> 
-    <script src="<?php echo BASE_URL; ?>/assets/libs/jquery/dist/jquery.min.js "></script>
+    <script src="<?php echo BASE_URL; ?>Assets/libs/jquery/dist/jquery.min.js "></script>
     <!-- Bootstrap tether Core JavaScript -->
-    <script src="<?php echo BASE_URL; ?>/assets/libs/popper.js/dist/umd/popper.min.js "></script>
-    <script src="<?php echo BASE_URL; ?>/assets/libs/bootstrap/dist/js/bootstrap.min.js "></script>
+    <script src="<?php echo BASE_URL; ?>Assets/libs/popper.js/dist/umd/popper.min.js "></script>
+    <script src="<?php echo BASE_URL; ?>Assets/libs/bootstrap/dist/js/bootstrap.min.js "></script>
     <!-- ============================================================== -->
     <!-- This page plugin js -->
     <!-- ============================================================== -->
@@ -120,8 +120,8 @@
        <script>
         const base_url = '<?php echo BASE_URL; ?>';
     </script>
-    <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
-        <script src="<?php echo BASE_URL; ?>assets/js/registro.js"></script>
+    <script src="<?php echo BASE_URL; ?>Assets/Js/sweetalert2.all.min.js"></script>
+        <script src="<?php echo BASE_URL; ?>Assets/Js/registro.js"></script>
 </body>
 
 </html>

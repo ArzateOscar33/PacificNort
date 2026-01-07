@@ -340,5 +340,5 @@
     </div>
   </div>
 </div>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/operaciones_llenado_catalogo.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/operaciones_registrar.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_llenado_catalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_registrar.js"></script>

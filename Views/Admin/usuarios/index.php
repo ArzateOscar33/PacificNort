@@ -171,4 +171,4 @@
 </div>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/usuarios.js'></script>
+<script src='<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/usuarios.js'></script>

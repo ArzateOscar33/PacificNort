@@ -241,4 +241,4 @@
 </div>
 
 <script>feather.replace();</script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/costos_operacion_catalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/catalogos/costos_operacion_catalogo.js"></script>

@@ -83,5 +83,5 @@
     </div>
 </div>
 
-<script src='<?php echo BASE_URL; ?>/assets/js/modulosAdmin/departamentos.js'></script>
+<script src='<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/departamentos.js'></script>
  

@@ -242,19 +242,19 @@
  <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>-->
 
-  <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chart.js"></script> 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartjs-adapter-date-fns.js"></script> 
+  <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chart.js"></script> 
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartjs-adapter-date-fns.js"></script> 
  
  
  
 
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/resumen_graficos.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_graficos.js"></script>
 <!-- Librerías requeridas para exportar a PDF (cargar después de Chart.js) 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>-->
 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/html2canvas.min.js"></script>
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/jspdf.umd.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/html2canvas.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
  
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/resumen.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/operaciones_maritimoferro/resumen_exportar.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_exportar.js"></script>

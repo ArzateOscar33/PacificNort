@@ -99,4 +99,4 @@
   </div>
 </div>
 
-<script src="<?php echo BASE_URL; ?>assets/js/modulosAdmin/estados.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/estados.js"></script>

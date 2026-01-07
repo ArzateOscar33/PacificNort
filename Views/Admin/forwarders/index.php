@@ -95,5 +95,5 @@
 
 
 <?php include 'Views/Template/admin_footer.php'; ?>
-<script src='<?php echo BASE_URL; ?>assets/js/modulosAdmin/forwarders.js'></script>
+<script src='<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/forwarders.js'></script>
 

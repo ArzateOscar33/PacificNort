@@ -183,7 +183,6 @@
      feather.replace();
      const BASE_URL = "<?= BASE_URL ?>";
  </script>
- <script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimoferro/en_piso.js"></script>
+ <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/en_piso.js"></script>
 
- <!-- JS del módulo (cuando lo implementes) -->
- <!-- <script src="<?= BASE_URL ?>assets/js/modulosAdmin/mercancia_piso/mercanciaPiso.js"></script> -->
+ 

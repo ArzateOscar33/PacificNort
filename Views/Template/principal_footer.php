@@ -54,8 +54,8 @@
  <script>
   const base_url = "<?php echo BASE_URL; ?>";
 </script>
-<script src="<?php echo BASE_URL; ?>/assets/js/bootstrap.bundle.min.js"></script>
-<script src="<?php echo BASE_URL; ?>/assets/js/aos.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/servicios.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/contactos.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/aos.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/servicios.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/sweetalert2.all.min.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/contactos.js"></script>

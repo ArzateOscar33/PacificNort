@@ -157,4 +157,4 @@
   white-space: nowrap;
 }
 </style>
-<script src="<?php echo BASE_URL; ?>assets/js/rastreo.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/rastreo.js"></script>

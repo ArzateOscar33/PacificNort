@@ -183,4 +183,4 @@
 </div>
  
 
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/operaciones_maritimas/catalogos/documentos.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/catalogos/documentos.js"></script>

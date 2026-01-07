@@ -14,12 +14,12 @@
     <meta name="theme-color" content="#ffffff">
     <title><?php echo $data['title']; ?></title>
     <!-- Custom CSS -->
-    <link href="<?php echo BASE_URL; ?>/assets/extra-libs/c3/c3.min.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>/assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
+    <link href="<?php echo BASE_URL; ?>Assets/extra-libs/c3/c3.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
     <!-- Custom CSS -->
    <!-- <script src="https://unpkg.com/feather-icons"></script>  -->
-    <script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/feather.min.js"></script>
+    <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/feather.min.js"></script>
 
     <link href="<?php echo BASE_URL; ?>/dist/css/style.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -56,10 +56,10 @@
                         <a href="<?php echo BASE_URL . 'admin'; ?>">
                             <b class="logo-icon">
                                 <!-- Dark Logo icon -->
-                                <img src="<?php echo BASE_URL; ?>/assets/img/logo.png" alt="homepage"
+                                <img src="<?php echo BASE_URL; ?>Assets/img/logo.png" alt="homepage"
                                     class="dark-logo img-fluid" />
                                 <!-- Light Logo icon -->
-                                <img src="<?php echo BASE_URL; ?>/assets/img/logo.png" alt="homepage"
+                                <img src="<?php echo BASE_URL; ?>Assets/img/logo.png" alt="homepage"
                                     class="light-logo" />
                             </b>
                             <!--End Logo icon -->
@@ -104,7 +104,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-toggle="dropdown"
                                 aria-haspopup="true" aria-expanded="false">
-                                <img src="<?php echo BASE_URL; ?>assets/images/users/1.jpg" alt="user"
+                                <img src="<?php echo BASE_URL; ?>Assets/images/users/1.jpg" alt="user"
                                     class="rounded-circle" width="40">
                                 <span class="ml-2 d-none d-lg-inline-block"><span>Hola,</span> <span
                                         class="text-dark"><?php echo $_SESSION['nombre_usuario']; ?></span> <i
@@ -475,15 +475,15 @@
 
 <!-- Chartist CSS -->
 <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css"> -->
-<link href="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartist.min.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.css" rel="stylesheet">
 
 
 <!-- Chartist JS -->
 <!--<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script> -->
-<script src="<?= BASE_URL ?>assets/js/modulosAdmin/librerias/chartist.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.js"></script>
 
 <!-- Luego tu dashboard -->
-<script src="<?php echo BASE_URL; ?>/assets/libs/chartist/dist/chartist.min.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script>
  
  <script>
      const base_url = '<?php echo BASE_URL; ?>';
