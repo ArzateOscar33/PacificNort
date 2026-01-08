@@ -27,6 +27,10 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false"><i data-feather="file-plus"></i>Documentos</a>
         </li>
+
+        <!--<li class="nav-item">
+            <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#costos-contenedor" role="tab" aria-controls="documentos" aria-selected="false"><i data-feather="file-plus"></i>Costos Contenedor</a>
+        </li> -->
  
  
         <li class="nav-item">
@@ -59,6 +63,9 @@ $tiposMovimiento = $data['tiposMovimiento'] ?? [];
             <?php include 'tabs/documentos.php'; ?>
         </div>
  
+       <!-- <div class="tab-pane fade" id="costos-contenedor" role="tabpanel" aria-labelledby="log-tab">
+            <?//php include 'tabs/costos.php'; ?>
+        </div> -->
         <div class="tab-pane fade" id="log" role="tabpanel" aria-labelledby="log-tab">
             <?php include 'tabs/log.php'; ?>
         </div> 

@@ -14,11 +14,8 @@
         <li class="nav-item">
             <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos  Maritimos</a>
         </li>
+   <!-- FIN MARITMA -->
 
-         <!-- FIN MARITMA -->
-        <!-- <li class="nav-item">
-            <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false">Costos Contenedor</a>
-        </li> -->
         <!-- FERRO/TERRESTRE -->
         <li class="nav-item">
             <a class="nav-link" id="en-piso-tab" data-bs-toggle="tab" href="#en-piso" role="tab" aria-controls="en-piso" aria-selected="false"><i data-feather="home"></i>En Bodega</a>
@@ -38,6 +35,9 @@
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false"><i data-feather="file-plus"></i>Documentos</a>
         </li>
+
+              
+
  
  <!-- FIN FERRO/TERRESTRE -->
 
@@ -45,6 +45,9 @@
                 <li class="nav-item">
             <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Operaciones</a>
         </li>
+                 <li class="nav-item">
+            <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Contenedor</a>
+        </li> 
     </ul>
 
     <div class="tab-content mt-3">
@@ -58,7 +61,7 @@
             <?php include 'tabs/operaciones_ferro.php'; ?>
         </div> 
         <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
-            <?php include 'tabs/costos.php'; ?>
+            <?php include 'tabs/costos_combinados.php'; ?>
         </div>
         <div class="tab-pane fade" id="costos_operacion" role="tabpanel" aria-labelledby="costos_operacion-tab">
             <?php include 'tabs/costos_operacion.php'; ?>
@@ -85,6 +88,9 @@
         <div class="tab-pane fade" id="en-piso" role="tabpanel" aria-labelledby="en-piso-tab">
             <?php include 'tabs/en_piso.php'; ?>
         </div>
+         <div class="tab-pane fade" id="costos-contenedor" role="tabpanel" aria-labelledby="log-tab">
+            <?php include 'tabs/costos.php'; ?>
+        </div> 
     </div>
 </div>
 
