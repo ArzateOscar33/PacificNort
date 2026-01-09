@@ -81,8 +81,7 @@
     <table class="table table-bordered align-middle" id="tablaCostosContenedoresCostosCombinados">
       <thead class="table-light">
         <tr>
-          <th>Operacion Maritima</th>
-          <th>Operacion Terrestre</th>
+          <th>Operacion De Origen</th> 
           <th>Contenedor</th>
           <th>Cliente</th>
           <th>Concepto</th>
@@ -108,4 +107,4 @@
   feather.replace();
 </script>
 
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_combinados.js"></script>
+ <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_combinados.js"></script>  

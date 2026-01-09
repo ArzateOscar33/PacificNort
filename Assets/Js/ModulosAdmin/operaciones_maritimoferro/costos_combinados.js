@@ -273,7 +273,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-muted py-4">
+        <td colspan="5" class="text-center text-muted py-4">
           Escribe y selecciona un contenedor para consultar sus costos.
         </td>
       </tr>`;
@@ -285,7 +285,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-muted py-4">
+        <td colspan="5" class="text-center text-muted py-4">
           Cargando...
         </td>
       </tr>`;
@@ -297,7 +297,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-danger py-4">
+        <td colspan="5" class="text-center text-danger py-4">
           ${escapeHtml(msg || "Error")}
         </td>
       </tr>`;
@@ -313,7 +313,7 @@
     if (!Array.isArray(rows) || rows.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="text-center text-muted py-4">
+          <td colspan="5" class="text-center text-muted py-4">
             No se encontraron costos para este contenedor con los filtros seleccionados.
           </td>
         </tr>`;
@@ -323,29 +323,26 @@
     const monedaVista = (state.moneda_vista || "MXN").toUpperCase();
 
     rows.forEach((r) => {
-      const opMar = (r.operacion_maritima || "").toString();
-      const opTer = (r.operacion_terrestre || "").toString();
-      const cont = (r.contenedor || "").toString();
-      const cli = (r.cliente || "").toString();
-      const concepto = (r.concepto || r.tipo_movimiento || "").toString();
+const opOrigen = (r.operacion_origen || (r.origen === "FO" ? "FO: " : "MAR: ") + (r.origen === "FO" ? (r.operacion_terrestre || "") : (r.operacion_maritima || "")) || "").toString();
 
-      // Preferimos monto_vista (modelo), si no existe, caemos a monto
-      const montoNum = toFloat(
-        (typeof r.monto_vista !== "undefined" && r.monto_vista !== null) ? r.monto_vista : r.monto
-      );
+const cont = (r.contenedor || "").toString();
+const cli = (r.cliente || "").toString();
+const concepto = (r.concepto || r.tipo_movimiento || "").toString();
 
-      const montoFmt = formatMoney(montoNum, monedaVista);
+const montoNum = toFloat(
+  (typeof r.monto_vista !== "undefined" && r.monto_vista !== null) ? r.monto_vista : r.monto
+);
+const montoFmt = formatMoney(montoNum, monedaVista);
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><span class="fw-semibold">${escapeHtml(opMar || "—")}</span></td>
-        <td><span class="fw-semibold">${escapeHtml(opTer || "—")}</span></td>
-        <td><span class="fw-semibold">${escapeHtml(cont || "—")}</span></td>
-        <td>${escapeHtml(cli || "—")}</td>
-        <td>${escapeHtml(concepto || "—")}</td>
-        <td class="text-end">${escapeHtml(montoFmt)}</td>
-      `;
-      tbody.appendChild(tr);
+const tr = document.createElement("tr");
+tr.innerHTML = `
+  <td><span class="fw-semibold">${escapeHtml(opOrigen || "—")}</span></td>
+  <td><span class="fw-semibold">${escapeHtml(cont || "—")}</span></td>
+  <td>${escapeHtml(cli || "—")}</td>
+  <td>${escapeHtml(concepto || "—")}</td>
+  <td class="text-end">${escapeHtml(montoFmt)}</td>
+`;
+tbody.appendChild(tr);
     });
   }
 
