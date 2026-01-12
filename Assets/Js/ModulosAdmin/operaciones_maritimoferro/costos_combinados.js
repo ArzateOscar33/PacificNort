@@ -15,6 +15,7 @@
 
   // ===== Refs UI (IDs con sufijo CostosCombinados) =====
   const inputContenedor = document.getElementById("inputContenedorBuscarCostosCombinados");
+  const sugerenciasBox  = document.getElementById("sugerenciasContenedorCostosCombinados");
   const fechaDesde = document.getElementById("filtroFechaInicioCostosContCostosCombinados");
   const fechaHasta = document.getElementById("filtroFechaFinCostosContCostosCombinados");
   const perPageSel = document.getElementById("perPageCostosCostosCombinados");
@@ -47,164 +48,198 @@
     tDebounce = setTimeout(fn, wait);
   }
 
-  // ===== Autocomplete (datalist simple) =====
-  const DATALIST_ID = "datalistContenedoresCostosCombinados";
-  function ensureDatalist() {
-    if (!inputContenedor) return null;
+ 
 
-    let dl = document.getElementById(DATALIST_ID);
-    if (!dl) {
-      dl = document.createElement("datalist");
-      dl.id = DATALIST_ID;
-      document.body.appendChild(dl);
-    }
-    inputContenedor.setAttribute("list", DATALIST_ID);
-    return dl;
+function ocultarSugerencias() {
+  if (!sugerenciasBox) return;
+  sugerenciasBox.style.display = "none";
+  sugerenciasBox.innerHTML = "";
+}
+
+function mostrarSugerencias(items) {
+  if (!sugerenciasBox) return;
+
+  sugerenciasBox.innerHTML = "";
+
+  if (!Array.isArray(items) || items.length === 0) {
+    ocultarSugerencias();
+    return;
   }
 
-  function sugerirContenedores(term) {
-    const dl = ensureDatalist();
-    if (!dl) return;
+  items.forEach((it) => {
+    const text = (it && (it.text || it.numero_contenedor || it.value) ? (it.text || it.numero_contenedor || it.value) : "").toString().trim();
+    if (!text) return;
 
-    dl.innerHTML = "";
-    if (!term || term.length < 2) return;
+    const a = document.createElement("button");
+    a.type = "button";
+    a.className = "list-group-item list-group-item-action";
+    a.innerHTML = `<span class="fw-semibold">${escapeHtml(text)}</span>`;
 
-    const url = base_url + ENDPOINT_SUGERENCIAS + "?term=" + encodeURIComponent(term) + "&limit=10";
+    a.addEventListener("click", function () {
+      inputContenedor.value = text;
+      state.contenedor = text.toUpperCase();
+      state.page = 1;
+      ocultarSugerencias();
+      listar();
+    });
 
-    const http = new XMLHttpRequest();
-    http.open("GET", url, true);
-    http.send();
-    http.onreadystatechange = function () {
-      if (this.readyState !== 4) return;
+    sugerenciasBox.appendChild(a);
+  });
 
-      if (this.status !== 200) {
-        // No bloqueamos UX por sugerencias
-        return;
-      }
+  sugerenciasBox.style.display = "block";
+}
 
-      let res;
-      try {
-        res = JSON.parse(this.responseText);
-      } catch (e) {
-        return;
-      }
+function sugerirContenedores(term) {
+  if (!sugerenciasBox) return;
 
-      if (!res || res.ok !== true || !Array.isArray(res.data)) return;
+  ocultarSugerencias();
 
-      dl.innerHTML = "";
-      res.data.forEach((it) => {
-        const val = (it && (it.text || it.numero_contenedor || it.value) ? (it.text || it.numero_contenedor || it.value) : "").toString();
-        if (!val) return;
-        const opt = document.createElement("option");
-        opt.value = val;
-        dl.appendChild(opt);
-      });
-    };
-  }
+  if (!term || term.length < 2) return;
+
+  const url = base_url + ENDPOINT_SUGERENCIAS
+    + "?term=" + encodeURIComponent(term)
+    + "&limit=10";
+
+  const http = new XMLHttpRequest();
+  http.open("GET", url, true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState !== 4) return;
+
+    if (this.status !== 200) return;
+
+    let res;
+    try { res = JSON.parse(this.responseText); } catch (e) { return; }
+
+    if (!res || res.ok !== true || !Array.isArray(res.data)) return;
+
+    mostrarSugerencias(res.data);
+  };
+}
+
 
   // ===== Init =====
-  window.addEventListener("DOMContentLoaded", function () {
-    if (!tbody || !ulPaginacion || !metaResumen) return;
+window.addEventListener("DOMContentLoaded", function () {
+  if (!tbody || !ulPaginacion || !metaResumen) return;
 
-    // Eventos filtros
-    if (inputContenedor) {
-      inputContenedor.addEventListener("keyup", function (e) {
-        const val = (inputContenedor.value || "").trim().toUpperCase();
+  // Eventos filtros
+  if (inputContenedor) {
+    inputContenedor.addEventListener("keyup", function (e) {
+      const val = (inputContenedor.value || "").trim().toUpperCase();
 
-        // Autocomplete
-        debounce(() => sugerirContenedores(val), 220);
+      // Sugerencias (list-group)
+      debounce(() => sugerirContenedores(val), 220);
 
-        // Enter = listar
-        if (e.key === "Enter") {
-          state.contenedor = val;
-          state.page = 1;
-          listar();
-        }
-      });
+      if (e.key === "Escape") {
+        ocultarSugerencias();
+        return;
+      }
 
-      // Change (cuando selecciona de sugerencias)
-      inputContenedor.addEventListener("change", function () {
-        const val = (inputContenedor.value || "").trim().toUpperCase();
+      // Enter = listar
+      if (e.key === "Enter") {
         state.contenedor = val;
         state.page = 1;
+        ocultarSugerencias();
         listar();
-      });
-    }
+      }
+    });
 
-    if (fechaDesde) {
-      fechaDesde.addEventListener("change", function () {
-        state.fecha_ini = (fechaDesde.value || "").trim();
-        state.page = 1;
-        if (state.contenedor) listar();
-      });
-    }
+    // Si el usuario borra, ocultamos sugerencias (y no listamos)
+    inputContenedor.addEventListener("input", function () {
+      const val = (inputContenedor.value || "").trim();
+      if (val.length < 2) ocultarSugerencias();
+    });
 
-    if (fechaHasta) {
-      fechaHasta.addEventListener("change", function () {
-        state.fecha_fin = (fechaHasta.value || "").trim();
-        state.page = 1;
-        if (state.contenedor) listar();
-      });
-    }
+    // Blur: ocultar (delay para permitir click en sugerencia)
+    inputContenedor.addEventListener("blur", function () {
+      setTimeout(ocultarSugerencias, 150);
+    });
 
-    if (perPageSel) {
-      perPageSel.addEventListener("change", function () {
-        state.per_page = parseInt(perPageSel.value || "10", 10) || 10;
-        state.page = 1;
-        if (state.contenedor) listar();
-      });
-    }
+    // Focus: si ya hay texto suficiente, volver a sugerir
+    inputContenedor.addEventListener("focus", function () {
+      const val = (inputContenedor.value || "").trim().toUpperCase();
+      if (val.length >= 2) debounce(() => sugerirContenedores(val), 120);
+    });
 
-    if (monedaVistaSel) {
-      monedaVistaSel.addEventListener("change", function () {
-        state.moneda_vista = (monedaVistaSel.value || "MXN").toUpperCase();
-        state.page = 1;
-        if (state.contenedor) listar();
-      });
-    }
+    // Nota: ya NO usamos "change" porque la selección sucede con click
+    // en el list-group y ahí mismo se asigna state + listar().
+  }
 
-    if (tipoCambioInput) {
-      tipoCambioInput.addEventListener("change", function () {
-        state.tc = parseFloat(tipoCambioInput.value || "17.00") || 17.0;
-        state.page = 1;
-        if (state.contenedor) listar();
-      });
-    }
+  if (fechaDesde) {
+    fechaDesde.addEventListener("change", function () {
+      state.fecha_ini = (fechaDesde.value || "").trim();
+      state.page = 1;
+      if (state.contenedor) listar();
+    });
+  }
 
-    // Exportaciones (si hay tabla)
-    if (btnExcel) {
-      btnExcel.addEventListener("click", function () {
-        if (typeof ExportarTablas === "undefined") return;
-        ExportarTablas.exportar({
-          ref: "tablaCostosContenedoresCostosCombinados",
-          formato: "xlsx",
-          nombre: "CostosCombinadosContenedor.xlsx",
-          columnasOcultas: [],
-          soloVisibles: true,
-          sheetName: "Costos Combinados",
-        });
-      });
-    }
+  if (fechaHasta) {
+    fechaHasta.addEventListener("change", function () {
+      state.fecha_fin = (fechaHasta.value || "").trim();
+      state.page = 1;
+      if (state.contenedor) listar();
+    });
+  }
 
-    if (btnPdf) {
-      btnPdf.addEventListener("click", function () {
-        if (typeof ExportarTablas === "undefined") return;
-        ExportarTablas.exportar({
-          ref: "#tablaCostosContenedoresCostosCombinados",
-          formato: "pdf",
-          nombre: "CostosCombinadosContenedor.pdf",
-          titulo: "Costos por Contenedor (Marítimo + FO)",
-          orientacion: "landscape",
-          formatoPagina: "letter",
-          columnasOcultas: [],
-          soloVisibles: true,
-        });
-      });
-    }
+  if (perPageSel) {
+    perPageSel.addEventListener("change", function () {
+      state.per_page = parseInt(perPageSel.value || "10", 10) || 10;
+      state.page = 1;
+      if (state.contenedor) listar();
+    });
+  }
 
-    // Estado inicial (no listamos hasta que haya contenedor)
-    renderVacioInicial();
-  });
+  if (monedaVistaSel) {
+    monedaVistaSel.addEventListener("change", function () {
+      state.moneda_vista = (monedaVistaSel.value || "MXN").toUpperCase();
+      state.page = 1;
+      if (state.contenedor) listar();
+    });
+  }
+
+  if (tipoCambioInput) {
+    tipoCambioInput.addEventListener("change", function () {
+      state.tc = parseFloat(tipoCambioInput.value || "17.00") || 17.0;
+      state.page = 1;
+      if (state.contenedor) listar();
+    });
+  }
+
+  // Exportaciones (si hay tabla)
+  if (btnExcel) {
+    btnExcel.addEventListener("click", function () {
+      if (typeof ExportarTablas === "undefined") return;
+      ExportarTablas.exportar({
+        ref: "tablaCostosContenedoresCostosCombinados",
+        formato: "xlsx",
+        nombre: "CostosCombinadosContenedor.xlsx",
+        columnasOcultas: [],
+        soloVisibles: true,
+        sheetName: "Costos Combinados",
+      });
+    });
+  }
+
+  if (btnPdf) {
+    btnPdf.addEventListener("click", function () {
+      if (typeof ExportarTablas === "undefined") return;
+      ExportarTablas.exportar({
+        ref: "#tablaCostosContenedoresCostosCombinados",
+        formato: "pdf",
+        nombre: "CostosCombinadosContenedor.pdf",
+        titulo: "Costos por Contenedor (Marítimo + FO)",
+        orientacion: "landscape",
+        formatoPagina: "letter",
+        columnasOcultas: [],
+        soloVisibles: true,
+      });
+    });
+  }
+
+  // Estado inicial (no listamos hasta que haya contenedor)
+  renderVacioInicial();
+});
+
 
   // ===== Helper: construir querystring =====
   function buildQuery() {

@@ -79,8 +79,8 @@
                             <th>Cliente</th>
                             <th>Naviera</th>
                             <th>Forwarder</th>
-
-                            <th>Estatus</th>
+                            <th>Estatus</th> 
+                            <th>Cita en Puerto</th>
                             <th style="width:120px;">Acciones</th>
                         </tr>
                     </thead>
@@ -343,6 +343,11 @@
                                             <?php endforeach; ?>
                                             <?php endif; ?>
                                         </select>
+                                    </div>
+                                      <!-- Cita en Puerto (NUEVO) -->
+                                    <div class="col-md-6">
+                                        <label class="form-label">Cita en Puerto</label>
+                                        <input type="date" id="cita_puerto" name="cita_puerto" class="form-control">
                                     </div>
 
                                 </div>

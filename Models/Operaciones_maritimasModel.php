@@ -160,7 +160,8 @@ public function listarPaginado(array $filters = [], int $page = 1, int $perPage 
             n.nombre   AS naviera,
             f.nombre   AS forwarder,
             c.nombre   AS cliente,
-            o.etd, o.eta,
+            o.etd, o.eta,o.cita_puerto,
+
             e.nombre   AS estatus,
             GROUP_CONCAT(DISTINCT cm.numero_contenedor
                          ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
@@ -177,7 +178,7 @@ public function listarPaginado(array $filters = [], int $page = 1, int $perPage 
         LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
         $where
         GROUP BY o.id_operacion, o.numero_operacion, st.nombre, o.numero_bl,
-                 p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre
+                 p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta,o.cita_puerto, e.nombre
         ORDER BY o.id_operacion DESC
         LIMIT $limit OFFSET $off
     ";
@@ -243,16 +244,18 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
         }
 
         // B.2) Insert en operaciones (con código ya único)
-        $sqlOp = "INSERT INTO operaciones
-            (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
-             cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
-        $paramsOp = [
+            $sqlOp = "INSERT INTO operaciones
+            (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, cita_puerto, numero_bl,
+            cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+            $paramsOp = [
             trim($op['numero_operacion']),
             (int)$op['tipo_operacion_id'],
             (int)$op['subtipo_operacion_id'],
             $op['etd'] ?? null,
             $op['eta'] ?? null,
+            $op['cita_puerto'] ?? null,   // ✅ NUEVO
             $op['numero_bl'] ?? null,
             (int)$op['cliente_id'],
             (int)($op['estatus_id'] ?? 9),
@@ -260,7 +263,7 @@ public function insertarOperacion(array $op, array $contenedores, int $usuarioId
             !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
             !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null,
             $op['notas'] ?? null,
-        ];
+            ];
         $opId = (int)$this->insertar($sqlOp, $paramsOp);
         if ($opId <= 0) {
             // Si falló (p.ej. por UNIQUE de numero_operacion), revertimos todo
@@ -497,6 +500,7 @@ public function obtenerOperacion(int $id): ?array
             o.cliente_id,
             c.nombre AS cliente_nombre,
             o.etd, o.eta,
+            o.cita_puerto,
             o.estatus_id,
             e.nombre AS estatus_nombre,
             o.notas   
@@ -519,29 +523,30 @@ public function actualizarOperacion(array $d): bool
               subtipo_operacion_id = ?,
               etd                  = ?,
               eta                  = ?,
+              cita_puerto          = ?,
               numero_bl            = ?,
               cliente_id           = ?,
               estatus_id           = ?,
               naviera_id           = ?,
               forwarder_id         = ?,
-              shipper_id           = ?,  -- aquí no hay problema
+              shipper_id           = ?,   
               notas                = ?
             WHERE id_operacion = ?
             LIMIT 1";
-    $args = [
-       
-      (int)($d['subtipo_operacion_id'] ?? 0),
-      !empty($d['etd']) ? $d['etd'] : null,
-      !empty($d['eta']) ? $d['eta'] : null,
-      trim($d['numero_bl'] ?? ''),
-      !empty($d['cliente_id'])  ? (int)$d['cliente_id']  : null,
-      !empty($d['estatus_id'])  ? (int)$d['estatus_id']  : null,
-      ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
-      ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
-      ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
-      ($d['notas'] ?? null),
-      (int)$d['id_operacion'],
-    ];
+$args = [
+  (int)($d['subtipo_operacion_id'] ?? 0),
+  !empty($d['etd']) ? $d['etd'] : null,
+  !empty($d['eta']) ? $d['eta'] : null,
+  !empty($d['cita_puerto']) ? $d['cita_puerto'] : null, // ✅ NUEVO
+  trim($d['numero_bl'] ?? ''),
+  !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
+  !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
+  ($d['naviera_id'] ?? '') !== '' ? (int)$d['naviera_id'] : null,
+  ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
+  ($d['shipper_id'] ?? '') !== '' ? (int)$d['shipper_id'] : null,
+  ($d['notas'] ?? null),
+  (int)$d['id_operacion'],
+];
 
     $res = $this->save($sql, $args);
     // ✅ Éxito si NO es false (0 filas afectadas cuenta como éxito)

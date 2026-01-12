@@ -25,6 +25,7 @@ const inpNumeroOp     = document.getElementById('numeroOperacion');
 const selEstatus      = document.getElementById('estatusId');
 const inpETD          = document.getElementById('etd');
 const inpETA          = document.getElementById('eta');
+const inpCitaPuerto = document.getElementById('cita_puerto');
  
 const selPuerto       = document.getElementById('puertoArribo');     // readonly/disabled
 const selNavieraEd    = document.getElementById('navieraId');
@@ -32,6 +33,7 @@ const selForwarderEd  = document.getElementById('forwarderId');
 const inpClienteNom   = document.getElementById('clienteNombre');
 const hidCliente      = document.getElementById('clienteId');
 const selShipper      = document.getElementById('shipperId');
+
 
 // Bootstrap modal instance (si usas Bootstrap 5)
 let modalInstance = null;
@@ -95,6 +97,7 @@ function resetModalOperacion(mode = 'create'){
   if (inpBL)          inpBL.value  = '';
   if (hidCliente)     hidCliente.value = '';
   if (inpClienteNom)  inpClienteNom.value = '';
+  if (inpCitaPuerto) inpCitaPuerto.value = '';
   if (typeof hideSugCliente === 'function') hideSugCliente(); // cierra sugerencias cliente
 
   // Selects dependientes
@@ -212,6 +215,7 @@ function renderTabla(data){
       <td>${safe(item.numero_operacion)}</td>
       <td>${safe(item.subtipo || item.subtipo_operacion)}</td>
       <td>${safe(item.eta)}</td> 
+      
       <td>${safe(item.contenedores)}</td>
       <td>${safe(item.numero_bl)}</td>
       <td>${safe(item.puerto_arribo)}</td>
@@ -220,6 +224,8 @@ function renderTabla(data){
       <td>${safe(item.forwarder)}</td>
       
       <td>${safe(item.estatus)}</td>
+      <td>${(item.cita_puerto || '').toString().slice(0,10) || '-'}</td>
+
       <td> 
         <button class="btn btn-sm btn-outline-secondary me-1 btn-edit" data-id="${safe(item.id_operacion)}" title="Editar"><i data-feather="edit"></i></button>
       </td> 
@@ -828,6 +834,7 @@ function cargarOperacionParaEditar(id){
       setSelectValue(selEstatus,    op.estatus_id);
       if (inpETD) inpETD.value = op.etd || '';
       if (inpETA) inpETA.value = op.eta || '';
+      if (inpCitaPuerto) inpCitaPuerto.value = (op.cita_puerto || '').toString().slice(0,10);
       if (inpBL)  inpBL.value  = op.numero_bl || '';
       if (hidCliente)    hidCliente.value = op.cliente_id || '';
       if (inpClienteNom) inpClienteNom.value = op.cliente_nombre || '';
@@ -887,6 +894,7 @@ function actualizarOperacion(){
     fd.append('estatus_id',           selEstatus.value);
     fd.append('etd',                  inpETD?.value || '');
     fd.append('eta',                  inpETA?.value || '');
+    fd.append('cita_puerto', inpCitaPuerto?.value || '');
     fd.append('numero_bl',            inpBL?.value || '');
     fd.append('cliente_id',           hidCliente?.value || '');
     fd.append('naviera_id',           selNavieraEd?.value || '');
@@ -894,6 +902,7 @@ function actualizarOperacion(){
     fd.append('shipper_id',           selShipper?.value || '');
     fd.append('notas', (txtNotas?.value || '').trim());
     fd.append('contenedores', JSON.stringify(collectContenedores())); 
+
 
     const x = new XMLHttpRequest();
     x.open('POST', base_url + 'Operaciones_maritimas/actualizar', true);

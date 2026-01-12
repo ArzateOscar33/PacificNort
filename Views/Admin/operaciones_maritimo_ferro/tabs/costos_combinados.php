@@ -10,15 +10,25 @@
   <div class="row g-3 align-items-end mb-4">
 
     <!-- Contenedor -->
-    <div class="col-md-3">
-      <label for="inputContenedorBuscarCostosCombinados" class="form-label">Contenedor marítimo</label>
-      <input
-        type="text"
-        id="inputContenedorBuscarCostosCombinados"
-        class="form-control"
-        placeholder="Ej. TRHU6818550"
-        autocomplete="off">
-    </div>
+<!-- Contenedor -->
+<div class="col-md-3 position-relative">
+  <label for="inputContenedorBuscarCostosCombinados" class="form-label">Contenedor marítimo</label>
+
+  <input
+    type="text"
+    id="inputContenedorBuscarCostosCombinados"
+    class="form-control"
+    placeholder="Ej. TRHU6818550"
+    autocomplete="off">
+
+  <!-- Sugerencias (formato estándar) -->
+  <div
+    id="sugerenciasContenedorCostosCombinados"
+    class="list-group position-absolute top-100 start-0 w-100"
+    style="display:none; z-index:999;">
+  </div>
+</div>
+
 
     <!-- Rango de fechas -->
     <div class="col-md-2">
