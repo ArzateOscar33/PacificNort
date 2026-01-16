@@ -285,48 +285,14 @@
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>Operaciones_maritimo_ferro/ver"
                                         class="sidebar-link"><i data-feather="truck"></i><span
                                             class="hide-menu">Operaciones Maritimo-Ferro</span></a></li>
-                               <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones/maritimo"
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_por_partida"
                                         class="sidebar-link"><i data-feather="navigation"></i><span
-                                            class="hide-menu">Operaciones Marítimas</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>documentos_operacion"
-                                        class="sidebar-link"><i data-feather="file-text"></i><span
-                                            class="hide-menu">Documentos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_log"
-                                        class="sidebar-link"><i data-feather="file"></i><span class="hide-menu">Log de
-                                            Operaciones</span></a></li> -->
+                                            class="hide-menu">Operaciones Por Partida</span></a></li> 
                             </ul>
                         </li>
 
-                        <!-- FINANZAS Y SEGUIMIENTO 
-                        <li class="sidebar-item">
-                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
-                                <i data-feather="dollar-sign"></i>
-                                <span class="hide-menu">Finanzas y Seguimiento</span>
-                            </a>
-                            <ul aria-expanded="false" class="collapse first-level">
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>costos_operacion"
-                                        class="sidebar-link"><i data-feather="dollar-sign"></i><span
-                                            class="hide-menu">Costos Operación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>finanzas/costos_contenedor_operacion"
-                                        class="sidebar-link"><i data-feather="credit-card"></i><span
-                                            class="hide-menu">Costos por Contenedor</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>finanzas/costos_logisticos"
-                                        class="sidebar-link"><i data-feather="trending-down"></i><span
-                                            class="hide-menu">Costos Logísticos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>eventos_logisticos"
-                                        class="sidebar-link"><i data-feather="calendar"></i><span
-                                            class="hide-menu">Eventos Logísticos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
-                                        class="sidebar-link"><i data-feather="repeat"></i><span
-                                            class="hide-menu">Movimientos Logísticos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimientos_contenedor"
-                                        class="sidebar-link"><i data-feather="move"></i><span
-                                            class="hide-menu">Movimientos Contenedor</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>detalles_logisticos"
-                                        class="sidebar-link"><i data-feather="file-plus"></i><span
-                                            class="hide-menu">Detalles Logísticos</span></a></li>
-                            </ul>
-                        </li>-->
+                           
+                        
 
                         <!-- AUDITORÍA -->
                          <?php if ($_SESSION['rol_usuario'] == 1): ?>
