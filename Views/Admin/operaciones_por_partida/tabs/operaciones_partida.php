@@ -282,14 +282,7 @@
           </div>
         </div>
 
-        <div class="alert alert-light border d-flex align-items-start gap-2" role="alert">
-          <i data-feather="info" class="mt-1"></i>
-          <div class="small">
-            Aquí puedes <strong>registrar</strong>, <strong>editar</strong> y <strong>eliminar</strong> productos de
-            esta factura.
-            El encabezado se edita desde el botón <strong>Editar</strong> en el listado de facturas.
-          </div>
-        </div>
+
 
         <!-- Acciones de tabla ( + arriba a la derecha ) -->
         <div class="d-flex justify-content-end mb-2">
@@ -367,9 +360,13 @@
 
             <td>
               <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-outline-primary pf_btnGuardarFila" title="Guardar producto">
-                  <i data-feather="save"></i>
-                </button>
+                <button type="button"
+                class="btn btn-outline-warning btnEditarProducto"
+                 
+                title="Editar encabezado"
+                id="btnEditarProducto">
+                <i data-feather="edit"></i>
+              </button>
                 <button type="button" class="btn btn-outline-danger pf_btnEliminarFila" title="Eliminar producto">
                   <i data-feather="trash-2"></i>
                 </button>
@@ -405,3 +402,4 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_factura_catalogo.js"></script>
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_factura_registrar.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_catalogo.js"></script>

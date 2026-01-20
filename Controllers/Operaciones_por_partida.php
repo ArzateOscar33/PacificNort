@@ -421,4 +421,81 @@ public function baja()
 }
 
 
+//registrar productos
+public function registrarProducto()
+{
+    // Seguridad básica
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        echo json_encode(["ok" => false, "msg" => "Método no permitido"]);
+        exit;
+    }
+
+    $factura_id  = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
+
+    $descripcion = isset($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
+    $upc         = isset($_POST['upc']) ? trim($_POST['upc']) : '';
+    $marca       = isset($_POST['marca']) ? trim($_POST['marca']) : '';
+    $expiracion  = isset($_POST['expiracion']) ? trim($_POST['expiracion']) : null;
+
+    $inner_pack  = isset($_POST['inner_pack']) && $_POST['inner_pack'] !== '' ? (int)$_POST['inner_pack'] : null;
+    $case_pack   = isset($_POST['case_pack']) && $_POST['case_pack'] !== '' ? (int)$_POST['case_pack'] : null;
+
+    $pallets_rcv = isset($_POST['pallets_rcv']) ? (int)$_POST['pallets_rcv'] : 0;
+    $cajas       = isset($_POST['cajas']) ? (int)$_POST['cajas'] : 0;
+    $piezas      = isset($_POST['piezas']) ? (int)$_POST['piezas'] : 0;
+
+    // Validaciones mínimas (en tu tabla: upc es NOT NULL)
+    if ($factura_id <= 0) {
+        echo json_encode(["ok" => false, "msg" => "Factura inválida"]);
+        exit;
+    }
+    if ($descripcion === '' || $upc === '' || $marca === '') {
+        echo json_encode(["ok" => false, "msg" => "Descripción, UPC y Marca son obligatorios"]);
+        exit;
+    }
+    if ($pallets_rcv < 0 || $cajas < 0 || $piezas < 0) {
+        echo json_encode(["ok" => false, "msg" => "Valores numéricos inválidos"]);
+        exit;
+    }
+
+    // (Opcional) Validar formato fecha YYYY-MM-DD si viene
+    if ($expiracion !== null && $expiracion !== '') {
+        $d = DateTime::createFromFormat('Y-m-d', $expiracion);
+        if (!$d || $d->format('Y-m-d') !== $expiracion) {
+            echo json_encode(["ok" => false, "msg" => "Expiración inválida"]);
+            exit;
+        }
+    } else {
+        $expiracion = null;
+    }
+
+    // (Recomendado) Verificar que la factura exista y estatus=1
+    $existe = $this->model->existeFacturaActiva($factura_id);
+    if (!$existe) {
+        echo json_encode(["ok" => false, "msg" => "La factura no existe o está inactiva"]);
+        exit;
+    }
+
+    $id = $this->model->insertarProductoFactura([
+        "factura_id"  => $factura_id,
+        "descripcion" => $descripcion,
+        "upc"         => $upc,
+        "marca"       => $marca,
+        "expiracion"  => $expiracion,
+        "inner_pack"  => $inner_pack,
+        "case_pack"   => $case_pack,
+        "pallets_rcv" => $pallets_rcv,
+        "cajas"       => $cajas,
+        "piezas"      => $piezas
+    ]);
+
+    if ($id > 0) {
+        echo json_encode(["ok" => true, "msg" => "Producto registrado", "id" => $id]);
+    } else {
+        echo json_encode(["ok" => false, "msg" => "No se pudo registrar el producto"]);
+    }
+    exit;
+}
+
+
 }

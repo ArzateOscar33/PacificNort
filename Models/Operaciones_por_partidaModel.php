@@ -462,4 +462,39 @@ public function bajaFactura(int $idFactura, ?int $usuarioId = null): array
     return ['ok' => true, 'msg' => 'Factura dada de baja correctamente.'];
 }
 
+
+//registrar productos
+public function existeFacturaActiva(int $factura_id): bool
+{
+    $sql = "SELECT id_factura
+            FROM op_partida_facturas
+            WHERE id_factura = ? AND estatus = 1
+            LIMIT 1";
+    $row = $this->select($sql, [$factura_id]);
+    return !empty($row);
+}
+
+public function insertarProductoFactura(array $d): int
+{
+    $sql = "INSERT INTO op_partida_productos
+            (factura_id, descripcion, upc, marca, expiracion, inner_pack, case_pack, pallets_rcv, cajas, piezas, estatus)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+    $params = [
+        $d["factura_id"],
+        $d["descripcion"],
+        $d["upc"],
+        $d["marca"],
+        $d["expiracion"],
+        $d["inner_pack"],
+        $d["case_pack"],
+        $d["pallets_rcv"],
+        $d["cajas"],
+        $d["piezas"]
+    ];
+
+    $res = $this->insertar($sql, $params);
+    // Ajusta según tu Query: si insertar() retorna ID, regresa eso; si retorna bool, usa lastInsertId()
+    return (int)$res;
+}
+
 }
