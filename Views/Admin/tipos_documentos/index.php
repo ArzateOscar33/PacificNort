@@ -96,6 +96,7 @@
                             <option value="operacion">Operacion</option>
                             <option value="contenedor_fisico">Contenedor Fisico</option>
                             <option value="contenedor_maritimo">Contenedor Maritimo</option>
+                            <option value="operaciones_por_partida">Operaciones Por Partida</option>
                             <option value="cualquiera">Cualquiera</option>
                         </select>
 
