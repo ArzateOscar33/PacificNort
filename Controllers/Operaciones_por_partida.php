@@ -250,4 +250,175 @@ public function registrar()
     }
 }
 
+
+//
+public function getFactura()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        $id = isset($_GET['id_factura']) ? (int)$_GET['id_factura'] : 0;
+        if ($id <= 0) {
+            echo json_encode([
+                'ok' => false,
+                'msg' => 'ID de factura inválido.',
+                'factura' => null
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // OJO: usa el método “para editar” (con fecha formateada)
+        $factura = $this->model->getFacturaByIdEditar($id);
+
+        if (!$factura) {
+            echo json_encode([
+                'ok' => false,
+                'msg' => 'Factura no encontrada o inactiva.',
+                'factura' => null
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'ok' => true,
+            'factura' => $factura
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/getFactura ERROR: " . $e->getMessage());
+
+        echo json_encode([
+            'ok' => false,
+            'msg' => 'Ocurrió un error al obtener la factura.',
+            'factura' => null
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+
+public function actualizar()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok' => false, 'msg' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $idFactura = isset($_POST['operaciones_partida_id']) ? (int)$_POST['operaciones_partida_id'] : 0;
+        if ($idFactura <= 0) {
+            echo json_encode(['ok' => false, 'msg' => 'ID de factura inválido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $bodegaId      = isset($_POST['operaciones_partida_bodega']) ? (int)$_POST['operaciones_partida_bodega'] : 0;
+        $numeroFactura = isset($_POST['invoice_number']) ? trim((string)$_POST['invoice_number']) : '';
+        $proveedor     = isset($_POST['vendor_name']) ? trim((string)$_POST['vendor_name']) : '';
+        $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
+        $palletsInv    = isset($_POST['pallets_inv']) ? (int)$_POST['pallets_inv'] : 0;
+        $fechaRecibido = isset($_POST['received_date']) ? trim((string)$_POST['received_date']) : '';
+        $notas         = isset($_POST['comentarios']) ? trim((string)$_POST['comentarios']) : '';
+
+        $actualizadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
+
+        $resp = $this->model->actualizarFactura($idFactura, [
+            'bodega_id'       => $bodegaId,
+            'numero_factura'  => $numeroFactura,
+            'proveedor'       => $proveedor,
+            'revision_pasa'   => $revisionPasa,
+            'pallets_inv'     => $palletsInv,
+            'fecha_recibido'  => $fechaRecibido,
+            'notas'           => $notas,
+            'actualizado_por' => $actualizadoPor
+        ]);
+
+        if (empty($resp) || empty($resp['ok'])) {
+            echo json_encode([
+                'ok' => false,
+                'msg' => $resp['msg'] ?? 'No se pudo actualizar la factura.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Opcional: devolver factura actualizada para refrescar tabla sin recargar
+        $factura = $this->model->getFacturaById($idFactura);
+
+        echo json_encode([
+            'ok' => true,
+            'msg' => $resp['msg'] ?? 'Factura actualizada correctamente.',
+            'factura' => $factura ?: null
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/actualizar ERROR: " . $e->getMessage());
+
+        echo json_encode([
+            'ok' => false,
+            'msg' => 'Ocurrió un error al actualizar la factura.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+public function baja()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok' => false, 'msg' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Acepta varias llaves por flexibilidad
+        $idFactura = 0;
+        if (isset($_POST['id_factura'])) {
+            $idFactura = (int)$_POST['id_factura'];
+        } elseif (isset($_POST['operaciones_partida_id'])) {
+            $idFactura = (int)$_POST['operaciones_partida_id'];
+        } elseif (isset($_POST['id'])) {
+            $idFactura = (int)$_POST['id'];
+        }
+
+        if ($idFactura <= 0) {
+            echo json_encode(['ok' => false, 'msg' => 'ID de factura inválido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        
+
+        // Modelo
+        $resp = $this->model->bajaFactura($idFactura);
+
+        if (empty($resp) || empty($resp['ok'])) {
+            echo json_encode([
+                'ok'  => false,
+                'msg' => $resp['msg'] ?? 'No se pudo dar de baja la factura.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'ok'  => true,
+            'msg' => $resp['msg'] ?? 'Factura dada de baja correctamente.',
+            'id_factura' => $idFactura
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/baja ERROR: " . $e->getMessage());
+
+        echo json_encode([
+            'ok'  => false,
+            'msg' => 'Ocurrió un error al dar de baja la factura.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+
 }

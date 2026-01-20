@@ -1,4 +1,4 @@
- // Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_registro.js
+// Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_factura_registrar.js
 (function () {
   "use strict";
 
@@ -8,69 +8,83 @@
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
 
-  const ENDPOINT_REGISTRAR_FACTURA = "Operaciones_por_partida/registrar";
+  // ===== Endpoints =====
+  const ENDPOINT_REGISTRAR_FACTURA  = "Operaciones_por_partida/registrar";
+  const ENDPOINT_GET_FACTURA        = "Operaciones_por_partida/getFactura";
+  const ENDPOINT_ACTUALIZAR_FACTURA = "Operaciones_por_partida/actualizar";
+  const ENDPOINT_BAJA_FACTURA = "Operaciones_por_partida/baja";
+
+  const tbodyFacturas = document.getElementById("operaciones_partida_facturasBody");
+
 
   // ===== Refs (IDs existentes) =====
   const formFactura  = document.getElementById("formOperacionesPartida");
   const btnGuardar   = document.getElementById("operaciones_partida_btnGuardarEncabezado");
+  const btnNueva     = document.getElementById("operaciones_partida_btnNuevaFactura");
 
   const selBodega    = document.getElementById("operaciones_partida_bodega");
   const chkRevision  = document.getElementById("operaciones_partida_revision");
-  const inpPallets   = document.getElementById("operaciones_partida_pallets_rcv");
+  const inpPallets   = document.getElementById("operaciones_partida_pallets_inv");
   const inpFactura   = document.getElementById("operaciones_partida_factura");
   const inpProveedor = document.getElementById("operaciones_partida_proveedor");
   const inpFecha     = document.getElementById("operaciones_partida_fechaRecibido");
   const inpNotas     = document.getElementById("operaciones_partida_notas");
 
-  // (Opcional) hidden id en tu form: operaciones_partida_id
+  // Hidden id factura en tu form (name="operaciones_partida_id")
   const inpIdFacturaHidden = document.getElementById("operaciones_partida_id");
 
-  let xhrGuardar = null;
+  // Modal element
+  const modalEl = document.getElementById("modalOperacionesPartida");
 
-  function esc(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+  let xhrReq = null;
 
+  // ===== Helpers =====
   function setBtnLoading(isLoading) {
     if (!btnGuardar) return;
     btnGuardar.disabled = !!isLoading;
   }
 
-function swalSuccess(msg) {
-  Swal.fire({
-    icon: "success",
-    title: "Correcto",
-    text: msg,
-    confirmButtonText: "Aceptar",
-    confirmButtonColor: "#198754", // bootstrap success
-  });
-}
+  function swalSuccess(msg) {
+    if (typeof Swal === "undefined") {
+      alert(msg);
+      return;
+    }
+    Swal.fire({
+      icon: "success",
+      title: "Correcto",
+      text: msg,
+      confirmButtonText: "Aceptar",
+      confirmButtonColor: "#198754",
+    });
+  }
 
-function swalError(msg) {
-  Swal.fire({
-    icon: "error",
-    title: "Error",
-    text: msg,
-    confirmButtonText: "Aceptar",
-    confirmButtonColor: "#dc3545", // bootstrap danger
-  });
-}
+  function swalError(msg) {
+    if (typeof Swal === "undefined") {
+      alert(msg);
+      return;
+    }
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: msg,
+      confirmButtonText: "Aceptar",
+      confirmButtonColor: "#dc3545",
+    });
+  }
 
-function swalWarning(msg) {
-  Swal.fire({
-    icon: "warning",
-    title: "Atención",
-    text: msg,
-    confirmButtonText: "Aceptar",
-    confirmButtonColor: "#ffc107", // bootstrap warning
-  });
-}
-
+  function swalWarning(msg) {
+    if (typeof Swal === "undefined") {
+      alert(msg);
+      return;
+    }
+    Swal.fire({
+      icon: "warning",
+      title: "Atención",
+      text: msg,
+      confirmButtonText: "Aceptar",
+      confirmButtonColor: "#ffc107",
+    });
+  }
 
   function validarEncabezado() {
     const bodegaId  = selBodega ? String(selBodega.value || "").trim() : "";
@@ -81,7 +95,6 @@ function swalWarning(msg) {
     if (!factura) return "El número de factura es obligatorio.";
     if (!proveedor) return "El proveedor es obligatorio.";
 
-    // Pallets puede ser 0 válido; fecha puede ser opcional según tu regla
     if (inpPallets) {
       const n = parseInt(inpPallets.value || "0", 10);
       if (isNaN(n) || n < 0) return "Pallets INV (Factura) debe ser 0 o mayor.";
@@ -90,99 +103,285 @@ function swalWarning(msg) {
     return null;
   }
 
-  function registrarFactura() {
+  function abrirModalFactura() {
+    if (!modalEl || typeof bootstrap === "undefined") return;
+
+    let modal = bootstrap.Modal.getInstance(modalEl);
+    if (!modal) modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
+  function setModoCrear() {
+    // limpiar hidden id y form
+    if (inpIdFacturaHidden) inpIdFacturaHidden.value = "";
+    if (formFactura) formFactura.reset();
+
+    // título
+    const titulo = document.getElementById("operaciones_partida_tituloModal");
+    if (titulo) titulo.textContent = "Nueva Factura";
+  }
+
+  function setModoEditar() {
+    const titulo = document.getElementById("operaciones_partida_tituloModal");
+    if (titulo) titulo.textContent = "Editar Factura";
+  }
+
+  // ===== Cargar factura para editar =====
+  function cargarFacturaParaEditar(idFactura) {
+    const id = parseInt(String(idFactura || "0"), 10);
+    if (!id || id <= 0) {
+      swalWarning("ID de factura inválido.");
+      return;
+    }
+
+    // abortar request previo si existe
+    if (xhrReq && xhrReq.readyState !== 4) {
+      try { xhrReq.abort(); } catch (_) {}
+    }
+
+    setBtnLoading(true);
+
+    xhrReq = new XMLHttpRequest();
+    xhrReq.open("GET", base_url + ENDPOINT_GET_FACTURA + "?id_factura=" + encodeURIComponent(id), true);
+
+    xhrReq.onreadystatechange = function () {
+      if (xhrReq.readyState !== 4) return;
+        console.log(this.responseText);
+      setBtnLoading(false);
+
+      let resp = null;
+      try {
+        resp = JSON.parse(xhrReq.responseText || "{}");
+      } catch (e) {
+        swalError("Respuesta inválida del servidor al obtener la factura.");
+        return;
+      }
+
+      if (!resp || resp.ok !== true || !resp.factura) {
+        swalError(resp && resp.msg ? resp.msg : "No se pudo obtener la factura.");
+        return;
+      }
+
+      const f = resp.factura;
+
+      // llenar form
+      if (inpIdFacturaHidden) inpIdFacturaHidden.value = String(f.id_factura || "");
+
+      if (selBodega) selBodega.value = String(f.bodega_id || "");
+      if (inpFactura) inpFactura.value = String(f.numero_factura || "");
+      if (inpProveedor) inpProveedor.value = String(f.proveedor || "");
+      if (inpPallets) inpPallets.value = String(f.pallets_inv ?? 0);
+
+      // fecha debe venir como YYYY-MM-DD desde el modelo getFacturaByIdEditar
+      if (inpFecha) inpFecha.value = f.fecha_recibido ? String(f.fecha_recibido) : "";
+
+      if (inpNotas) inpNotas.value = f.notas ? String(f.notas) : "";
+
+      if (chkRevision) chkRevision.checked = (String(f.revision_pasa) === "1" || f.revision_pasa === 1);
+
+      setModoEditar();
+      abrirModalFactura();
+    };
+
+    xhrReq.onerror = function () {
+      setBtnLoading(false);
+      swalError("Error de red al obtener la factura.");
+    };
+
+    xhrReq.send(null);
+  }
+
+  // ===== Guardar encabezado (crear o actualizar) =====
+  function guardarEncabezadoFactura() {
     if (!formFactura) return;
 
     const err = validarEncabezado();
-if (err) {
-  swalWarning(err);
-  return;
-}
+    if (err) {
+      swalWarning(err);
+      return;
+    }
 
     // abortar request previo si existe
-    if (xhrGuardar && xhrGuardar.readyState !== 4) {
-      try { xhrGuardar.abort(); } catch (_) {}
+    if (xhrReq && xhrReq.readyState !== 4) {
+      try { xhrReq.abort(); } catch (_) {}
     }
 
     const fd = new FormData(formFactura);
 
-    // Asegurar checkbox en FormData (por si tu backend depende del name="revision_pasa")
-    // En tu vista el checkbox tiene name="revision_pasa" => perfecto; si no viniera, lo forzamos:
+    // checkbox: si no está checked, no viaja => controlador lo interpreta como 0
     if (chkRevision) {
-      if (chkRevision.checked) {
-        fd.set("revision_pasa", "1");
-      } else {
-        // si no está checked, lo quitamos para que el controlador lo interprete como 0
-        fd.delete("revision_pasa");
-      }
+      if (chkRevision.checked) fd.set("revision_pasa", "1");
+      else fd.delete("revision_pasa");
     }
 
-    // Asegurar que el select bodega viaje sí o sí con el name esperado por el controlador
+    // asegurar bodega con name esperado
     if (selBodega) {
       fd.set("operaciones_partida_bodega", selBodega.value || "");
     }
 
-    xhrGuardar = new XMLHttpRequest();
-    xhrGuardar.open("POST", base_url + ENDPOINT_REGISTRAR_FACTURA, true);
+    const idEdit = inpIdFacturaHidden ? String(inpIdFacturaHidden.value || "").trim() : "";
+    const endpoint = idEdit ? ENDPOINT_ACTUALIZAR_FACTURA : ENDPOINT_REGISTRAR_FACTURA;
 
-xhrGuardar.onreadystatechange = function () {
-    
-  if (xhrGuardar.readyState !== 4) return;
- console.log(xhrGuardar.status, xhrGuardar.responseText);
-  setBtnLoading(false);
+    xhrReq = new XMLHttpRequest();
+    xhrReq.open("POST", base_url + endpoint, true);
 
-  let resp = null;
-  try {
-    resp = JSON.parse(xhrGuardar.responseText || "{}");
-  } catch (e) {
-    swalError("Respuesta inválida del servidor al registrar la factura.");
-    return;
-  }
+    xhrReq.onreadystatechange = function () {
+      if (xhrReq.readyState !== 4) return;
+        console.log(this.responseText);
+      setBtnLoading(false);
 
-  if (!resp || resp.ok !== true) {
-    swalError(resp && resp.msg ? resp.msg : "No se pudo registrar la factura.");
-    return;
-  }
+      let resp = null;
+      try {
+        resp = JSON.parse(xhrReq.responseText || "{}");
+      } catch (e) {
+        swalError("Respuesta inválida del servidor.");
+        return;
+      }
 
-  // OK
-  const idFactura =
-    resp.id_factura ||
-    (resp.factura && resp.factura.id_factura) ||
-    null;
+      if (!resp || resp.ok !== true) {
+        swalError(resp && resp.msg ? resp.msg : "No se pudo guardar la factura.");
+        return;
+      }
 
-  if (inpIdFacturaHidden && idFactura) {
-    inpIdFacturaHidden.value = String(idFactura);
-  }
+      // Si fue registro, guardar id en hidden
+      if (!idEdit) {
+        const newId =
+          resp.id_factura ||
+          (resp.factura && resp.factura.id_factura) ||
+          null;
 
-  swalSuccess(resp.msg || "Factura registrada correctamente.");
+        if (inpIdFacturaHidden && newId) inpIdFacturaHidden.value = String(newId);
+      }
 
-  // Opcional: cerrar modal
-  // const modalEl = document.getElementById("modalOperacionesPartida");
-  // const modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
-  // if (modal) modal.hide();
-};
+      swalSuccess(resp.msg || (idEdit ? "Factura actualizada correctamente." : "Factura registrada correctamente."));
 
+      //  refrescar listado 
+       if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
+    };
 
-xhrGuardar.onerror = function () {
-  setBtnLoading(false);
-  swalError("Error de red al registrar la factura.");
-};
+    xhrReq.onerror = function () {
+      setBtnLoading(false);
+      swalError("Error de red al guardar la factura.");
+    };
 
     setBtnLoading(true);
-    xhrGuardar.send(fd);
+    xhrReq.send(fd);
   }
 
-  // ===== Bind =====
+  // ===== Bindings =====
   document.addEventListener("DOMContentLoaded", function () {
-    if (!btnGuardar) return;
+    if (btnGuardar) {
+      btnGuardar.addEventListener("click", function (e) {
+        e.preventDefault();
+        guardarEncabezadoFactura();
+      });
+    }
 
-    btnGuardar.addEventListener("click", function (e) {
-      e.preventDefault();
-      registrarFactura();
-    });
+    // Al abrir "Nueva Factura", limpiar modal
+    if (btnNueva) {
+      btnNueva.addEventListener("click", function () {
+        setModoCrear();
+      });
+    }
+if (tbodyFacturas) {
+  tbodyFacturas.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btnEliminarFactura");
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const idFactura = parseInt(btn.getAttribute("data-id") || "0", 10);
+    if (!idFactura) {
+      swalError("No se pudo identificar la factura.");
+      return;
+    }
+
+    confirmarBajaFactura(idFactura);
+  });
+}
+
   });
 
-  // (Opcional) exponer para debug/uso externo
-  window.opPartidaRegistrarFactura = registrarFactura;
+  function confirmarBajaFactura(idFactura) {
+  Swal.fire({
+    icon: "warning",
+    title: "Dar de baja factura",
+    text: "Esta acción ocultará la factura del listado, pero conservará sus productos. ¿Deseas continuar?",
+    showCancelButton: true,
+    confirmButtonText: "Sí, dar de baja",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      bajaFactura(idFactura);
+    }
+  });
+}
+
+function bajaFactura(idFactura) {
+  const id = parseInt(String(idFactura || "0"), 10);
+  if (!id || id <= 0) {
+    swalError("ID de factura inválido.");
+    return;
+  }
+
+  // abortar request previo si existe
+  if (xhrReq && xhrReq.readyState !== 4) {
+    try { xhrReq.abort(); } catch (_) {}
+  }
+
+  const fd = new FormData();
+  fd.set("id_factura", String(id));
+
+  xhrReq = new XMLHttpRequest();
+  xhrReq.open("POST", base_url + ENDPOINT_BAJA_FACTURA, true);
+
+  xhrReq.onreadystatechange = function () {
+    if (xhrReq.readyState !== 4) return;
+
+    let resp = null;
+    try {
+      resp = JSON.parse(xhrReq.responseText || "{}");
+    } catch (e) {
+      swalError("Respuesta inválida del servidor al dar de baja.");
+      return;
+    }
+
+    if (!resp || resp.ok !== true) {
+      swalError(resp && resp.msg ? resp.msg : "No se pudo dar de baja la factura.");
+      return;
+    }
+
+    swalSuccess(resp.msg || "Factura dada de baja correctamente.");
+
+    // Refrescar lista del catálogo
+    if (typeof window.opPartidaListarFacturas === "function") {
+      window.opPartidaListarFacturas({ resetPage: false });
+    }
+  };
+
+  xhrReq.onerror = function () {
+    swalError("Error de red al dar de baja la factura.");
+  };
+
+  xhrReq.send(fd);
+}
+
+
+
+  // Delegación: botón editar en tabla (render dinámico)
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btnEditarFactura");
+    if (!btn) return;
+
+    e.preventDefault();
+    const id = btn.getAttribute("data-id") || "";
+    cargarFacturaParaEditar(id);
+  });
+
+  // Exponer para debug si lo necesitas
+  window.opPartidaGuardarEncabezadoFactura = guardarEncabezadoFactura;
+  window.opPartidaCargarFacturaParaEditar = cargarFacturaParaEditar;
 
 })();

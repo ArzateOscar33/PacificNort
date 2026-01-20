@@ -304,5 +304,162 @@ public function registrarFactura(array $data): array
     return ['ok' => true, 'msg' => 'Factura registrada correctamente.', 'id_factura' => (int)$id];
 }
 
+//obtener factura para editar
+public function getFacturaByIdEditar(int $idFactura)
+{
+    $sql = "SELECT
+              f.id_factura,
+              f.bodega_id,
+              b.nombre AS bodega_nombre,
+              f.numero_factura,
+              f.proveedor,
+              f.revision_pasa,
+              f.pallets_inv,
+              DATE_FORMAT(f.fecha_recibido, '%Y-%m-%d') AS fecha_recibido,
+              f.notas,
+              f.estatus
+            FROM op_partida_facturas f
+            LEFT JOIN bodegas b
+              ON b.id_bodega = f.bodega_id
+            WHERE f.id_factura = ?
+              AND f.estatus = 1
+            LIMIT 1";
+
+    return $this->select($sql, [$idFactura]);
+}
+
+public function actualizarFactura(int $idFactura, array $data): array
+{
+    $bodegaId      = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
+    $numeroFactura = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
+    $proveedor     = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
+    $revisionPasa  = !empty($data['revision_pasa']) ? 1 : 0;
+    $palletsInv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
+    $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
+    $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
+    $actualizadoPor= isset($data['actualizado_por']) && $data['actualizado_por'] !== '' ? (int)$data['actualizado_por'] : null;
+
+    // ===== Validaciones =====
+    if ($idFactura <= 0) {
+        return ['ok'=>false,'msg'=>'Factura inválida.'];
+    }
+    if ($bodegaId <= 0) {
+        return ['ok'=>false,'msg'=>'Selecciona una bodega válida.'];
+    }
+    if ($numeroFactura === '') {
+        return ['ok'=>false,'msg'=>'El número de factura es obligatorio.'];
+    }
+    if ($proveedor === '') {
+        return ['ok'=>false,'msg'=>'El proveedor es obligatorio.'];
+    }
+    if ($palletsInv < 0) {
+        return ['ok'=>false,'msg'=>'Pallets INV (Factura) debe ser 0 o mayor.'];
+    }
+
+    // Validar que exista factura activa
+    $exists = $this->select(
+        "SELECT id_factura FROM op_partida_facturas WHERE id_factura = ? AND estatus = 1 LIMIT 1",
+        [$idFactura]
+    );
+    if (!$exists) {
+        return ['ok'=>false,'msg'=>'La factura no existe o está inactiva.'];
+    }
+
+    // Validar bodega activa
+    $bodega = $this->select(
+        "SELECT id_bodega FROM bodegas WHERE id_bodega = ? AND estatus = 1 LIMIT 1",
+        [$bodegaId]
+    );
+    if (!$bodega) {
+        return ['ok'=>false,'msg'=>'La bodega seleccionada no existe o está inactiva.'];
+    }
+
+    // Evitar duplicado (si tienes UNIQUE por bodega/numero/proveedor)
+    $dup = $this->select(
+        "SELECT id_factura
+         FROM op_partida_facturas
+         WHERE bodega_id = ?
+           AND numero_factura = ?
+           AND proveedor = ?
+           AND id_factura <> ?
+         LIMIT 1",
+        [$bodegaId, $numeroFactura, $proveedor, $idFactura]
+    );
+    if ($dup) {
+        return ['ok'=>false,'msg'=>'Ya existe otra factura con esa bodega, número y proveedor.'];
+    }
+
+    $sql = "UPDATE op_partida_facturas
+            SET bodega_id = ?,
+                numero_factura = ?,
+                proveedor = ?,
+                revision_pasa = ?,
+                pallets_inv = ?,
+                fecha_recibido = ?,
+                notas = ?,
+                actualizado_en = NOW()
+            WHERE id_factura = ?
+              AND estatus = 1";
+
+    $params = [
+        $bodegaId,
+        $numeroFactura,
+        $proveedor,
+        $revisionPasa,
+        $palletsInv,
+        ($fechaRecibido === '' ? null : $fechaRecibido),
+        ($notas === '' ? null : $notas),
+      
+        $idFactura
+    ];
+
+    $ok = $this->save($sql, $params);
+
+    if (!$ok) {
+        return ['ok'=>false,'msg'=>'No se pudo actualizar la factura.'];
+    }
+
+    return ['ok'=>true,'msg'=>'Factura actualizada correctamente.'];
+}
+
+/**
+ * Baja lógica de factura (no elimina productos).
+ * Cambia estatus a 0.
+ */
+public function bajaFactura(int $idFactura, ?int $usuarioId = null): array
+{
+    if ($idFactura <= 0) {
+        return ['ok' => false, 'msg' => 'Factura inválida.'];
+    }
+
+    // Validar que exista activa
+    $existe = $this->select(
+        "SELECT id_factura
+         FROM op_partida_facturas
+         WHERE id_factura = ?
+           AND estatus = 1
+         LIMIT 1",
+        [$idFactura]
+    );
+
+    if (!$existe) {
+        return ['ok' => false, 'msg' => 'La factura no existe o ya está dada de baja.'];
+    }
+
+    
+    $sql = "UPDATE op_partida_facturas
+            SET estatus = 0,
+                actualizado_en = NOW()
+            WHERE id_factura = ?
+              AND estatus = 1";
+
+    $ok = $this->save($sql, [ $idFactura]);
+
+    if (!$ok) {
+        return ['ok' => false, 'msg' => 'No se pudo dar de baja la factura.'];
+    }
+
+    return ['ok' => true, 'msg' => 'Factura dada de baja correctamente.'];
+}
 
 }

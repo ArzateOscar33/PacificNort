@@ -143,7 +143,8 @@
               <button type="button"
                 class="btn btn-outline-warning btnEditarFactura"
                 data-id="${esc(idFactura)}"
-                title="Editar encabezado">
+                title="Editar encabezado"
+                id="btnEditarFactura">
                 <i data-feather="edit"></i>
               </button>
 
@@ -291,6 +292,13 @@
 
     xhr.send();
   }
+  // Exponer recarga del catálogo para que el JS de registrar pueda refrescar la tabla
+window.opPartidaListarFacturas = function (opts) {
+  // opts opcional: { resetPage: true }
+  const reset = opts && opts.resetPage === true;
+  if (reset) currentPage = 1;
+  cargarFacturas();
+};
 
   function bindFilters() {
     if (inputBuscar) {
