@@ -186,7 +186,7 @@ public function registrar()
         // - operaciones_partida_factura (input)
         // - operaciones_partida_proveedor (input)
         // - operaciones_partida_revision (checkbox)
-        // - operaciones_partida_pallets_rcv (number)
+        // - operaciones_partida_pallets_inv (number)
         // - operaciones_partida_fechaRecibido (date)
         // - operaciones_partida_notas (text)
 
@@ -197,7 +197,7 @@ public function registrar()
         // checkbox switch: puede venir "on", "1", etc.
         $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
 
-        $palletsRcv    = isset($_POST['pallets_rcv']) ? (int)$_POST['pallets_rcv'] : (isset($_POST['operaciones_partida_pallets_rcv']) ? (int)$_POST['operaciones_partida_pallets_rcv'] : 0);
+        $palletsInv    = isset($_POST['pallets_inv']) ? (int)$_POST['pallets_inv'] : (isset($_POST['operaciones_partida_pallets_inv']) ? (int)$_POST['operaciones_partida_pallets_inv'] : 0);
 
         $fechaRecibido = isset($_POST['received_date']) ? trim((string)$_POST['received_date']) : (isset($_POST['operaciones_partida_fechaRecibido']) ? trim((string)$_POST['operaciones_partida_fechaRecibido']) : '');
         $notas         = isset($_POST['comentarios']) ? trim((string)$_POST['comentarios']) : (isset($_POST['operaciones_partida_notas']) ? trim((string)$_POST['operaciones_partida_notas']) : '');
@@ -212,7 +212,7 @@ public function registrar()
             'numero_factura' => $numeroFactura,
             'proveedor'      => $proveedor,
             'revision_pasa'  => $revisionPasa,
-            'pallets_rcv'    => $palletsRcv,
+            'pallets_inv'    => $palletsInv,
             'fecha_recibido' => $fechaRecibido,
             'notas'          => $notas,
             'creado_por'     => $creadoPor
@@ -497,5 +497,146 @@ public function registrarProducto()
     exit;
 }
 
+public function getProducto()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        $idProducto = isset($_GET['id_producto']) ? (int)$_GET['id_producto'] : 0;
+        $facturaId  = isset($_GET['factura_id']) ? (int)$_GET['factura_id'] : 0;
+
+        if ($idProducto <= 0 || $facturaId <= 0) {
+            echo json_encode(['ok'=>false,'msg'=>'Parámetros inválidos.','producto'=>null], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $prod = $this->model->getProductoById($idProducto, $facturaId);
+
+        if (!$prod) {
+            echo json_encode(['ok'=>false,'msg'=>'Producto no encontrado o no pertenece a la factura.','producto'=>null], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode(['ok'=>true,'producto'=>$prod], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/getProducto ERROR: " . $e->getMessage());
+        echo json_encode(['ok'=>false,'msg'=>'Ocurrió un error al obtener el producto.','producto'=>null], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+public function actualizarProducto()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok'=>false,'msg'=>'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $idProducto = isset($_POST['id_producto']) ? (int)$_POST['id_producto'] : 0;
+        $facturaId  = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
+
+        $descripcion = isset($_POST['descripcion']) ? trim((string)$_POST['descripcion']) : '';
+        $upc         = isset($_POST['upc']) ? trim((string)$_POST['upc']) : '';
+        $marca       = isset($_POST['marca']) ? trim((string)$_POST['marca']) : '';
+        $expiracion  = isset($_POST['expiracion']) ? trim((string)$_POST['expiracion']) : null;
+
+        $inner_pack  = isset($_POST['inner_pack']) && $_POST['inner_pack'] !== '' ? (int)$_POST['inner_pack'] : null;
+        $case_pack   = isset($_POST['case_pack']) && $_POST['case_pack'] !== '' ? (int)$_POST['case_pack'] : null;
+
+        $pallets_rcv = isset($_POST['pallets_rcv']) ? (int)$_POST['pallets_rcv'] : 0;
+        $cajas       = isset($_POST['cajas']) ? (int)$_POST['cajas'] : 0;
+        $piezas      = isset($_POST['piezas']) ? (int)$_POST['piezas'] : 0;
+
+        if ($idProducto <= 0 || $facturaId <= 0) {
+            echo json_encode(['ok'=>false,'msg'=>'Producto o factura inválidos.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Validaciones mínimas
+        if ($descripcion === '' || $upc === '' || $marca === '') {
+            echo json_encode(['ok'=>false,'msg'=>'Descripción, UPC y Marca son obligatorios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($pallets_rcv < 0 || $cajas < 0 || $piezas < 0) {
+            echo json_encode(['ok'=>false,'msg'=>'Valores numéricos inválidos.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // (Opcional) validar fecha
+        if ($expiracion !== null && $expiracion !== '') {
+            $d = DateTime::createFromFormat('Y-m-d', $expiracion);
+            if (!$d || $d->format('Y-m-d') !== $expiracion) {
+                echo json_encode(['ok'=>false,'msg'=>'Expiración inválida.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        } else {
+            $expiracion = null;
+        }
+
+        $resp = $this->model->actualizarProductoFactura($idProducto, $facturaId, [
+            'descripcion' => $descripcion,
+            'upc'         => $upc,
+            'marca'       => $marca,
+            'expiracion'  => $expiracion,
+            'inner_pack'  => $inner_pack,
+            'case_pack'   => $case_pack,
+            'pallets_rcv' => $pallets_rcv,
+            'cajas'       => $cajas,
+            'piezas'      => $piezas
+        ]);
+
+        echo json_encode($resp, JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/actualizarProducto ERROR: " . $e->getMessage());
+        echo json_encode(['ok'=>false,'msg'=>'Ocurrió un error al actualizar el producto.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+public function guardarProductos()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok'=>false,'msg'=>'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $facturaId = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
+        $itemsJson = isset($_POST['items']) ? (string)$_POST['items'] : '';
+
+        if ($facturaId <= 0) {
+            echo json_encode(['ok'=>false,'msg'=>'Factura inválida.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($itemsJson === '') {
+            echo json_encode(['ok'=>false,'msg'=>'Items vacíos.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $items = json_decode($itemsJson, true);
+        if (!is_array($items)) {
+            echo json_encode(['ok'=>false,'msg'=>'Formato de items inválido (JSON).'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Aquí delegas toda la lógica (insert vs update) al MODEL
+        $resp = $this->model->guardarProductosFactura($facturaId, $items);
+
+        echo json_encode($resp, JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/guardarProductos ERROR: " . $e->getMessage());
+        echo json_encode(['ok'=>false,'msg'=>'Ocurrió un error al guardar productos.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
 
 }

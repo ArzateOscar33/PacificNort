@@ -146,7 +146,7 @@
 
     xhrReq.onreadystatechange = function () {
       if (xhrReq.readyState !== 4) return;
-        console.log(this.responseText);
+    //console.log(this.responseText);
       setBtnLoading(false);
 
       let resp = null;
@@ -227,7 +227,7 @@
 
     xhrReq.onreadystatechange = function () {
       if (xhrReq.readyState !== 4) return;
-        console.log(this.responseText);
+        //console.log(this.responseText);
       setBtnLoading(false);
 
       let resp = null;
@@ -257,6 +257,8 @@
 
       //  refrescar listado 
        if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
+       modalEl && bootstrap.Modal.getInstance(modalEl).hide();
+       
     };
 
     xhrReq.onerror = function () {

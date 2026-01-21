@@ -192,13 +192,16 @@
             <div class="col-md-4">
               <label class="form-label">Número de factura</label>
               <input type="text" id="operaciones_partida_factura" name="invoice_number" class="form-control"
-                placeholder="Ej. 43">
+                placeholder="Ej. 43"
+                onkeyup="this.value=this.value.toUpperCase()"
+                style="text-transform: uppercase;">
             </div>
 
             <div class="col-md-6">
               <label class="form-label">Proveedor</label>
               <input type="text" id="operaciones_partida_proveedor" name="vendor_name" class="form-control"
-                placeholder="Ej. PLATINUM">
+                placeholder="Ej. PLATINUM" onkeyup="this.value=this.value.toUpperCase()"
+                style="text-transform: uppercase;">
             </div>
 
             <div class="col-md-3">

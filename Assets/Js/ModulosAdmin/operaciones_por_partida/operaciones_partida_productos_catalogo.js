@@ -39,13 +39,12 @@
 
 
    // ===== Refs del modal =====
-  const btnAgregar = document.getElementById("pf_btnAgregarLinea");
   const tbody      = document.getElementById("pf_tbody");
   const empty      = document.getElementById("pf_empty");
   const tplFila    = document.getElementById("pf_tplFilaProducto");
 
   // Si esta vista no tiene el modal, no hacemos nada
-  if (!btnAgregar || !tbody || !tplFila) return;
+  if (  !tbody || !tplFila) return;
 
   function ocultarEmpty() {
     if (!empty) return;
@@ -87,8 +86,7 @@
     mostrarEmptySiNoHayFilas();
   }
 
-  // Click en "+"
-  btnAgregar.addEventListener("click", agregarFilaProducto);
+ 
 
   // (Opcional) Si el modal se abre sin filas, mostrar empty
    

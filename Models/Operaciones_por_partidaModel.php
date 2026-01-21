@@ -497,4 +497,154 @@ public function insertarProductoFactura(array $d): int
     return (int)$res;
 }
 
+public function getProductoById(int $idProducto, int $facturaId)
+{
+    $sql = "SELECT
+              p.id_producto,
+              p.factura_id,
+              p.descripcion,
+              p.upc,
+              p.marca,
+              p.expiracion,
+              p.inner_pack,
+              p.case_pack,
+              p.pallets_rcv,
+              p.cajas,
+              p.piezas,
+              p.estatus,
+              p.creado_en,
+              p.actualizado_en
+            FROM op_partida_productos p
+            WHERE p.id_producto = ?
+              AND p.factura_id = ?
+              AND p.estatus = 1
+            LIMIT 1";
+    return $this->select($sql, [$idProducto, $facturaId]);
+}
+
+public function actualizarProductoFactura(int $idProducto, int $facturaId, array $d): array
+{
+    if ($idProducto <= 0 || $facturaId <= 0) {
+        return ['ok' => false, 'msg' => 'Producto o factura inválidos.'];
+    }
+
+    // Validar factura activa
+    if (!$this->existeFacturaActiva($facturaId)) {
+        return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
+    }
+
+    // Validar que el producto exista y pertenezca a la factura
+    $prod = $this->getProductoById($idProducto, $facturaId);
+    if (!$prod) {
+        return ['ok' => false, 'msg' => 'El producto no existe, está inactivo o no pertenece a la factura.'];
+    }
+
+    $upc = trim((string)($d['upc'] ?? ''));
+    if ($upc === '') {
+        return ['ok' => false, 'msg' => 'El UPC es obligatorio.'];
+    }
+
+    $inner = (int)($d['inner_pack'] ?? 0);
+    $case  = (int)($d['case_pack'] ?? 0);
+    $pal   = (int)($d['pallets_rcv'] ?? 0);
+    $caj   = (int)($d['cajas'] ?? 0);
+    $pzs   = (int)($d['piezas'] ?? 0);
+
+    if ($inner < 0 || $case < 0 || $pal < 0 || $caj < 0 || $pzs < 0) {
+        return ['ok' => false, 'msg' => 'Los campos numéricos no pueden ser negativos.'];
+    }
+
+    $sql = "UPDATE op_partida_productos
+            SET descripcion   = ?,
+                upc           = ?,
+                marca         = ?,
+                expiracion    = ?,
+                inner_pack    = ?,
+                case_pack     = ?,
+                pallets_rcv   = ?,
+                cajas         = ?,
+                piezas        = ?,
+                actualizado_en = NOW()
+            WHERE id_producto = ?
+              AND factura_id  = ?
+              AND estatus     = 1";
+
+    $params = [
+        ($d['descripcion'] ?? null),
+        $upc,
+        ($d['marca'] ?? null),
+        ($d['expiracion'] ?? null),
+        $inner,
+        $case,
+        $pal,
+        $caj,
+        $pzs,
+        $idProducto,
+        $facturaId
+    ];
+
+    $ok = $this->save($sql, $params);
+    if (!$ok) {
+        return ['ok' => false, 'msg' => 'No se pudo actualizar el producto.'];
+    }
+
+    return ['ok' => true, 'msg' => 'Producto actualizado correctamente.'];
+}
+
+
+public function guardarProductosFactura(int $facturaId, array $items): array
+{
+    if ($facturaId <= 0) {
+        return ['ok' => false, 'msg' => 'Factura inválida.'];
+    }
+    if (!$this->existeFacturaActiva($facturaId)) {
+        return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
+    }
+    if (!is_array($items) || empty($items)) {
+        return ['ok' => false, 'msg' => 'No hay productos para guardar.'];
+    }
+
+    $insertados = 0;
+    $actualizados = 0;
+    $idsInsertados = [];
+
+    foreach ($items as $i => $d) {
+        // Normaliza factura_id desde backend (no confíes 100% en el front)
+        $d['factura_id'] = $facturaId;
+
+        $idProducto = (int)($d['id_producto'] ?? 0);
+
+        if ($idProducto > 0) {
+            $r = $this->actualizarProductoFactura($idProducto, $facturaId, $d);
+            if (!$r['ok']) {
+                return ['ok' => false, 'msg' => "Error en producto #".($i+1).": ".$r['msg']];
+            }
+            $actualizados++;
+        } else {
+            // Validaciones mínimas para insert
+            $upc = trim((string)($d['upc'] ?? ''));
+            if ($upc === '') {
+                return ['ok' => false, 'msg' => "Error en producto #".($i+1).": El UPC es obligatorio."];
+            }
+
+            $newId = $this->insertarProductoFactura($d);
+            if ($newId <= 0) {
+                return ['ok' => false, 'msg' => "Error en producto #".($i+1).": No se pudo insertar."];
+            }
+            $insertados++;
+            $idsInsertados[] = $newId;
+        }
+    }
+
+    return [
+        'ok' => true,
+        'msg' => 'Productos guardados correctamente.',
+        'insertados' => $insertados,
+        'actualizados' => $actualizados,
+        'ids_insertados' => $idsInsertados
+    ];
+}
+
+
+
 }
