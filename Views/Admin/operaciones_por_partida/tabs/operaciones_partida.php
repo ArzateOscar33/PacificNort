@@ -176,7 +176,7 @@
 
 
             <div class="col-md-2">
-              <label class="form-label d-block">Revisión pasa</label>
+              <label class="form-label d-block">Revisión</label>
               <div class="form-check form-switch mt-1">
                 <input class="form-check-input" type="checkbox" id="operaciones_partida_revision" name="revision_pasa">
                 <label class="form-check-label" for="operaciones_partida_revision">Sí</label>
@@ -252,15 +252,22 @@
 
           <div class="small text-white-50 mt-1">
             <span class="me-2">Factura: <span class="fw-semibold text-white" id="pf_lblFactura">—</span></span>
-            <span class="me-2">Proveedor: <span class="fw-semibold text-white" id="pf_lblProveedor">—</span></span>
-            <span class="me-2">Bodega: <span class="fw-semibold text-white" id="pf_lblXdock">—</span></span>
-            <span class="me-2">Recibido: <span class="fw-semibold text-white" id="pf_lblRecibido">—</span></span>
-            <span class="me-2">Revisión pasa: <span class="fw-semibold text-white" id="pf_lblRevision">—</span></span>
-            <span class="me-2">Pallets INV (Factura): <span class="fw-semibold text-white"
+            <span class="me-2"> Proveedor: <span class="fw-semibold text-white" id="pf_lblProveedor">—</span></span>
+            <span class="me-2"> Bodega: <span class="fw-semibold text-white" id="pf_lblXdock">—</span></span>
+            <span class="me-2"> Recibido: <span class="fw-semibold text-white" id="pf_lblRecibido">—</span></span>
+            <span class="me-2"> Revisión: <span class="fw-semibold text-white" id="pf_lblRevision">—</span></span>
+            <span class="me-2"> Pallets INV (Factura): <span class="fw-semibold text-white"
                 id="pf_lblPalletsRcv">—</span></span>
-          </div>
-        </div>
 
+          </div>
+
+        </div>
+            <div class="ms-auto d-flex align-items-end justify-content-end col-md-8" >
+            <span class="small text-muted">Totales:</span>
+            <span class="badge bg-success text-white" id="pf_totalCajas">Cajas: 0</span>
+            <span class="badge bg-primary text-white" id="pf_totalPiezas">Piezas: 0</span>
+            <span class="badge bg-secondary text-white" id="pf_totalPalletsRcv">Pallets RCV: 0</span>
+          </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
@@ -269,18 +276,7 @@
         <!-- Hidden opcional para ID real de factura -->
         <input type="hidden" id="pf_invoice_id" value="">
 
-        <!-- Barra superior: búsqueda + métricas -->
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-          <input type="text" id="pf_buscar" class="form-control" style="max-width:320px;"
-            placeholder="Buscar por descripción, UPC o marca..." autocomplete="off">
-
-          <div class="ms-auto d-flex align-items-center gap-2">
-            <span class="small text-muted">Totales:</span>
-            <span class="badge bg-success text-white" id="pf_totalCajas">Cajas: 0</span>
-            <span class="badge bg-primary text-white" id="pf_totalPiezas">Piezas: 0</span>
-            <span class="badge bg-secondary text-white" id="pf_totalPalletsRcv">Pallets RCV: 0</span>
-          </div>
-        </div>
+ 
 
 
 
@@ -360,14 +356,8 @@
 
             <td>
               <div class="btn-group btn-group-sm" role="group">
-                <button type="button"
-                class="btn btn-outline-warning btnEditarProducto"
-                 
-                title="Editar encabezado"
-                id="btnEditarProducto">
-                <i data-feather="edit"></i>
-              </button>
-                <button type="button" class="btn btn-outline-danger pf_btnEliminarFila" title="Eliminar producto">
+ 
+                <button type="button" class="btn btn-outline-danger pf_btnEliminarFila"   title="Eliminar producto">
                   <i data-feather="trash-2"></i>
                 </button>
               </div>
@@ -403,3 +393,5 @@
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_factura_registrar.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_catalogo.js"></script>
+
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_registrar.js"></script>
