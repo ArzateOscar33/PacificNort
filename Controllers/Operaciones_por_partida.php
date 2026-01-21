@@ -638,5 +638,39 @@ public function guardarProductos()
         exit;
     }
 }
+public function bajaProducto()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok'=>false,'msg'=>'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $idProducto = isset($_POST['id_producto']) ? (int)$_POST['id_producto'] : 0;
+        $facturaId  = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
+
+        if ($idProducto <= 0 || $facturaId <= 0) {
+            echo json_encode(['ok'=>false,'msg'=>'Parámetros inválidos.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $resp = $this->model->bajaProductoFactura($idProducto, $facturaId);
+
+        // (Opcional) devolver totales ya actualizados para refrescar UI sin relistar
+        if (!empty($resp['ok'])) {
+            $resp['totals'] = $this->model->getTotalesProductosFactura($facturaId);
+        }
+
+        echo json_encode($resp, JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida/bajaProducto ERROR: " . $e->getMessage());
+        echo json_encode(['ok'=>false,'msg'=>'Ocurrió un error al dar de baja el producto.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
 
 }

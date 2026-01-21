@@ -645,6 +645,64 @@ public function guardarProductosFactura(int $facturaId, array $items): array
     ];
 }
 
+public function bajaProductoFactura(int $idProducto, int $facturaId): array
+{
+    if ($idProducto <= 0 || $facturaId <= 0) {
+        return ['ok' => false, 'msg' => 'Producto o factura inválidos.'];
+    }
 
+    // Validar factura activa
+    if (!$this->existeFacturaActiva($facturaId)) {
+        return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
+    }
+
+    // Validar que el producto exista, pertenezca a la factura y esté activo
+    $prod = $this->select(
+        "SELECT id_producto
+         FROM op_partida_productos
+         WHERE id_producto = ?
+           AND factura_id = ?
+           AND estatus = 1
+         LIMIT 1",
+        [$idProducto, $facturaId]
+    );
+
+    if (!$prod) {
+        return ['ok' => false, 'msg' => 'El producto no existe, ya está dado de baja o no pertenece a la factura.'];
+    }
+
+    $ok = $this->save(
+        "UPDATE op_partida_productos
+         SET estatus = 0,
+             actualizado_en = NOW()
+         WHERE id_producto = ?
+           AND factura_id = ?
+           AND estatus = 1",
+        [$idProducto, $facturaId]
+    );
+
+    if (!$ok) {
+        return ['ok' => false, 'msg' => 'No se pudo dar de baja el producto.'];
+    }
+
+    return ['ok' => true, 'msg' => 'Producto dado de baja correctamente.'];
+}
+public function getTotalesProductosFactura(int $facturaId): array
+{
+    $sql = "SELECT
+              COALESCE(SUM(cajas), 0)       AS total_cajas,
+              COALESCE(SUM(piezas), 0)      AS total_piezas,
+              COALESCE(SUM(pallets_rcv), 0) AS total_pallets_rcv
+            FROM op_partida_productos
+            WHERE factura_id = ?
+              AND estatus = 1";
+    $row = $this->select($sql, [$facturaId]);
+
+    return [
+        'total_cajas'       => (int)($row['total_cajas'] ?? 0),
+        'total_piezas'      => (int)($row['total_piezas'] ?? 0),
+        'total_pallets_rcv' => (int)($row['total_pallets_rcv'] ?? 0),
+    ];
+}
 
 }

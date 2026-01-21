@@ -608,4 +608,118 @@ pfTbody.addEventListener("blur", function (e) {
   }
 }, true);
 
+
+// ==========================
+// BAJA LOGICA DE PRODUCTO (estatus = 0)
+// Endpoint: Operaciones_por_partida/bajaProducto
+// ==========================
+const ENDPOINT_BAJA_PRODUCTO = "Operaciones_por_partida/bajaProducto";
+
+function swalConfirm(title, text) {
+  if (window.Swal) {
+    return Swal.fire({
+      icon: "warning",
+      title,
+      text,
+      showCancelButton: true,
+      confirmButtonText: "Sí, dar de baja",
+      cancelButtonText: "Cancelar",
+    }).then(r => !!r.isConfirmed);
+  }
+  return Promise.resolve(confirm(title + "\n" + text));
+}
+
+function swalError(title, text) {
+  if (window.Swal) return Swal.fire({ icon: "error", title, text });
+  alert(title + "\n" + text);
+}
+
+function swalSuccess(title, text) {
+  if (window.Swal) return Swal.fire({ icon: "success", title, text });
+  alert(title + "\n" + text);
+}
+
+function xhrPostFormData(url, formData) {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      let res = null;
+      try { res = JSON.parse(xhr.responseText); } catch (_) {}
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({ okHttp: true, res, raw: xhr.responseText });
+      } else {
+        resolve({ okHttp: false, res, raw: xhr.responseText, status: xhr.status });
+      }
+    };
+
+    xhr.send(formData);
+  });
+}
+
+// Delegación: botón eliminar existente (viene del backend)
+pfTbody.addEventListener("click", async function (e) {
+  const btn = e.target.closest(".pf_btnEliminar");
+  if (!btn) return;
+
+  const tr = btn.closest("tr");
+  if (!tr) return;
+
+  // id del producto: en tu renderRows lo pones en data-id
+  const idProducto = parseInt(btn.getAttribute("data-id") || tr.getAttribute("data-id") || "0", 10) || 0;
+
+  // factura actual (ya la tienes en el estado del catálogo)
+  const facturaId = parseInt(String(facturaIdActual || 0), 10) || 0;
+
+  if (idProducto <= 0 || facturaId <= 0) {
+    await swalError("Parámetros inválidos", "No se pudo identificar el producto o la factura.");
+    return;
+  }
+
+  const ok = await swalConfirm("Dar de baja producto", "El producto dejará de mostrarse en la factura. ¿Deseas continuar?");
+  if (!ok) return;
+
+  const url = base_url + ENDPOINT_BAJA_PRODUCTO;
+
+  const fd = new FormData();
+  fd.append("id_producto", String(idProducto));
+  fd.append("factura_id", String(facturaId));
+
+  const resp = await xhrPostFormData(url, fd);
+
+  if (!resp.okHttp || !resp.res) {
+    await swalError("Error", "No se pudo procesar la baja (respuesta inválida del servidor).");
+    return;
+  }
+
+  if (resp.res.ok !== true) {
+    await swalError("Error al dar de baja", String(resp.res.msg || "No se pudo dar de baja el producto."));
+    return;
+  }
+
+  // 1) Remover fila del DOM (feedback inmediato)
+  tr.remove();
+
+  // 2) Si backend regresó totals, actualízalos (más rápido que relistar)
+  if (resp.res.totals) {
+    // Mantén el contador en base a meta.total real: lo más seguro es relistar.
+    // Pero actualizamos badges de totales aquí mismo:
+    if (pfTotalCajas)   pfTotalCajas.textContent   = `Cajas: ${resp.res.totals.total_cajas ?? 0}`;
+    if (pfTotalPiezas)  pfTotalPiezas.textContent  = `Piezas: ${resp.res.totals.total_piezas ?? 0}`;
+    if (pfTotalPallets) pfTotalPallets.textContent = `Pallets RCV: ${resp.res.totals.total_pallets_rcv ?? 0}`;
+  }
+
+  // 3) Re-listar para que badgeCount/meta queden perfectos (y filtros/term)
+  document.dispatchEvent(new CustomEvent("opPartida:productos:refresh", { detail: { facturaId } }));
+
+  // 4) Refrescar facturas para actualizar "productos_count"
+  if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
+
+  await swalSuccess("Listo", "Producto dado de baja correctamente.");
+});
+
 })();
