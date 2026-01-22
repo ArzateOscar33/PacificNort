@@ -37,12 +37,7 @@
         <input id="partidas_transito_buscarProducto" class="form-control" style="max-width:320px;"
           placeholder="Buscar producto por descripción / UPC / marca" autocomplete="off">
 
-        <div class="ms-auto d-flex align-items-center gap-2">
-          <span class="small text-muted">Resumen:</span>
-          <span class="badge bg-secondary text-white" id="partidas_transito_badgeProductos">Productos: 0</span>
-          <span class="badge bg-success text-white" id="partidas_transito_badgeCajasTotal">Cajas: 0</span>
-          <span class="badge bg-warning text-dark" id="partidas_transito_badgeCajasRestantes">Restantes: 0</span>
-        </div>
+        
       </div>
 
       <!-- ===================== TABLA DE PRODUCTOS DE LA FACTURA ===================== -->
@@ -102,44 +97,55 @@
             </div>
           </div>
 
-          <div class="row g-3">
+<div class="row g-3">
 
-            <div class="col-md-6">
-              <label class="form-label">Destino</label>
-              <select id="partidas_transito_destino" class="form-control" required>
-                <option value="">Seleccione...</option>
-                <option value="TJ">Tijuana</option>
-                <option value="LERMA">Lerma</option>
-                <option value="GDL">Guadalajara</option>
-                <option value="SB">San Bartolo</option>
-              </select>
-            </div>
+  <!-- DESTINO (desde BD) -->
+  <div class="col-md-6">
+    <label class="form-label">Destino</label>
+<select id="partidas_transito_destino" class="form-control" required>
+  <option value="">Seleccione...</option>
+</select>
 
-            <div class="col-md-6">
-              <label class="form-label">Fecha de envío</label>
-              <input type="date" id="partidas_transito_fechaEnvio" class="form-control" required>
-            </div>
+  </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Caja / Ferro</label>
-              <input type="text" id="partidas_transito_cajaFerro" class="form-control"
-                placeholder="Ej. Caja 102 / FO-22 / Ferro 17" required>
-            </div>
+  <div class="col-md-6">
+    <label class="form-label">Fecha de envío</label>
+    <input type="date" id="partidas_transito_fechaEnvio" class="form-control" required>
+  </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Cajas enviadas</label>
-              <input type="number" min="1" step="1" id="partidas_transito_cajasEnviadas" class="form-control"
-                placeholder="0" required>
-              <small class="text-muted d-block mt-1">No debe exceder las cajas restantes.</small>
-            </div>
+  <!-- CAJA / FERRO (input + sugerencias) -->
+<div class="col-md-6">
+  <label class="form-label">Caja / Ferro</label>
 
-            <div class="col-md-12">
-              <label class="form-label">Notas</label>
-              <textarea id="partidas_transito_notasEnvio" class="form-control" rows="2"
-                placeholder="Opcional"></textarea>
-            </div>
+  <input type="hidden" id="partidas_transito_idFisico" value="">
 
-          </div>
+  <div class="position-relative">
+    <input type="text" id="partidas_transito_cajaFerro" class="form-control"
+      placeholder="Buscar Caja/Ferro (Ej. FO-22 / Ferro 17)" autocomplete="off" required>
+
+    <div id="partidas_transito_sugerenciasFisico"
+      class="list-group position-absolute w-100 z-3"
+      style="z-index:999; display:none;">
+    </div>
+  </div>
+</div>
+
+
+  <div class="col-md-6">
+    <label class="form-label">Cajas enviadas</label>
+    <input type="number" min="1" step="1" id="partidas_transito_cajasEnviadas" class="form-control"
+      placeholder="0" required>
+    <small class="text-muted d-block mt-1">No debe exceder las cajas restantes.</small>
+  </div>
+
+  <div class="col-md-12">
+    <label class="form-label">Notas</label>
+    <textarea id="partidas_transito_notasEnvio" class="form-control" rows="2"
+      placeholder="Opcional"></textarea>
+  </div>
+
+</div>
+
         </form>
       </div>
 
@@ -156,3 +162,4 @@
     </div>
   </div>
 </div>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js"></script>
