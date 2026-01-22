@@ -12,4 +12,8 @@ const USER_SMTP = "sistemas@pacificnort.com";
 const PASS_SMTP = "Pacific2025.";
 const PUERTO_SMTP = 465;
 const HOST_SMTP = "mailc75.carrierzone.com";
+
+// Raíz física del proyecto (filesystem), portable para local y servidor
+define('UPLOAD_ROOT', rtrim(dirname(__DIR__), "/\\"));
+
 ?>

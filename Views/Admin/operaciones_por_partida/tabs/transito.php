@@ -6,7 +6,7 @@
         <i data-feather="truck" class="me-1"></i> Partidas en Tránsito (Envíos por Factura)
       </h5>
 
-      <button class="btn btn-light btn-sm" id="partidas_transito_btnRefrescar">
+      <button class="btn btn-light btn-sm" id="partidas_transito_btnRefrescar" type="button">
         <i data-feather="refresh-cw" class="me-1"></i> Refrescar
       </button>
     </div>
@@ -16,17 +16,23 @@
       <!-- ===================== FILTROS / SELECCIÓN DE FACTURA ===================== -->
       <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
 
-        <select id="partidas_transito_selectFactura" class="form-control" style="max-width:220px;">
-          <option value="">Seleccione factura...</option>
-          <!-- DEMO: -->
-          <option value="48">Factura 48</option>
-          <option value="43">Factura 43</option>
-        </select>
+        <!-- FACTURA: INPUT + SUGERENCIAS (MISMO PATRÓN QUE NAVIERAS) -->
+        <div class="position-relative" style="max-width:220px; width:100%;">
+          <input type="hidden" id="partidas_transito_facturaId" value="">
+          <input
+            type="text"
+            id="partidas_transito_buscarFactura"
+            class="form-control"
+            placeholder="Buscar factura..."
+            autocomplete="off">
+          <div
+            id="partidas_transito_sugerenciasFacturas"
+            class="list-group position-absolute w-100 z-3"
+            style="z-index:999;">
+          </div>
+        </div>
 
-        <select id="partidas_transito_selectProveedor" class="form-control" style="max-width:240px;">
-          <option value="">Proveedor (Todos)</option>
-          <option value="PLATINUM">PLATINUM</option>
-        </select>
+        <!-- QUITAMOS PROVEEDOR (SE TOMARÁ DE LA FACTURA SELECCIONADA) -->
 
         <input id="partidas_transito_buscarProducto" class="form-control" style="max-width:320px;"
           placeholder="Buscar producto por descripción / UPC / marca" autocomplete="off">
@@ -49,10 +55,10 @@
               <th style="width:140px;">Marca</th>
 
               <th style="width:120px;">Cajas (Total)</th>
-              <th style="width:120px;">TJ</th>
-              <th style="width:120px;">Lerma</th>
-              <th style="width:120px;">GDL</th>
-              <th style="width:120px;">San Bartolo</th>
+
+              <!-- REEMPLAZA DESTINOS FIJOS POR 1 COLUMNA -->
+              <th style="min-width:420px;">Destinos / Envíos</th>
+              <th style="width:130px;">Caja/Ferro</th>
 
               <th style="width:150px;">Restantes (Bodega)</th>
               <th style="width:130px;">Acción</th>
@@ -135,20 +141,6 @@
 
           </div>
         </form>
-
-        <!-- DEMO preview -->
-        <div class="mt-3 d-none" id="partidas_transito_previewWrap">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-              <span class="small"><i data-feather="code" class="me-1"></i> Preview (DEMO)</span>
-              <button type="button" class="btn btn-light btn-sm" id="partidas_transito_btnOcultarPreview">Ocultar</button>
-            </div>
-            <div class="card-body">
-              <pre class="mb-0" style="white-space:pre-wrap;" id="partidas_transito_previewJson"></pre>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <div class="modal-footer d-flex justify-content-between">
@@ -157,234 +149,10 @@
         </button>
 
         <button type="button" class="btn btn-success" id="partidas_transito_btnGuardarEnvio">
-          <i data-feather="save" class="me-1"></i> Guardar (demo)
+          <i data-feather="save" class="me-1"></i> Guardar
         </button>
       </div>
 
     </div>
   </div>
 </div>
-
-<!-- ===================== SCRIPT DEMO (SIN BD) ===================== -->
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  "use strict";
-
-  // ====== Refs ======
-  const selFactura   = document.getElementById("partidas_transito_selectFactura");
-  const inpBuscar    = document.getElementById("partidas_transito_buscarProducto");
-  const tbody        = document.getElementById("partidas_transito_tbodyProductos");
-  const empty        = document.getElementById("partidas_transito_empty");
-
-  const badgeProd    = document.getElementById("partidas_transito_badgeProductos");
-  const badgeCajas   = document.getElementById("partidas_transito_badgeCajasTotal");
-  const badgeRest    = document.getElementById("partidas_transito_badgeCajasRestantes");
-
-  // Modal Envío
-  const modalEnvioEl = document.getElementById("modalPartidasTransitoEnvio");
-  const inpIdProd    = document.getElementById("partidas_transito_idProducto");
-  const inpFacturaH  = document.getElementById("partidas_transito_factura");
-  const lblFact      = document.getElementById("partidas_transito_lblFactura");
-  const lblProd      = document.getElementById("partidas_transito_lblProducto");
-  const lblRest      = document.getElementById("partidas_transito_lblRestantes");
-
-  const selDestino   = document.getElementById("partidas_transito_destino");
-  const inpFecha     = document.getElementById("partidas_transito_fechaEnvio");
-  const inpCajaF     = document.getElementById("partidas_transito_cajaFerro");
-  const inpCajasEnv  = document.getElementById("partidas_transito_cajasEnviadas");
-  const inpNotas     = document.getElementById("partidas_transito_notasEnvio");
-
-  const btnGuardar   = document.getElementById("partidas_transito_btnGuardarEnvio");
-
-  const previewWrap  = document.getElementById("partidas_transito_previewWrap");
-  const preJson      = document.getElementById("partidas_transito_previewJson");
-  const btnHidePrev  = document.getElementById("partidas_transito_btnOcultarPreview");
-
-  // ====== DEMO DATA ======
-  // Nota: aquí simulamos una factura 48 con un producto y sus envíos parciales
-  const DATA = {
-    "48": [
-      {
-        id: "P-4801",
-        producto: "LOREAL MATTE SIGNATURE LIQUID EYELINER",
-        upc: "",
-        marca: "LOREAL",
-        cajas_total: 45,
-        enviados: { TJ: 20, LERMA: 20, GDL: 3, SB: 2 }
-      },
-      {
-        id: "P-4802",
-        producto: "LOREAL PURE SUGAR SCRUB-MINI",
-        upc: "",
-        marca: "LOREAL",
-        cajas_total: 75,
-        enviados: { TJ: 0, LERMA: 0, GDL: 0, SB: 0 }
-      }
-    ],
-    "43": [
-      { id: "P-4301", producto: "DUNION - SHOES", upc: "", marca: "", cajas_total: 221, enviados: { TJ: 0, LERMA: 0, GDL: 0, SB: 0 } }
-    ]
-  };
-
-  const sumEnvios = (e) => (e.TJ||0) + (e.LERMA||0) + (e.GDL||0) + (e.SB||0);
-
-  const calcularResumen = (rows) => {
-    const totalProd = rows.length;
-    const totalCajas = rows.reduce((a,r)=> a + (r.cajas_total||0), 0);
-    const totalRest = rows.reduce((a,r)=> a + ((r.cajas_total||0) - sumEnvios(r.enviados||{})), 0);
-
-    badgeProd.textContent = "Productos: " + totalProd;
-    badgeCajas.textContent = "Cajas: " + totalCajas;
-    badgeRest.textContent = "Restantes: " + totalRest;
-  };
-
-  const render = (rows) => {
-    tbody.innerHTML = "";
-
-    if (!rows || rows.length === 0) {
-      empty.classList.remove("d-none");
-      badgeProd.textContent = "Productos: 0";
-      badgeCajas.textContent = "Cajas: 0";
-      badgeRest.textContent = "Restantes: 0";
-      return;
-    }
-
-    empty.classList.add("d-none");
-    calcularResumen(rows);
-
-    rows.forEach((r) => {
-      const enviados = r.enviados || { TJ:0, LERMA:0, GDL:0, SB:0 };
-      const restantes = (r.cajas_total || 0) - sumEnvios(enviados);
-
-      const tr = document.createElement("tr");
-      tr.className = "text-center";
-
-      tr.innerHTML = `
-        <td class="text-start">${r.producto || "—"}</td>
-        <td>${r.upc || "—"}</td>
-        <td>${r.marca || "—"}</td>
-
-        <td class="fw-semibold">${r.cajas_total ?? 0}</td>
-        <td>${enviados.TJ ?? 0}</td>
-        <td>${enviados.LERMA ?? 0}</td>
-        <td>${enviados.GDL ?? 0}</td>
-        <td>${enviados.SB ?? 0}</td>
-
-        <td>
-          <span class="badge ${restantes > 0 ? "bg-warning text-dark" : "bg-success"}">
-            ${restantes}
-          </span>
-        </td>
-
-        <td>
-          <button type="button"
-            class="btn btn-outline-primary btn-sm partidas_transito_btnRegistrarEnvio"
-            data-bs-toggle="modal"
-            data-bs-target="#modalPartidasTransitoEnvio"
-            data-id="${r.id}"
-            data-factura="${selFactura.value}"
-            data-producto="${(r.producto||"").replace(/"/g, "&quot;")}"
-            data-restantes="${restantes}">
-            <i data-feather="send"></i>
-          </button>
-        </td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-
-    if (window.feather) window.feather.replace();
-  };
-
-  const getCurrentRows = () => {
-    const fac = selFactura.value;
-    return (DATA[fac] || []).slice();
-  };
-
-  const applySearch = () => {
-    const term = (inpBuscar.value || "").trim().toLowerCase();
-    const rows = getCurrentRows();
-
-    if (!term) {
-      render(rows);
-      return;
-    }
-
-    const filtered = rows.filter(r =>
-      (r.producto || "").toLowerCase().includes(term) ||
-      (r.upc || "").toLowerCase().includes(term) ||
-      (r.marca || "").toLowerCase().includes(term)
-    );
-
-    render(filtered);
-  };
-
-  // ====== Events ======
-  selFactura.addEventListener("change", () => {
-    inpBuscar.value = "";
-    render(getCurrentRows());
-  });
-
-  inpBuscar.addEventListener("input", applySearch);
-
-  // Modal: set data on open
-  modalEnvioEl.addEventListener("show.bs.modal", (ev) => {
-    const btn = ev.relatedTarget;
-    const id = btn?.getAttribute("data-id") || "";
-    const factura = btn?.getAttribute("data-factura") || "";
-    const producto = btn?.getAttribute("data-producto") || "";
-    const restantes = btn?.getAttribute("data-restantes") || "0";
-
-    inpIdProd.value = id;
-    inpFacturaH.value = factura;
-
-    lblFact.textContent = factura ? ("Factura " + factura) : "—";
-    lblProd.textContent = producto || "—";
-    lblRest.textContent = restantes;
-
-    // Reset form
-    selDestino.value = "";
-    inpFecha.value = "";
-    inpCajaF.value = "";
-    inpCajasEnv.value = "";
-    inpNotas.value = "";
-    previewWrap.classList.add("d-none");
-
-    if (window.feather) window.feather.replace();
-  });
-
-  btnHidePrev.addEventListener("click", () => previewWrap.classList.add("d-none"));
-
-  // Guardar envío (DEMO)
-  btnGuardar.addEventListener("click", () => {
-    const restantes = parseInt(lblRest.textContent || "0", 10) || 0;
-    const cajas = parseInt(inpCajasEnv.value || "0", 10) || 0;
-
-    if (!selDestino.value) return alert("Selecciona destino.");
-    if (!inpFecha.value) return alert("Selecciona fecha de envío.");
-    if (!inpCajaF.value.trim()) return alert("Captura Caja / Ferro.");
-    if (cajas <= 0) return alert("Captura cajas enviadas.");
-    if (cajas > restantes) return alert("Las cajas enviadas no pueden exceder las restantes.");
-
-    const payload = {
-      factura: inpFacturaH.value,
-      producto_id: inpIdProd.value,
-      destino: selDestino.value,
-      fecha_envio: inpFecha.value,
-      caja_ferro: inpCajaF.value.trim(),
-      cajas_enviadas: cajas,
-      notas: (inpNotas.value || "").trim()
-    };
-
-    preJson.textContent = JSON.stringify(payload, null, 2);
-    previewWrap.classList.remove("d-none");
-
-    if (window.feather) window.feather.replace();
-  });
-
-  // Init
-  empty.classList.remove("d-none");
-  render([]);
-  if (window.feather) window.feather.replace();
-});
-</script>
