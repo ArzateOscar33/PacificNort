@@ -264,7 +264,7 @@ function entrarEdicionFila(tr) {
   // Estructura esperada en tu tabla:
   // 0 descripcion, 1 upc, 2 marca, 3 expiracion, 4 inner, 5 case,
   // 6 pallets_rcv, 7 cajas, 8 piezas, 9 acciones
-  if (tds.length < 10) return;
+  if (tds.length < 9) return;
 
   const getText = (i) => (tds[i]?.textContent || "").trim();
 
@@ -281,20 +281,20 @@ function entrarEdicionFila(tr) {
   const cajas       = getText(7);
   const piezas      = getText(8);
 
-  // Reemplazar celdas por inputs
-  tds[0].innerHTML = `<input type="text" class="form-control form-control-sm pf_edit_descripcion" value="${esc(descripcion)}">`;
-  tds[1].innerHTML = `<input type="text" class="form-control form-control-sm pf_edit_upc" value="${esc(upc)}">`;
-  tds[2].innerHTML = `<input type="text" class="form-control form-control-sm pf_edit_marca" value="${esc(marca)}">`;
+tds[0].innerHTML = `<input type="text" class="form-control form-control-sm pf_descripcion" value="${esc(descripcion)}">`;
+tds[1].innerHTML = `<input type="text" class="form-control form-control-sm pf_upc" value="${esc(upc)}">`;
+tds[2].innerHTML = `<input type="text" class="form-control form-control-sm pf_marca" value="${esc(marca)}">`;
 
-  // Date (si no hay raw, lo dejamos vacío)
-  tds[3].innerHTML = `<input type="date" class="form-control form-control-sm pf_edit_expiracion" value="${esc(expiracionRaw)}">`;
+tds[3].innerHTML = `<input type="date" class="form-control form-control-sm pf_expiracion" value="${esc(expiracionRaw)}">`;
 
-  tds[4].innerHTML = `<input type="text" class="form-control form-control-sm pf_edit_inner" value="${esc(innerPack)}">`;
-  tds[5].innerHTML = `<input type="text" class="form-control form-control-sm pf_edit_case" value="${esc(casePack)}">`;
+tds[4].innerHTML = `<input type="text" class="form-control form-control-sm pf_inner" value="${esc(innerPack)}">`;
+tds[5].innerHTML = `<input type="text" class="form-control form-control-sm pf_case" value="${esc(casePack)}">`;
 
-  tds[6].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_edit_pallets_rcv" value="${esc(palletsRcv || "0")}">`;
-  tds[7].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_edit_cajas" value="${esc(cajas || "0")}">`;
-  tds[8].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_edit_piezas" value="${esc(piezas || "0")}">`;
+tds[6].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_pallets_rcv" value="${esc(palletsRcv || "0")}">`;
+tds[7].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_cajas" value="${esc(cajas || "0")}">`;
+tds[8].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" value="${esc(piezas || "0")}">`;
+
+
 
   // Cambiar botón Editar a Cancelar en la celda de acciones (última)
   const btnEditar = tr.querySelector(".pf_btnEditar");
@@ -309,9 +309,14 @@ function entrarEdicionFila(tr) {
 
   if (window.feather) window.feather.replace();
 
-  // Enfocar primer input
-  const first = tr.querySelector(".pf_edit_descripcion");
-  if (first) first.focus();
+const first = tr.querySelector(".pf_descripcion");
+if (first) first.focus();
+
+
+  // Para que el registrador pueda hacer UPDATE
+tr.dataset.state = "dirty";                 // marca la fila como editada
+tr.dataset.idProducto = tr.dataset.id || ""; // mapea data-id -> data-id-producto
+
 }
 
 function cancelarEdicionFila(tr) {
@@ -343,6 +348,32 @@ pfTbody.addEventListener("click", function (e) {
 
   // Entra en edición
   entrarEdicionFila(tr);
+});
+
+
+// Marcar dirty automáticamente al cambiar cualquier input de la fila
+pfTbody.addEventListener("input", function (ev) {
+  const el = ev.target;
+  if (!el) return;
+
+  // Solo inputs del módulo
+  if (!el.classList.contains("pf_descripcion") &&
+      !el.classList.contains("pf_upc") &&
+      !el.classList.contains("pf_marca") &&
+      !el.classList.contains("pf_expiracion") &&
+      !el.classList.contains("pf_inner") &&
+      !el.classList.contains("pf_case") &&
+      !el.classList.contains("pf_pallets_rcv") &&
+      !el.classList.contains("pf_cajas") &&
+      !el.classList.contains("pf_piezas")) {
+    return;
+  }
+
+  const tr = el.closest("tr");
+  if (!tr) return;
+
+  // No cambies draft, pero sí convierte existentes a dirty
+  if (tr.dataset.state !== "draft") tr.dataset.state = "dirty";
 });
 
 // Opcional: si cierran el modal, cancela cualquier edición activa
