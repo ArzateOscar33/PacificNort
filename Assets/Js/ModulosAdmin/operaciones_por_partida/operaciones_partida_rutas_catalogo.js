@@ -11,6 +11,9 @@
   // ===== Endpoints =====
 const EP_SUGERIR_FACTURAS = "Operaciones_por_partida_rutas/sugerirFacturasRutas";
 const EP_LISTAR_PRODUCTOS = "Operaciones_por_partida_rutas/listarProductosRutas";
+const EP_SUGERIR_FISICOS  = "Operaciones_por_partida_rutas/sugerirFerroCajaRutas"; 
+const EP_SUGERIR_CIUDADES = "Operaciones_por_partida_rutas/sugerirCiudadesRutas";
+
 
 
   // ===== Refs DOM   =====
@@ -336,18 +339,153 @@ const EP_LISTAR_PRODUCTOS = "Operaciones_por_partida_rutas/listarProductosRutas"
   }
 
   // ========== Eventos globales (cerrar sugerencias al click fuera) ==========
-  function onDocClick(e) {
-    if (!boxSug || boxSug.style.display === "none") return;
+ function onDocClick(e) {
+  const t = e.target;
+  if (!t) return;
 
-    const t = e.target;
-    if (!t) return;
+  // ============================
+  // 1) FACTURAS (catálogo)
+  // ============================
+  if (boxSug && boxSug.style.display !== "none") {
+    const clickEnFacturaInp = inpFactura && (t === inpFactura || inpFactura.contains(t));
+    const clickEnFacturaBox = boxSug && (t === boxSug || boxSug.contains(t));
 
-    // Click dentro del input o dentro del box => no cerrar aquí
-    if (inpFactura && (inpFactura === t || inpFactura.contains(t))) return;
-    if (boxSug && (boxSug === t || boxSug.contains(t))) return;
-
-    limpiarSugerencias();
+    if (!clickEnFacturaInp && !clickEnFacturaBox) {
+      limpiarSugerencias();
+    }
   }
+
+  // ============================
+  // 2) MODAL: FÍSICOS + CIUDADES
+  // ============================
+  if (modalEnvioEl && (modalEnvioEl.contains(t) || document.body.contains(t))) {
+    // --- FÍSICOS ---
+    const clickEnFisico = t.closest(".pt_fisico_txt") || t.closest(".pt_fisico_sug");
+    if (!clickEnFisico) {
+      modalEnvioEl.querySelectorAll(".pt_fisico_sug").forEach((b) => {
+        b.innerHTML = "";
+        b.style.display = "none";
+      });
+    }
+
+    // --- CIUDADES ---
+    const clickEnCiudad = t.closest(".pt_destino_txt") || t.closest(".pt_destino_sug");
+    if (!clickEnCiudad) {
+      modalEnvioEl.querySelectorAll(".pt_destino_sug").forEach((b) => {
+        b.innerHTML = "";
+        b.style.display = "none";
+      });
+    }
+  }
+}
+
+// ===================== SUGERENCIAS CIUDADES (DESTINOS) POR RENGLÓN =====================
+let debounceCiudadId = null;
+let xhrCiudad = null;
+
+function hideCiudadSug(rowEl) {
+  const box = rowEl?.querySelector(".pt_destino_sug");
+  if (!box) return;
+  box.innerHTML = "";
+  box.style.display = "none";
+}
+
+function renderCiudadSug(rowEl, rows) {
+  const box = rowEl?.querySelector(".pt_destino_sug");
+  if (!box) return;
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    hideCiudadSug(rowEl);
+    return;
+  }
+
+  const html = rows.map((r) => {
+    const id = r.id ?? r.id_ciudad ?? "";
+    const texto = r.texto ?? r.nombre ?? r.nombre_ciudad ?? "";
+
+    return `
+      <button type="button"
+        class="list-group-item list-group-item-action py-2 pt_ciudad_item"
+        data-id="${esc(id)}"
+        data-texto="${esc(texto)}">
+        <div class="fw-semibold">${esc(texto)}</div>
+      </button>
+    `;
+  }).join("");
+
+  box.innerHTML = html;
+  box.style.display = "block";
+}
+
+function fetchCiudadSug(rowEl, term) {
+  abortXHR(xhrCiudad);
+
+  xhrCiudad = new XMLHttpRequest();
+  const url = buildUrl(EP_SUGERIR_CIUDADES, { term: term, limit: 10 });
+
+  xhrCiudad.open("GET", url, true);
+  xhrCiudad.onreadystatechange = function () {
+    if (xhrCiudad.readyState !== 4) return;
+
+    if (xhrCiudad.status < 200 || xhrCiudad.status >= 300) {
+      hideCiudadSug(rowEl);
+      return;
+    }
+
+    let json = null;
+    try { json = JSON.parse(xhrCiudad.responseText || "{}"); } catch (_) {}
+
+    if (!json || !json.ok) {
+      hideCiudadSug(rowEl);
+      return;
+    }
+
+    renderCiudadSug(rowEl, json.data || []);
+  };
+
+  xhrCiudad.send();
+}
+
+function onCiudadInput(e) {
+  const input = e.target;
+  if (!input || !input.classList.contains("pt_destino_txt")) return;
+
+  const rowEl = input.closest(".partidas_transito_row");
+  if (!rowEl) return;
+
+  // al teclear, invalida selección previa
+  const hid = rowEl.querySelector(".pt_destino_id");
+  if (hid) hid.value = "";
+
+  const term = (input.value || "").trim();
+  if (term.length < 2) {
+    hideCiudadSug(rowEl);
+    return;
+  }
+
+  clearTimeout(debounceCiudadId);
+  debounceCiudadId = setTimeout(() => fetchCiudadSug(rowEl, term), 250);
+}
+
+function onCiudadPick(e) {
+  const btn = e.target?.closest(".pt_ciudad_item");
+  if (!btn) return;
+
+  const rowEl = btn.closest(".partidas_transito_row");
+  if (!rowEl) return;
+
+  const id = btn.getAttribute("data-id") || "";
+  const texto = btn.getAttribute("data-texto") || "";
+
+  const hid = rowEl.querySelector(".pt_destino_id");
+  const inp = rowEl.querySelector(".pt_destino_txt");
+
+  if (hid) hid.value = id;
+  if (inp) inp.value = texto;
+
+  hideCiudadSug(rowEl);
+}
+
 
   // ========== Init ==========
   function init() {
@@ -428,6 +566,42 @@ const EP_LISTAR_PRODUCTOS = "Operaciones_por_partida_rutas/listarProductosRutas"
       });
     });
 
+    // Delegación dentro del modal: inputs y clicks de sugerencias de físicos
+// Delegación dentro del modal: inputs y clicks de sugerencias
+if (modalEnvioEl) {
+
+  // CIUDADES
+  modalEnvioEl.addEventListener("input", onCiudadInput);
+
+  modalEnvioEl.addEventListener("click", function (e) {
+    if (e.target?.closest(".pt_ciudad_item")) {
+      onCiudadPick(e);
+      return;
+    }
+  });
+
+  // FÍSICOS (lo que ya tienes)
+  modalEnvioEl.addEventListener("input", onFisicoInput);
+
+  modalEnvioEl.addEventListener("click", function (e) {
+    if (e.target?.closest(".pt_fisico_item")) {
+      onFisicoPick(e);
+      return;
+    }
+  });
+
+  // cerrar sugerencias al presionar ESC dentro del modal
+  modalEnvioEl.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+
+    modalEnvioEl.querySelectorAll(".pt_fisico_sug, .pt_destino_sug").forEach((b) => {
+      b.innerHTML = "";
+      b.style.display = "none";
+    });
+  });
+}
+
+
     // Limpieza cada vez que se cierre el modal (por si el usuario cancela)
     if (modalEnvioEl) {
       modalEnvioEl.addEventListener("hidden.bs.modal", function () {
@@ -494,6 +668,117 @@ const EP_LISTAR_PRODUCTOS = "Operaciones_por_partida_rutas/listarProductosRutas"
   init();
 
 
+// ===================== SUGERENCIAS FÍSICOS (Caja/Ferro) POR RENGLÓN =====================
+let debounceFisicoId = null; // debounce global (suficiente)
+let xhrFisico = null;
+
+function hideFisicoSug(rowEl) {
+  const box = rowEl?.querySelector(".pt_fisico_sug");
+  if (!box) return;
+  box.innerHTML = "";
+  box.style.display = "none";
+}
+
+function renderFisicoSug(rowEl, rows) {
+  const box = rowEl?.querySelector(".pt_fisico_sug");
+  if (!box) return;
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    hideFisicoSug(rowEl);
+    return;
+  }
+
+  const html = rows.map((r) => {
+    const id = r.id ?? "";
+    const tipo = r.tipo ?? "FERRO";
+    const texto = r.texto ?? "";
+
+    return `
+      <button type="button"
+        class="list-group-item list-group-item-action py-2 pt_fisico_item"
+        data-id="${esc(id)}"
+        data-tipo="${esc(tipo)}"
+        data-texto="${esc(texto)}">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">${esc(texto)}</div>
+          
+        </div>
+      </button>
+    `;
+  }).join("");
+
+  box.innerHTML = html;
+  box.style.display = "block";
+}
+
+function fetchFisicoSug(rowEl, term) {
+  abortXHR(xhrFisico);
+
+  xhrFisico = new XMLHttpRequest();
+  const url = buildUrl(EP_SUGERIR_FISICOS, { term: term, limit: 10 });
+
+  xhrFisico.open("GET", url, true);
+  xhrFisico.onreadystatechange = function () {
+    if (xhrFisico.readyState !== 4) return;
+
+    if (xhrFisico.status < 200 || xhrFisico.status >= 300) {
+      hideFisicoSug(rowEl);
+      return;
+    }
+
+    let json = null;
+    try { json = JSON.parse(xhrFisico.responseText || "{}"); } catch (_) {}
+
+    if (!json || !json.ok) {
+      hideFisicoSug(rowEl);
+      return;
+    }
+
+    renderFisicoSug(rowEl, json.data || []);
+  };
+
+  xhrFisico.send();
+}
+
+function onFisicoInput(e) {
+  const input = e.target;
+  if (!input || !input.classList.contains("pt_fisico_txt")) return;
+
+  const rowEl = input.closest(".partidas_transito_row");
+  if (!rowEl) return;
+
+  // al teclear, invalida selección previa
+  const hid = rowEl.querySelector(".pt_fisico_id");
+  if (hid) hid.value = "";
+
+  const term = (input.value || "").trim();
+  if (term.length < 2) {
+    hideFisicoSug(rowEl);
+    return;
+  }
+
+  clearTimeout(debounceFisicoId);
+  debounceFisicoId = setTimeout(() => fetchFisicoSug(rowEl, term), 250);
+}
+
+function onFisicoPick(e) {
+  const btn = e.target?.closest(".pt_fisico_item");
+  if (!btn) return;
+
+  const rowEl = btn.closest(".partidas_transito_row");
+  if (!rowEl) return;
+
+  const id = btn.getAttribute("data-id") || "";
+  const texto = btn.getAttribute("data-texto") || "";
+
+  const hid = rowEl.querySelector(".pt_fisico_id");
+  const inp = rowEl.querySelector(".pt_fisico_txt");
+
+  if (hid) hid.value = id;
+  if (inp) inp.value = texto;
+
+  hideFisicoSug(rowEl);
+}
 
   
 

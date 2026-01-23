@@ -1,3 +1,9 @@
+<style>
+  .modal-xxl-wide {
+    max-width: min(1600px, calc(100vw - 2rem));
+  }
+</style>
+
 <div class="container py-4 col-md-12">
   <div class="card shadow-sm">
 
@@ -72,7 +78,7 @@
 </div>
 <!-- ===================== MODAL: REGISTRAR ENVÍOS (MÚLTIPLES) POR PRODUCTO ===================== -->
 <div class="modal fade" id="modalPartidasTransitoEnvio" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl  modal-xxl-wide modal-dialog-scrollable">
     <div class="modal-content">
 
       <div class="modal-header bg-dark text-white">
@@ -123,8 +129,8 @@
           </div>
 
           <!-- TABLA DE RENGLONES -->
-          <div class="table-responsive border rounded">
-            <table class="table table-sm align-middle mb-0" id="partidas_transito_tblEnvios">
+          <div class="table border rounded">
+            <table class="table  align-middle mb-0" id="partidas_transito_tblEnvios">
               <thead class="table-dark">
                 <tr class="text-center">
                   <th style="min-width:240px;" class="text-start">Destino (ciudad)</th>
@@ -132,6 +138,8 @@
                   <th style="min-width:260px;" class="text-start">Caja / Ferro</th>
                   <th style="width:170px;">Cajas a enviar</th>
                   <th style="width:160px;">Estatus</th>
+                  <th style="min-width:220px;" class="text-start">Notas</th>
+
                   <th style="width:90px;">Quitar</th>
                 </tr>
               </thead>
@@ -186,23 +194,27 @@
                         class="form-control pt_cajas"
                         placeholder="0"
                         required>
-                      <span class="input-group-text">
-                        <span class="text-muted ms-1 ">Disp.</span>
-                        <span class="badge bg-warning text-dark" id="pt_badgeDispInline_0">0</span>
-                      </span>
+                   
                     </div>
                      
                   </td>
 
                   <!-- ESTATUS (sin BD) -->
                   <td class="text-center">
-                    <select class="form-select form-control pt_estatus" required>
-                      <option value="EN_CAMINO" selected>En camino</option>
-                      <option value="ENTREGADO">Entregado</option>
-                    </select>
+<select class="form-select form-control pt_estatus" required>
+  <option value="1" selected>En camino</option>
+  <option value="2">Entregado</option>
+</select>
                   </td>
+        <!-- NOTAS POR RENGLÓN -->
+<td class="text-start">
+  <input type="text"
+    class="form-control form-control-sm pt_nota"
+    placeholder="Nota (opcional)"
+    maxlength="255">
+</td>
 
-                  <!-- QUITAR -->
+
                   <td class="text-center">
                     <button type="button" class="btn btn-outline-danger btn-sm pt_btnRemoveRow" title="Quitar renglón">
                       <i data-feather="trash-2"></i>
@@ -225,11 +237,7 @@
             </div>
           </div>
 
-          <!-- NOTAS (general) -->
-          <div class="mt-3">
-            <label class="form-label">Notas</label>
-            <textarea id="partidas_transito_notasEnvio" class="form-control" rows="2" placeholder="Opcional"></textarea>
-          </div>
+ 
 
         </form>
       </div>

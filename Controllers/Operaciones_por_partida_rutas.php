@@ -156,41 +156,81 @@ class Operaciones_por_partida_rutas extends Controller
         }
     }
 
-    // ==== RUTAS: SUGERIR CAJA/FERRO ====
-    public function sugerirFerroCajaRutas()
-    {
-        header('Content-Type: application/json; charset=utf-8');
+ 
 
-        try {
-            $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+    // ==== RUTAS: SUGERIR CAJA/FERRO (contenedores_fisicos) ====
+public function sugerirFerroCajaRutas()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-            if ($limit < 1) $limit = 10;
-            if ($limit > 25) $limit = 25;
+    try {
+        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
 
-            if ($term === '' || mb_strlen($term) < 2) {
-                echo json_encode(['ok' => true, 'data' => []], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
+        if ($limit < 1)  $limit = 10;
+        if ($limit > 25) $limit = 25;
 
-            // IMPORTANTE: en tu controller original llamabas sugerirFisicos()
-            // aquí lo dejamos igual, pero el MODEL nuevo ya trae ese wrapper.
-            $rows = $this->model->sugerirFisicos($term, $limit);
-
-            echo json_encode([
-                'ok'   => true,
-                'data' => $rows ?: []
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-
-        } catch (Throwable $e) {
-            error_log("Operaciones_por_partida_rutas/sugerirFerroCajaRutas ERROR: " . $e->getMessage());
-            echo json_encode([
-                'ok'   => false,
-                'msg'  => 'Ocurrió un error al buscar Caja/Ferro.',
-                'data' => []
-            ], JSON_UNESCAPED_UNICODE);
+        if ($term === '' || mb_strlen($term) < 2) {
+            echo json_encode(['ok' => true, 'data' => []], JSON_UNESCAPED_UNICODE);
             exit;
         }
+
+        // El model debe tener sugerirFisicos() -> sugerirCajaFerro()
+        $rows = $this->model->sugerirFisicos($term, $limit);
+
+        echo json_encode([
+            'ok'   => true,
+            'data' => $rows ?: []
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida_rutas/sugerirFerroCajaRutas ERROR: " . $e->getMessage());
+        echo json_encode([
+            'ok'   => false,
+            'msg'  => 'Ocurrió un error al buscar Caja/Ferro.',
+            'data' => []
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
+}
+
+
+// ==== RUTAS: SUGERIR CIUDADES (DESTINOS) ====
+public function sugerirCiudadesRutas()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+
+        if ($limit < 1)  $limit = 10;
+        if ($limit > 25) $limit = 25;
+
+        if ($term === '' || mb_strlen($term) < 2) {
+            echo json_encode(['ok' => true, 'data' => []], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $rows = $this->model->sugerirCiudades($term, $limit);
+
+        echo json_encode([
+            'ok'   => true,
+            'data' => $rows ?: []
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida_rutas/sugerirCiudadesRutas ERROR: " . $e->getMessage());
+        echo json_encode([
+            'ok'   => false,
+            'msg'  => 'Ocurrió un error al buscar ciudades.',
+            'data' => []
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+
 }

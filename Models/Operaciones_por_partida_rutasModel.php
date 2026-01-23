@@ -153,66 +153,84 @@ class Operaciones_por_partida_rutasModel extends Query
     // SUGERIR CAJA/FERRO
     // =====================
 
-    // Wrapper para que no truene si el Controller llama sugerirFisicos()
-    public function sugerirFisicos(string $term, int $limit = 10): array
-    {
-        return $this->sugerirCajaFerro($term, $limit);
-    }
+ 
 
-    public function sugerirCajaFerro(string $term, int $limit = 10): array
-    {
-        $term  = trim((string)$term);
-        $limit = (int)$limit;
+// =====================
+// SUGERIR FERROS (FÍSICOS)
+// Tabla real: contenedores_fisicos (id_fisico, numero_ferro, estatus)
+// =====================
 
-        if ($limit < 1) $limit = 10;
-        if ($limit > 25) $limit = 25;
-        if ($term === '' || mb_strlen($term) < 2) return [];
+// Wrapper para que el Controller/JS llamen sugerirFisicos()
+public function sugerirFisicos(string $term, int $limit = 10): array
+{
+    return $this->sugerirFerros($term, $limit);
+}
 
-        $like = '%' . $term . '%';
+public function sugerirFerros(string $term, int $limit = 10): array
+{
+    $term  = trim((string)$term);
+    $limit = (int)$limit;
 
-        /*
-          AJUSTA A TU BD REAL.
-          Te lo dejo como lo tenías: “cajas_fisicas” y “ferros”.
-          Si en realidad usas “contenedores_fisicos” o algo similar,
-          aquí se cambia.
-        */
+    if ($limit < 1)  $limit = 10;
+    if ($limit > 25) $limit = 25;
 
-        // (1) CAJAS
-        $sqlCajas = "SELECT
-                        c.id_caja AS id,
-                        'CAJA'    AS tipo,
-                        c.folio   AS texto
-                     FROM cajas_fisicas c
-                     WHERE c.estatus = 1
-                       AND c.folio LIKE ?
-                     ORDER BY c.id_caja DESC
-                     LIMIT $limit";
+    // para sugerencias: no saturar si escriben 1 caracter
+    if ($term === '' || mb_strlen($term) < 2) return [];
 
-        $cajas = $this->selectAll($sqlCajas, [$like]);
-        if ($cajas === false) $cajas = [];
+    $like = '%' . $term . '%';
 
-        // (2) FERROS
-        $sqlFerros = "SELECT
-                        f.id_ferro AS id,
-                        'FERRO'    AS tipo,
-                        f.folio    AS texto
-                      FROM ferros f
-                      WHERE f.estatus = 1
-                        AND f.folio LIKE ?
-                      ORDER BY f.id_ferro DESC
-                      LIMIT $limit";
+    // Opcional: prioriza los que empiezan con lo escrito
+    $likeStart = $term . '%';
 
-        $ferros = $this->selectAll($sqlFerros, [$like]);
-        if ($ferros === false) $ferros = [];
+    $sql = "SELECT
+                cf.id_fisico AS id,
+                'FERRO'      AS tipo,
+                cf.numero_ferro AS texto
+            FROM contenedores_fisicos cf
+            WHERE cf.estatus = 1
+              AND cf.numero_ferro LIKE ?
+            ORDER BY
+              (cf.numero_ferro LIKE ?) DESC,
+              cf.id_fisico DESC
+            LIMIT $limit";
 
-        $rows = array_merge($cajas, $ferros);
+    $rows = $this->selectAll($sql, [$like, $likeStart]);
+    return ($rows === false) ? [] : $rows;
+}
 
-        if (count($rows) > $limit) {
-            $rows = array_slice($rows, 0, $limit);
-        }
+// =====================
+// SUGERENCIAS CIUDADES (DESTINOS)
+// =====================
+public function sugerirCiudades(string $term, int $limit = 10): array
+{
+    $term  = trim((string)$term);
+    $limit = (int)$limit;
 
-        return $rows;
-    }
+    if ($limit < 1)  $limit = 10;
+    if ($limit > 25) $limit = 25;
+
+    // Evita consultas con 1 caracter
+    if ($term === '' || mb_strlen($term) < 2) return [];
+
+    $like      = '%' . $term . '%';
+    $likeStart = $term . '%';
+
+    // AJUSTE DE CAMPO:
+    // Si tu columna se llama "nombre" en vez de "nombre_ciudad", cámbialo aquí.
+    $sql = "SELECT
+                c.id_ciudad AS id,
+                c.nombre_ciudad AS texto
+            FROM ciudades c
+            WHERE c.estatus = 1
+              AND c.nombre_ciudad LIKE ?
+            ORDER BY
+              (c.nombre_ciudad LIKE ?) DESC,
+              c.nombre_ciudad ASC
+            LIMIT $limit";
+
+    $rows = $this->selectAll($sql, [$like, $likeStart]);
+    return ($rows === false) ? [] : $rows;
+}
 
     
 }
