@@ -34,33 +34,34 @@ class Operaciones_maritimo_ferroModel extends Query
         return str_pad((string)$n, ($n < 100 ? 2 : strlen((string)$n)), '0', STR_PAD_LEFT);
     }
 
-    private function nextConsecutivoSeguro(int $subtipoId, int $anio): int
-    {
-        // Requiere UNIQUE (subtipo_id, anio) en secuencias_operacion
-        $ok = $this->save(
-            "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
-             VALUES (?, ?, 1)
-             ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
-            [$subtipoId, $anio]
-        );
-        if ($ok === false) return 0;
+private function nextConsecutivoSeguro(int $subtipoId): int
+{
+    $ok = $this->save(
+        "INSERT INTO secuencias_operacion (subtipo_id, valor)
+         VALUES (?, 1)
+         ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
+        [$subtipoId]
+    );
+    if ($ok === false) return 0;
 
-        $row = $this->select("SELECT LAST_INSERT_ID() AS n");
-        return (int)($row['n'] ?? 0);
-    }
+    $row = $this->select("SELECT LAST_INSERT_ID() AS n");
+    return (int)($row['n'] ?? 0);
+}
+
+
 
     /** Genera código por secuencia (seguro) */
-    public function generarCodigoPorSecuencia(int $subtipoId): ?string
-    {
-        $pref = $this->getPrefijoSubtipo($subtipoId);
-        if (!$pref) return null;
+public function generarCodigoPorSecuencia(int $subtipoId): ?string
+{
+    $pref = $this->getPrefijoSubtipo($subtipoId);
+    if (!$pref) return null;
 
-        $anio = (int)date('Y');
-        $consec = $this->nextConsecutivoSeguro($subtipoId, $anio);
-        if ($consec <= 0) return null;
+    $consec = $this->nextConsecutivoSeguro($subtipoId);
+    if ($consec <= 0) return null;
 
-        return $pref . '-' . $this->lpadNumeroN($consec);
-    }
+    return $pref . '-' . $this->lpadNumeroN($consec);
+}
+
 
     /** Preview de folio para UI (sin bloquear) */
     public function previewCodigoSubtipo(int $subtipoId): ?array
@@ -444,7 +445,7 @@ class Operaciones_maritimo_ferroModel extends Query
             $op['etd'] ?? null,
             $op['eta'] ?? null,
             $op['numero_bl'] ?? null,
-            (int)$op['cliente_id'],
+            !empty($op['cliente_id']) ? (int)$op['cliente_id'] : null,
             (int)($op['estatus_id'] ?? 9),
             !empty($op['naviera_id'])   ? (int)$op['naviera_id']   : null,
             !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
@@ -506,6 +507,9 @@ class Operaciones_maritimo_ferroModel extends Query
                 'numero_operacion' => $op['numero_operacion'],
             ];
         } catch (\Throwable $ex) {
+            error_log("insertarOperacion error: " . $ex->getMessage());
+    error_log("PAYLOAD op: " . json_encode($op, JSON_UNESCAPED_UNICODE));
+    error_log("CONTENEDORES: " . json_encode($contenedores, JSON_UNESCAPED_UNICODE));
             try { $this->save("ROLLBACK", []); } catch (\Throwable $e2) {}
             error_log("insertarOperacion error: " . $ex->getMessage());
             return ['status' => 'error', 'msg' => 'Error inesperado al guardar'];

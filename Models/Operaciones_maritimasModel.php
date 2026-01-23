@@ -621,10 +621,10 @@ private function nextConsecutivoSeguro(int $subtipoId, int $anio): int
 {
     // Requiere UNIQUE (subtipo_id, anio)
     $ok = $this->save(
-        "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
-         VALUES (?, ?, 1)
+        "INSERT INTO secuencias_operacion (subtipo_id, valor)
+         VALUES (?, 1)
          ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
-        [$subtipoId, $anio]
+        [$subtipoId]
     );
     if ($ok === false) return 0;
 

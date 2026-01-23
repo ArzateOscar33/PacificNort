@@ -169,7 +169,12 @@ class Operaciones_maritimo_ferro extends Controller
     $blRaw = (string)($_POST['maritimo_ferro_numeroBL'] ?? '');
     $bl    = preg_replace('/[^A-Za-z0-9]/', '', $blRaw) ?: null;
 
-    $clienteId   = (int)($_POST['maritimo_ferro_clienteId'] ?? 0);
+    $clienteIdRaw = trim((string)($_POST['maritimo_ferro_clienteId'] ?? ''));
+    $clienteId = ctype_digit($clienteIdRaw) ? (int)$clienteIdRaw : 0;
+    $clienteId = ($clienteId > 0) ? $clienteId : null;
+
+
+
     $navieraId   = (int)($_POST['maritimo_ferro_navieraId'] ?? 0);
     $forwarderId = (int)($_POST['maritimo_ferro_forwarderId'] ?? 0);
     $shipperId   = (int)($_POST['maritimo_ferro_shipperId'] ?? 0);

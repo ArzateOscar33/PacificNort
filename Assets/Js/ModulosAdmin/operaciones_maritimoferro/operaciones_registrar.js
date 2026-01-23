@@ -200,7 +200,8 @@ function guardarOperacionMF(){
     };
     x.onreadystatechange = function(){
       if (x.readyState !== 4) return;
-
+      console.log('guardarOperacionMF response:', x.responseText);
+      console.log(this.responseText);
       let res = null; try { res = JSON.parse(x.responseText); } catch(e){}
       if (x.status !== 200 || !res){
         Swal?.fire('Error','No se pudo registrar la operación.','error');
