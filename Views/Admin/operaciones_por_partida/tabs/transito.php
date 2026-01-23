@@ -70,18 +70,23 @@
     </div>
   </div>
 </div>
-
-<!-- ===================== MODAL: REGISTRAR ENVÍO POR PRODUCTO ===================== -->
+<!-- ===================== MODAL: REGISTRAR ENVÍOS (MÚLTIPLES) POR PRODUCTO ===================== -->
 <div class="modal fade" id="modalPartidasTransitoEnvio" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
 
       <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title d-flex align-items-center gap-2 mb-0">
-          <i data-feather="send"></i>
-          <span>Registrar Envío</span>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <div class="d-flex flex-column">
+          <h5 class="modal-title d-flex align-items-center gap-2 mb-0">
+            <i data-feather="send"></i>
+            <span>Registrar Envíos</span>
+          </h5>
+          <div class="small text-white-50 mt-1">
+            Múltiples destinos por producto (parciales)
+          </div>
+        </div>
+
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
       <div class="modal-body">
@@ -89,62 +94,142 @@
           <input type="hidden" id="partidas_transito_idProducto" value="">
           <input type="hidden" id="partidas_transito_factura" value="">
 
+          <!-- META / RESUMEN -->
           <div class="alert alert-light border mb-3">
-            <div class="small">
-              <div><span class="text-muted">Factura:</span> <span class="fw-semibold" id="partidas_transito_lblFactura">—</span></div>
-              <div><span class="text-muted">Producto:</span> <span class="fw-semibold" id="partidas_transito_lblProducto">—</span></div>
-              <div><span class="text-muted">Cajas restantes:</span> <span class="fw-semibold" id="partidas_transito_lblRestantes">0</span></div>
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+              <div class="small">
+                <div><span class="text-muted">Factura:</span> <span class="fw-semibold" id="partidas_transito_lblFactura">—</span></div>
+                <div><span class="text-muted">Producto:</span> <span class="fw-semibold" id="partidas_transito_lblProducto">—</span></div>
+              </div>
+
+              <div class="text-end">
+                <div class="small text-muted">Disponibles para enviar</div>
+                <span class="badge bg-success fs-6 text-white" id="partidas_transito_badgeDisponibles">0</span>
+                <input type="hidden" id="partidas_transito_cajasDisponibles" value="0">
+              </div>
             </div>
           </div>
 
-<div class="row g-3">
+          <!-- HEADER DE ACCIONES DE RENGLONES -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-semibold">
+              Detalle de Envíos
+               
+            </div>
 
-  <!-- DESTINO (desde BD) -->
-  <div class="col-md-6">
-    <label class="form-label">Destino</label>
-<select id="partidas_transito_destino" class="form-control" required>
-  <option value="">Seleccione...</option>
-</select>
+            <button type="button" class="btn btn-success btn-sm" id="partidas_transito_btnAddRow" title="Agregar renglón">
+              <i data-feather="plus" class="me-1"></i> Agregar
+            </button>
+          </div>
 
-  </div>
+          <!-- TABLA DE RENGLONES -->
+          <div class="table-responsive border rounded">
+            <table class="table table-sm align-middle mb-0" id="partidas_transito_tblEnvios">
+              <thead class="table-dark">
+                <tr class="text-center">
+                  <th style="min-width:240px;" class="text-start">Destino (ciudad)</th>
+                  <th style="width:160px;">Fecha envío</th>
+                  <th style="min-width:260px;" class="text-start">Caja / Ferro</th>
+                  <th style="width:170px;">Cajas a enviar</th>
+                  <th style="width:160px;">Estatus</th>
+                  <th style="width:90px;">Quitar</th>
+                </tr>
+              </thead>
 
-  <div class="col-md-6">
-    <label class="form-label">Fecha de envío</label>
-    <input type="date" id="partidas_transito_fechaEnvio" class="form-control" required>
-  </div>
+              <tbody id="partidas_transito_tbodyEnvios">
+                <!-- Row template (1 por defecto) -->
+                <tr class="partidas_transito_row" data-index="0">
+                  <!-- DESTINO con sugerencias -->
+                  <td class="text-start">
+                    <input type="hidden" class="pt_destino_id" value="">
+                    <div class="position-relative">
+                      <input type="text"
+                        class="form-control form-control-sm pt_destino_txt"
+                        placeholder="Escribe ciudad... (Ej. TIJ)"
+                        autocomplete="off"
+                        required>
 
-  <!-- CAJA / FERRO (input + sugerencias) -->
-<div class="col-md-6">
-  <label class="form-label">Caja / Ferro</label>
+                      <div class="list-group position-absolute w-100 z-3 pt_destino_sug"
+                        style="z-index:999; display:none;">
+                        <!-- sugerencias aquí -->
+                      </div>
+                    </div> 
+                  </td>
 
-  <input type="hidden" id="partidas_transito_idFisico" value="">
+                  <!-- FECHA -->
+                  <td class="text-center">
+                    <input type="date" class="form-control form-control-sm pt_fecha_envio" required>
+                  </td>
 
-  <div class="position-relative">
-    <input type="text" id="partidas_transito_cajaFerro" class="form-control"
-      placeholder="Buscar Caja/Ferro (Ej. FO-22 / Ferro 17)" autocomplete="off" required>
+                  <!-- CAJA/FERRO con sugerencias -->
+                  <td class="text-start">
+                    <input type="hidden" class="pt_fisico_id" value="">
+                    <div class="position-relative">
+                      <input type="text"
+                        class="form-control form-control-sm pt_fisico_txt"
+                        placeholder="Buscar Caja/Ferro (Ej. FO-22 / Ferro 17)"
+                        autocomplete="off"
+                        required>
 
-    <div id="partidas_transito_sugerenciasFisico"
-      class="list-group position-absolute w-100 z-3"
-      style="z-index:999; display:none;">
-    </div>
-  </div>
-</div>
+                      <div class="list-group position-absolute w-100 z-3 pt_fisico_sug"
+                        style="z-index:999; display:none;">
+                        <!-- sugerencias aquí -->
+                      </div>
+                    </div>
+                    
+                  </td>
 
+                  <!-- CAJAS -->
+                  <td class="text-center">
+                    <div class="input-group input-group-sm">
+                      <input type="number" min="1" step="1"
+                        class="form-control pt_cajas"
+                        placeholder="0"
+                        required>
+                      <span class="input-group-text">
+                        <span class="text-muted ms-1 ">Disp.</span>
+                        <span class="badge bg-warning text-dark" id="pt_badgeDispInline_0">0</span>
+                      </span>
+                    </div>
+                     
+                  </td>
 
-  <div class="col-md-6">
-    <label class="form-label">Cajas enviadas</label>
-    <input type="number" min="1" step="1" id="partidas_transito_cajasEnviadas" class="form-control"
-      placeholder="0" required>
-    <small class="text-muted d-block mt-1">No debe exceder las cajas restantes.</small>
-  </div>
+                  <!-- ESTATUS (sin BD) -->
+                  <td class="text-center">
+                    <select class="form-select form-control pt_estatus" required>
+                      <option value="EN_CAMINO" selected>En camino</option>
+                      <option value="ENTREGADO">Entregado</option>
+                    </select>
+                  </td>
 
-  <div class="col-md-12">
-    <label class="form-label">Notas</label>
-    <textarea id="partidas_transito_notasEnvio" class="form-control" rows="2"
-      placeholder="Opcional"></textarea>
-  </div>
+                  <!-- QUITAR -->
+                  <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm pt_btnRemoveRow" title="Quitar renglón">
+                      <i data-feather="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-</div>
+          <!-- RESUMEN DE ASIGNACIÓN (UI) -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+            <div class="small text-muted">
+              Total asignado en renglones:
+              <span class="fw-semibold" id="partidas_transito_lblTotalAsignado">0</span>
+            </div>
+            <div class="small text-muted">
+              Restantes en bodega:
+              <span class="fw-semibold" id="partidas_transito_lblRestantes">0</span>
+            </div>
+          </div>
+
+          <!-- NOTAS (general) -->
+          <div class="mt-3">
+            <label class="form-label">Notas</label>
+            <textarea id="partidas_transito_notasEnvio" class="form-control" rows="2" placeholder="Opcional"></textarea>
+          </div>
 
         </form>
       </div>
@@ -162,4 +247,6 @@
     </div>
   </div>
 </div>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js"></script>
+
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js">
+</script>

@@ -213,4 +213,6 @@ class Operaciones_por_partida_rutasModel extends Query
 
         return $rows;
     }
+
+    
 }

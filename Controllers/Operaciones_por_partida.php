@@ -1138,7 +1138,7 @@ public function eliminarDocumentoFactura()
 
 
 //RUTAS
-
+/*
  // ===================== RUTAS: SUGERENCIAS FACTURAS =====================
 public function sugerirFacturasRutas()
 {
@@ -1325,5 +1325,5 @@ public function sugerirFerroCajaRutas()
     }
 }
 
-
+*/
 }

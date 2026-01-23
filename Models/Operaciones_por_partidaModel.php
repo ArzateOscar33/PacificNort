@@ -695,142 +695,10 @@ class Operaciones_por_partidaModel extends Query
 
 
 
- 
-// DOCUMENTOS
-public function listarPorFactura(int $facturaId, string $term = "", int $estatus = 1): array
-{
-    $facturaId = (int)$facturaId;
-    $estatus   = (int)$estatus;
-    $term      = trim($term);
-
-    $where  = " WHERE d.factura_id = ? AND d.estatus = ? ";
-    $params = [$facturaId, $estatus];
-
-    if ($term !== "") {
-        $where .= " AND (
-            d.nombre_archivo LIKE ?
-            OR td.nombre LIKE ?
-            OR IFNULL(d.mime_type,'') LIKE ?
-        ) ";
-        $like = '%' . $term . '%';
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
-    }
-
-    $sql = "SELECT
-                d.id_documento,
-                d.factura_id,
-                f.numero_factura,
-                d.tipo_documento_id,
-                td.nombre            AS tipo_documento,
-                d.nombre_archivo,
-                d.ruta_archivo,
-                d.mime_type,
-                d.tamano_bytes,
-                d.subido_por,
-                CONCAT(u.nombre,' ',u.apellido) AS subido_por_nombre,
-                d.fecha_subida,
-                d.estatus
-            FROM op_partida_documentos d
-            INNER JOIN op_partida_facturas f
-                ON f.id_factura = d.factura_id
-            INNER JOIN tipos_documento td
-                ON td.id_tipo_documento = d.tipo_documento_id
-            LEFT JOIN usuarios u
-                ON u.id_usuario = d.subido_por
-            $where
-            ORDER BY d.fecha_subida DESC, d.id_documento DESC";
-
-    $rows = $this->selectAll($sql, $params);
-    return ($rows === false) ? [] : $rows;
-}
-
-
-
-
-    public function existeTipoDocumentoOPP(int $tipoId): bool
-    {
-        $sql = "SELECT id_tipo_documento
-                FROM tipos_documento
-                WHERE id_tipo_documento = ?
-                AND activo = 1
-                AND aplica_sobre IN ('operaciones_por_partida','cualquiera')
-                LIMIT 1";
-
-        $row = $this->select($sql, [$tipoId]);
-        return !empty($row);
-    }
-
-    public function insertarDocumentoPartida(array $d): int
-    {
-        $sql = "INSERT INTO op_partida_documentos
-                (factura_id, tipo_documento_id, nombre_archivo, ruta_archivo, mime_type, tamano_bytes, notas, subido_por, fecha_subida, estatus)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1)";
-
-        $params = [
-            (int)$d['factura_id'],
-            (int)$d['tipo_documento_id'],
-            (string)$d['nombre_archivo'],
-            (string)$d['ruta_archivo'],
-            (string)$d['mime_type'],
-            (int)$d['tamano_bytes'],
-            ($d['notas'] ?? null),
-            ($d['subido_por'] ?? null),
-        ];
-
-        $id = $this->insertar($sql, $params);
-        return (int)$id;
-    }
-    public function insertarDocumentosPartidaBatch(int $facturaId, int $tipoId, array $items, ?int $userId, ?string $notas = null): array
-    {
-        $insertados = 0;
-        $ids = [];
-
-        foreach ($items as $it) {
-            $newId = $this->insertarDocumentoPartida([
-                'factura_id'        => $facturaId,
-                'tipo_documento_id' => $tipoId,
-                'nombre_archivo'    => $it['nombre_archivo'] ?? '',
-                'ruta_archivo'      => $it['ruta_archivo'] ?? '',
-                'mime_type'         => $it['mime_type'] ?? '',
-                'tamano_bytes'      => $it['tamano_bytes'] ?? 0,
-                'notas'             => $notas,
-                'subido_por'        => $userId
-            ]);
-
-            if ($newId > 0) { $insertados++; $ids[] = $newId; }
-        }
-
-        return ['insertados' => $insertados, 'ids' => $ids];
-    }
-
-
-    // Obtener documento por id (para saber ruta, factura, etc.)
-    public function getDocumentoPartidaById(int $idDocumento): ?array
-    {
-        $sql = "SELECT
-                d.id_documento,
-                d.factura_id,
-                d.ruta_archivo,
-                d.nombre_archivo
-                FROM op_partida_documentos d
-                WHERE d.id_documento = ?
-                LIMIT 1";
-
-        $row = $this->select($sql, [$idDocumento]);
-        return $row ?: null;
-    }
-
-    // Eliminar físicamente el registro de BD (DELETE)
-    public function eliminarDocumentoPartida(int $idDocumento): bool
-    {
-        $sql = "DELETE FROM op_partida_documentos WHERE id_documento = ? LIMIT 1";
-        return (bool)$this->save($sql, [$idDocumento]);
-    }
 
 
     //rutas
+    /*
 public function sugerirFacturas(string $term, int $limit = 10): array
 {
     $term  = trim((string)$term);
@@ -1050,6 +918,6 @@ public function sugerirCajaFerro(string $term, int $limit = 10): array
 
     return $rows;
 }
-
+*/
 
 }
