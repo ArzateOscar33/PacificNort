@@ -9,8 +9,9 @@
     "";
 
   // ===== Endpoints =====
-  const EP_SUGERIR_FACTURAS = "Operaciones_por_partida/sugerirFacturasRutas";
-  const EP_LISTAR_PRODUCTOS = "Operaciones_por_partida/listarProductosRutas";
+const EP_SUGERIR_FACTURAS = "Operaciones_por_partida/sugerirFacturasRutas";
+const EP_LISTAR_PRODUCTOS = "Operaciones_por_partida/listarProductosRutas";
+
 
   // ===== Refs DOM   =====
   const btnRefrescar = document.getElementById("partidas_transito_btnRefrescar");

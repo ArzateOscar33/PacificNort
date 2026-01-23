@@ -10,10 +10,10 @@
     "";
 
   // ===== Endpoints (Controller: Operaciones_por_partida) =====
-  const ENDPOINT_SUGERIR_FACTURAS = "Operaciones_por_partida/sugerirFacturasDocs";
-  const ENDPOINT_LISTAR_DOCS      = "Operaciones_por_partida/listarDocumentosFactura";
-  const ENDPOINT_TIPOS_DOC        = "Operaciones_por_partida/listarTiposDocumentoOPP";
-  const ENDPOINT_ELIMINAR_DOC = "Operaciones_por_partida/eliminarDocumentoFactura";
+  const ENDPOINT_SUGERIR_FACTURAS = "Operaciones_por_partida_documentos/sugerirFacturasDocs";
+  const ENDPOINT_LISTAR_DOCS      = "Operaciones_por_partida_documentos/listarDocumentosFactura";
+  const ENDPOINT_TIPOS_DOC        = "Operaciones_por_partida_documentos/listarTiposDocumentoOPP";
+  const ENDPOINT_ELIMINAR_DOC = "Operaciones_por_partida_documentos/eliminarDocumentoFactura";
 
   // TODO: cuando lo tengas:
   // const ENDPOINT_DESCARGAR_DOC = "Operaciones_por_partida/descargarDocumento";

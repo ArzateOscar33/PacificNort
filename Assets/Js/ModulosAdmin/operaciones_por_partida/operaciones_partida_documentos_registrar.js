@@ -9,8 +9,8 @@
     "";
 
   // ===== Endpoints (Controller: Operaciones_por_partida) =====
-  const ENDPOINT_TIPOS_DOC = "Operaciones_por_partida/listarTiposDocumentoOPP";
-  const ENDPOINT_REGISTRAR_DOCS = "Operaciones_por_partida/registrarDocumentosFactura";
+  const ENDPOINT_TIPOS_DOC = "Operaciones_por_partida_documentos/listarTiposDocumentoOPP";
+  const ENDPOINT_REGISTRAR_DOCS = "Operaciones_por_partida_documentos/registrarDocumentosFactura";
 
   // ===== Refs UI =====
   const inpFactura     = document.getElementById("partidas_docs_facturaInput");
