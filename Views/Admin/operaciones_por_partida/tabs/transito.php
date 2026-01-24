@@ -256,5 +256,6 @@
   </div>
 </div>
 
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js"></script>
+  <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_registrar.js">
 </script>

@@ -233,4 +233,57 @@ public function sugerirCiudadesRutas()
 }
 
 
+//alta
+
+// ===================== RUTAS: GUARDAR ENVIOS (MULTI-ROW) =====================
+public function guardarEnviosRutas()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok'=>false,'msg'=>'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $facturaId  = (int)($_POST['factura_id'] ?? 0);
+        $productoId = (int)($_POST['producto_id'] ?? 0);
+
+        $enviosRaw = $_POST['envios'] ?? '[]';
+        $envios = is_array($enviosRaw) ? $enviosRaw : json_decode((string)$enviosRaw, true);
+
+        if ($facturaId <= 0 || $productoId <= 0 || !is_array($envios) || count($envios) === 0) {
+            echo json_encode(['ok'=>false,'msg'=>'Datos inválidos (factura/producto/envíos).'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Normaliza llaves a lo que espera tu Model guardarEnviosProducto()
+        $norm = [];
+        foreach ($envios as $i => $r) {
+            $norm[] = [
+                'ciudad_id'    => (int)($r['destino_id'] ?? $r['ciudad_id'] ?? 0),
+                'fecha_envio'  => trim((string)($r['fecha_envio'] ?? '')),
+                'fisico_id'    => (int)($r['fisico_id'] ?? 0),
+                'fisico_texto' => trim((string)($r['fisico_txt'] ?? $r['fisico_texto'] ?? '')),
+                'cajas'        => (int)($r['cajas'] ?? 0),
+                'estatus'      => (int)($r['estatus'] ?? 1),
+                'nota'         => trim((string)($r['nota'] ?? '')),
+            ];
+        }
+
+        // Aquí se resuelve TODO: totales/enviadas/restantes, ciudad válida, fisico crear si no existe, inserts, etc.
+        $res = $this->model->guardarEnviosProducto($facturaId, $productoId, $norm);
+
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida_rutas/guardarEnviosRutas ERROR: " . $e->getMessage());
+        echo json_encode(['ok'=>false,'msg'=>'Ocurrió un error al guardar envíos.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+
+
 }

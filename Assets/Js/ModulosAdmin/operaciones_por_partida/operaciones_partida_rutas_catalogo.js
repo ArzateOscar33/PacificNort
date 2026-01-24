@@ -44,6 +44,12 @@ const EP_SUGERIR_CIUDADES = "Operaciones_por_partida_rutas/sugerirCiudadesRutas"
   const inpCajasEnv    = document.getElementById("partidas_transito_cajasEnviadas");
   const txtNotasEnv    = document.getElementById("partidas_transito_notasEnvio");
 
+
+  const btnAddRow    = document.getElementById("partidas_transito_btnAddRow");
+  const tbodyEnvios  = document.getElementById("partidas_transito_tbodyEnvios");
+
+
+
   // ===== Estado =====
   let debounceSugId = null;
   let debounceProdId = null;
@@ -564,6 +570,35 @@ function onCiudadPick(e) {
         productoDesc: desc,
         restantes: rest
       });
+          // Botón + Agregar renglón
+    if (btnAddRow) {
+      btnAddRow.addEventListener("click", function () {
+        addEnvioRow();
+      });
+    }
+
+    // Quitar renglón (delegación dentro del modal)
+    if (modalEnvioEl) {
+      modalEnvioEl.addEventListener("click", function (e) {
+        const btnRemove = e.target?.closest(".pt_btnRemoveRow");
+        if (!btnRemove) return;
+
+        const rowEl = btnRemove.closest(".partidas_transito_row");
+        if (!rowEl) return;
+
+        // evita dejar el modal sin renglones: si es el último, solo resetea
+        const rows = tbodyEnvios?.querySelectorAll(".partidas_transito_row") || [];
+        if (rows.length <= 1) {
+          resetRowInputs(rowEl);
+          return;
+        }
+
+        rowEl.remove();
+        reindexRows();
+      });
+    }
+
+
     });
 
     // Delegación dentro del modal: inputs y clicks de sugerencias de físicos
@@ -663,6 +698,79 @@ if (modalEnvioEl) {
       // Fallback por si bootstrap no está disponible por alguna razón
       console.error("No se pudo abrir el modal (bootstrap).", e);
     }
+  }
+
+
+    function getNextRowIndex() {
+    if (!tbodyEnvios) return 0;
+    const rows = tbodyEnvios.querySelectorAll(".partidas_transito_row");
+    if (!rows.length) return 0;
+
+    // toma el último data-index y suma 1
+    const last = rows[rows.length - 1];
+    const idx = parseInt(last.getAttribute("data-index") || "0", 10);
+    return isNaN(idx) ? rows.length : (idx + 1);
+  }
+
+  function resetRowInputs(rowEl) {
+    if (!rowEl) return;
+
+    rowEl.querySelectorAll("input, select, textarea").forEach((el) => {
+      if (el.classList.contains("pt_destino_id")) el.value = "";
+      else if (el.classList.contains("pt_fisico_id")) el.value = "";
+      else if (el.classList.contains("pt_destino_txt")) el.value = "";
+      else if (el.classList.contains("pt_fisico_txt")) el.value = "";
+      else if (el.classList.contains("pt_fecha_envio")) el.value = "";
+      else if (el.classList.contains("pt_cajas")) el.value = "";
+      else if (el.classList.contains("pt_nota")) el.value = "";
+      else if (el.classList.contains("pt_estatus")) el.value = "1"; // En camino (según tu HTML)
+      else {
+        // fallback seguro
+        if (el.tagName === "SELECT") el.selectedIndex = 0;
+        else el.value = "";
+      }
+    });
+
+    // oculta sugerencias si quedaron visibles
+    rowEl.querySelectorAll(".pt_fisico_sug, .pt_destino_sug").forEach((b) => {
+      b.innerHTML = "";
+      b.style.display = "none";
+    });
+  }
+
+  function reindexRows() {
+    if (!tbodyEnvios) return;
+    const rows = tbodyEnvios.querySelectorAll(".partidas_transito_row");
+    rows.forEach((row, i) => {
+      row.setAttribute("data-index", String(i));
+    });
+  }
+
+  function addEnvioRow() {
+    if (!tbodyEnvios) return;
+
+    const tpl = tbodyEnvios.querySelector(".partidas_transito_row");
+    if (!tpl) return;
+
+    const newRow = tpl.cloneNode(true);
+
+    // set data-index nuevo
+    const idx = getNextRowIndex();
+    newRow.setAttribute("data-index", String(idx));
+
+    // reset valores
+    resetRowInputs(newRow);
+
+    tbodyEnvios.appendChild(newRow);
+
+    // re-render iconos (trash) en la nueva fila
+    try {
+      if (window.feather) window.feather.replace();
+    } catch (_) {}
+
+    // (opcional) enfocar destino para mejorar UX
+    const firstDest = newRow.querySelector(".pt_destino_txt");
+    if (firstDest) firstDest.focus();
   }
 
   init();
