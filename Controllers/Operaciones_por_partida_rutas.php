@@ -246,34 +246,35 @@ public function guardarEnviosRutas()
             exit;
         }
 
-        $facturaId  = (int)($_POST['factura_id'] ?? 0);
-        $productoId = (int)($_POST['producto_id'] ?? 0);
+        // Leer JSON raw (porque tu JS manda application/json)
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) $payload = [];
 
-        $enviosRaw = $_POST['envios'] ?? '[]';
-        $envios = is_array($enviosRaw) ? $enviosRaw : json_decode((string)$enviosRaw, true);
+        $facturaId  = (int)($payload['factura_id'] ?? 0);
+        $productoId = (int)($payload['producto_id'] ?? 0);
+        $envios     = $payload['envios'] ?? [];
 
         if ($facturaId <= 0 || $productoId <= 0 || !is_array($envios) || count($envios) === 0) {
             echo json_encode(['ok'=>false,'msg'=>'Datos inválidos (factura/producto/envíos).'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        // Normaliza llaves a lo que espera tu Model guardarEnviosProducto()
+        // Normaliza llaves que te manda el JS
         $norm = [];
-        foreach ($envios as $i => $r) {
+        foreach ($envios as $r) {
             $norm[] = [
                 'ciudad_id'    => (int)($r['destino_id'] ?? $r['ciudad_id'] ?? 0),
                 'fecha_envio'  => trim((string)($r['fecha_envio'] ?? '')),
-                'fisico_id'    => (int)($r['fisico_id'] ?? 0),
+                'fisico_id'    => (int)($r['id_fisico'] ?? $r['fisico_id'] ?? 0),
                 'fisico_texto' => trim((string)($r['fisico_txt'] ?? $r['fisico_texto'] ?? '')),
-                'cajas'        => (int)($r['cajas'] ?? 0),
+                'cajas'        => (int)($r['cajas_enviadas'] ?? $r['cajas'] ?? 0),
                 'estatus'      => (int)($r['estatus'] ?? 1),
-                'nota'         => trim((string)($r['nota'] ?? '')),
+                'nota'         => trim((string)($r['notas'] ?? $r['nota'] ?? '')),
             ];
         }
 
-        // Aquí se resuelve TODO: totales/enviadas/restantes, ciudad válida, fisico crear si no existe, inserts, etc.
         $res = $this->model->guardarEnviosProducto($facturaId, $productoId, $norm);
-
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
         exit;
 
@@ -283,6 +284,7 @@ public function guardarEnviosRutas()
         exit;
     }
 }
+
 
 
 

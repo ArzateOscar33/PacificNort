@@ -102,52 +102,48 @@ class Operaciones_por_partida_rutasModel extends Query
     }
 
     // ===================== LISTAR ENVIOS (DETALLE) =====================
-    public function listarEnviosProducto(int $facturaId, int $productoId): array
-    {
-        $facturaId  = (int)$facturaId;
-        $productoId = (int)$productoId;
+public function listarEnviosProducto(int $facturaId, int $productoId): array
+{
+    $facturaId  = (int)$facturaId;
+    $productoId = (int)$productoId;
 
-        /*
-          Ajusta nombres reales de tu tabla op_partida_envios:
-          - e.destino (o ciudad_destino_id)
-          - e.fecha_envio
-          - e.caja_ferro (o id_fisico)
-          - e.cajas_enviadas
-        */
-        $sql = "SELECT
-                    e.id_envio,
-                    e.factura_id,
-                    e.producto_id,
-                    e.destino,
-                    e.fecha_envio,
-                    e.caja_ferro,
-                    e.cajas_enviadas,
-                    e.notas,
-                    e.estatus,
-                    e.creado_en
-                FROM op_partida_envios e
-                WHERE e.factura_id = ?
-                  AND e.producto_id = ?
-                ORDER BY e.fecha_envio DESC, e.id_envio DESC";
+    $sql = "SELECT
+                e.id_envio,
+                e.factura_id,
+                e.producto_id,
+                e.ciudad_destino_id,
+                c.nombre_ciudad AS destino,
+                e.id_fisico,
+                cf.numero_ferro AS ferro,
+                e.cajas_enviadas,
+                e.fecha_envio,
+                e.notas,
+                e.estatus,
+                e.creado_en
+            FROM op_partida_envios e
+            INNER JOIN ciudades c ON c.id_ciudad = e.ciudad_destino_id
+            INNER JOIN contenedores_fisicos cf ON cf.id_fisico = e.id_fisico
+            WHERE e.factura_id = ?
+              AND e.producto_id = ?
+            ORDER BY e.fecha_envio DESC, e.id_envio DESC";
 
-        $rows = $this->selectAll($sql, [$facturaId, $productoId]);
-        return ($rows === false) ? [] : $rows;
-    }
+    $rows = $this->selectAll($sql, [$facturaId, $productoId]);
+    return ($rows === false) ? [] : $rows;
+}
+
 
     // ===================== CIUDADES =====================
-    public function listarCiudadesActivas(): array
-    {
-        // AJUSTA tabla/campos según tu BD real
-        $sql = "SELECT
-                    c.id_ciudad,
-                    c.nombre
-                FROM ciudades c
-                WHERE c.estatus = 1
-                ORDER BY c.nombre ASC";
-
-        $rows = $this->selectAll($sql);
-        return ($rows === false || empty($rows)) ? [] : $rows;
-    }
+public function listarCiudadesActivas(): array
+{
+    $sql = "SELECT
+                c.id_ciudad,
+                c.nombre_ciudad
+            FROM ciudades c
+            WHERE c.estatus = 1
+            ORDER BY c.nombre_ciudad ASC";
+    $rows = $this->selectAll($sql);
+    return ($rows === false || empty($rows)) ? [] : $rows;
+}
 
     // =====================
     // SUGERIR CAJA/FERRO
@@ -398,10 +394,11 @@ public function guardarEnviosProducto(int $facturaId, int $productoId, array $en
     $inserted = 0;
     $ids = [];
 
-    $sqlIns = "INSERT INTO op_partida_envios
-                (factura_id, producto_id, id_ciudad_destino, fecha_envio, id_fisico, cajas_enviadas, notas, estatus)
-               VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?)";
+$sqlIns = "INSERT INTO op_partida_envios
+            (factura_id, producto_id, ciudad_destino_id, fecha_envio, id_fisico, cajas_enviadas, notas, estatus, creado_por)
+           VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
 
     foreach ($envios as $r) {
         $ciudadId = (int)($r['ciudad_id'] ?? 0);
@@ -411,6 +408,11 @@ public function guardarEnviosProducto(int $facturaId, int $productoId, array $en
         $cajas    = (int)($r['cajas'] ?? 0);
         $estatus  = (int)($r['estatus'] ?? 1);
         $nota     = trim((string)($r['nota'] ?? ''));
+        // fecha_envio en BD es DATETIME
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+    $fecha = $fecha . ' 00:00:00';
+}
+
 
         if ($ciudadId <= 0 || !$this->existeCiudadActiva($ciudadId)) {
             return ['ok'=>false,'msg'=>'Destino (ciudad) inválido o inactivo.','inserted'=>$inserted,'ids'=>$ids];
@@ -442,6 +444,7 @@ public function guardarEnviosProducto(int $facturaId, int $productoId, array $en
         if (mb_strlen($nota) > 255) {
             $nota = mb_substr($nota, 0, 255);
         }
+        $creadoPor = (int)($_SESSION['id_usuario'] ?? 0);
 
         $newId = $this->insertar($sqlIns, [
             $facturaId,
@@ -451,7 +454,9 @@ public function guardarEnviosProducto(int $facturaId, int $productoId, array $en
             $fisicoId,
             $cajas,
             $nota,
-            $estatus
+            $estatus,
+            $creadoPor ?: null
+            
         ]);
 
         if (!$newId) {

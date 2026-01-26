@@ -242,17 +242,10 @@ const EP_SUGERIR_CIUDADES = "Operaciones_por_partida_rutas/sugerirCiudadesRutas"
 
           <td><span class="fw-semibold">${esc(total)}</span></td>
 
-          <td class="text-start">${destinosHtml}</td>
+          <td class="text-start">${destinosHtml} </td>
 
-          <td>
-            <span class="text-muted small">—</span>
-          </td>
+         
 
-          <td>
-            <span class="badge ${rest > 0 ? "bg-success text-white" : "bg-secondary text-white"}">
-              ${esc(rest)}
-            </span>
-          </td>
 
           <td>
             <button type="button"

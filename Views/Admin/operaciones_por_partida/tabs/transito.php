@@ -25,15 +25,9 @@
         <!-- FACTURA: INPUT + SUGERENCIAS (MISMO PATRÓN QUE NAVIERAS) -->
         <div class="position-relative" style="max-width:220px; width:100%;">
           <input type="hidden" id="partidas_transito_facturaId" value="">
-          <input
-            type="text"
-            id="partidas_transito_buscarFactura"
-            class="form-control"
-            placeholder="Buscar factura..."
+          <input type="text" id="partidas_transito_buscarFactura" class="form-control" placeholder="Buscar factura..."
             autocomplete="off">
-          <div
-            id="partidas_transito_sugerenciasFacturas"
-            class="list-group position-absolute w-100 z-3"
+          <div id="partidas_transito_sugerenciasFacturas" class="list-group position-absolute w-100 z-3"
             style="z-index:999;">
           </div>
         </div>
@@ -43,7 +37,6 @@
         <input id="partidas_transito_buscarProducto" class="form-control" style="max-width:320px;"
           placeholder="Buscar producto por descripción / UPC / marca" autocomplete="off">
 
-        
       </div>
 
       <!-- ===================== TABLA DE PRODUCTOS DE LA FACTURA ===================== -->
@@ -58,10 +51,7 @@
               <th style="width:120px;">Cajas (Total)</th>
 
               <!-- REEMPLAZA DESTINOS FIJOS POR 1 COLUMNA -->
-              <th style="min-width:420px;">Destinos / Envíos</th>
-              <th style="width:130px;">Caja/Ferro</th>
-
-              <th style="width:150px;">Restantes (Bodega)</th>
+              <th style="min-width:420px;">Enviados / Pendientes de Envio</th> 
               <th style="width:130px;">Acción</th>
             </tr>
           </thead>
@@ -104,8 +94,10 @@
           <div class="alert alert-light border mb-3">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
               <div class="small">
-                <div><span class="text-muted">Factura:</span> <span class="fw-semibold" id="partidas_transito_lblFactura">—</span></div>
-                <div><span class="text-muted">Producto:</span> <span class="fw-semibold" id="partidas_transito_lblProducto">—</span></div>
+                <div><span class="text-muted">Factura:</span> <span class="fw-semibold"
+                    id="partidas_transito_lblFactura">—</span></div>
+                <div><span class="text-muted">Producto:</span> <span class="fw-semibold"
+                    id="partidas_transito_lblProducto">—</span></div>
               </div>
 
               <div class="text-end">
@@ -120,10 +112,11 @@
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="fw-semibold">
               Detalle de Envíos
-               
+
             </div>
 
-            <button type="button" class="btn btn-success btn-sm" id="partidas_transito_btnAddRow" title="Agregar renglón">
+            <button type="button" class="btn btn-success btn-sm" id="partidas_transito_btnAddRow"
+              title="Agregar renglón">
               <i data-feather="plus" class="me-1"></i> Agregar
             </button>
           </div>
@@ -140,7 +133,7 @@
                   <th style="width:160px;">Estatus</th>
                   <th style="min-width:220px;" class="text-start">Notas</th>
 
-                  <th style="width:90px;">Quitar</th>
+                  <th style="width:90px;">Acciones</th>
                 </tr>
               </thead>
 
@@ -151,17 +144,14 @@
                   <td class="text-start">
                     <input type="hidden" class="pt_destino_id" value="">
                     <div class="position-relative">
-                      <input type="text"
-                        class="form-control form-control-sm pt_destino_txt"
-                        placeholder="Escribe ciudad... (Ej. TIJ)"
-                        autocomplete="off"
-                        required>
+                      <input type="text" class="form-control form-control-sm pt_destino_txt"
+                        placeholder="Escribe ciudad... (Ej. TIJ)" autocomplete="off" required>
 
                       <div class="list-group position-absolute w-100 z-3 pt_destino_sug"
                         style="z-index:999; display:none;">
                         <!-- sugerencias aquí -->
                       </div>
-                    </div> 
+                    </div>
                   </td>
 
                   <!-- FECHA -->
@@ -173,47 +163,38 @@
                   <td class="text-start">
                     <input type="hidden" class="pt_fisico_id" value="">
                     <div class="position-relative">
-                      <input type="text"
-                        class="form-control form-control-sm pt_fisico_txt"
-                        placeholder="Buscar Caja/Ferro (Ej. FO-22 / Ferro 17)"
-                        autocomplete="off"
-                        required>
+                      <input type="text" class="form-control form-control-sm pt_fisico_txt"
+                        placeholder="Buscar Caja/Ferro (Ej. FO-22 / Ferro 17)" autocomplete="off" required>
 
                       <div class="list-group position-absolute w-100 z-3 pt_fisico_sug"
                         style="z-index:999; display:none;">
                         <!-- sugerencias aquí -->
                       </div>
                     </div>
-                    
+
                   </td>
 
                   <!-- CAJAS -->
                   <td class="text-center">
                     <div class="input-group input-group-sm">
-                      <input type="number" min="1" step="1"
-                        class="form-control pt_cajas"
-                        placeholder="0"
-                        required>
-                   
+                      <input type="number" min="1" step="1" class="form-control pt_cajas" placeholder="0" required>
+
                     </div>
-                     
+
                   </td>
 
                   <!-- ESTATUS (sin BD) -->
                   <td class="text-center">
-<select class="form-select form-control pt_estatus" required>
-  <option value="1" selected>En camino</option>
-  <option value="2">Entregado</option>
-</select>
+                    <select class="form-select form-control pt_estatus" required>
+                      <option value="1" selected>En camino</option>
+                      <option value="2">Entregado</option>
+                    </select>
                   </td>
-        <!-- NOTAS POR RENGLÓN -->
-<td class="text-start">
-  <input type="text"
-    class="form-control form-control-sm pt_nota"
-    placeholder="Nota (opcional)"
-    maxlength="255">
-</td>
-
+                  <!-- NOTAS POR RENGLÓN -->
+                  <td class="text-start">
+                    <input type="text" class="form-control form-control-sm pt_nota" placeholder="Nota (opcional)"
+                      maxlength="255">
+                  </td>
 
                   <td class="text-center">
                     <button type="button" class="btn btn-outline-danger btn-sm pt_btnRemoveRow" title="Quitar renglón">
@@ -237,8 +218,6 @@
             </div>
           </div>
 
- 
-
         </form>
       </div>
 
@@ -256,6 +235,7 @@
   </div>
 </div>
 
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js"></script>
-  <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_registrar.js">
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_catalogo.js">
+</script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_registrar.js">
 </script>
