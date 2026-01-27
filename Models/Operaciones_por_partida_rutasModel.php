@@ -125,6 +125,7 @@ public function listarEnviosProducto(int $facturaId, int $productoId): array
             INNER JOIN contenedores_fisicos cf ON cf.id_fisico = e.id_fisico
             WHERE e.factura_id = ?
               AND e.producto_id = ?
+              AND e.estatus IN (1,2)
             ORDER BY e.fecha_envio DESC, e.id_envio DESC";
 
     $rows = $this->selectAll($sql, [$facturaId, $productoId]);
@@ -470,5 +471,204 @@ if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
     return ['ok'=>true,'msg'=>'Envíos guardados correctamente.','inserted'=>$inserted,'ids'=>$ids];
 }
 
-    
+    //edicion y baja
+    // =====================
+// ENVIOS: OBTENER 1
+// =====================
+public function getEnvioById(int $envioId): ?array
+{
+    $sql = "SELECT
+                id_envio, factura_id, producto_id,
+                ciudad_destino_id, fecha_envio, id_fisico,
+                cajas_enviadas, notas, estatus
+            FROM op_partida_envios
+            WHERE id_envio = ?
+            LIMIT 1";
+    $row = $this->select($sql, [$envioId]);
+    return $row ?: null;
+}
+
+public function envioPerteneceProducto(int $envioId, int $facturaId, int $productoId): bool
+{
+    $sql = "SELECT id_envio
+            FROM op_partida_envios
+            WHERE id_envio = ?
+              AND factura_id = ?
+              AND producto_id = ?
+            LIMIT 1";
+    $row = $this->select($sql, [$envioId, $facturaId, $productoId]);
+    return !empty($row);
+}
+public function bajaEnvio(int $envioId, int $facturaId, int $productoId): array
+{
+    $envioId   = (int)$envioId;
+    $facturaId = (int)$facturaId;
+    $productoId= (int)$productoId;
+
+    if ($envioId <= 0 || $facturaId <= 0 || $productoId <= 0) {
+        return ['ok'=>false,'msg'=>'Datos inválidos.'];
+    }
+
+    if (!$this->envioPerteneceProducto($envioId, $facturaId, $productoId)) {
+        return ['ok'=>false,'msg'=>'El envío no pertenece al producto/factura.'];
+    }
+
+    // Baja lógica: estatus=0 (y como tu suma cuenta IN(1,2), ya no afecta enviados)
+    $sql = "UPDATE op_partida_envios
+            SET estatus = 0
+            WHERE id_envio = ?
+              AND factura_id = ?
+              AND producto_id = ?";
+    $ok = $this->save($sql, [$envioId, $facturaId, $productoId]);
+
+    if (!$ok) return ['ok'=>false,'msg'=>'No se pudo dar de baja el envío.'];
+    return ['ok'=>true,'msg'=>'Envío dado de baja correctamente.'];
+}
+
+
+public function guardarEnviosProductoUpsert(int $facturaId, int $productoId, array $envios): array
+{
+    $facturaId  = (int)$facturaId;
+    $productoId = (int)$productoId;
+
+    if ($facturaId <= 0 || $productoId <= 0) {
+        return ['ok'=>false,'msg'=>'Factura/Producto inválidos.'];
+    }
+    if (!$this->existeFacturaActiva($facturaId)) {
+        return ['ok'=>false,'msg'=>'La factura no existe o está inactiva.'];
+    }
+    if (!$this->existeProductoEnFactura($facturaId, $productoId)) {
+        return ['ok'=>false,'msg'=>'El producto no pertenece a la factura o está inactivo.'];
+    }
+    if (!is_array($envios) || count($envios) === 0) {
+        return ['ok'=>false,'msg'=>'No hay renglones para guardar.'];
+    }
+
+    // Totales
+    $totales   = $this->getCajasTotalesProducto($facturaId, $productoId);
+    $enviadas0 = $this->getCajasEnviadasProducto($facturaId, $productoId);
+
+    // Pre-cargar envíos existentes involucrados (para editar)
+    $editIds = [];
+    foreach ($envios as $r) {
+        $id = (int)($r['id_envio'] ?? 0);
+        if ($id > 0) $editIds[$id] = true;
+    }
+
+    $existMap = []; // id_envio => row
+    if (!empty($editIds)) {
+        foreach (array_keys($editIds) as $eid) {
+            $row = $this->getEnvioById((int)$eid);
+            if (!$row) return ['ok'=>false,'msg'=>"No existe el envío ID $eid."];
+            if ((int)$row['factura_id'] !== $facturaId || (int)$row['producto_id'] !== $productoId) {
+                return ['ok'=>false,'msg'=>"El envío ID $eid no pertenece a este producto/factura."];
+            }
+            $existMap[(int)$eid] = $row;
+        }
+    }
+
+    // Calcular “enviadas resultantes” = enviadas0 - originales_edit + nuevas_edit + nuevos_insert
+    $enviadasResult = $enviadas0;
+
+    foreach ($envios as $r) {
+        $eid     = (int)($r['id_envio'] ?? 0);
+        $cajasN  = (int)($r['cajas'] ?? 0);
+        $estatusN= (int)($r['estatus'] ?? 1);
+        if ($estatusN !== 1 && $estatusN !== 2) $estatusN = 1;
+        if ($cajasN < 0) $cajasN = 0;
+
+        if ($eid > 0) {
+            $orig = $existMap[$eid];
+            $cajasO   = (int)($orig['cajas_enviadas'] ?? 0);
+            $estatusO = (int)($orig['estatus'] ?? 1);
+
+            if (in_array($estatusO, [1,2], true)) $enviadasResult -= $cajasO;
+            if (in_array($estatusN, [1,2], true)) $enviadasResult += $cajasN;
+        } else {
+            if (in_array($estatusN, [1,2], true)) $enviadasResult += $cajasN;
+        }
+    }
+
+    if ($enviadasResult > $totales) {
+        $rest = max(0, $totales - $enviadas0);
+        return ['ok'=>false,'msg'=>"Excedes disponibles. Disponibles actuales: $rest. Revisa cajas editadas/nuevas."];
+    }
+
+    // UPSERT
+    $insSql = "INSERT INTO op_partida_envios
+                (factura_id, producto_id, ciudad_destino_id, fecha_envio, id_fisico, cajas_enviadas, notas, estatus, creado_por)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    $updSql = "UPDATE op_partida_envios
+               SET ciudad_destino_id = ?,
+                   fecha_envio       = ?,
+                   id_fisico         = ?,
+                   cajas_enviadas    = ?,
+                   notas             = ?,
+                   estatus           = ?
+               WHERE id_envio = ?
+                 AND factura_id = ?
+                 AND producto_id = ?";
+
+    $inserted = 0;
+    $updated  = 0;
+    $idsIns   = [];
+    $idsUpd   = [];
+
+    $creadoPor = (int)($_SESSION['id_usuario'] ?? 0);
+
+    foreach ($envios as $r) {
+        $eid      = (int)($r['id_envio'] ?? 0);
+        $ciudadId = (int)($r['ciudad_id'] ?? 0);
+        $fecha    = trim((string)($r['fecha_envio'] ?? ''));
+        $fisicoId = (int)($r['fisico_id'] ?? 0);
+        $fisicoTxt= trim((string)($r['fisico_texto'] ?? ''));
+        $cajas    = (int)($r['cajas'] ?? 0);
+        $estatus  = (int)($r['estatus'] ?? 1);
+        $nota     = trim((string)($r['nota'] ?? ''));
+
+        if ($estatus !== 1 && $estatus !== 2) $estatus = 1;
+
+        if ($ciudadId <= 0 || !$this->existeCiudadActiva($ciudadId)) {
+            return ['ok'=>false,'msg'=>'Destino (ciudad) inválido o inactivo.'];
+        }
+        if ($fecha === '') return ['ok'=>false,'msg'=>'Fecha de envío requerida.'];
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) $fecha .= ' 00:00:00';
+        if ($cajas <= 0) return ['ok'=>false,'msg'=>'Cajas a enviar inválidas.'];
+
+        if ($fisicoId <= 0 && $fisicoTxt !== '') {
+            $fisicoId = $this->obtenerOCrearFisicoPorNumero($fisicoTxt);
+        }
+        if ($fisicoId <= 0) return ['ok'=>false,'msg'=>'Caja/Ferro inválido.'];
+
+        if (mb_strlen($nota) > 255) $nota = mb_substr($nota, 0, 255);
+
+        if ($eid > 0) {
+            $ok = $this->save($updSql, [
+                $ciudadId, $fecha, $fisicoId, $cajas, $nota, $estatus,
+                $eid, $facturaId, $productoId
+            ]);
+            if (!$ok) return ['ok'=>false,'msg'=>"No se pudo actualizar el envío ID $eid."];
+            $updated++;
+            $idsUpd[] = $eid;
+        } else {
+            $newId = $this->insertar($insSql, [
+                $facturaId, $productoId, $ciudadId, $fecha, $fisicoId, $cajas, $nota, $estatus, ($creadoPor ?: null)
+            ]);
+            if (!$newId) return ['ok'=>false,'msg'=>'No se pudo insertar uno de los envíos.'];
+            $inserted++;
+            $idsIns[] = (int)$newId;
+        }
+    }
+
+    return [
+        'ok'=>true,
+        'msg'=>'Envíos guardados correctamente.',
+        'inserted'=>$inserted,
+        'updated'=>$updated,
+        'ids_inserted'=>$idsIns,
+        'ids_updated'=>$idsUpd
+    ];
+}
+
 }

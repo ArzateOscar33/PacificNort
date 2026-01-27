@@ -139,7 +139,7 @@
 
               <tbody id="partidas_transito_tbodyEnvios">
                 <!-- Row template (1 por defecto) -->
-                <tr class="partidas_transito_row" data-index="0">
+                <tr class="partidas_transito_row" data-index="0" data-envio-id="0">
                   <!-- DESTINO con sugerencias -->
                   <td class="text-start">
                     <input type="hidden" class="pt_destino_id" value="">

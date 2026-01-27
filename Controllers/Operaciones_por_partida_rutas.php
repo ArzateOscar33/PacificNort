@@ -261,22 +261,23 @@ public function guardarEnviosRutas()
         }
 
         // Normaliza llaves que te manda el JS
-        $norm = [];
-        foreach ($envios as $r) {
-            $norm[] = [
-                'ciudad_id'    => (int)($r['destino_id'] ?? $r['ciudad_id'] ?? 0),
-                'fecha_envio'  => trim((string)($r['fecha_envio'] ?? '')),
-                'fisico_id'    => (int)($r['id_fisico'] ?? $r['fisico_id'] ?? 0),
-                'fisico_texto' => trim((string)($r['fisico_txt'] ?? $r['fisico_texto'] ?? '')),
-                'cajas'        => (int)($r['cajas_enviadas'] ?? $r['cajas'] ?? 0),
-                'estatus'      => (int)($r['estatus'] ?? 1),
-                'nota'         => trim((string)($r['notas'] ?? $r['nota'] ?? '')),
-            ];
-        }
+$norm = [];
+foreach ($envios as $r) {
+    $norm[] = [
+        'id_envio'     => (int)($r['id_envio'] ?? 0),
+        'ciudad_id'    => (int)($r['destino_id'] ?? $r['ciudad_id'] ?? 0),
+        'fecha_envio'  => trim((string)($r['fecha_envio'] ?? '')),
+        'fisico_id'    => (int)($r['id_fisico'] ?? $r['fisico_id'] ?? 0),
+        'fisico_texto' => trim((string)($r['fisico_txt'] ?? $r['fisico_texto'] ?? '')),
+        'cajas'        => (int)($r['cajas_enviadas'] ?? $r['cajas'] ?? 0),
+        'estatus'      => (int)($r['estatus'] ?? 1),
+        'nota'         => trim((string)($r['notas'] ?? $r['nota'] ?? '')),
+    ];
+}
 
-        $res = $this->model->guardarEnviosProducto($facturaId, $productoId, $norm);
-        echo json_encode($res, JSON_UNESCAPED_UNICODE);
-        exit;
+$res = $this->model->guardarEnviosProductoUpsert($facturaId, $productoId, $norm);
+echo json_encode($res, JSON_UNESCAPED_UNICODE);
+exit;
 
     } catch (Throwable $e) {
         error_log("Operaciones_por_partida_rutas/guardarEnviosRutas ERROR: " . $e->getMessage());
@@ -284,8 +285,36 @@ public function guardarEnviosRutas()
         exit;
     }
 }
+//baja 
 
+public function bajaEnvioRutas()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok'=>false,'msg'=>'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $raw = file_get_contents('php://input');
+        $p = json_decode($raw, true);
+        if (!is_array($p)) $p = [];
+
+        $envioId   = (int)($p['id_envio'] ?? 0);
+        $facturaId = (int)($p['factura_id'] ?? 0);
+        $productoId= (int)($p['producto_id'] ?? 0);
+
+        $res = $this->model->bajaEnvio($envioId, $facturaId, $productoId);
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        error_log("Operaciones_por_partida_rutas/bajaEnvioRutas ERROR: ".$e->getMessage());
+        echo json_encode(['ok'=>false,'msg'=>'Ocurrió un error al dar de baja el envío.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
 
 
 }
