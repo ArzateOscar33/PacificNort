@@ -9,25 +9,39 @@
     "";
 
   const EP_GUARDAR_ENVIOS = "Operaciones_por_partida_rutas/guardarEnviosRutas";
-  const EP_LISTAR_ENVIOS  = "Operaciones_por_partida_rutas/listarEnviosProductoRutas";
+  const EP_LISTAR_ENVIOS =
+    "Operaciones_por_partida_rutas/listarEnviosProductoRutas";
 
   // ===== Refs DOM (Modal) =====
   const modalEnvioEl = document.getElementById("modalPartidasTransitoEnvio");
-  const btnGuardar   = document.getElementById("partidas_transito_btnGuardarEnvio");
+  const btnGuardar = document.getElementById(
+    "partidas_transito_btnGuardarEnvio",
+  );
 
   const hidProductoId = document.getElementById("partidas_transito_idProducto");
   const hidFacturaId2 = document.getElementById("partidas_transito_factura");
 
-  const badgeDisponibles = document.getElementById("partidas_transito_badgeDisponibles");
-  const hidDisponibles   = document.getElementById("partidas_transito_cajasDisponibles");
+  const badgeDisponibles = document.getElementById(
+    "partidas_transito_badgeDisponibles",
+  );
+  const hidDisponibles = document.getElementById(
+    "partidas_transito_cajasDisponibles",
+  );
 
-  const lblTotalAsignado = document.getElementById("partidas_transito_lblTotalAsignado");
-  const lblRestantes     = document.getElementById("partidas_transito_lblRestantes");
+  const lblTotalAsignado = document.getElementById(
+    "partidas_transito_lblTotalAsignado",
+  );
+  const lblRestantes = document.getElementById(
+    "partidas_transito_lblRestantes",
+  );
 
   const tbodyEnvios = document.getElementById("partidas_transito_tbodyEnvios");
+  const btnAddRow = document.getElementById("partidas_transito_btnAddRow");
 
   // Refrescar tabla de productos (lo usa tu catálogo)
-  const btnRefrescar = document.getElementById("partidas_transito_btnRefrescar");
+  const btnRefrescar = document.getElementById(
+    "partidas_transito_btnRefrescar",
+  );
 
   let xhrGuardar = null;
 
@@ -49,15 +63,23 @@
   }
 
   function safeFire(opts) {
-    if (typeof Swal !== "undefined" && Swal && typeof Swal.fire === "function") {
+    if (
+      typeof Swal !== "undefined" &&
+      Swal &&
+      typeof Swal.fire === "function"
+    ) {
       return Swal.fire(opts);
     }
-    alert((opts.title ? opts.title + "\n" : "") + (opts.text || opts.html || ""));
+    alert(
+      (opts.title ? opts.title + "\n" : "") + (opts.text || opts.html || ""),
+    );
     return Promise.resolve();
   }
 
   function abortXHR(x) {
-    try { if (x && x.readyState !== 4) x.abort(); } catch (_) {}
+    try {
+      if (x && x.readyState !== 4) x.abort();
+    } catch (_) {}
   }
 
   function buildUrl(ep) {
@@ -77,7 +99,9 @@
   }
 
   function getRows() {
-    return Array.from(tbodyEnvios?.querySelectorAll(".partidas_transito_row") || []);
+    return Array.from(
+      tbodyEnvios?.querySelectorAll(".partidas_transito_row") || [],
+    );
   }
 
   // Solo suma CAJAS de renglones NUEVOS (no existentes)
@@ -101,21 +125,62 @@
     if (lblRestantes) lblRestantes.textContent = String(restantes);
   }
 
+  function reindexRows() {
+    const rows = getRows();
+    rows.forEach((row, i) => row.setAttribute("data-index", String(i)));
+  }
+
+  function addEnvioRow() {
+    if (!tbodyEnvios) return;
+
+    // Crea un renglón NUEVO usando tu plantilla (no existente)
+    const html = rowHtmlBase({
+      envioId: 0,
+      destinoId: "",
+      destinoTxt: "",
+      fecha: "",
+      fisicoId: "",
+      fisicoTxt: "",
+      cajas: "",
+      estatus: 1,
+      nota: "",
+      esExistente: false,
+    });
+
+    tbodyEnvios.insertAdjacentHTML("beforeend", html);
+
+    reindexRows();
+
+    // Re-render feather (para el ícono trash del nuevo row)
+    try {
+      if (typeof feather !== "undefined") feather.replace();
+    } catch (_) {}
+
+    // UX: enfocar el destino del renglón recién agregado
+    const rows = getRows();
+    const last = rows[rows.length - 1];
+    const inp = last?.querySelector(".pt_destino_txt");
+    if (inp) inp.focus();
+
+    // Recalcular resumen (por si luego empiezan a capturar)
+    updateResumenUI();
+  }
+
   // =========================
   // Plantillas de renglón
   // =========================
   function rowHtmlBase(data) {
     // data: { envioId, destinoId, destinoTxt, fecha, fisicoId, fisicoTxt, cajas, estatus, nota, esExistente }
-    const envioId    = nint(data.envioId);
-    const destinoId  = nint(data.destinoId);
-    const fisicoId   = nint(data.fisicoId);
-    const cajas      = data.cajas !== undefined ? nint(data.cajas) : "";
-    const estatus    = nint(data.estatus) || 1;
+    const envioId = nint(data.envioId);
+    const destinoId = nint(data.destinoId);
+    const fisicoId = nint(data.fisicoId);
+    const cajas = data.cajas !== undefined ? nint(data.cajas) : "";
+    const estatus = nint(data.estatus) || 1;
 
     const destinoTxt = escHtml(data.destinoTxt || "");
-    const fisicoTxt  = escHtml(data.fisicoTxt || "");
-    const fecha      = escHtml((data.fecha || "").toString().slice(0, 10));
-    const nota       = escHtml(data.nota || "");
+    const fisicoTxt = escHtml(data.fisicoTxt || "");
+    const fecha = escHtml((data.fecha || "").toString().slice(0, 10));
+    const nota = escHtml(data.nota || "");
 
     const esExistente = !!data.esExistente;
 
@@ -222,7 +287,7 @@
         cajas: e.cajas_enviadas,
         estatus: e.estatus,
         nota: e.notas,
-        esExistente: true
+        esExistente: true,
       });
     });
 
@@ -237,17 +302,22 @@
       cajas: "",
       estatus: 1,
       nota: "",
-      esExistente: false
+      esExistente: false,
     });
 
     tbodyEnvios.innerHTML = html;
 
     // Feather refresh
-    try { if (typeof feather !== "undefined") feather.replace(); } catch (_) {}
+    try {
+      if (typeof feather !== "undefined") feather.replace();
+    } catch (_) {}
+
+    reindexRows();
+    updateResumenUI();
   }
 
   function listarEnviosExistentesModal() {
-    const facturaId  = nint(hidFacturaId2?.value);
+    const facturaId = nint(hidFacturaId2?.value);
     const productoId = nint(hidProductoId?.value);
 
     if (facturaId <= 0 || productoId <= 0) {
@@ -256,9 +326,12 @@
       return;
     }
 
-    const url = buildUrl(EP_LISTAR_ENVIOS) +
-      "?factura_id=" + encodeURIComponent(facturaId) +
-      "&producto_id=" + encodeURIComponent(productoId);
+    const url =
+      buildUrl(EP_LISTAR_ENVIOS) +
+      "?factura_id=" +
+      encodeURIComponent(facturaId) +
+      "&producto_id=" +
+      encodeURIComponent(productoId);
 
     const xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
@@ -272,7 +345,9 @@
       }
 
       let json = null;
-      try { json = JSON.parse(xhr.responseText || "{}"); } catch (_) {}
+      try {
+        json = JSON.parse(xhr.responseText || "{}");
+      } catch (_) {}
 
       if (!json || json.ok !== true) {
         renderTablaEnviosMixta([]);
@@ -290,11 +365,13 @@
   // Guardar: SOLO NUEVOS
   // =========================
   function collectPayloadOrThrow() {
-    const facturaId  = nint(hidFacturaId2?.value);
+    const facturaId = nint(hidFacturaId2?.value);
     const productoId = nint(hidProductoId?.value);
 
     if (facturaId <= 0 || productoId <= 0) {
-      throw new Error("Factura/Producto inválidos. Abre el modal desde un producto válido.");
+      throw new Error(
+        "Factura/Producto inválidos. Abre el modal desde un producto válido.",
+      );
     }
 
     const envios = [];
@@ -306,26 +383,44 @@
       if (envioId > 0) return; // EXISTENTE: no se manda a guardar
 
       const destinoId = nint(row.querySelector(".pt_destino_id")?.value);
-      const destinoTxt = String(row.querySelector(".pt_destino_txt")?.value || "").trim();
+      const destinoTxt = String(
+        row.querySelector(".pt_destino_txt")?.value || "",
+      ).trim();
 
-      const fecha = String(row.querySelector(".pt_fecha_envio")?.value || "").trim();
+      const fecha = String(
+        row.querySelector(".pt_fecha_envio")?.value || "",
+      ).trim();
 
       const fisicoId = nint(row.querySelector(".pt_fisico_id")?.value);
-      const fisicoTxt = String(row.querySelector(".pt_fisico_txt")?.value || "").trim();
+      const fisicoTxt = String(
+        row.querySelector(".pt_fisico_txt")?.value || "",
+      ).trim();
 
       const cajas = nint(row.querySelector(".pt_cajas")?.value);
       const estatus = nint(row.querySelector(".pt_estatus")?.value) || 1;
       const nota = String(row.querySelector(".pt_nota")?.value || "").trim();
 
       const rowIsBlank =
-        !destinoId && !destinoTxt && !fecha && !fisicoId && !fisicoTxt && !cajas && !nota;
+        !destinoId &&
+        !destinoTxt &&
+        !fecha &&
+        !fisicoId &&
+        !fisicoTxt &&
+        !cajas &&
+        !nota;
 
       if (rowIsBlank) return;
 
-      if (destinoId <= 0) throw new Error(`Renglón #${idx + 1}: selecciona un destino (ciudad) de las sugerencias.`);
-      if (!fecha) throw new Error(`Renglón #${idx + 1}: fecha de envío requerida.`);
-      if (cajas <= 0) throw new Error(`Renglón #${idx + 1}: cajas a enviar inválidas.`);
-      if (fisicoId <= 0 && !fisicoTxt) throw new Error(`Renglón #${idx + 1}: Caja/Ferro requerido.`);
+      if (destinoId <= 0)
+        throw new Error(
+          `Renglón #${idx + 1}: selecciona un destino (ciudad) de las sugerencias.`,
+        );
+      if (!fecha)
+        throw new Error(`Renglón #${idx + 1}: fecha de envío requerida.`);
+      if (cajas <= 0)
+        throw new Error(`Renglón #${idx + 1}: cajas a enviar inválidas.`);
+      if (fisicoId <= 0 && !fisicoTxt)
+        throw new Error(`Renglón #${idx + 1}: Caja/Ferro requerido.`);
 
       envios.push({
         destino_id: destinoId,
@@ -334,7 +429,7 @@
         fisico_txt: fisicoTxt,
         cajas: cajas,
         estatus: estatus === 2 ? 2 : 1,
-        notas: nota
+        notas: nota,
       });
     });
 
@@ -346,7 +441,9 @@
     const totalNuevo = envios.reduce((a, r) => a + nint(r.cajas), 0);
 
     if (totalNuevo > disponibles) {
-      throw new Error(`No puedes enviar ${totalNuevo} cajas. Disponibles: ${disponibles}.`);
+      throw new Error(
+        `No puedes enviar ${totalNuevo} cajas. Disponibles: ${disponibles}.`,
+      );
     }
 
     return { factura_id: facturaId, producto_id: productoId, envios };
@@ -366,7 +463,10 @@
 
     const url = buildUrl(EP_GUARDAR_ENVIOS);
     xhrGuardar.open("POST", url, true);
-    xhrGuardar.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+    xhrGuardar.setRequestHeader(
+      "Content-Type",
+      "application/json; charset=utf-8",
+    );
 
     const oldHtml = btnGuardar ? btnGuardar.innerHTML : "";
     if (btnGuardar) {
@@ -383,26 +483,39 @@
       }
 
       if (xhrGuardar.status < 200 || xhrGuardar.status >= 300) {
-        safeFire({ icon: "error", title: "Error", text: "No se pudo guardar (HTTP " + xhrGuardar.status + ")." });
+        safeFire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo guardar (HTTP " + xhrGuardar.status + ").",
+        });
         return;
       }
 
       let json = null;
-      try { json = JSON.parse(xhrGuardar.responseText || "{}"); } catch (_) {}
+      try {
+        json = JSON.parse(xhrGuardar.responseText || "{}");
+      } catch (_) {}
 
       if (!json || json.ok !== true) {
-        safeFire({ icon: "warning", title: "No se guardó", text: (json && json.msg) ? json.msg : "Respuesta inválida." });
+        safeFire({
+          icon: "warning",
+          title: "No se guardó",
+          text: json && json.msg ? json.msg : "Respuesta inválida.",
+        });
         return;
       }
 
-      safeFire({ icon: "success", title: "Guardado", text: json.msg || "Envíos guardados correctamente." })
-        .then(() => {
-          // Refrescar: vuelve a listar existentes (ya incluye lo nuevo) y deja renglón vacío
-          listarEnviosExistentesModal();
+      safeFire({
+        icon: "success",
+        title: "Guardado",
+        text: json.msg || "Envíos guardados correctamente.",
+      }).then(() => {
+        // Refrescar: vuelve a listar existentes (ya incluye lo nuevo) y deja renglón vacío
+        listarEnviosExistentesModal();
 
-          // refresca tabla de productos
-          if (btnRefrescar) btnRefrescar.click();
-        });
+        // refresca tabla de productos
+        if (btnRefrescar) btnRefrescar.click();
+      });
     };
 
     xhrGuardar.send(JSON.stringify(payload));
@@ -429,23 +542,45 @@
       if (t.classList.contains("pt_cajas")) updateResumenUI();
     });
 
-    modalEnvioEl.addEventListener("click", function (e) {
-      const btnRemove = e.target?.closest(".pt_btnRemoveRow");
-      if (btnRemove) {
-        const tr = btnRemove.closest("tr");
-        if (tr) tr.remove();
-        updateResumenUI();
-        return;
-      }
+modalEnvioEl.addEventListener("click", function (e) {
+  const btnRemove = e.target?.closest(".pt_btnRemoveRow");
+  if (btnRemove) {
+    const tr = btnRemove.closest("tr");
+    if (!tr) return;
 
-      // (Opcional por ahora) handlers de editar/baja:
-      // const btnEdit = e.target?.closest(".pt_btnEditarEnvio");
-      // const btnBaja = e.target?.closest(".pt_btnBajaEnvio");
-      // aquí después conectamos a endpoints de update/baja.
-    });
+    // ✅ SOLO aplica a renglones NUEVOS (envio-id = 0)
+    const envioId = nint(tr.getAttribute("data-envio-id"));
+    if (envioId > 0) return; // existente -> no lo toques con este botón
+
+    // ✅ Elimina el renglón
+    tr.remove();
+
+    // ✅ Si ya no quedan renglones, deja 1 vacío (template)
+    const rows = getRows();
+    if (rows.length === 0) {
+      addEnvioRow(); // ya reindexa + updateResumenUI internamente
+      return;
+    }
+
+    // ✅ Reindex + resumen
+    reindexRows();
+    updateResumenUI();
+    return;
+  }
+
+  // (Opcional por ahora) handlers de editar/baja:
+  // const btnEdit = e.target?.closest(".pt_btnEditarEnvio");
+  // const btnBaja = e.target?.closest(".pt_btnBajaEnvio");
+});
+
 
     if (btnGuardar) {
       btnGuardar.addEventListener("click", guardar);
+    }
+    if (btnAddRow) {
+      btnAddRow.addEventListener("click", function () {
+        addEnvioRow();
+      });
     }
 
     modalEnvioEl.addEventListener("hidden.bs.modal", function () {
