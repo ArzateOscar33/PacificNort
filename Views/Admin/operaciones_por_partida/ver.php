@@ -21,6 +21,19 @@
 
     <li class="nav-item" role="presentation">
       <a class="nav-link"
+         id="registrar-envio-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#registrar-envio"
+         type="button"
+         role="tab"
+         aria-controls="registrar-envio"
+         aria-selected="false">
+        <i data-feather="send"></i> Registrar Envio 
+      </a>
+    </li>
+
+        <li class="nav-item" role="presentation">
+      <a class="nav-link"
          id="transito-tab"
          data-bs-toggle="tab"
          data-bs-target="#transito"
@@ -28,7 +41,7 @@
          role="tab"
          aria-controls="transito"
          aria-selected="false">
-        <i data-feather="truck"></i> En Tránsito
+        <i data-feather="truck"></i> En Transito 
       </a>
     </li>
 
@@ -60,6 +73,13 @@
  
 
     <div class="tab-pane fade"
+         id="registrar-envio"
+         role="tabpanel"
+         aria-labelledby="registrar-envio-tab">
+      <?php include 'tabs/registrar_envio.php'; ?>
+    </div>
+
+        <div class="tab-pane fade"
          id="transito"
          role="tabpanel"
          aria-labelledby="transito-tab">
