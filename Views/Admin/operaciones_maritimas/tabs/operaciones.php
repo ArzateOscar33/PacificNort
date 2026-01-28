@@ -395,3 +395,12 @@
         </div>
     </div>
 </div>
+
+<script>
+// Mayúsculas automáticas para contenedores
+document.getElementById("contenedoresRepeater").addEventListener("input", function (e) {
+  if (e.target.classList.contains("contenedor-input")) {
+    e.target.value = e.target.value.toUpperCase();
+  }
+});
+</script>

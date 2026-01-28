@@ -349,50 +349,34 @@ public function getEstatusIdsByNombre(array $nombres): array
      */
 public function kpiOperacionesSinCitaPuerto(): int
 {
-    $lazaroIds = $this->getSubtipoLazaroIds();
-    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
-
-    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
-
     $sql = "
         SELECT COUNT(*) AS n
         FROM operaciones o
         WHERE o.estatus_id = 11
           AND o.cita_puerto IS NULL
-          AND $whereNoLazaro
     ";
 
-    $row = $this->select($sql, $paramsL);
+    $row = $this->select($sql);
     return $row ? (int)$row['n'] : 0;
 }
 
 
-        /**
-     * KPI: Operaciones activas con cita_puerto dentro de los próximos N días,
-     * excluyendo subtipo Lázaro.
-     */
-    public function kpiCitaPuertoProxima(int $dias = 5): int
-    {
-        $dias = max(0, (int)$dias);
+public function kpiCitaPuertoProxima(int $dias = 5): int
+{
+    $dias = max(0, (int)$dias);
 
-        $lazaroIds = $this->getSubtipoLazaroIds();
-        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+    $sql = "
+        SELECT COUNT(*) AS n
+        FROM operaciones o
+        WHERE o.estatus_id IN (1,5,9)
+          AND o.cita_puerto IS NOT NULL
+          AND DATE(o.cita_puerto) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+    ";
 
-        $sql = "
-            SELECT COUNT(*) AS n
-            FROM operaciones o
-            WHERE o.estatus_id IN (1,5,9)
-              AND o.cita_puerto IS NOT NULL
-              AND DATE(o.cita_puerto) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
-              AND (
-                    " . (empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro") . "
-                  )
-        ";
+    $row = $this->select($sql, [$dias]);
+    return $row ? (int)$row['n'] : 0;
+}
 
-        $params = array_merge([$dias], $paramsL);
-        $row = $this->select($sql, $params);
-        return $row ? (int)$row['n'] : 0;
-    }
 
         /**
      * Alertas: ETA próximas a vencer (0..window días).

@@ -342,3 +342,22 @@
 </div>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_llenado_catalogo.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_registrar.js"></script>
+<script>
+// Mayúsculas automáticas (MF) para contenedores (incluye filas agregadas por template)
+document.getElementById("contenedoresRepeater_mf").addEventListener("input", function (e) {
+  if (e.target.classList.contains("contenedor-input_mf")) {
+    e.target.value = e.target.value.toUpperCase();
+  }
+});
+
+
+document.getElementById("contenedoresRepeater_mf").addEventListener("input", function (e) {
+  if (e.target.classList.contains("contenedor-bultos_mf")) {
+    // Enteros >= 0
+    let v = e.target.value === "" ? "" : String(parseInt(e.target.value, 10));
+    if (v === "NaN") v = "";
+    if (v !== "" && parseInt(v, 10) < 0) v = "0";
+    e.target.value = v;
+  }
+});
+</script>

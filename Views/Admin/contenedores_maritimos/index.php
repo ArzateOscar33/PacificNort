@@ -113,3 +113,8 @@
 
 <?php include 'Views/Template/admin_footer.php'; ?>
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/contenedores_maritimos.js"></script>
+<script> 
+document.getElementById("numero_contenedor").addEventListener("input", function () {
+  this.value = this.value.toUpperCase();
+});
+</script>
