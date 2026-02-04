@@ -72,7 +72,8 @@ public function listarEventosMFPaginado(
             AND cm.estatus = 1
         $whereSql
         GROUP BY o.id_operacion, cmo.id, operacion, contenedor
-        ORDER BY operacion ASC, contenedor ASC
+        ORDER BY operacion DESC, contenedor ASC
+
         LIMIT $perPage OFFSET $offset
     ";
     $rowsPairs = $this->selectAll($sqlPairs, $params) ?: [];
@@ -123,7 +124,8 @@ public function listarEventosMFPaginado(
               AND e.cont_maritimo_operacion_id = p.cmo_id
         LEFT JOIN tipos_evento_logistico te
                ON te.id_tipo_evento = e.tipo_evento_id
-        ORDER BY p.operacion ASC, p.contenedor ASC, e.tipo_evento_id ASC, e.fecha DESC
+        ORDER BY p.operacion DESC, p.contenedor ASC, e.tipo_evento_id ASC, e.fecha DESC
+
     ";
     $rows = $this->selectAll($sqlPageWithEvents, $paramsEvt) ?: [];
 
@@ -223,7 +225,7 @@ public function buscarOperacionesMaritimoFerro(string $term, int $limit = 10): a
         WHERE o.tipo_operacion_id = 11
           AND LOWER(o.numero_operacion) LIKE ?
         GROUP BY o.id_operacion, o.numero_operacion
-        ORDER BY o.numero_operacion ASC
+        ORDER BY o.numero_operacion DESC
         LIMIT $limit
     ";
 
@@ -489,7 +491,7 @@ public function sugerirOperacionesMF(string $term, int $limit = 8): array
               AND cm.estatus = 1
         WHERE $where
         GROUP BY o.id_operacion, o.numero_operacion
-        ORDER BY o.numero_operacion ASC
+        ORDER BY o.numero_operacion DESC
         LIMIT $limit
     ";
 

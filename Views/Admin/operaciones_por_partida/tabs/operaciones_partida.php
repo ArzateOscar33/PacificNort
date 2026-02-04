@@ -398,3 +398,47 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_catalogo.js"></script>
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_registrar.js"></script>
+<script>
+  
+// Excel
+  document.getElementById('operaciones_partida_ExportarExcel')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#operaciones_partida_TablaFacturasExportar',       // "#tablaEventos" o el elemento también funciona
+      formato: 'xlsx',
+      nombre: 'OperacionesPorPartida.xlsx',
+      columnasOcultas: [8],      // oculta columna ID
+      soloVisibles: true,
+      sheetName: 'Operaciones por Partida'
+    });
+  });
+
+  // PDF
+  document.getElementById('operaciones_partida_ExportarPDF')?.addEventListener('click', () => {
+    ExportarTablas.exportar({
+      ref: '#operaciones_partida_TablaFacturasExportar',
+      formato: 'pdf',
+      nombre: 'OperacionesPorPartida.pdf',
+      titulo: 'Operaciones por Partida',
+      orientacion: 'landscape',  // o 'portrait'
+      formatoPagina: 'letter',   // o 'a4'
+      columnasOcultas: [8],
+      soloVisibles: true
+    });
+  });
+</script>
+<script>
+document.addEventListener("input", function (e) {
+  const el = e.target;
+  if (!el || !el.classList.contains("form-control")) return;
+
+  const start = el.selectionStart;
+  const end   = el.selectionEnd;
+
+  el.value = (el.value || "").toUpperCase();
+
+  // Mantener cursor (si el input lo soporta)
+  if (typeof start === "number" && typeof end === "number") {
+    el.setSelectionRange(start, end);
+  }
+});
+</script>

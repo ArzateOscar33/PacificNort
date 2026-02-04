@@ -217,3 +217,19 @@
 </script>
 <!-- JS específico ferroviario --> 
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/eventos_logisticos_fer.js"></script>
+<script>
+function forzarMayusculas(inputId){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+
+  input.addEventListener("input", function () {
+    const start = this.selectionStart;
+    const end   = this.selectionEnd;
+    this.value  = this.value.toUpperCase();
+    this.setSelectionRange(start, end);
+  });
+}
+
+// Uso
+forzarMayusculas("eventoOperacionNombreFer"); 
+</script>

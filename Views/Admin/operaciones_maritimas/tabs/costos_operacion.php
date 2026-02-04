@@ -242,3 +242,20 @@
 
 <script>feather.replace();</script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/Operaciones_maritimas/catalogos/costos_operacion_catalogo.js"></script>
+<script>
+function forzarMayusculas(inputId){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+
+  input.addEventListener("input", function () {
+    const start = this.selectionStart;
+    const end   = this.selectionEnd;
+    this.value  = this.value.toUpperCase();
+    this.setSelectionRange(start, end);
+  });
+}
+
+// Uso
+forzarMayusculas("costosOperacionFiltroOpNombre");
+forzarMayusculas("costosOperacionOpNombre");
+</script>

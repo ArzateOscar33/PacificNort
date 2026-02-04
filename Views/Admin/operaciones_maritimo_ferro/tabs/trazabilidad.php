@@ -717,3 +717,21 @@
   
 })(); */
 </script>
+
+<script>
+function forzarMayusculas(inputId){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+
+  input.addEventListener("input", function () {
+    const start = this.selectionStart;
+    const end   = this.selectionEnd;
+    this.value  = this.value.toUpperCase();
+    this.setSelectionRange(start, end);
+  });
+}
+
+ 
+// Uso
+forzarMayusculas("rutaOperacionFerroNombre"); 
+</script>

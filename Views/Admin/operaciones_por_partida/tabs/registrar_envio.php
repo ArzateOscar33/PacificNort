@@ -239,3 +239,19 @@
 </script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_registrar.js">
 </script>
+<script>
+document.addEventListener("input", function (e) {
+  const el = e.target;
+  if (!el || !el.classList.contains("pt_fisico_txt")) return;
+
+  const start = el.selectionStart;
+  const end   = el.selectionEnd;
+
+  el.value = (el.value || "").toUpperCase();
+
+  // Mantener cursor (si el input lo soporta)
+  if (typeof start === "number" && typeof end === "number") {
+    el.setSelectionRange(start, end);
+  }
+});
+</script>

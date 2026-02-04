@@ -276,3 +276,20 @@
 </script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_catalogo.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_registrar.js"></script>
+<script>
+function forzarMayusculas(inputId){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+
+  input.addEventListener("input", function () {
+    const start = this.selectionStart;
+    const end   = this.selectionEnd;
+    this.value  = this.value.toUpperCase();
+    this.setSelectionRange(start, end);
+  });
+}
+
+// Uso
+forzarMayusculas("costosOperacionFiltroOpNombre"); 
+forzarMayusculas("costosOperacionNombre");
+</script>

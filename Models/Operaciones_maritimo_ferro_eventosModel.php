@@ -93,10 +93,11 @@ public function listarPaginado(int $page, int $perPage, ?int $opId = null, ?int 
         LEFT JOIN contenedores_maritimos cm  ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         $whereSql
         ORDER BY 
-            o.numero_operacion ASC,
+            o.numero_operacion DESC,
             contenedor ASC,
             e.fecha DESC,
             e.id_evento DESC
+
         LIMIT $perPage OFFSET $offset
     ";
     $rows = $this->selectAll($dataSql, $params);
@@ -125,7 +126,7 @@ public function listarPaginado(int $page, int $perPage, ?int $opId = null, ?int 
         WHERE o.tipo_operacion_id = 1
           AND LOWER(o.numero_operacion) LIKE ?
         GROUP BY o.id_operacion, o.numero_operacion
-        ORDER BY o.numero_operacion ASC
+        ORDER BY o.numero_operacion DESC
         LIMIT $limit
     ";
 
