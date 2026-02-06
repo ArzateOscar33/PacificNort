@@ -487,64 +487,69 @@ class Operaciones_maritimo_ferro_contenedoresModel extends Query
             return ['ok' => false, 'msg' => 'No se pudo crear la operación ferroviaria.'];
         }
 
-        // === 3) Insertar LÍNEAS (validando saldos por CMO) ===
-        $total_bultos = 0;
+       
+// === 3) Insertar LÍNEAS con VALIDACIÓN ATÓMICA (anti-concurrencia) ===
+$total_bultos = 0;
 
-        foreach ($asignaciones as $i => $a) {
-            $cmo_id = (int)($a['cmo_id'] ?? 0);
-            $cant   = (int)($a['bultos_asignados'] ?? 0);
-            $comLin = trim((string)($a['comentario'] ?? ''));
+// 🚀 Iniciar transacción manualmente
+$this->save("START TRANSACTION", []);
 
-            if ($cmo_id <= 0 || $cant <= 0) {
-                return ['ok' => false, 'msg' => "Asignación #" . ($i + 1) . " inválida (cmo_id/cantidad)."];
-            }
+try {
+    foreach ($asignaciones as $i => $a) {
+        $cmo_id = (int)($a['cmo_id'] ?? 0);
+        $cant   = (int)($a['bultos_asignados'] ?? 0);
+        $comLin = trim((string)($a['comentario'] ?? ''));
 
-            // Datos base del CMO
-            $row = $this->select(
-                "SELECT cmo.id, cmo.operacion_id, cmo.contenedor_maritimo_id,
-                    COALESCE(cmo.bultos,0) AS b_tot
+        if ($cmo_id <= 0 || $cant <= 0) {
+            $this->save("ROLLBACK", []);
+            return ['ok' => false, 'msg' => "Asignación #" . ($i + 1) . " inválida (cmo_id/cantidad)."];
+        }
+
+        // 🔥 Obtener contenedor_maritimo_id
+        $row = $this->select(
+            "SELECT cmo.contenedor_maritimo_id
                FROM contenedores_maritimos_operacion cmo
               WHERE cmo.id = ?
               LIMIT 1",
-                [$cmo_id]
-            );
-            if (!$row) return ['ok' => false, 'msg' => "CMO #{$cmo_id} no encontrado."];
-
-            // Saldo disponible = cmo.bultos - SUM(cmf.bultos_asignados)
-            $sum = $this->select(
-                "SELECT COALESCE(SUM(bultos_asignados),0) AS b_asig
-               FROM contenedor_maritimo_ferro
-              WHERE cont_maritimo_operacion_id = ?",
-                [$cmo_id]
-            );
-            $tot   = (int)$row['b_tot'];
-            $asig  = (int)($sum['b_asig'] ?? 0);
-            $saldo = max(0, $tot - $asig);
-            if ($cant > $saldo) {
-                return ['ok' => false, 'msg' => "Asignación #" . ($i + 1) . ": saldo insuficiente. Disponible: {$saldo}."];
-            }
-
-            // Insert línea (nota: en (27) NO existe cmf.operacion_id)
-            $id_linea = (int)$this->insertar(
-                "INSERT INTO contenedor_maritimo_ferro
-               (operacion_ferro_id, contenedor_maritimo_id, cont_maritimo_operacion_id,
-                contenedor_fisico_id, comentario, bultos_asignados)
-             VALUES (?,?,?,?,?,?)",
-                [
-                    $id_operacion_ferro,
-                    (int)$row['contenedor_maritimo_id'],
-                    $cmo_id,
-                    $contenedor_fisico_id,
-                    $comLin !== '' ? $comLin : null,
-                    $cant
-                ]
-            );
-            if ($id_linea <= 0) {
-                return ['ok' => false, 'msg' => "No se pudo insertar la asignación #" . ($i + 1) . "."];
-            }
-
-            $total_bultos += $cant;
+            [$cmo_id]
+        );
+        
+        if (!$row) {
+            $this->save("ROLLBACK", []);
+            return ['ok' => false, 'msg' => "CMO #{$cmo_id} no encontrado."];
         }
+
+        // 🚀 INSERTAR CON VALIDACIÓN ATÓMICA
+        $resultado = $this->insertarLineaConValidacion(
+            $id_operacion_ferro,
+            $cmo_id,
+            (int)$row['contenedor_maritimo_id'],
+            $contenedor_fisico_id,
+            $cant,
+            $comLin !== '' ? $comLin : null
+        );
+
+        // ❌ Si falló la validación, hacer ROLLBACK y detener
+        if (!$resultado['ok']) {
+            $this->save("ROLLBACK", []);
+            return [
+                'ok' => false, 
+                'msg' => "Asignación #" . ($i + 1) . ": " . $resultado['msg'],
+                'detalles' => $resultado
+            ];
+        }
+
+        $total_bultos += $cant;
+    }
+
+    // ✅ Si todo salió bien, confirmar transacción
+    $this->save("COMMIT", []);
+    
+} catch (Exception $e) {
+    $this->save("ROLLBACK", []);
+    error_log("Error en registrarAsignacionFerro: " . $e->getMessage());
+    return ['ok' => false, 'msg' => 'Error inesperado al procesar las asignaciones.'];
+}
 
         // === 4) Actualizar totales del HEADER (nivel código, no trigger) ===
         $this->save(
@@ -1052,5 +1057,99 @@ public function getOperacionFerroEditable(int $operacion_ferro_id): array
     ];
 }
 
+
+/**
+ * 🔒 Insertar línea con validación atómica (anti-concurrencia)
+ * Usa transacción + FOR UPDATE para evitar race conditions
+ */
+private function insertarLineaConValidacion(
+    int $operacion_ferro_id,
+    int $cmo_id,
+    int $contenedor_maritimo_id,
+    int $contenedor_fisico_id,
+    int $bultos_asignar,
+    ?string $comentario = null
+): array {
+    try {
+        // 🔒 BLOQUEO PESIMISTA: Lee y bloquea el CMO
+        $sqlCheck = "
+            SELECT 
+                cmo.id,
+                COALESCE(cmo.bultos, 0) AS bultos_totales,
+                COALESCE((
+                    SELECT SUM(cmf.bultos_asignados)
+                    FROM contenedor_maritimo_ferro cmf
+                    WHERE cmf.cont_maritimo_operacion_id = cmo.id
+                ), 0) AS bultos_asignados
+            FROM contenedores_maritimos_operacion cmo
+            WHERE cmo.id = ?
+            FOR UPDATE
+        ";
+        
+        $resultado = $this->select($sqlCheck, [$cmo_id]);
+        
+        if (!$resultado) {
+            return [
+                'ok' => false,
+                'msg' => 'La operación marítima (CMO) no existe.',
+                'code' => 'CMO_NOT_FOUND'
+            ];
+        }
+        
+        // ✅ Calcular bultos disponibles
+        $bultosDisponibles = (int)$resultado['bultos_totales'] - (int)$resultado['bultos_asignados'];
+        
+        // ❌ Validar si hay suficientes bultos
+        if ($bultos_asignar > $bultosDisponibles) {
+            return [
+                'ok' => false,
+                'msg' => "Solo hay {$bultosDisponibles} bultos disponibles. Otro usuario pudo haber asignado bultos mientras trabajabas.",
+                'code' => 'INSUFFICIENT_BULTOS',
+                'disponibles' => $bultosDisponibles,
+                'solicitados' => $bultos_asignar
+            ];
+        }
+        
+        // 💾 Insertar la línea (bultos validados)
+        $id_linea = (int)$this->insertar(
+            "INSERT INTO contenedor_maritimo_ferro
+               (operacion_ferro_id, contenedor_maritimo_id, cont_maritimo_operacion_id,
+                contenedor_fisico_id, comentario, bultos_asignados)
+             VALUES (?,?,?,?,?,?)",
+            [
+                $operacion_ferro_id,
+                $contenedor_maritimo_id,
+                $cmo_id,
+                $contenedor_fisico_id,
+                $comentario,
+                $bultos_asignar
+            ]
+        );
+        
+        if ($id_linea <= 0) {
+            return [
+                'ok' => false,
+                'msg' => 'Error al insertar la asignación.',
+                'code' => 'INSERT_FAILED'
+            ];
+        }
+        
+        return [
+            'ok' => true,
+            'msg' => 'Asignación guardada exitosamente.',
+            'id' => $id_linea,
+            'bultos_restantes' => $bultosDisponibles - $bultos_asignar
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error en insertarLineaConValidacion: " . $e->getMessage());
+        return [
+            'ok' => false,
+            'msg' => 'Error inesperado en la base de datos.',
+            'code' => 'DB_ERROR',
+            'error' => $e->getMessage()
+        ];
+    }
+}
 
 }
