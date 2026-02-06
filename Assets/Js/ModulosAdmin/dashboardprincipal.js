@@ -184,11 +184,14 @@ function iconoPorTipo(t) {
     doc: "file-minus",
     evento: "activity",
     cont: "package",
+    puerto: "anchor",
+    lc: "anchor",
     general: "alert-circle",
   };
   const icon = map[(t || "").toLowerCase()] || map.general;
   return `<i data-feather="${icon}" class="me-2"></i>`;
 }
+
 function badgePorPrioridad(p) {
   const v = String(p || "").toLowerCase();
 
@@ -238,7 +241,8 @@ function xhrGET(url, onOk, onErr) {
       onErr?.(this.responseText);
       return;
     }
-   // console.log(this.responseText);
+    console.log(this.responseText);
+    console.log("[Dashboard/kpis raw]", this.responseText);
     let data;
     try {
       data = JSON.parse(this.responseText);
@@ -959,6 +963,15 @@ function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTime
 const onResizeTimeline = debounce(()=> { cargarTimelineOperaciones(30, 50); }, 200);
 window.addEventListener('resize', onResizeTimeline);
 
+
+function normalizeAlertList(list, tipoDefault) {
+  const arr = Array.isArray(list) ? list : [];
+  return arr.map(a => ({
+    ...a,
+    tipo: a.tipo || tipoDefault,                  // para iconoPorTipo
+    prioridad: String(a.prioridad ?? "2")         // fuerza string
+  }));
+}
 // Init
 function cargarAlertas() {
   xhrGET(
@@ -972,17 +985,18 @@ function cargarAlertas() {
 
       const d = res?.data || {};
 
-      // Flexible: si mañana agregas alertas_media / alertas_baja, esto ya funciona
-      const alta  = Array.isArray(d.alertas_alta)  ? d.alertas_alta  : [];
-      const media = Array.isArray(d.alertas_media) ? d.alertas_media : [];
-      const baja  = Array.isArray(d.alertas_baja)  ? d.alertas_baja  : [];
+      // Lo que ya tenías
+      const alta  = normalizeAlertList(d.alertas_alta,  "general");
+      const media = normalizeAlertList(d.alertas_media, "general");
+      const baja  = normalizeAlertList(d.alertas_baja,  "general");
 
-      // Unificadas y ordenadas por prioridad (1 primero)
-      const all = [].concat(alta, media, baja).sort((a,b) => {
-        const pa = Number(a.prioridad || 99);
-        const pb = Number(b.prioridad || 99);
-        return pa - pb;
-      });
+      // ✅ NUEVAS: ETA próxima y LC sin cita
+      const arribo = normalizeAlertList(d.alertas_arribo, "eta");
+      const lc     = normalizeAlertList(d.alertas_lc_sin_cita, "general"); // o "puerto" si quieres icono propio
+
+      // Unificadas
+      const all = [].concat(alta, media, baja, arribo, lc)
+        .sort((a,b) => Number(a.prioridad || 99) - Number(b.prioridad || 99));
 
       renderAlertasAlta(all);
     },
@@ -1056,7 +1070,8 @@ function renderAlertasAlta(items) {
     const icon = (pr === "1") ? "alert-triangle" : (pr === "2" ? "alert-circle" : "info");
 
     // Mensaje ya viene bien: "LBS-124 Sin ISF y Sin Cita en puerto"
-    const msg = a.mensaje || `${a.numero_operacion || ""}`;
+    const msg = a.mensaje || a.numero_operacion || "Alerta";
+
 
     li.innerHTML = `
       <span class="d-flex align-items-start">

@@ -349,16 +349,23 @@ public function getEstatusIdsByNombre(array $nombres): array
      */
 public function kpiOperacionesSinCitaPuerto(): int
 {
+    $lazaroIds = $this->getSubtipoLazaroIds();
+    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+
+    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
+
     $sql = "
         SELECT COUNT(*) AS n
         FROM operaciones o
         WHERE o.estatus_id = 11
           AND o.cita_puerto IS NULL
+          AND $whereNoLazaro
     ";
 
-    $row = $this->select($sql);
+    $row = $this->select($sql, $paramsL);
     return $row ? (int)$row['n'] : 0;
 }
+
 
 
 public function kpiCitaPuertoProxima(int $dias = 5): int
@@ -587,8 +594,84 @@ public function alertasAltaPrioridadISFyCita(int $limit = 15): array
 }
 
  
+// DashboardModel.php
 
- 
+/**
+ * Alertas: Operaciones próximas a ARRIBAR (ETA dentro de N días)
+ * Devuelve: id_operacion, numero_operacion, cliente, eta_fecha, dias_restantes, mensaje, prioridad
+ */
+public function alertasArriboProximoETA(int $window = 7, int $limit = 15): array
+{
+    $window = max(0, (int)$window);
+    $limit  = max(1, (int)$limit);
+
+    $sql = "
+        SELECT
+          o.id_operacion,
+          o.numero_operacion,
+          COALESCE(c.nombre,'') AS cliente,
+          DATE(o.eta) AS eta_fecha,
+          DATEDIFF(DATE(o.eta), CURDATE()) AS dias_restantes,
+          CASE
+            WHEN DATEDIFF(DATE(o.eta), CURDATE()) = 0
+              THEN CONCAT(o.numero_operacion,' — ARRIBA HOY (ETA: ', DATE(o.eta), ')')
+            ELSE CONCAT(o.numero_operacion,' — Arribo en ',
+                        DATEDIFF(DATE(o.eta), CURDATE()),
+                        ' día(s) (ETA: ', DATE(o.eta), ')')
+          END AS mensaje,
+          CASE
+            WHEN DATEDIFF(DATE(o.eta), CURDATE()) <= 2 THEN 1
+            ELSE 2
+          END AS prioridad
+        FROM operaciones o
+        LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+        WHERE o.estatus_id IN (1,5,9)
+          AND o.eta IS NOT NULL
+          AND DATEDIFF(DATE(o.eta), CURDATE()) BETWEEN 0 AND ?
+        ORDER BY dias_restantes ASC, o.eta ASC
+        LIMIT {$limit}
+    ";
+
+    $rows = $this->selectAll($sql, [$window]);
+    return is_array($rows) ? $rows : [];
+}
+
+ // DashboardModel.php
+
+/**
+ * Alertas: Lázaro Cárdenas SIN cita en puerto y estatus = PUERTO (11)
+ * NOTA: LC no usa ISF, así que NO se evalúa isf aquí.
+ */
+public function alertasLazaroSinCitaPuerto(int $limit = 15): array
+{
+    $limit = max(1, (int)$limit);
+
+    $lazaroIds = $this->getSubtipoLazaroIds(); // :contentReference[oaicite:5]{index=5}
+    if (empty($lazaroIds)) return [];
+
+    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+
+    $sql = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            COALESCE(c.nombre,'') AS cliente,
+            DATE(o.eta) AS eta_fecha,
+            CONCAT(o.numero_operacion,' — Sin Cita en puerto') AS mensaje,
+            1 AS prioridad
+        FROM operaciones o
+        LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
+        WHERE o.estatus_id = 11
+          AND o.cita_puerto IS NULL
+          AND o.subtipo_operacion_id IN {$inLazaro}
+        ORDER BY o.id_operacion DESC
+        LIMIT {$limit}
+    ";
+
+    $rows = $this->selectAll($sql, $paramsL);
+    return is_array($rows) ? $rows : [];
+}
+
 
  
 

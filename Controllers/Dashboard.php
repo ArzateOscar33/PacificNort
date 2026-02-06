@@ -56,9 +56,7 @@ public function kpis()
 
         // ✅ KPI: Contenedores en Bodega
         $bodega = $this->model->kpiContenedoresBodegaPendientes();
-
-        //Alertas Alta Prioridad
-        $alertasAlta = $this->model->alertasAltaPrioridadISFyCita(20);
+ 
 
         // ✅ (opcional) detalle TJ/SD
         $contBodegaDetalle = null;
@@ -69,7 +67,10 @@ public function kpis()
         }
 
             // Alertas existentes
-$alertasAlta = $this->model->alertasAltaPrioridadISFyCita(15);
+        $alertasAlta = $this->model->alertasAltaPrioridadISFyCita(15);
+
+        $alertasArribo = $this->model->alertasArriboProximoETA($etaDays, 15);
+        $alertasLazaro = $this->model->alertasLazaroSinCitaPuerto(15);
 
 
         echo json_encode([
@@ -117,7 +118,9 @@ $alertasAlta = $this->model->alertasAltaPrioridadISFyCita(15);
                 'ops_cita_puerto_proxima' => $opsCitaProx,
 
                 // Alertas Alta Prioridad
-                'alertas_alta' => $alertasAlta
+                'alertas_alta' => $alertasAlta,
+                'alertas_arribo' => $alertasArribo,
+                'alertas_lc_sin_cita' => $alertasLazaro,
             ]
         ], JSON_UNESCAPED_UNICODE);
         die();
