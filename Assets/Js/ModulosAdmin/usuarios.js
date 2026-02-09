@@ -1,10 +1,34 @@
+/* =========================
+   Usuarios.js (corregido)
+   ========================= */
+
 const form = document.getElementById("formUsuario");
 const modal = new bootstrap.Modal(
-  document.getElementById("modalRegistrarUsuario")
+  document.getElementById("modalRegistrarUsuario"),
 );
 const btnAgregarUsuario = document.getElementById("btnAgregarUsuario");
 const tabla = document.getElementById("tablaUsuarios");
-// ---- Refs password (mover arriba, antes de usarlas)
+
+// ====== Refs Cliente ======
+const selRol = document.getElementById("rol_id");
+const wrapCliente = document.getElementById("wrap_cliente");
+const selCliente = document.getElementById("cliente_id");
+
+// ✅ Ajusta este ID al rol Cliente real (el mismo que pusiste en el Controller)
+const ROL_CLIENTE_ID = 3;
+
+// Mostrar/ocultar select cliente según rol
+function toggleClienteByRol() {
+  if (!wrapCliente || !selCliente || !selRol) return;
+
+  const esCliente = String(selRol.value) === String(ROL_CLIENTE_ID);
+  wrapCliente.classList.toggle("d-none", !esCliente);
+
+  // Si no es cliente, limpiamos para que no mande basura
+  if (!esCliente) selCliente.value = "";
+}
+
+// ---- Refs password
 const chkCambiarClave = document.getElementById("toggleCambiarClave");
 const wrapNuevaClave = document.getElementById("wrapNuevaClave");
 const wrapConfirmarClave = document.getElementById("wrapConfirmarClave");
@@ -12,131 +36,28 @@ const inputNuevaClave = document.getElementById("nueva_clave");
 const inputConfirma = document.getElementById("confirmar_clave");
 
 // Toggle cambiar contraseña
-chkCambiarClave.addEventListener("change", () => {
+chkCambiarClave?.addEventListener("change", () => {
   const on = chkCambiarClave.checked;
-  wrapNuevaClave.classList.toggle("d-none", !on);
-  wrapConfirmarClave.classList.toggle("d-none", !on);
-  inputNuevaClave.required = on;
-  inputConfirma.required = on;
+  wrapNuevaClave?.classList.toggle("d-none", !on);
+  wrapConfirmarClave?.classList.toggle("d-none", !on);
+
+  if (inputNuevaClave) inputNuevaClave.required = on;
+  if (inputConfirma) inputConfirma.required = on;
 
   if (!on) {
-    inputNuevaClave.value = "";
-    inputConfirma.value = "";
+    if (inputNuevaClave) inputNuevaClave.value = "";
+    if (inputConfirma) inputConfirma.value = "";
   }
 });
 
-listar();
-
-// Listar
-function listar() {
-  const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Usuarios/listar", true);
-  http.send();
-  http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      const data = JSON.parse(this.responseText);
-      renderTabla(data);
-    }
-  };
-}
-
-// Render
-function renderTabla(data) {
-  tabla.innerHTML = "";
-  if (!Array.isArray(data) || data.length === 0) {
-    tabla.innerHTML =
-      "<tr><td colspan='2' class='text-center'>No se encontraron resultados</td></tr>";
-    return;
-  }
-  data.forEach((item) => {
-    const row = document.createElement("tr");
-    row.classList.add("text-center");
-    row.innerHTML = `
-      <td>${item.nombre}</td>
-      <td>${item.apellido}</td>
-      <td>${item.correo}</td> 
-      <td>${item.telefono}</td>
-      <td>${item.departamento}</td>
-      <td>${item.puesto}</td>
-      <td>${item.roles}</td>
-      <td>
-        <button class="btn btn-sm btn-info" onclick="editarUsuario(${item.id_usuario})"><i class="fas fa-edit"></i> Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${item.id_usuario})"><i class="fas fa-trash-alt"></i> Eliminar</button>
-      </td>
-    `;
-    tabla.appendChild(row);
-  });
-}
-
-// Abrir modal modo Agregar
-// Abrir modal modo AGREGAR (único)
-btnAgregarUsuario.addEventListener("click", () => {
-  form.reset();
-  document.getElementById("id_usuario").value = "";
-  document.getElementById("modalRegistrarUsuarioLabel").textContent =
-    "Registrar Usuario";
-  const btn = document.querySelector(
-    '#modalRegistrarUsuario button[type="submit"]'
-  );
-  if (btn)
-    btn.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-  document.getElementById("wrapToggleCambiarClave").classList.add("d-none");
-  chkCambiarClave.checked = true; // forzamos como si fuera activo
-  chkCambiarClave.dispatchEvent(new Event("change")); // muestra inputs
-  // En ALTA: pedir contraseña => mostrar/obligar campos
-  chkCambiarClave.checked = true;
-  chkCambiarClave.dispatchEvent(new Event("change"));
-
-  feather.replace();
-
-  // limpiar puestos
-  const selPuesto = document.getElementById("puesto_id");
-  selPuesto.innerHTML = '<option value="">Seleccione</option>';
-  selPuesto.disabled = true;
-});
-
-// Submit (registrar)
-form.addEventListener("submit", function (e) {
-  e.preventDefault();
-  if (chkCambiarClave.checked) {
-    if (inputNuevaClave.value.length < 8) {
-      e.preventDefault();
-      Swal.fire(
-        "Aviso",
-        "La contraseña debe tener al menos 8 caracteres",
-        "warning"
-      );
-      return;
-    }
-    if (inputNuevaClave.value !== inputConfirma.value) {
-      e.preventDefault();
-      Swal.fire("Aviso", "Las contraseñas no coinciden", "warning");
-      return;
-    }
-  }
-  const http = new XMLHttpRequest();
-  http.open("POST", base_url + "Usuarios/registrar", true);
-  http.send(new FormData(form)); // incluye id_estatus + nombre
-  http.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      console.log(this.responseText);
-      const res = JSON.parse(this.responseText);
-      if (res.status === "success") {
-        modal.hide();
-        form.reset();
-        listar();
-      }
-      Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
-    }
-  };
-});
-
+// ====== Refs puesto/depto ======
 const selDepto = document.getElementById("departamento_id");
 const wrapPuesto = document.getElementById("wrap_puesto");
 const selPuesto = document.getElementById("puesto_id");
 
 // Ocultar/limpiar puesto
 function ocultarPuesto() {
+  if (!wrapPuesto || !selPuesto) return;
   wrapPuesto.classList.add("d-none");
   selPuesto.required = false;
   selPuesto.disabled = true;
@@ -145,32 +66,213 @@ function ocultarPuesto() {
 
 // Mostrar puesto
 function mostrarPuesto() {
+  if (!wrapPuesto || !selPuesto) return;
   wrapPuesto.classList.remove("d-none");
   selPuesto.required = true;
   selPuesto.disabled = false;
 }
 
-// Al cargar, el puesto está oculto
-document.addEventListener("DOMContentLoaded", ocultarPuesto);
+// Inicialización
+document.addEventListener("DOMContentLoaded", () => {
+  ocultarPuesto();
+  toggleClienteByRol();
+});
 
- function cargarPuestosPorDepto(deptoId, puestoSeleccionado = "") {
-  if (!deptoId) { ocultarPuesto(); return; }
+selRol?.addEventListener("change", toggleClienteByRol);
 
-  // Estado de carga
-  selPuesto.innerHTML = '<option value="">Cargando...</option>';
-  wrapPuesto.classList.remove("d-none");
-  selPuesto.required = true;
-  selPuesto.disabled = true;
+// =========================
+// Listar
+// =========================
+listar();
+
+function listar() {
+  const http = new XMLHttpRequest();
+  http.open("GET", base_url + "Usuarios/listar", true);
+  http.send();
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let data = [];
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+      }
+      renderTabla(data);
+    }
+  };
+}
+
+// =========================
+// Render Tabla
+// =========================
+function renderTabla(data) {
+  tabla.innerHTML = "";
+
+  // Ajusta este colspan a tus columnas reales:
+  // Nombre, Apellido, Correo, Tel, Departamento, Puesto, Rol, Cliente, Acciones = 9
+  const COLS = 9;
+
+  if (!Array.isArray(data) || data.length === 0) {
+    tabla.innerHTML = `<tr><td colspan="${COLS}" class="text-center">No se encontraron resultados</td></tr>`;
+    return;
+  }
+
+  data.forEach((item) => {
+    const row = document.createElement("tr");
+    row.classList.add("text-center");
+    row.innerHTML = `
+      <td>${item.nombre ?? ""}</td>
+      <td>${item.apellido ?? ""}</td>
+      <td>${item.correo ?? ""}</td>
+      <td>${item.telefono ?? ""}</td>
+      <td>${item.departamento ?? ""}</td>
+      <td>${item.puesto ?? ""}</td>
+      <td>${item.roles ?? ""}</td>
+      <td>${item.cliente ?? ""}</td>
+      <td>
+        <button class="btn btn-sm btn-info" onclick="editarUsuario(${item.id_usuario})">
+          <i class="fas fa-edit"></i> Editar
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${item.id_usuario})">
+          <i class="fas fa-trash-alt"></i> Eliminar
+        </button>
+      </td>
+    `;
+    tabla.appendChild(row);
+  });
+}
+
+// =========================
+// Abrir modal modo AGREGAR
+// =========================
+btnAgregarUsuario?.addEventListener("click", () => {
+  form.reset();
+
+  // ids/labels
+  const idEl = document.getElementById("id_usuario");
+  if (idEl) idEl.value = "";
+
+  const label = document.getElementById("modalRegistrarUsuarioLabel");
+  if (label) label.textContent = "Registrar Usuario";
+
+  const btn = document.querySelector(
+    '#modalRegistrarUsuario button[type="submit"]',
+  );
+  if (btn)
+    btn.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+
+  // Password: en alta, se muestra y es obligatorio
+  document.getElementById("wrapToggleCambiarClave")?.classList.add("d-none");
+  if (chkCambiarClave) {
+    chkCambiarClave.checked = true;
+    chkCambiarClave.dispatchEvent(new Event("change"));
+  }
+
+  // Puestos: limpio y deshabilito
+  if (selPuesto) {
+    selPuesto.innerHTML = '<option value="">Seleccione</option>';
+    selPuesto.disabled = true;
+  }
+
+  // Rol/Cliente: limpio y oculto cliente
+  if (selRol) selRol.value = "";
+  if (selCliente) selCliente.value = "";
+  toggleClienteByRol();
+
+  feather?.replace?.();
+});
+
+// =========================
+// Submit (registrar/actualizar)
+// =========================
+form?.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  // Validación Cliente (frontend)
+  const esCliente = selRol && String(selRol.value) === String(ROL_CLIENTE_ID);
+  if (esCliente && (!selCliente || selCliente.value === "")) {
+    Swal.fire(
+      "Aviso",
+      "Debes seleccionar un cliente para el rol Cliente",
+      "warning",
+    );
+    return;
+  }
+
+  // Validación contraseña (si checkbox activo)
+  if (chkCambiarClave?.checked) {
+    if ((inputNuevaClave?.value || "").length < 8) {
+      Swal.fire(
+        "Aviso",
+        "La contraseña debe tener al menos 8 caracteres",
+        "warning",
+      );
+      return;
+    }
+    if ((inputNuevaClave?.value || "") !== (inputConfirma?.value || "")) {
+      Swal.fire("Aviso", "Las contraseñas no coinciden", "warning");
+      return;
+    }
+  }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Usuarios/puestosPorDepartamento/" + encodeURIComponent(deptoId), true);
+  http.open("POST", base_url + "Usuarios/registrar", true);
+  http.send(new FormData(form));
+  http.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      let res;
+      try {
+        res = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
+        return;
+      }
+
+      if (res.status === "success") {
+        modal.hide();
+        form.reset();
+        listar();
+      }
+      Swal.fire(
+        "Aviso",
+        String(res.msg || "").toUpperCase(),
+        res.status || "info",
+      );
+    }
+  };
+});
+
+// =========================
+// Deptos → puestos
+// =========================
+function cargarPuestosPorDepto(deptoId, puestoSeleccionado = "") {
+  if (!deptoId) {
+    ocultarPuesto();
+    return;
+  }
+
+  if (selPuesto) {
+    selPuesto.innerHTML = '<option value="">Cargando...</option>';
+    selPuesto.disabled = true;
+  }
+  wrapPuesto?.classList.remove("d-none");
+
+  const http = new XMLHttpRequest();
+  http.open(
+    "GET",
+    base_url + "Usuarios/puestosPorDepartamento/" + encodeURIComponent(deptoId),
+    true,
+  );
   http.send();
 
   http.onreadystatechange = function () {
     if (http.readyState === 4) {
       if (http.status === 200) {
         let data = [];
-        try { data = JSON.parse(http.responseText); } catch (e) {
+        try {
+          data = JSON.parse(http.responseText);
+        } catch (e) {
           console.error("JSON inválido:", http.responseText);
           Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
           ocultarPuesto();
@@ -178,7 +280,8 @@ document.addEventListener("DOMContentLoaded", ocultarPuesto);
         }
 
         if (Array.isArray(data) && data.length > 0) {
-          selPuesto.innerHTML = '<option value="">Seleccione un puesto</option>';
+          selPuesto.innerHTML =
+            '<option value="">Seleccione un puesto</option>';
           data.forEach((p) => {
             const opt = document.createElement("option");
             opt.value = p.id_puesto;
@@ -186,10 +289,7 @@ document.addEventListener("DOMContentLoaded", ocultarPuesto);
             selPuesto.appendChild(opt);
           });
 
-          // 👇 Aquí preseleccionamos el puesto si viene uno
-          if (puestoSeleccionado) {
-            selPuesto.value = String(puestoSeleccionado);
-          }
+          if (puestoSeleccionado) selPuesto.value = String(puestoSeleccionado);
 
           mostrarPuesto();
           selPuesto.disabled = false;
@@ -205,85 +305,85 @@ document.addEventListener("DOMContentLoaded", ocultarPuesto);
   };
 }
 
-// Listener simple que usa el helper
-selDepto.addEventListener("change", function () {
+selDepto?.addEventListener("change", function () {
   cargarPuestosPorDepto(this.value, "");
 });
 
+// =========================
+// Editar usuario
+// =========================
 function editarUsuario(id) {
   const http = new XMLHttpRequest();
   http.open("GET", base_url + "Usuarios/editar/" + id, true);
   http.send();
+
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let data;
-      try { data = JSON.parse(this.responseText); } catch (e) {
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
         Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
         return;
       }
 
       // Campos base
       document.getElementById("id_usuario").value = data.id_usuario;
-      form.nombre.value   = data.nombre || "";
+      form.nombre.value = data.nombre || "";
       form.apellido.value = data.apellido || "";
-      form.correo.value   = data.correo || "";
+      form.correo.value = data.correo || "";
       form.telefono.value = data.telefono || "";
 
       // Estado
-      document.querySelector('select[name="active"]').value =
-        (typeof data.estatus !== "undefined") ? String(data.estatus) : "1";
+      const selActivo = document.querySelector('select[name="active"]');
+      if (selActivo)
+        selActivo.value =
+          typeof data.estatus !== "undefined" ? String(data.estatus) : "1";
 
-      // Password (oculto por defecto)
+      // Password: oculto por defecto en edición
       inputNuevaClave.value = "";
-      inputConfirma.value   = "";
+      inputConfirma.value = "";
       chkCambiarClave.checked = false;
       chkCambiarClave.dispatchEvent(new Event("change"));
 
-      // 👇 Departamento y Puesto (preselección correcta)
+      // Departamento y Puesto (preselección)
       const deptoId = data.departamento_id ? String(data.departamento_id) : "";
       const puestoId = data.puesto_id ? String(data.puesto_id) : "";
+      selDepto.value = deptoId || "";
+      cargarPuestosPorDepto(deptoId, puestoId);
 
-      selDepto.value = deptoId || "";        // marca el departamento
-      cargarPuestosPorDepto(deptoId, puestoId); // carga puestos y preselecciona
+      // Rol
+      if (selRol) selRol.value = data.rol_id ? String(data.rol_id) : "";
 
-      // 👇 Rol (si hoy manejas un único rol)
-      const selRol = document.getElementById("rol_id");
-      selRol.value = data.rol_id ? String(data.rol_id) : "";
+      // Cliente (según rol)
+      toggleClienteByRol();
+      if (selCliente)
+        selCliente.value = data.cliente_id ? String(data.cliente_id) : "";
 
       // UI modal
-      document.getElementById("modalRegistrarUsuarioLabel").textContent = "Editar Usuario";
-      const btn = document.querySelector('#modalRegistrarUsuario button[type="submit"]');
-      if (btn) btn.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      document.getElementById("modalRegistrarUsuarioLabel").textContent =
+        "Editar Usuario";
+      const btn = document.querySelector(
+        '#modalRegistrarUsuario button[type="submit"]',
+      );
+      if (btn)
+        btn.innerHTML =
+          '<i data-feather="check-circle" class="me-1"></i> Actualizar';
 
-      document.getElementById("wrapToggleCambiarClave").classList.remove("d-none");
-      feather.replace();
+      document
+        .getElementById("wrapToggleCambiarClave")
+        ?.classList.remove("d-none");
+
+      feather?.replace?.();
       modal.show();
     }
   };
 }
-
 window.editarUsuario = editarUsuario;
 
-// expón para onclick en la tabla
-window.editarUsuario = editarUsuario;
-document.getElementById("btnAgregarUsuario").addEventListener("click", () => {
-  form.reset();
-  document.getElementById("id_usuario").value = "";
-  document.getElementById("modalRegistrarUsuarioLabel").textContent =
-    "Registrar Usuario";
-  const btn = document.querySelector(
-    '#modalRegistrarUsuario button[type="submit"]'
-  );
-  if (btn)
-    btn.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-  feather.replace();
-
-  // limpiar puestos
-  const selPuesto = document.getElementById("puesto_id");
-  selPuesto.innerHTML = '<option value="">Seleccione</option>';
-  selPuesto.disabled = true;
-});
-
+// =========================
+// Eliminar
+// =========================
 function eliminarUsuario(id) {
   Swal.fire({
     title: "¿Eliminar usuario?",
@@ -298,6 +398,7 @@ function eliminarUsuario(id) {
     const http = new XMLHttpRequest();
     http.open("GET", base_url + "Usuarios/eliminar/" + id, true);
     http.send();
+
     http.onreadystatechange = function () {
       if (this.readyState === 4 && this.status === 200) {
         let res;
@@ -308,23 +409,29 @@ function eliminarUsuario(id) {
           Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
           return;
         }
-        if (res.status === "success") {
-          listar(); // refresca tabla (listar ya trae estatus=1)
-        }
-        Swal.fire("Aviso", (res.msg || "").toUpperCase(), res.status || "info");
+
+        if (res.status === "success") listar();
+        Swal.fire(
+          "Aviso",
+          String(res.msg || "").toUpperCase(),
+          res.status || "info",
+        );
       }
     };
   });
 }
+window.eliminarUsuario = eliminarUsuario;
 
+// =========================
+// Buscar + sugerencias
+// =========================
 const inputBuscar = document.getElementById("buscarUsuario");
 const sugerenciasEl = document.getElementById("sugerenciasUsuario");
-// Buscar + sugerencias
+
 inputBuscar?.addEventListener("keyup", function () {
   const term = this.value.trim();
 
   if (term === "") {
-    // Limpia sugerencias y vuelve a listar todo
     sugerenciasEl.innerHTML = "";
     sugerenciasEl.style.display = "none";
     listar();
@@ -335,9 +442,10 @@ inputBuscar?.addEventListener("keyup", function () {
   http.open(
     "GET",
     base_url + "Usuarios/buscar?term=" + encodeURIComponent(term),
-    true
+    true,
   );
   http.send();
+
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let data;
@@ -348,10 +456,8 @@ inputBuscar?.addEventListener("keyup", function () {
         return;
       }
 
-      // refresca tabla con el resultado
       renderTabla(data);
 
-      // pinta sugerencias
       sugerenciasEl.innerHTML = "";
       if (Array.isArray(data) && data.length > 0) {
         data.slice(0, 8).forEach((u) => {
@@ -363,7 +469,6 @@ inputBuscar?.addEventListener("keyup", function () {
             inputBuscar.value = `${u.nombre} ${u.apellido}`.trim();
             sugerenciasEl.innerHTML = "";
             sugerenciasEl.style.display = "none";
-            // si quieres mostrar SOLO ese registro en la tabla:
             renderTabla([u]);
           };
           sugerenciasEl.appendChild(item);
@@ -383,6 +488,3 @@ document.addEventListener("click", function (e) {
     sugerenciasEl.style.display = "none";
   }
 });
-
-// Exponer si usas onclick en la tabla:
-window.eliminarUsuario = eliminarUsuario;
