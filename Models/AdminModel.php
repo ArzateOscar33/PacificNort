@@ -8,9 +8,12 @@ class AdminModel extends Query
 
     public function getUsuario($correo)
     {
-        $sql = "SELECT * FROM usuarios WHERE correo = ?";
+        $sql = "SELECT id_usuario, nombre, apellido, correo, clave, telefono, cliente_id
+            FROM usuarios
+            WHERE correo = ?";
         return $this->select($sql, [$correo]);
     }
+
 
     public function getRolUsuario($userId)
     {
@@ -19,12 +22,12 @@ class AdminModel extends Query
         return $data ? $data['rol_id'] : null;
     }
 
-    public function registrar($nombre,$apellido, $correo, $hash,$telefono, $puesto_id, $departamento_id, $rol_id)
+    public function registrar($nombre, $apellido, $correo, $hash, $telefono, $puesto_id, $departamento_id, $rol_id)
     {
         // Insertar en la tabla usuarios
         $sql = "INSERT INTO usuarios (nombre,apellido, correo, clave,telefono, puesto_id, departamento_id)
                 VALUES (?, ?, ?,?, ?, ?,?)";
-        $array = [$nombre,$apellido, $correo, $hash,$telefono, $puesto_id, $departamento_id];
+        $array = [$nombre, $apellido, $correo, $hash, $telefono, $puesto_id, $departamento_id];
         $userId = $this->insertar($sql, $array);
 
         if ($userId > 0) {

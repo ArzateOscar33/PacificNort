@@ -32,13 +32,25 @@ class Admin extends Controller
                         require_once 'Models/SesionModel.php';
                         $sesionModel = new SesionModel();
                         $sesionModel->guardarToken($data['id_usuario'], $token);
-                        
+
                         $_SESSION['email'] = $data['correo'];
                         $_SESSION['nombre_usuario'] = $data['nombre'];
                         $_SESSION['id_usuario'] = $data['id_usuario'];
                         $_SESSION['rol_usuario'] = $this->model->getRolUsuario($data['id_usuario']);
                         $_SESSION['session_token'] = $token;
-
+                        // ✅ NUEVO: cliente_id en sesión (si aplica)
+                        $_SESSION['cliente_id'] = isset($data['cliente_id']) ? (int)$data['cliente_id'] : 0;
+                        // ✅ NUEVO: URL destino por rol
+                        $redirect = BASE_URL . 'admin/home';
+                        if ($_SESSION['rol_usuario'] === 3) { // 3 = Cliente
+                            // seguridad: si es cliente, debe tener cliente_id
+                            if ($_SESSION['cliente_id'] <= 0) {
+                                $respuesta = ['msg' => 'Tu usuario cliente no tiene cliente asignado. Contacta a soporte.', 'icono' => 'error'];
+                                echo json_encode($respuesta, JSON_UNESCAPED_UNICODE);
+                                die();
+                            }
+                            $redirect = BASE_URL . 'PortalClientes';
+                        }
                         $respuesta = array('msg' => 'Acceso correcto', 'icono' => 'success');
                     } else {
                         $respuesta = array('msg' => 'Contraseña incorrecta', 'icono' => 'warning');
@@ -59,9 +71,17 @@ class Admin extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+
+        // ✅ Bloqueo clientes
+        if ((int)$_SESSION['rol_usuario'] === 3) {
+            header('Location: ' . BASE_URL . 'PortalClientes');
+            exit;
+        }
+
         $data['title'] = 'Panel Administrativo';
         $this->views->getView('admin/administracion', "index", $data);
     }
+
 
     public function registro()
     {
@@ -73,22 +93,22 @@ class Admin extends Controller
     {
         if (isset($_POST['nombre']) && isset($_POST['correo']) && isset($_POST['clave'])) {
             $nombre = $_POST['nombre'];
-            $apellido=$_POST['apellido'];
+            $apellido = $_POST['apellido'];
             $correo = $_POST['correo'];
             $clave = $_POST['clave'];
-            $telefono=$_POST['telefono'];
+            $telefono = $_POST['telefono'];
             $puesto_id = 2; // <- debe estar en el formulario
-            $departamento_id =2; // <- en la base de datos creamos un departamento para clientes
+            $departamento_id = 2; // <- en la base de datos creamos un departamento para clientes
             $rol_id = 3; // <- le damos el rol de cliente si se registro desde la pagina 
-            
 
-            if (empty($nombre) || empty($correo) || empty($clave) || empty($puesto_id) || empty($departamento_id)|| empty($telefono)) {
+
+            if (empty($nombre) || empty($correo) || empty($clave) || empty($puesto_id) || empty($departamento_id) || empty($telefono)) {
                 $respuesta = array('msg' => 'Todos los campos son requeridos', 'icono' => 'warning');
             } else {
                 $result = $this->model->verificarCorreo($correo);
                 if (empty($result)) {
                     $hash = password_hash($clave, PASSWORD_DEFAULT);
-                    $data = $this->model->registrar($nombre,$apellido, $correo, $hash,$telefono, $puesto_id, $departamento_id, $rol_id);
+                    $data = $this->model->registrar($nombre, $apellido, $correo, $hash, $telefono, $puesto_id, $departamento_id, $rol_id);
                     if ($data > 0) {
                         $respuesta = array('msg' => 'Usuario registrado correctamente', 'icono' => 'success');
                     } else {
@@ -118,7 +138,6 @@ class Admin extends Controller
         $_SESSION['msg_error'] = 'Has cerrado sesión correctamente.';
         header('Location: ' . BASE_URL . 'admin');
         exit;
-
     }
 
     private function verificarRol($rolPermitido)
