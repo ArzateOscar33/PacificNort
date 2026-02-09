@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,199 +10,155 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
-    :root{
-      --pn-sidebar-w: 280px;
-    }
-    body{
+    body {
       background: #f6f7fb;
     }
-    .pn-sidebar{
-      width: var(--pn-sidebar-w);
-      min-height: 100vh;
-      position: sticky;
-      top: 0;
-      background: #0f172a; /* slate-900 */
-      color: #e2e8f0;      /* slate-200 */
+
+    .pn-topnav {
+      background: #0f172a;
+      /* slate-900 */
+      color: #e2e8f0;
+      border-bottom: 1px solid rgba(226, 232, 240, .12);
     }
-    .pn-sidebar .brand{
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid rgba(226,232,240,.12);
+
+    .pn-brand {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      color: #e2e8f0;
+      text-decoration: none;
     }
-    .pn-sidebar .nav-link{
-      color: #cbd5e1;
-      border-radius: .75rem;
-      padding: .6rem .9rem;
-      display:flex;
-      align-items:center;
-      gap:.55rem;
-      margin:.15rem .5rem;
-    }
-    .pn-sidebar .nav-link:hover{
-      background: rgba(148,163,184,.12);
-      color:#fff;
-    }
-    .pn-sidebar .nav-link.active{
-      background: rgba(56,189,248,.15);
-      color:#e0f2fe;
-      border: 1px solid rgba(56,189,248,.25);
-    }
-    .pn-content{
-      min-height: 100vh;
-    }
-    .pn-topbar{
-      background: #ffffff;
-      border-bottom: 1px solid rgba(15,23,42,.08);
-    }
-    .kpi-card{
-      border: 1px solid rgba(15,23,42,.08);
-      border-radius: 1rem;
-      background:#fff;
-    }
-    .kpi-icon{
-      width: 42px; height: 42px;
+
+    .pn-brand .kpi-icon {
+      width: 42px;
+      height: 42px;
       border-radius: .9rem;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border: 1px solid rgba(15,23,42,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(226, 232, 240, .12);
+      background: rgba(148, 163, 184, .10);
+      color: #38bdf8;
+    }
+
+    .pn-muted {
+      color: #64748b;
+    }
+
+    .pn-muted-inv {
+      color: rgba(226, 232, 240, .75);
+    }
+
+    .pn-topbar {
+      background: #ffffff;
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+    }
+
+    .kpi-card {
+      border: 1px solid rgba(15, 23, 42, .08);
+      border-radius: 1rem;
+      background: #fff;
+    }
+
+    .kpi-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: .9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(15, 23, 42, .08);
       background: #f8fafc;
     }
-    .table thead th{
+
+    .table thead th {
       background: #f8fafc;
-      border-bottom: 1px solid rgba(15,23,42,.08);
-      color:#0f172a;
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+      color: #0f172a;
       font-weight: 600;
       white-space: nowrap;
     }
-    .badge-soft{
-      background: rgba(15,23,42,.06);
-      color:#0f172a;
-      border: 1px solid rgba(15,23,42,.10);
+
+    .badge-soft {
+      background: rgba(15, 23, 42, .06);
+      color: #0f172a;
+      border: 1px solid rgba(15, 23, 42, .10);
       font-weight: 600;
     }
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:.35rem;
-      padding:.15rem .55rem;
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .15rem .55rem;
       border-radius: 999px;
-      background: rgba(2,132,199,.08);
-      color:#075985;
-      border: 1px solid rgba(2,132,199,.18);
-      font-size:.825rem;
-      font-weight:600;
+      background: rgba(2, 132, 199, .08);
+      color: #075985;
+      border: 1px solid rgba(2, 132, 199, .18);
+      font-size: .825rem;
+      font-weight: 600;
     }
-    .modal-xxl-wide{
+
+    .modal-xxl-wide {
       max-width: min(1400px, calc(100vw - 2rem));
     }
-    .pn-muted{
-      color:#64748b;
-    }
-    .search-hint{
-      font-size:.9rem;
-      color:#64748b;
-    }
-    @media (max-width: 992px){
-      .pn-sidebar{
-        position: fixed;
-        left: -100%;
-        z-index: 1040;
-        transition: left .2s ease;
-      }
-      .pn-sidebar.show{
-        left: 0;
-      }
-      .pn-overlay{
-        display:none;
-      }
-      .pn-overlay.show{
-        display:block;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.35);
-        z-index: 1039;
-      }
+
+    .search-hint {
+      font-size: .9rem;
+      color: #64748b;
     }
   </style>
 </head>
 
 <body>
-<div class="d-flex">
 
-  <!-- Sidebar -->
-  <aside class="pn-sidebar" id="pnSidebar">
-    <div class="brand d-flex align-items-center justify-content-between">
-      <div class="d-flex align-items-center gap-2">
-        <div class="kpi-icon text-info">
-          <i data-feather="anchor"></i>
-        </div>
-        <div>
-          <div class="fw-bold" style="line-height:1.1;">PacificNort Suite</div>
-          <div class="small pn-muted">Portal Cliente</div>
-        </div>
-      </div>
-      <button class="btn btn-sm btn-outline-light d-lg-none" id="btnCloseSidebar" type="button" aria-label="Cerrar">
-        <i data-feather="x"></i>
-      </button>
-    </div>
+  <!-- NAV SUPERIOR (REEMPLAZA SIDEBAR) -->
+  <header class="pn-topnav">
+    <div class="container-fluid py-2">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
 
-    <div class="px-3 pt-3 pb-2">
-      <div class="small pn-muted mb-2">MENÚ</div>
-      <nav class="nav flex-column">
-        <a class="nav-link active" href="#">
-          <i data-feather="layers"></i> Operaciones
+        <!-- Brand -->
+        <a class="pn-brand" href="#">
+          <span class="kpi-icon"><i data-feather="anchor"></i></span>
+          <span>
+            <span class="fw-bold d-block" style="line-height:1.05;">PacificNort Suite</span>
+            <span class="small pn-muted-inv">Portal Cliente</span>
+          </span>
         </a>
-        <a class="nav-link" href="#">
-          <i data-feather="folder"></i> Documentos
-        </a>
-        <a class="nav-link" href="#">
-          <i data-feather="user"></i> Mi cuenta
-        </a>
-      </nav>
-    </div>
 
-    <div class="mt-auto px-3 pb-3">
-      <div class="p-3 rounded-4" style="background: rgba(148,163,184,.10); border: 1px solid rgba(148,163,184,.15);">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="fw-semibold">Cliente: Andrea/Tommer</div>
-            <div class="small pn-muted">Usuario: Andrea</div>
+        <!-- Acciones / Usuario -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+
+
+          <div class="text-end me-1">
+            <div class="fw-semibold" style="line-height:1.1;">Cliente: Andrea/Tommer</div>
+            <div class="small pn-muted-inv">Usuario: Andrea</div>
           </div>
-          <span class="badge rounded-pill text-bg-info">Solo lectura</span>
+
+          <button class="btn btn-outline-light btn-sm" type="button">
+            <i data-feather="log-out" class="me-1"></i> Cerrar sesión
+          </button>
         </div>
-        <hr class="my-3" style="border-color: rgba(226,232,240,.18);">
-        <button class="btn btn-outline-light w-100" type="button">
-          <i data-feather="log-out" class="me-1"></i> Cerrar sesión
-        </button>
+
       </div>
     </div>
-  </aside>
+  </header>
 
-  <div class="pn-overlay" id="pnOverlay"></div>
+  <!-- CONTENIDO -->
+  <main class="pn-content">
 
-  <!-- Main -->
-  <main class="pn-content flex-grow-1">
-
-    <!-- Topbar -->
+    <!-- Topbar blanca (título + acciones) -->
     <div class="pn-topbar">
       <div class="container-fluid py-3">
-        <div class="d-flex align-items-center justify-content-between gap-3">
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-secondary d-lg-none" id="btnOpenSidebar" type="button">
-              <i data-feather="menu"></i>
-            </button>
-            <div>
-              <h4 class="mb-0">Operaciones</h4>
-              <div class="search-hint">Consulta y filtra tus operaciones. Puedes <b>subir documentos</b> por operación.</div>
-            </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div>
+            <h4 class="mb-0">Operaciones</h4>
+            <div class="search-hint">Consulta y filtra tus operaciones. Puedes <b>subir documentos</b> por operación.</div>
           </div>
 
           <div class="d-flex align-items-center gap-2">
             <button class="btn btn-outline-secondary" type="button">
               <i data-feather="refresh-cw" class="me-1"></i> Refrescar
-            </button>
-            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalAyuda">
-              <i data-feather="help-circle" class="me-1"></i> Ayuda
             </button>
           </div>
         </div>
@@ -210,7 +167,7 @@
 
     <div class="container-fluid py-4">
 
-      <!-- KPIs (opcionales para cliente) -->
+      <!-- KPIs -->
       <div class="row g-3 mb-3">
         <div class="col-12 col-md-4">
           <div class="kpi-card p-3">
@@ -219,9 +176,7 @@
                 <div class="pn-muted small">Operaciones activas</div>
                 <div class="h4 mb-0">12</div>
               </div>
-              <div class="kpi-icon">
-                <i data-feather="activity"></i>
-              </div>
+              <div class="kpi-icon"><i data-feather="activity"></i></div>
             </div>
           </div>
         </div>
@@ -232,9 +187,7 @@
                 <div class="pn-muted small">Arribos (ETA próximos)</div>
                 <div class="h4 mb-0">3</div>
               </div>
-              <div class="kpi-icon">
-                <i data-feather="calendar"></i>
-              </div>
+              <div class="kpi-icon"><i data-feather="calendar"></i></div>
             </div>
           </div>
         </div>
@@ -245,9 +198,7 @@
                 <div class="pn-muted small">Docs pendientes</div>
                 <div class="h4 mb-0">5</div>
               </div>
-              <div class="kpi-icon">
-                <i data-feather="file-text"></i>
-              </div>
+              <div class="kpi-icon"><i data-feather="file-text"></i></div>
             </div>
           </div>
         </div>
@@ -317,7 +268,7 @@
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>
               <div class="fw-semibold">Listado de operaciones</div>
-              <div class="small pn-muted">Solo lectura. Acciones disponibles: <b>ver detalle</b> y <b>documentos</b>.</div>
+
             </div>
             <div class="d-flex align-items-center gap-2">
               <select class="form-select form-select-sm" style="width:auto;">
@@ -347,6 +298,7 @@
                 </tr>
               </thead>
               <tbody>
+                <!-- (Mockup) -->
                 <tr>
                   <td>
                     <div class="fw-semibold">PN-OP-2026-001</div>
@@ -358,7 +310,7 @@
                   <td>2026-02-12</td>
                   <td><span class="badge text-bg-success">Abierta</span></td>
                   <td class="text-end">
-                    <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalleOp">
+                    <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalleMaritima">
                       <i data-feather="eye" class="me-1"></i> Ver
                     </button>
                     <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
@@ -367,56 +319,11 @@
                   </td>
                 </tr>
 
-                <tr>
-                  <td>
-                    <div class="fw-semibold">PN-FO-2026-014</div>
-                    <div class="small pn-muted">FO - Nogales</div>
-                  </td>
-                  <td><span class="badge badge-soft">Ferroviario (FO)</span></td>
-                  <td>—</td>
-                  <td>2026-02-01</td>
-                  <td>2026-02-09</td>
-                  <td><span class="badge text-bg-warning">En revisión</span></td>
-                  <td class="text-end">
-                    <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalleOp">
-                      <i data-feather="eye" class="me-1"></i> Ver
-                    </button>
-                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
-                      <i data-feather="folder" class="me-1"></i> Docs
-                    </button>
-                  </td>
-                </tr>
 
-                <tr>
-                  <td>
-                    <div class="fw-semibold">PN-LBMF-2026-003</div>
-                    <div class="small pn-muted">Mixto</div>
-                  </td>
-                  <td><span class="badge badge-soft">Mixto (LBMF)</span></td>
-                  <td>BL-990011</td>
-                  <td>2026-02-03</td>
-                  <td>2026-02-17</td>
-                  <td><span class="badge text-bg-success">Abierta</span></td>
-                  <td class="text-end">
-                    <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalleOp">
-                      <i data-feather="eye" class="me-1"></i> Ver
-                    </button>
-                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
-                      <i data-feather="folder" class="me-1"></i> Docs
-                    </button>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td colspan="7" class="text-center py-4 pn-muted">
-                    <i data-feather="info" class="me-1"></i> (Mockup) Aquí irían más registros...
-                  </td>
-                </tr>
               </tbody>
             </table>
           </div>
 
-          <!-- Paginación -->
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
             <div class="small pn-muted">Mostrando 1–15 de 87</div>
             <nav aria-label="Paginación">
@@ -433,11 +340,105 @@
         </div>
       </div>
 
+      <!-- Tabla FO -->
+      <div class="card shadow-sm border-0 rounded-4 mt-3">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+              <div class="fw-semibold">Operaciones FO (Ferroviarias)</div>
+
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <select class="form-select form-select-sm" id="foPageSize" style="width:auto;">
+                <option value="15">15 / pág</option>
+                <option value="30">30 / pág</option>
+                <option value="50">50 / pág</option>
+              </select>
+              <button class="btn btn-sm btn-outline-secondary" id="btnExportFO" type="button">
+                <i data-feather="download" class="me-1"></i> Exportar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body px-4 pb-4">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0" id="tblOpsFO">
+              <thead>
+                <tr>
+                  <th>Operación</th>
+                  <th>Ferro/Caja</th>
+                  <th>Origen</th>
+                  <th>Destino</th>
+                  <th>Contenedores Maritimos</th>
+                  <th>Fecha</th>
+                  <th>Estatus</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbOpsFO">
+                <!-- (Mockup) -->
+                <tr>
+                  <td>
+                    <div class="fw-semibold">PN-FO-2026-014</div>
+                    <div class="small pn-muted">FO - Nogales</div>
+                  </td>
+                  <td>FXEU12345</td>
+                  <td>Long Beach</td>
+                  <td>Pantaco</td>
+                  <td>OOLU132456</td>
+                  <td>2026-02-09</td>
+                  <td><span class="badge text-bg-warning">En revisión</span></td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalleFO">
+                      <i data-feather="eye" class="me-1"></i> Ver
+                    </button>
+                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
+                      <i data-feather="folder" class="me-1"></i> Docs
+                    </button>
+                  </td>
+                </tr>
+
+
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación FO -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+            <div class="small pn-muted" id="foPagingLbl">Mostrando 1–15 de 25</div>
+            <nav aria-label="Paginación FO">
+              <ul class="pagination pagination-sm mb-0" id="foPaging">
+                <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">»</a></li>
+              </ul>
+            </nav>
+          </div>
+
+        </div>
+      </div>
+
+
     </div>
   </main>
-</div>
 
-<!-- MODAL: Detalle Operación -->
+  <!-- MODALES: (igual que los tuyos, sin cambios) -->
+  <!-- ... pega aquí tus modales modalDetalleOp, modalDocs, modalAyuda tal cual ... -->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+  <script>
+    feather.replace();
+  </script>
+</body>
+
+</html>
+
+
+<!-- MODAL: Detalle Operación 
 <div class="modal fade" id="modalDetalleOp" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-xxl-wide">
     <div class="modal-content rounded-4 border-0">
@@ -550,6 +551,403 @@
     </div>
   </div>
 </div>
+-->
+<!-- MODAL: Detalle Operación FO (Solo lectura) -->
+<div class="modal fade" id="modalDetalleFO" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-xxl-wide">
+    <div class="modal-content rounded-4 border-0">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0">Detalle de operación FO</h5>
+          <div class="small pn-muted">Solo lectura — <span id="fo_numero">PN-FO-2026-014</span></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <!-- Resumen -->
+          <div class="col-12 col-lg-4">
+            <div class="card rounded-4 border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="fw-semibold mb-2">Resumen</div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Cliente</span>
+                    <span class="fw-semibold" id="fo_cliente">Andrea/Tommer</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Ferro/Caja</span>
+                    <span class="fw-semibold" id="fo_ferro">FERRO-00123</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Bultos totales</span>
+                    <span class="fw-semibold" id="fo_bultos">120</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Transportista</span>
+                    <span class="fw-semibold" id="fo_transportista">Transportes X</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Destino</span>
+                    <span class="fw-semibold" id="fo_destino">Nogales</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Fecha</span>
+                    <span class="fw-semibold" id="fo_fecha">2026-02-09</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Estatus</span>
+                    <span class="badge text-bg-warning" id="fo_estatus">En revisión</span>
+                  </li>
+                </ul>
+
+                <div class="mt-3 d-grid">
+                  <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
+                    <i data-feather="folder" class="me-1"></i> Ver/Subir documentos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información -->
+          <div class="col-12 col-lg-8">
+            <div class="card rounded-4 border-0 shadow-sm">
+              <div class="card-body">
+                <div class="fw-semibold mb-2">Información</div>
+
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Número de operación</label>
+                    <input class="form-control" id="fo_numero_input" value="PN-FO-2026-014" readonly>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Ferro/Caja</label>
+                    <input class="form-control" id="fo_ferro_input" value="FERRO-00123" readonly>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Transportista</label>
+                    <input class="form-control" id="fo_transportista_input" value="Transportes X" readonly>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Destino</label>
+                    <input class="form-control" id="fo_destino_input" value="Nogales" readonly>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Bultos Totales</label>
+                    <input class="form-control" id="fo_bultos_input" value="120" readonly>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Fecha</label>
+                    <input class="form-control" id="fo_fecha_input" value="2026-02-09" readonly>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label pn-muted">Comentarios</label>
+                    <textarea class="form-control" id="fo_comentarios" rows="3" readonly>(Mock) Comentarios visibles para cliente.</textarea>
+                  </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="fw-semibold mb-2">Contenedores marítimos asignados</div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Operación Marítima</th>
+                        <th>Contenedor Marítimo</th>
+                        <th class="text-end">Bultos asignados</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fo_asignaciones">
+                      <tr>
+                        <td>PN-OP-2026-001</td>
+                        <td>MSCU1234567</td>
+                        <td class="text-end">80</td>
+                      </tr>
+                      <tr>
+                        <td colspan="3" class="text-center pn-muted py-3">
+                          (Mock) Aquí se listan las asignaciones reales...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="fw-semibold mb-2">Eventos (solo lectura)</div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Evento</th>
+                        <th>Comentario</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fo_eventos">
+                      <tr>
+                        <td>2026-02-08</td>
+                        <td>Salida</td>
+                        <td class="pn-muted">(Mock) Registrado</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div><!-- /card-body -->
+            </div><!-- /card -->
+          </div>
+
+        </div><!-- /row -->
+      </div><!-- /modal-body -->
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Detalle Operación Marítima (Solo lectura) -->
+<div class="modal fade" id="modalDetalleMaritima" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-xxl-wide">
+    <div class="modal-content rounded-4 border-0">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0">Detalle de operación Marítima</h5>
+          <div class="small pn-muted">Solo lectura — <span id="mar_numero">PN-OP-2026-001</span></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <div class="col-12 col-lg-4">
+            <div class="card rounded-4 border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="fw-semibold mb-2">Resumen</div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Cliente</span> <span class="fw-semibold" id="mar_cliente">Andrea/Tommer</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Tipo</span> <span class="fw-semibold" id="mar_tipo">Marítimo</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Estatus</span> <span class="badge text-bg-success" id="mar_estatus">Abierta</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">ETD</span> <span class="fw-semibold" id="mar_etd">2026-02-05</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">ETA</span> <span class="fw-semibold" id="mar_eta">2026-02-12</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">BL</span> <span class="fw-semibold" id="mar_bl">BL-883120</span>
+                  </li>
+                </ul>
+
+                <div class="mt-3 d-grid">
+                  <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
+                    <i data-feather="folder" class="me-1"></i> Ver/Subir documentos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8">
+            <div class="card rounded-4 border-0 shadow-sm">
+              <div class="card-body">
+                <div class="fw-semibold mb-2">Información</div>
+
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Número de operación</label>
+                    <input class="form-control" id="mar_numero_input" value="PN-OP-2026-001" readonly>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Puerto / Origen</label>
+                    <input class="form-control" id="mar_puerto" value="Lázaro Cárdenas" readonly>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Naviera</label>
+                    <input class="form-control" id="mar_naviera" value="(Mock) Naviera X" readonly>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label pn-muted">Contenedor</label>
+                    <input class="form-control" id="mar_contenedor" value="MSCU1234567" readonly>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label pn-muted">Comentario</label>
+                    <textarea class="form-control" id="mar_comentario" rows="3" readonly>(Mock) Comentario o notas visibles para cliente.</textarea>
+                  </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="fw-semibold mb-2">Eventos (solo lectura)</div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Evento</th>
+                        <th>Comentario</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mar_eventos">
+                      <tr>
+                        <td>2026-02-06</td>
+                        <td>Arribo</td>
+                        <td class="pn-muted">(Mock) Arribo registrado</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Detalle Operación Marítimo–Ferro (Solo lectura) -->
+<div class="modal fade" id="modalDetalleMF" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-xxl-wide">
+    <div class="modal-content rounded-4 border-0">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0">Detalle Marítimo–Ferro (LBMF)</h5>
+          <div class="small pn-muted">Solo lectura — <span id="mf_numero">PN-LBMF-2026-003</span></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <!-- Resumen -->
+          <div class="col-12 col-lg-4">
+            <div class="card rounded-4 border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="fw-semibold mb-2">Resumen</div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Cliente</span> <span class="fw-semibold" id="mf_cliente">Andrea/Tommer</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">FO</span> <span class="fw-semibold" id="mf_fo">PN-FO-2026-014</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Ferro/Caja</span> <span class="fw-semibold" id="mf_ferro">FERRO-00123</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Bultos totales</span> <span class="fw-semibold" id="mf_bultos">120</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between">
+                    <span class="pn-muted">Estatus</span> <span class="badge text-bg-success" id="mf_estatus">Abierta</span>
+                  </li>
+                </ul>
+
+                <div class="mt-3 d-grid">
+                  <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
+                    <i data-feather="folder" class="me-1"></i> Ver/Subir documentos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Asignaciones -->
+          <div class="col-12 col-lg-8">
+            <div class="card rounded-4 border-0 shadow-sm">
+              <div class="card-body">
+                <div class="fw-semibold mb-2">Asignaciones (Marítimos → FO)</div>
+
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Operación Marítima</th>
+                        <th>Contenedor Marítimo</th>
+                        <th class="text-end">Bultos asignados</th>
+                        <th class="text-end">Disponibles</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mf_asignaciones">
+                      <tr>
+                        <td>PN-OP-2026-001</td>
+                        <td>MSCU1234567</td>
+                        <td class="text-end">80</td>
+                        <td class="text-end">40</td>
+                      </tr>
+                      <tr>
+                        <td colspan="4" class="text-center pn-muted py-3">
+                          (Mock) Aquí va el detalle real de contenedor_maritimo_ferro...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="fw-semibold mb-2">Eventos (solo lectura)</div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Evento</th>
+                        <th>Comentario</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mf_eventos">
+                      <tr>
+                        <td>2026-02-07</td>
+                        <td>Asignación confirmada</td>
+                        <td class="pn-muted">(Mock) Confirmado</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- MODAL: Documentos -->
 <div class="modal fade" id="modalDocs" tabindex="-1" aria-hidden="true">
@@ -653,27 +1051,7 @@
   </div>
 </div>
 
-<!-- MODAL: Ayuda -->
-<div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content rounded-4 border-0">
-      <div class="modal-header">
-        <h5 class="modal-title">Ayuda</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <ul class="mb-0">
-          <li>Este portal es <b>solo lectura</b>: no puedes editar ni eliminar operaciones.</li>
-          <li>Puedes <b>subir documentos</b> por operación desde “Docs”.</li>
-          <li>Usa filtros (tipo/estatus/ETA) para encontrar más rápido.</li>
-        </ul>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" data-bs-dismiss="modal" type="button">Entendido</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <!-- Bootstrap + Feather -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -688,18 +1066,20 @@
   const btnOpen = document.getElementById('btnOpenSidebar');
   const btnClose = document.getElementById('btnCloseSidebar');
 
-  function openSidebar(){
+  function openSidebar() {
     sidebar.classList.add('show');
     overlay.classList.add('show');
   }
-  function closeSidebar(){
+
+  function closeSidebar() {
     sidebar.classList.remove('show');
     overlay.classList.remove('show');
   }
 
-  if(btnOpen) btnOpen.addEventListener('click', openSidebar);
-  if(btnClose) btnClose.addEventListener('click', closeSidebar);
-  if(overlay) overlay.addEventListener('click', closeSidebar);
+  if (btnOpen) btnOpen.addEventListener('click', openSidebar);
+  if (btnClose) btnClose.addEventListener('click', closeSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
 </script>
 </body>
+
 </html>
