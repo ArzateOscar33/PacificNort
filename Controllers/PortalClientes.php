@@ -67,4 +67,60 @@ class PortalClientes extends Controller
             echo json_encode(['ok' => false, 'msg' => 'Error interno al listar operaciones.']);
         }
     }
+
+    // ✅ NUEVO: detalle de operación Marítima/LBMF + eventos (JSON)
+    // Uso: POST/GET PortalClientes/detalleMaritima con { id_operacion }
+    public function detalleMaritima()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+            if ($clienteId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'Sesión sin cliente válido.']);
+                return;
+            }
+
+            $in = $_POST ?: $_GET;
+            $opId = (int)($in['id_operacion'] ?? 0);
+
+            if ($opId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'ID de operación inválido.']);
+                return;
+            }
+
+            $res = $this->model->obtenerDetalleMaritimaConEventos($clienteId, $opId);
+            echo json_encode($res);
+        } catch (Throwable $e) {
+            error_log("PortalClientes::detalleMaritima ERROR: " . $e->getMessage());
+            echo json_encode(['ok' => false, 'msg' => 'Error interno al obtener detalle.']);
+        }
+    }
+
+
+    public function eventosMaritima()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+            if ($clienteId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'Sesión sin cliente válido.']);
+                return;
+            }
+
+            $in = $_POST ?: $_GET;
+            $operacionId = (int)($in['id_operacion'] ?? ($in['id'] ?? 0));
+            if ($operacionId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'ID de operación inválido.']);
+                return;
+            }
+
+            $rows = $this->model->listarEventosOperacion($clienteId, $operacionId);
+            echo json_encode(['ok' => true, 'rows' => $rows]);
+        } catch (Throwable $e) {
+            error_log("PortalClientes::eventosMaritima ERROR: " . $e->getMessage());
+            echo json_encode(['ok' => false, 'msg' => 'Error interno al listar eventos.']);
+        }
+    }
 }

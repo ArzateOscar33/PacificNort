@@ -397,9 +397,7 @@
   </script>
 
 
-  <!-- JS del portal -->
-  <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
-  <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosMaritimos.js"></script>
+
 
 
 
@@ -757,34 +755,37 @@
   </div>
 
 
-  <script>
-    feather.replace();
-
-    // Sidebar mobile toggle
-    const sidebar = document.getElementById('pnSidebar');
-    const overlay = document.getElementById('pnOverlay');
-    const btnOpen = document.getElementById('btnOpenSidebar');
-    const btnClose = document.getElementById('btnCloseSidebar');
-
-    function openSidebar() {
-      sidebar.classList.add('show');
-      overlay.classList.add('show');
-    }
-
-    function closeSidebar() {
-      sidebar.classList.remove('show');
-      overlay.classList.remove('show');
-    }
-
-    if (btnOpen) btnOpen.addEventListener('click', openSidebar);
-    if (btnClose) btnClose.addEventListener('click', closeSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-  </script>
 
 
 </body>
 
 </html>
+<!-- JS del portal -->
+<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosMaritimos.js"></script>
+<script>
+  feather.replace();
+
+  // Sidebar mobile toggle
+  const sidebar = document.getElementById('pnSidebar');
+  const overlay = document.getElementById('pnOverlay');
+  const btnOpen = document.getElementById('btnOpenSidebar');
+  const btnClose = document.getElementById('btnCloseSidebar');
+
+  function openSidebar() {
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+  }
+
+  if (btnOpen) btnOpen.addEventListener('click', openSidebar);
+  if (btnClose) btnClose.addEventListener('click', closeSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+</script>
 
 <!-- MODAL: Detalle Operación 
 <div class="modal fade" id="modalDetalleOp" tabindex="-1" aria-hidden="true">

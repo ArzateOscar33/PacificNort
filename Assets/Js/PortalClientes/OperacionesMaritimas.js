@@ -11,6 +11,9 @@
 
   const ENDPOINT = `${BASE_URL}PortalClientes/listarOperacionesCliente`;
 
+  //detalle maritima
+  const ENDPOINT_DETALLE_MAR = `${BASE_URL}PortalClientes/detalleMaritima`;
+
   // ===== Refs UI (IDs de tu vista) =====
   const tb = document.getElementById("tbOpsMar");
   const pagingLbl = document.getElementById("marPagingLbl");
@@ -294,6 +297,196 @@
     `;
   }
 
+  //modal maritimo
+  // ===== Modal refs (Marítima) =====
+  const modalMar = document.getElementById("modalDetalleMaritima");
+
+  const elMarNumero = document.getElementById("mar_numero");
+  const elMarCliente = document.getElementById("mar_cliente");
+  const elMarTipo = document.getElementById("mar_tipo");
+  const elMarEstatus = document.getElementById("mar_estatus");
+  const elMarEtd = document.getElementById("mar_etd");
+  const elMarEta = document.getElementById("mar_eta");
+  const elMarBl = document.getElementById("mar_bl");
+
+  const inpMarNumero = document.getElementById("mar_numero_input");
+  const inpMarPuerto = document.getElementById("mar_puerto");
+  const inpMarNaviera = document.getElementById("mar_naviera");
+  const inpMarContenedor = document.getElementById("mar_contenedor");
+  const txtMarComentario = document.getElementById("mar_comentario");
+
+  const tbMarEventos = document.getElementById("mar_eventos");
+
+  function tipoLabel(tipoClave) {
+    const t = String(tipoClave || "").toUpperCase();
+    if (t === "LBMF") return "Mixto (LBMF)";
+    if (t === "MAR") return "Marítimo";
+    return t || "—";
+  }
+
+  function setBadgeEstatus(el, estatusTxt) {
+    if (!el) return;
+    const t = String(estatusTxt || "—");
+
+    // limpia clases bootstrap badge
+    el.classList.remove(
+      "text-bg-success",
+      "text-bg-warning",
+      "text-bg-danger",
+      "text-bg-secondary",
+      "text-bg-info",
+      "text-bg-primary",
+    );
+
+    // mapeo simple por texto (ajusta si prefieres por id)
+    const low = t.toLowerCase();
+    if (low.includes("abier")) el.classList.add("text-bg-success");
+    else if (low.includes("revisi")) el.classList.add("text-bg-warning");
+    else if (low.includes("pend")) el.classList.add("text-bg-secondary");
+    else if (low.includes("cerr")) el.classList.add("text-bg-danger");
+    else el.classList.add("text-bg-primary");
+
+    el.textContent = t;
+  }
+
+  function renderEventosMar(rows) {
+    if (!tbMarEventos) return;
+
+    if (!rows || rows.length === 0) {
+      tbMarEventos.innerHTML = `
+        <tr>
+          <td colspan="3" class="text-center pn-muted py-3">Sin eventos</td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = "";
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      html += `
+        <tr>
+          <td>${esc(fmtDate(r.fecha) || "—")}</td>
+          <td>${esc(r.evento || "—")}</td>
+          <td class="pn-muted">${esc(r.comentario || "")}</td>
+        </tr>
+      `;
+    }
+    tbMarEventos.innerHTML = html;
+  }
+
+  function limpiarModalMar() {
+    if (elMarNumero) elMarNumero.textContent = "—";
+    if (inpMarNumero) inpMarNumero.value = "";
+
+    if (elMarCliente) elMarCliente.textContent = "—";
+    if (elMarTipo) elMarTipo.textContent = "—";
+    if (elMarEstatus) setBadgeEstatus(elMarEstatus, "—");
+
+    if (elMarEtd) elMarEtd.textContent = "—";
+    if (elMarEta) elMarEta.textContent = "—";
+    if (elMarBl) elMarBl.textContent = "—";
+
+    if (inpMarPuerto) inpMarPuerto.value = "";
+    if (inpMarNaviera) inpMarNaviera.value = "";
+    if (inpMarContenedor) inpMarContenedor.value = "";
+    if (txtMarComentario) txtMarComentario.value = "";
+
+    if (tbMarEventos) {
+      tbMarEventos.innerHTML = `
+        <tr>
+          <td colspan="3" class="text-center pn-muted py-3">Cargando...</td>
+        </tr>
+      `;
+    }
+  }
+
+  function fillModalMar(det) {
+    // det = json.detalle
+    const opNum = det.numero_operacion || "—";
+    const cliente = det.cliente || "—";
+    const tipo = det.tipo_nombre || tipoLabel(det.tipo_clave);
+    const estatus = det.estatus || "—";
+    if (inpMarPuerto) inpMarPuerto.value = det.puerto || "";
+    if (inpMarNaviera) inpMarNaviera.value = det.naviera || "";
+    if (txtMarComentario) txtMarComentario.value = det.comentario || "";
+
+    if (elMarNumero) elMarNumero.textContent = opNum;
+    if (inpMarNumero) inpMarNumero.value = opNum;
+
+    if (elMarCliente) elMarCliente.textContent = cliente;
+    if (elMarTipo) elMarTipo.textContent = tipo;
+    if (elMarEstatus) setBadgeEstatus(elMarEstatus, estatus);
+
+    if (elMarEtd) elMarEtd.textContent = fmtDate(det.etd) || "—";
+    if (elMarEta) elMarEta.textContent = fmtDate(det.eta) || "—";
+    if (elMarBl) elMarBl.textContent = det.numero_bl || "—";
+
+    // Contenedores (concat)
+    if (inpMarContenedor) inpMarContenedor.value = det.contenedores || "";
+
+    // Campos opcionales (dependen de tu SQL final)
+    if (inpMarPuerto) inpMarPuerto.value = det.puerto || "";
+    if (inpMarNaviera) inpMarNaviera.value = det.naviera || "";
+    if (txtMarComentario) txtMarComentario.value = det.comentario || "";
+  }
+
+  function cargarDetalleMaritima(opId) {
+    if (!opId || opId <= 0) return;
+
+    limpiarModalMar();
+
+    xhrPost(ENDPOINT_DETALLE_MAR, { id_operacion: opId }, function (err, json) {
+      if (err) {
+        // deja el modal con mensaje
+        if (tbMarEventos) {
+          tbMarEventos.innerHTML = `
+            <tr>
+              <td colspan="3" class="text-center text-danger py-3">
+                No se pudo cargar el detalle.
+              </td>
+            </tr>
+          `;
+        }
+        return;
+      }
+
+      if (!json || json.ok !== true) {
+        const msg =
+          json && json.msg ? json.msg : "No se pudo obtener el detalle.";
+        if (tbMarEventos) {
+          tbMarEventos.innerHTML = `
+            <tr>
+              <td colspan="3" class="text-center text-danger py-3">
+                ${esc(msg)}
+              </td>
+            </tr>
+          `;
+        }
+        return;
+      }
+
+      const det = json.detalle || null;
+      if (!det) {
+        if (tbMarEventos) {
+          tbMarEventos.innerHTML = `
+            <tr>
+              <td colspan="3" class="text-center text-danger py-3">
+                Detalle vacío.
+              </td>
+            </tr>
+          `;
+        }
+        return;
+      }
+
+      fillModalMar(det);
+      renderEventosMar(Array.isArray(json.eventos) ? json.eventos : []);
+
+      if (window.feather) window.feather.replace();
+    });
+  }
+
   // ===== Cargar datos =====
   function cargarListado() {
     buildQueryFromUI();
@@ -431,13 +624,25 @@
 
       // ✅ 1) Abrir modal detalle Marítima
       if (action === "detalle-mar") {
-        const modalEl = document.getElementById("modalDetalleMaritima");
-        if (modalEl && window.bootstrap) {
-          // (aquí luego llenaremos campos)
-          // Ejemplo: document.getElementById("mar_numero").textContent = ...
-          const m = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-          m.show();
+        console.log("CLICK detalle-mar", { opId });
+        console.log("modalMar:", modalMar);
+        console.log("bootstrap:", window.bootstrap);
+
+        if (!modalMar) {
+          alert("No se encontró #modalDetalleMaritima en el DOM");
+          return;
         }
+        if (!window.bootstrap || !window.bootstrap.Modal) {
+          alert(
+            "Bootstrap Modal no está disponible (window.bootstrap undefined)",
+          );
+          return;
+        }
+
+        const m = window.bootstrap.Modal.getOrCreateInstance(modalMar);
+        m.show();
+
+        cargarDetalleMaritima(opId);
         return;
       }
 
