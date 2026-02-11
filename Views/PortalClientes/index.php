@@ -691,7 +691,7 @@
                   <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
                       <span class="pn-muted">Cliente</span>
-                      <span class="fw-semibold" id="fo_cliente">Andrea/Tommer</span>
+                      <span class="fw-semibold" id="fo_cliente"><?php echo $data['nombre_cliente']; ?></span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                       <span class="pn-muted">Ferro/Caja</span>

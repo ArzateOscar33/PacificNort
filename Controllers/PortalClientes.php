@@ -6,17 +6,31 @@ class PortalClientes extends Controller
     {
         parent::__construct();
 
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        if (session_status() === PHP_SESSION_NONE) session_start();
 
+        // Solo rol Cliente
         $this->requireRoles([3]);
 
-        if (empty($_SESSION['cliente_id']) || (int)$_SESSION['cliente_id'] <= 0) {
-            header('Location: ' . BASE_URL);
+        // Si no hay sesión de usuario, al login
+        if (empty($_SESSION['id_usuario'])) {
+            header('Location: ' . BASE_URL . 'admin');
+            exit;
+        }
+
+        // Detectar ruta actual (según tu router ?url=Controller/metodo)
+        $accion = trim($_GET['url'] ?? '', '/'); // ej: "PortalClientes/pendiente"
+
+        $permitidasSinCliente = ['PortalClientes/pendiente', 'PortalClientes/salir'];
+
+        $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+
+        if ($clienteId <= 0 && !in_array($accion, $permitidasSinCliente, true)) {
+            header('Location: ' . BASE_URL . 'PortalClientes/pendiente');
             exit;
         }
     }
+
+
     public function salir()
     {
         // Si hay sesión activa, destruimos todo
@@ -48,12 +62,23 @@ class PortalClientes extends Controller
         header('Location: ' . BASE_URL . 'admin');
         exit;
     }
+
+    public function pendiente()
+    {
+
+        $data['title'] = 'Cuenta pendiente de vinculación';
+        $data['nombre_usuario'] = $this->model->getNombreUsuario();
+        $this->views->getView('PortalClientes', 'pendiente', $data);
+    }
+
     public function index()
     {
+
         if (empty($_SESSION['nombre_usuario'])) {
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+
 
         $data['title'] = 'Portal Cliente';
         $data['nombre_cliente'] = $this->model->getNombreCliente();

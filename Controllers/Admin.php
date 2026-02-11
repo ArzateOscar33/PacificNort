@@ -1,10 +1,127 @@
 <?php
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'vendor/autoload.php';
+
 class Admin extends Controller
 {
     public function __construct()
     {
         parent::__construct();
         session_start();
+    }
+    private function mailer(): PHPMailer
+    {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = HOST_SMTP;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = USER_SMTP;
+        $mail->Password   = PASS_SMTP;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = PUERTO_SMTP;
+
+        $mail->CharSet = 'UTF-8';
+        $mail->isHTML(true);
+
+        return $mail;
+    }
+    private function enviarCorreoRegistroUsuario(string $correoUsuario, string $nombre): void
+    {
+        $mail = $this->mailer();
+        $mail->setFrom(USER_SMTP, 'PacificNort Suite');
+        $mail->addAddress($correoUsuario, $nombre);
+
+        $mail->Subject = 'Solicitud recibida - PacificNort Suite';
+
+        $mail->Body = '
+      <div style="max-width:600px;margin:0 auto;font-family:\'Segoe UI\',sans-serif;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+        <div style="background:#0f172a;padding:22px 24px;color:#e2e8f0;">
+          <h2 style="margin:0;font-size:18px;">Solicitud recibida</h2>
+          <div style="margin-top:6px;font-size:13px;color:rgba(226,232,240,.8);">PacificNort Suite | Portal Cliente</div>
+        </div>
+        <div style="padding:24px;color:#0f172a;">
+          <p style="margin-top:0;font-size:15px;">Hola <b>' . htmlspecialchars($nombre) . '</b>,</p>
+
+          <p style="font-size:15px;line-height:1.6;">
+            Recibimos tu solicitud de acceso al Portal Cliente.
+            En breve, nuestro equipo se comunicará contigo para <b>vincular tu usuario</b> con un cliente registrado y activar tu acceso.
+          </p>
+
+          <div style="border:1px solid rgba(15,23,42,.10);background:#f8fafc;border-radius:10px;padding:14px 16px;margin:18px 0;">
+            <div style="font-weight:700;margin-bottom:6px;">Estado actual</div>
+            <div style="font-size:14px;color:#334155;">Pendiente de vinculación por administrador.</div>
+          </div>
+
+          <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:0;">
+            Si no solicitaste esta cuenta, ignora este correo.
+          </p>
+
+          <p style="margin-top:18px;font-size:15px;">
+            Saludos,<br><b>Equipo PacificNort</b>
+          </p>
+        </div>
+        <div style="background:#f1f5f9;padding:14px 18px;text-align:center;font-size:12px;color:#64748b;">
+          © ' . date("Y") . ' PacificNort. Mensaje automático, no respondas a este correo.
+        </div>
+      </div>';
+
+        $mail->AltBody = "Hola {$nombre}. Recibimos tu solicitud de acceso. Tu cuenta está pendiente de vinculación por un administrador. En breve nos comunicaremos contigo.";
+
+        $mail->send();
+    }
+    private function enviarCorreoRegistroAdmin(string $correoUsuario, string $nombre, string $telefono = ''): void
+    {
+        $mail = $this->mailer();
+        $mail->setFrom(USER_SMTP, 'PacificNort Suite');
+        $mail->addAddress(USER_SMTP, 'Soporte PacificNort');
+
+        $mail->Subject = 'Nuevo registro de Portal Cliente - acción requerida';
+
+        $tel = trim($telefono) !== '' ? htmlspecialchars($telefono) : 'No proporcionado';
+
+        $mail->Body = '
+      <div style="max-width:640px;margin:0 auto;font-family:\'Segoe UI\',sans-serif;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+        <div style="background:#0f172a;padding:22px 24px;color:#e2e8f0;">
+          <h2 style="margin:0;font-size:18px;">Nuevo usuario cliente registrado</h2>
+          <div style="margin-top:6px;font-size:13px;color:rgba(226,232,240,.8);">Acción requerida: contactar y vincular</div>
+        </div>
+        <div style="padding:24px;color:#0f172a;">
+          <p style="margin-top:0;font-size:15px;">
+            Se registró un nuevo usuario con rol <b>Cliente</b> y quedó en estado <b>Pendiente de vinculación</b>.
+          </p>
+
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <tr>
+              <td style="padding:10px;border:1px solid rgba(15,23,42,.10);background:#f8fafc;width:160px;"><b>Nombre</b></td>
+              <td style="padding:10px;border:1px solid rgba(15,23,42,.10);">' . htmlspecialchars($nombre) . '</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border:1px solid rgba(15,23,42,.10);background:#f8fafc;"><b>Correo</b></td>
+              <td style="padding:10px;border:1px solid rgba(15,23,42,.10);">
+                <a href="mailto:' . htmlspecialchars($correoUsuario) . '">' . htmlspecialchars($correoUsuario) . '</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border:1px solid rgba(15,23,42,.10);background:#f8fafc;"><b>Teléfono</b></td>
+              <td style="padding:10px;border:1px solid rgba(15,23,42,.10);">' . $tel . '</td>
+            </tr>
+          </table>
+
+          <p style="margin-top:16px;font-size:14px;color:#475569;">
+            Siguiente paso: contactar al usuario y vincularlo a un cliente desde el panel admin.
+          </p>
+        </div>
+        <div style="background:#f1f5f9;padding:14px 18px;text-align:center;font-size:12px;color:#64748b;">
+          © ' . date("Y") . ' PacificNort.
+        </div>
+      </div>';
+
+        $mail->AltBody = "Nuevo usuario cliente registrado.\nNombre: {$nombre}\nCorreo: {$correoUsuario}\nTeléfono: {$telefono}\nAcción: contactar y vincular a un cliente.";
+
+        $mail->send();
     }
 
     public function index()
@@ -42,15 +159,13 @@ class Admin extends Controller
                         $_SESSION['cliente_id'] = isset($data['cliente_id']) ? (int)$data['cliente_id'] : 0;
                         // ✅ NUEVO: URL destino por rol
                         $redirect = BASE_URL . 'admin/home';
-                        if ($_SESSION['rol_usuario'] === 3) { // 3 = Cliente
-                            // seguridad: si es cliente, debe tener cliente_id
-                            if ($_SESSION['cliente_id'] <= 0) {
-                                $respuesta = ['msg' => 'Tu usuario cliente no tiene cliente asignado. Contacta a soporte.', 'icono' => 'error'];
-                                echo json_encode($respuesta, JSON_UNESCAPED_UNICODE);
-                                die();
-                            }
+                        if ((int)$_SESSION['rol_usuario'] === 3) {
                             $redirect = BASE_URL . 'PortalClientes';
+                            if ((int)$_SESSION['cliente_id'] <= 0) {
+                                $redirect = BASE_URL . 'PortalClientes/pendiente';
+                            }
                         }
+
                         $respuesta = array('msg' => 'Acceso correcto', 'icono' => 'success');
                     } else {
                         $respuesta = array('msg' => 'Contraseña incorrecta', 'icono' => 'warning');
@@ -110,7 +225,22 @@ class Admin extends Controller
                     $hash = password_hash($clave, PASSWORD_DEFAULT);
                     $data = $this->model->registrar($nombre, $apellido, $correo, $hash, $telefono, $puesto_id, $departamento_id, $rol_id);
                     if ($data > 0) {
-                        $respuesta = array('msg' => 'Usuario registrado correctamente', 'icono' => 'success');
+                        // ✅ Registrar ok
+                        $respuesta = array('msg' => 'Usuario registrado correctamente. Revisa tu correo.', 'icono' => 'success');
+
+                        // ✅ Enviar correos (no bloquear si fallan)
+                        try {
+                            $this->enviarCorreoRegistroUsuario($correo, $nombre);
+                        } catch (Throwable $e) {
+                            error_log("Registro mail usuario ERROR: " . $e->getMessage());
+                            // No rompas el registro
+                        }
+
+                        try {
+                            $this->enviarCorreoRegistroAdmin($correo, $nombre, $telefono);
+                        } catch (Throwable $e) {
+                            error_log("Registro mail admin ERROR: " . $e->getMessage());
+                        }
                     } else {
                         $respuesta = array('msg' => 'Error al registrar usuario', 'icono' => 'error');
                     }
