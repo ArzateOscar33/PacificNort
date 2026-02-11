@@ -134,9 +134,10 @@
             <div class="small pn-muted-inv" id="lblUsuarioTop">Usuario:<?php echo $data['nombre_usuario']; ?></div>
           </div>
 
-          <button class="btn btn-outline-light btn-sm" type="button" id="btnCerrarSesion">
+          <a class="btn btn-outline-light btn-sm" href="<?php echo BASE_URL; ?>admin/salir">
             <i data-feather="log-out" class="me-1"></i> Cerrar sesión
-          </button>
+          </a>
+
         </div>
 
       </div>
@@ -285,10 +286,10 @@
               </select>
 
               <div class="btn-group" role="group" aria-label="Exportaciones">
-                <button class="btn btn-sm btn-outline-success" id="btnExcelFerroOP">
+                <button class="btn btn-sm btn-outline-success" id="btnExcelOpMar">
                   <i data-feather="file-text" class="me-1"></i> Excel
                 </button>
-                <button class="btn btn-sm btn-outline-warning" id="btnPdfFerroOP">
+                <button class="btn btn-sm btn-outline-warning" id="btnPdfOpMar">
                   <i data-feather="file" class="me-1"></i> PDF
                 </button>
               </div>
@@ -330,6 +331,75 @@
         </div>
       </div>
 
+
+      <!-- Filtros FO -->
+      <div class="card shadow-sm border-0 rounded-4 mb-3" id="cardFiltrosFO">
+        <div class="card-body">
+          <div class="row g-3 align-items-end" id="rowFiltrosFO">
+
+            <!-- Buscar -->
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="foSearch">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text"><i data-feather="search"></i></span>
+                <input class="form-control" id="foSearch"
+                  placeholder="Operación FO, Ferro/Caja, Origen, Destino..." />
+              </div>
+            </div>
+
+            <!-- Estatus -->
+            <div class="col-12 col-md-2">
+              <label class="form-label" for="foEstatus">Estatus</label>
+              <select class="form-select" id="foEstatus" name="fo_estatus">
+                <option value="0">Todos</option>
+
+                <?php if (!empty($data['estatus_op'])): ?>
+                  <?php foreach ($data['estatus_op'] as $estatus): ?>
+                    <option value="<?php echo (int)$estatus['id_estatus']; ?>">
+                      <?php echo htmlspecialchars($estatus['nombre']); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+
+              </select>
+            </div>
+
+            <!-- Rango fecha (FO) -->
+            <div class="col-12 col-md-2">
+              <label class="form-label" for="foFechaIni">Rango (Fecha)</label>
+              <input type="date" class="form-control" id="foFechaIni" />
+            </div>
+
+            <div class="col-12 col-md-2">
+              <label class="form-label" for="foFechaFin">&nbsp;</label>
+              <input type="date" class="form-control" id="foFechaFin" />
+            </div>
+
+            <!-- Botones -->
+            <div class="col-12 col-md-1 d-grid">
+              <button class="btn btn-dark" type="button" id="btnFOFiltrar">
+                <i data-feather="filter" class="me-1"></i> Filtrar
+              </button>
+            </div>
+
+            <div class="col-12 col-md-1 d-grid">
+              <button class="btn btn-outline-secondary" type="button" id="btnFOLimpiar">
+                <i data-feather="x-circle" class="me-1"></i> Limpiar
+              </button>
+            </div>
+
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Chips / filtros activos FO -->
+          <div class="d-flex flex-wrap align-items-center gap-2" id="foFiltrosActivosBar">
+
+          </div>
+
+        </div>
+      </div>
+
       <!-- Tabla FO -->
       <div class="card shadow-sm border-0 rounded-4 mt-3" id="cardTablaFO">
         <div class="card-header bg-white border-0 pt-4 px-4">
@@ -344,10 +414,15 @@
                 <option value="30">30 / pág</option>
                 <option value="50">50 / pág</option>
               </select>
+              <div class="btn-group" role="group" aria-label="Exportaciones">
+                <button class="btn btn-sm btn-outline-success" id="btnExcelOpFO">
+                  <i data-feather="file-text" class="me-1"></i> Excel
+                </button>
+                <button class="btn btn-sm btn-outline-warning" id="btnPdfOpFO">
+                  <i data-feather="file" class="me-1"></i> PDF
+                </button>
+              </div>
 
-              <button class="btn btn-sm btn-outline-secondary" id="btnExportFO" type="button">
-                <i data-feather="download" class="me-1"></i> Exportar
-              </button>
             </div>
           </div>
         </div>
@@ -359,7 +434,6 @@
                 <tr>
                   <th>Operación</th>
                   <th>Ferro/Caja</th>
-                  <th>Origen</th>
                   <th>Destino</th>
                   <th>Contenedores Maritimos</th>
                   <th>Fecha</th>
@@ -645,11 +719,7 @@
                     </li>
                   </ul>
 
-                  <div class="mt-3 d-grid">
-                    <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
-                      <i data-feather="folder" class="me-1"></i> Ver/Subir documentos
-                    </button>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -794,118 +864,3 @@
   if (btnClose) btnClose.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
 </script>
-
-<!-- MODAL: Detalle Operación 
-<div class="modal fade" id="modalDetalleOp" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-xl modal-xxl-wide">
-    <div class="modal-content rounded-4 border-0">
-      <div class="modal-header">
-        <div>
-          <h5 class="modal-title mb-0">Detalle de operación</h5>
-          <div class="small pn-muted">Solo lectura — PN-OP-2026-001</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row g-3">
-          <div class="col-12 col-lg-4">
-            <div class="card rounded-4 border-0 shadow-sm h-100">
-              <div class="card-body">
-                <div class="fw-semibold mb-2">Resumen</div>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span class="pn-muted">Cliente</span> <span class="fw-semibold">Andrea/Tommer</span>
-                  </li>
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span class="pn-muted">Tipo</span> <span class="fw-semibold">Marítimo</span>
-                  </li>
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span class="pn-muted">Estatus</span> <span class="badge text-bg-success">Abierta</span>
-                  </li>
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span class="pn-muted">ETD</span> <span class="fw-semibold">2026-02-05</span>
-                  </li>
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span class="pn-muted">ETA</span> <span class="fw-semibold">2026-02-12</span>
-                  </li>
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span class="pn-muted">BL</span> <span class="fw-semibold">BL-883120</span>
-                  </li>
-                </ul>
-                <div class="mt-3 d-grid">
-                  <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDocs">
-                    <i data-feather="folder" class="me-1"></i> Ver/Subir documentos
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12 col-lg-8">
-            <div class="card rounded-4 border-0 shadow-sm">
-              <div class="card-body">
-                <div class="fw-semibold mb-2">Información</div>
-
-                <div class="row g-3">
-                  <div class="col-12 col-md-6">
-                    <label class="form-label pn-muted">Número de operación</label>
-                    <input class="form-control" value="PN-OP-2026-001" readonly>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label class="form-label pn-muted">Puerto / Origen</label>
-                    <input class="form-control" value="Lázaro Cárdenas" readonly>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label class="form-label pn-muted">Naviera</label>
-                    <input class="form-control" value="(Mock) Naviera X" readonly>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label class="form-label pn-muted">Contenedor</label>
-                    <input class="form-control" value="MSCU1234567" readonly>
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label pn-muted">Comentario</label>
-                    <textarea class="form-control" rows="3" readonly>(Mock) Comentario o notas visibles para cliente.</textarea>
-                  </div>
-                </div>
-
-                <hr class="my-3">
-
-                <div class="fw-semibold mb-2">Eventos (solo lectura)</div>
-                <div class="table-responsive">
-                  <table class="table table-sm align-middle">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Evento</th>
-                        <th>Comentario</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>2026-02-06</td>
-                        <td>Arribo</td>
-                        <td class="pn-muted">(Mock) Arribo registrado</td>
-                      </tr>
-                      <tr>
-                        <td>2026-02-07</td>
-                        <td>Revisión documental</td>
-                        <td class="pn-muted">(Mock) En proceso</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
--->

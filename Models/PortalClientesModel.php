@@ -250,4 +250,189 @@ class PortalClientesModel extends Query
             'eventos' => $eventos,
         ];
     }
+
+    //operaciones FO
+    // Models/PortalClientesModel.php (ejemplo)
+    public function listarOperacionesFerroCliente(int $clienteId, int $limit = 1000): array
+    {
+        $sql = "
+        SELECT DISTINCT
+            of.id_operacion_ferro,
+            of.numero_operacion,
+            of.fecha,
+            of.bultos_total,
+            of.comentarios,
+
+            of.estatus_id,
+            e.nombre AS estatus,
+
+            of.subtipo_operacion_id,
+            st.clave  AS subtipo_clave,
+            st.nombre AS subtipo_nombre,
+
+            of.destino_id,
+            ciu.nombre_ciudad AS destino,
+
+            of.transportista_id,
+            tr.nombre AS transportista,
+
+            of.contenedor_fisico_id,
+            cf.numero_ferro AS contenedor_fisico,
+
+            of.creado_por,
+            u.nombre AS creado_por_nombre,
+
+            /* ✅ Resumen de contenedores marítimos asignados a esta FO */
+            (
+                SELECT GROUP_CONCAT(
+                           DISTINCT cm.numero_contenedor
+                           ORDER BY cm.numero_contenedor SEPARATOR ', '
+                       )
+                FROM contenedor_maritimo_ferro cmf2
+                INNER JOIN contenedores_maritimos_operacion cmo2
+                        ON cmo2.id = cmf2.cont_maritimo_operacion_id
+                LEFT JOIN contenedores_maritimos cm
+                       ON cm.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                WHERE cmf2.operacion_ferro_id = of.id_operacion_ferro
+                  AND cmf2.estatus = 1
+            ) AS contenedores_maritimos
+
+        FROM operaciones_ferroviarias of
+        /* Catálogos para mostrar info en el Portal */
+        LEFT JOIN estatus e               ON e.id_estatus = of.estatus_id
+        LEFT JOIN subtipos_operacion st   ON st.id_subtipo = of.subtipo_operacion_id
+        LEFT JOIN ciudades ciu            ON ciu.id_ciudad = of.destino_id
+        LEFT JOIN transportistas tr       ON tr.id_transportista = of.transportista_id
+        LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id
+        LEFT JOIN usuarios u              ON u.id_usuario = of.creado_por
+
+        WHERE
+            /* 1) FO directa del cliente */
+            of.cliente_id = ?
+
+            OR
+
+            /* 2) FO vinculada a operación marítima cuyo cliente es el mismo */
+            EXISTS (
+                SELECT 1
+                FROM contenedor_maritimo_ferro cmf
+                INNER JOIN contenedores_maritimos_operacion cmo
+                        ON cmo.id = cmf.cont_maritimo_operacion_id
+                INNER JOIN operaciones o
+                        ON o.id_operacion = cmo.operacion_id
+                WHERE cmf.operacion_ferro_id = of.id_operacion_ferro
+                  AND o.cliente_id = ?
+            )
+
+        ORDER BY of.id_operacion_ferro DESC
+        LIMIT " . (int)$limit . "
+    ";
+
+        return $this->selectAll($sql, [$clienteId, $clienteId]) ?: [];
+    }
+
+
+    public function contarOperacionesFerroCliente(int $clienteId): int
+    {
+        $sql = "
+        SELECT COUNT(DISTINCT of.id_operacion_ferro) AS n
+        FROM operaciones_ferroviarias of
+        WHERE
+            of.cliente_id = ?
+            OR EXISTS (
+                SELECT 1
+                FROM contenedor_maritimo_ferro cmf
+                INNER JOIN contenedores_maritimos_operacion cmo
+                        ON cmo.id = cmf.cont_maritimo_operacion_id
+                INNER JOIN operaciones o
+                        ON o.id_operacion = cmo.operacion_id
+                WHERE cmf.operacion_ferro_id = of.id_operacion_ferro
+                  AND o.cliente_id = ?
+            )
+    ";
+        $row = $this->select($sql, [$clienteId, $clienteId]);
+        return $row ? (int)$row['n'] : 0;
+    }
+
+    // ✅ Seguridad: valida que la FO pertenezca al cliente (directa o vía marítima)
+    private function foPerteneceACliente(int $clienteId, int $opFerroId): bool
+    {
+        if ($clienteId <= 0 || $opFerroId <= 0) return false;
+
+        $sql = "
+        SELECT 1 AS ok
+        FROM operaciones_ferroviarias of
+        WHERE of.id_operacion_ferro = ?
+          AND (
+                of.cliente_id = ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedor_maritimo_ferro cmf
+                    INNER JOIN contenedores_maritimos_operacion cmo
+                            ON cmo.id = cmf.cont_maritimo_operacion_id
+                    INNER JOIN operaciones o
+                            ON o.id_operacion = cmo.operacion_id
+                    WHERE cmf.operacion_ferro_id = of.id_operacion_ferro
+                      AND o.cliente_id = ?
+                )
+          )
+        LIMIT 1
+    ";
+
+        $row = $this->select($sql, [$opFerroId, $clienteId, $clienteId]);
+        return !empty($row);
+    }
+
+    public function listarAsignacionesMaritimasFO(int $clienteId, int $opFerroId): array
+    {
+        if (!$this->foPerteneceACliente($clienteId, $opFerroId)) return [];
+
+        $sql = "
+        SELECT
+            cmf.id,
+            cmf.operacion_ferro_id,
+            cmf.cont_maritimo_operacion_id,
+            cmf.bultos_asignados,
+            cmf.fecha_asignacion,
+
+            o.id_operacion AS operacion_maritima_id,
+            o.numero_operacion AS operacion_maritima,
+
+            cm.id_contenedor_maritimo,
+            cm.numero_contenedor AS contenedor_maritimo
+
+        FROM contenedor_maritimo_ferro cmf
+        INNER JOIN contenedores_maritimos_operacion cmo
+                ON cmo.id = cmf.cont_maritimo_operacion_id
+        INNER JOIN operaciones o
+                ON o.id_operacion = cmo.operacion_id
+        LEFT JOIN contenedores_maritimos cm
+               ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        WHERE cmf.operacion_ferro_id = ?
+          AND cmf.estatus = 1
+        ORDER BY cmf.fecha_asignacion DESC, cmf.id DESC
+    ";
+
+        return $this->selectAll($sql, [$opFerroId]) ?: [];
+    }
+    public function listarEventosFO(int $clienteId, int $opFerroId): array
+    {
+        if (!$this->foPerteneceACliente($clienteId, $opFerroId)) return [];
+
+        $sql = "
+        SELECT
+            e.id_evento,
+            e.fecha,
+            te.nombre AS evento,
+            COALESCE(e.comentario,'') AS comentario
+        FROM eventos_ferroviarios e
+        LEFT JOIN tipos_evento_logistico te
+               ON te.id_tipo_evento = e.tipo_evento_id
+        WHERE e.operacion_ferro_id = ?
+          AND e.estatus = 1
+        ORDER BY e.fecha DESC, e.id_evento DESC
+    ";
+
+        return $this->selectAll($sql, [$opFerroId]) ?: [];
+    }
 }

@@ -33,6 +33,7 @@
   // Chips (opcionales; si no existen, no pasa nada)
   const chipCliente = document.getElementById("chipCliente");
   const chipEstatus = document.getElementById("chipEstatus");
+  const filtrosBar = document.getElementById("filtrosActivosBar");
 
   // ===== Estado =====
   const state = {
@@ -57,6 +58,45 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  //filtros
+  function buildChip(label, value) {
+    return `
+    <span class="chip">
+      <i data-feather="tag" style="width:14px;height:14px;"></i>
+      ${esc(label)}: ${esc(value)}
+    </span>
+  `;
+  }
+
+  function renderFiltrosActivosMar() {
+    if (!filtrosBar) return;
+
+    const chips = [];
+
+    const s = inpSearch ? String(inpSearch.value || "").trim() : "";
+    const estVal = selEstatus ? parseInt(selEstatus.value || "0", 10) : 0;
+    const etaIni = inpEtaIni ? String(inpEtaIni.value || "") : "";
+    const etaFin = inpEtaFin ? String(inpEtaFin.value || "") : "";
+
+    // OJO: en tu HTML no existe marTipo, así que esto solo aplica si luego lo agregas.
+    const tipoVal = selTipo ? String(selTipo.value || "") : "";
+
+    if (s) chips.push(buildChip("Buscar", s));
+
+    if (estVal && selEstatus) {
+      const opt = selEstatus.options[selEstatus.selectedIndex];
+      chips.push(buildChip("Estatus", opt ? opt.text : String(estVal)));
+    }
+
+    if (tipoVal) chips.push(buildChip("Tipo", tipoVal));
+    if (etaIni) chips.push(buildChip("ETA ini", etaIni));
+    if (etaFin) chips.push(buildChip("ETA fin", etaFin));
+
+    filtrosBar.innerHTML = chips.join(" ");
+
+    if (window.feather) window.feather.replace();
   }
 
   function fmtDate(d) {
@@ -190,7 +230,6 @@
                 <i data-feather="eye" class="me-1"></i> Ver
                 </button>
 
-                <!-- (opcional) botón Docs si quieres mantenerlo -->
                 <button class="btn btn-outline-primary"
                         type="button"
                         data-action="docs"
@@ -490,6 +529,7 @@
   // ===== Cargar datos =====
   function cargarListado() {
     buildQueryFromUI();
+    renderFiltrosActivosMar();
     syncChips();
 
     const payload = {
@@ -580,6 +620,7 @@
       if (inpEtaFin) inpEtaFin.value = "";
 
       state.page = 1;
+      renderFiltrosActivosMar();
       cargarListado();
     });
   }
@@ -687,6 +728,46 @@
       }
     });
   }
+  // ===== Buscar en vivo (debounce) como FO =====
+  let tSearch = null;
+
+  function onSearchInput() {
+    if (tSearch) clearTimeout(tSearch);
+    tSearch = setTimeout(function () {
+      state.page = 1;
+      renderFiltrosActivosMar(); // para que el chip "Buscar" se actualice mientras escribes
+      cargarListado();
+    }, 350);
+  }
+
+  if (inpSearch) {
+    inpSearch.addEventListener("input", onSearchInput);
+  }
+
+  if (selTipo)
+    selTipo.addEventListener("change", () => {
+      state.page = 1;
+      renderFiltrosActivosMar();
+      cargarListado();
+    });
+  if (selEstatus)
+    selEstatus.addEventListener("change", () => {
+      state.page = 1;
+      renderFiltrosActivosMar();
+      cargarListado();
+    });
+  if (inpEtaIni)
+    inpEtaIni.addEventListener("change", () => {
+      state.page = 1;
+      renderFiltrosActivosMar();
+      cargarListado();
+    });
+  if (inpEtaFin)
+    inpEtaFin.addEventListener("change", () => {
+      state.page = 1;
+      renderFiltrosActivosMar();
+      cargarListado();
+    });
 
   // ===== Init =====
   cargarListado();
