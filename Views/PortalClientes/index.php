@@ -130,8 +130,8 @@
         <div class="d-flex flex-wrap align-items-center gap-2" id="pnUserActions">
 
           <div class="text-end me-1" id="pnUserInfo">
-            <div class="fw-semibold" style="line-height:1.1;" id="lblClienteTop">Cliente: Andrea/Tommer</div>
-            <div class="small pn-muted-inv" id="lblUsuarioTop">Usuario: Andrea</div>
+            <div class="fw-semibold" style="line-height:1.1;" id="lblClienteTop">Cliente:<?php echo $data['nombre_cliente']; ?></div>
+            <div class="small pn-muted-inv" id="lblUsuarioTop">Usuario:<?php echo $data['nombre_usuario']; ?></div>
           </div>
 
           <button class="btn btn-outline-light btn-sm" type="button" id="btnCerrarSesion">
@@ -217,26 +217,24 @@
               </div>
             </div>
 
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="marTipo">Tipo</label>
-              <select class="form-select" id="marTipo">
-                <option value="">Todos</option>
-                <option value="MAR">Marítimo</option>
-                <option value="LBMF">Mixto (LBMF)</option>
-              </select>
-            </div>
 
             <div class="col-12 col-md-2">
               <label class="form-label" for="marEstatus">Estatus</label>
-              <select class="form-select" id="marEstatus">
+              <select class="form-select" id="marEstatus" name="estatus">
                 <option value="0">Todos</option>
-                <!-- ideal: value=estatus_id real -->
-                <option value="1">Pendiente</option>
-                <option value="5">En revisión</option>
-                <option value="9">Abierta</option>
-                <option value="2">Cerrada</option>
+
+                <?php if (!empty($data['estatus_op'])): ?>
+                  <?php foreach ($data['estatus_op'] as $estatus): ?>
+                    <option value="<?php echo (int)$estatus['id_estatus']; ?>">
+                      <?php echo htmlspecialchars($estatus['nombre']); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+
               </select>
             </div>
+
+
 
             <div class="col-12 col-md-2">
               <label class="form-label" for="marEtaIni">Rango (ETA)</label>
@@ -252,18 +250,21 @@
               <button class="btn btn-dark" type="button" id="btnMarFiltrar">
                 <i data-feather="filter" class="me-1"></i> Filtrar
               </button>
+
+            </div>
+            <div class="col-12 col-md-1">
+
+              <button class="btn  btn-outline-secondary ms-auto" type="button" id="btnMarLimpiar">
+                <i data-feather="x-circle" class="me-1"></i> Limpiar
+              </button>
             </div>
           </div>
 
           <hr class="my-3">
 
           <div class="d-flex flex-wrap align-items-center gap-2" id="filtrosActivosBar">
-            <span class="pn-muted small">Filtros activos:</span>
-            <span class="chip" id="chipCliente"><i data-feather="user" style="width:16px;height:16px;"></i> Andrea/Tommer</span>
-            <span class="chip" id="chipEstatus"><i data-feather="tag" style="width:16px;height:16px;"></i> Abiertas</span>
-            <button class="btn btn-sm btn-outline-secondary ms-auto" type="button" id="btnMarLimpiar">
-              <i data-feather="x-circle" class="me-1"></i> Limpiar
-            </button>
+
+
           </div>
         </div>
       </div>
@@ -283,9 +284,14 @@
                 <option value="50">50 / pág</option>
               </select>
 
-              <button class="btn btn-sm btn-outline-secondary" type="button" id="btnExportMar">
-                <i data-feather="download" class="me-1"></i> Exportar
-              </button>
+              <div class="btn-group" role="group" aria-label="Exportaciones">
+                <button class="btn btn-sm btn-outline-success" id="btnExcelFerroOP">
+                  <i data-feather="file-text" class="me-1"></i> Excel
+                </button>
+                <button class="btn btn-sm btn-outline-warning" id="btnPdfFerroOP">
+                  <i data-feather="file" class="me-1"></i> PDF
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -762,7 +768,9 @@
 </html>
 <!-- JS del portal -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosMaritimos.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesFerro.js"></script>
+
+
 <script>
   feather.replace();
 

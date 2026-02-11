@@ -26,6 +26,10 @@ class PortalClientes extends Controller
         }
 
         $data['title'] = 'Portal Cliente';
+        $data['nombre_cliente'] = $this->model->getNombreCliente();
+        $data['nombre_usuario'] = $this->model->getNombreUsuario();
+        $data['estatus_op'] = $this->model->getEstatusOp();
+
         $this->views->getView('PortalClientes', 'index', $data);
     }
 
