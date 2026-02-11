@@ -106,7 +106,7 @@ class PortalClientesModel extends Query
         LEFT JOIN contenedores_maritimos cm
                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         $where
-    ";
+        ";
 
         $rowTotal = $this->select($sqlTotal, $params);
         $total = $rowTotal ? (int)$rowTotal['total'] : 0;

@@ -107,9 +107,20 @@
   }
 
   function badgeEstatus(row) {
-    // Tu vista usa "badge-soft" (puedes personalizar)
     const name = row.estatus || "—";
-    return `<span class="badge badge-soft">${esc(name)}</span>`;
+    const cls = badgeClassByEstatusText(name);
+    return `<span class="badge ${cls}">${esc(name)}</span>`;
+  }
+
+  function badgeClassByEstatusText(estatusTxt) {
+    const t = String(estatusTxt || "—").toLowerCase();
+
+    if (t.includes("entre")) return "text-bg-success";
+    if (t.includes("bodega") || t.includes("yar")) return "text-bg-warning";
+    if (t.includes("puer")) return "text-bg-secondary";
+    if (t.includes("en ag")) return "text-bg-primary";
+
+    return "text-bg-primary";
   }
 
   function buildQueryFromUI() {
@@ -219,10 +230,10 @@
           <td>${esc(bl || "—")}</td>
           <td>${esc(etd || "—")}</td>
           <td>${esc(eta || "—")}</td>
-          <td>${badgeEstatus(r)}</td>
+          <td >${badgeEstatus(r)}</td>
           <td class="text-end">
             <div class="btn-group btn-group-sm" role="group">
-                <!-- ✅ Botón Detalle -->
+                
                 <button class="btn btn-outline-dark"
                         type="button"
                         data-action="detalle-mar"
@@ -367,7 +378,6 @@
     if (!el) return;
     const t = String(estatusTxt || "—");
 
-    // limpia clases bootstrap badge
     el.classList.remove(
       "text-bg-success",
       "text-bg-warning",
@@ -377,14 +387,7 @@
       "text-bg-primary",
     );
 
-    // mapeo simple por texto (ajusta si prefieres por id)
-    const low = t.toLowerCase();
-    if (low.includes("abier")) el.classList.add("text-bg-success");
-    else if (low.includes("revisi")) el.classList.add("text-bg-warning");
-    else if (low.includes("pend")) el.classList.add("text-bg-secondary");
-    else if (low.includes("cerr")) el.classList.add("text-bg-danger");
-    else el.classList.add("text-bg-primary");
-
+    el.classList.add(badgeClassByEstatusText(t));
     el.textContent = t;
   }
 

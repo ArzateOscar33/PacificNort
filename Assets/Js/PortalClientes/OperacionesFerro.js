@@ -87,12 +87,10 @@
   function badgeClassByEstatus(nombre) {
     const n = norm(nombre);
     if (!n) return "text-bg-secondary";
-    if (n.includes("abiert") || n.includes("activ")) return "text-bg-success";
-    if (n.includes("revision") || n.includes("revisión"))
-      return "text-bg-warning";
-    if (n.includes("pend")) return "text-bg-warning";
-    if (n.includes("cerr") || n.includes("final")) return "text-bg-secondary";
-    if (n.includes("cancel")) return "text-bg-danger";
+    if (n.includes("entre")) return "text-bg-success";
+    if (n.includes("bodega") || n.includes("yar")) return "text-bg-warning";
+    if (n.includes("puer")) return "text-bg-secondary";
+    if (n.includes("en ag")) return "text-bg-danger";
     return "text-bg-primary";
   }
 
