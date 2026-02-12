@@ -7,6 +7,15 @@ class PortalClientesModel extends Query
         parent::__construct();
     }
 
+    public function getUsuarioById(int $idUsuario): array
+    {
+        $sql = "SELECT id_usuario, nombre, correo, cliente_id
+            FROM usuarios
+            WHERE id_usuario = ?
+            LIMIT 1";
+
+        return $this->select($sql, [$idUsuario]) ?: [];
+    }
 
 
     // Datos de sesión

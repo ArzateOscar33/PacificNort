@@ -20,7 +20,7 @@ class PortalClientes extends Controller
         // Detectar ruta actual (según tu router ?url=Controller/metodo)
         $accion = trim($_GET['url'] ?? '', '/'); // ej: "PortalClientes/pendiente"
 
-        $permitidasSinCliente = ['PortalClientes/pendiente', 'PortalClientes/salir'];
+        $permitidasSinCliente = ['PortalClientes/pendiente', 'PortalClientes/salir', 'PortalClientes/verificarEstado'];
 
         $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
 
@@ -87,6 +87,42 @@ class PortalClientes extends Controller
 
         $this->views->getView('PortalClientes', 'index', $data);
     }
+
+    public function verificarEstado()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $idUsuario = (int)($_SESSION['id_usuario'] ?? 0);
+
+        if ($idUsuario <= 0) {
+            echo json_encode(['ok' => false]);
+            exit;
+        }
+
+        $usuario = $this->model->getUsuarioById($idUsuario);
+
+        if (empty($usuario)) {
+            echo json_encode(['ok' => false]);
+            exit;
+        }
+
+        $clienteId = (int)($usuario['cliente_id'] ?? 0);
+
+        // 🔄 Si ya fue vinculado, actualizamos sesión
+        if ($clienteId > 0) {
+            $_SESSION['cliente_id'] = $clienteId;
+        }
+
+        echo json_encode([
+            'ok' => true,
+            'vinculado' => $clienteId > 0
+        ]);
+        exit;
+    }
+
+
+
+
 
     // ✅ NUEVO: listar operaciones (Marítimas/LBMF) por cliente (JSON)
     public function listarOperacionesCliente()

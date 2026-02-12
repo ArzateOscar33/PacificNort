@@ -238,17 +238,127 @@
     <!-- Bootstrap + Feather -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script>
-        feather.replace();
+    <script src="<?php echo BASE_URL; ?>assets/js/sweetalert2.all.min.js"></script>
 
-        // Revisión simple: recarga la página (ya con eso detectas si el admin ya vinculó)
-        const btn = document.getElementById('btnRevisarEstado');
-        if (btn) btn.addEventListener('click', () => window.location.reload());
-    </script>
 
     <script>
         window.BASE_URL = "<?php echo BASE_URL; ?>";
     </script>
+
+
+
+    <script>
+        feather.replace();
+
+        // ===== Config =====
+        const ENDPOINT_ESTADO = window.BASE_URL + 'PortalClientes/verificarEstado';
+
+        // Evita spamear requests (click + polling)
+        let checking = false;
+
+        function verificarEstado(silencioso = false) {
+            if (checking) return;
+            checking = true;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', ENDPOINT_ESTADO, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState !== 4) return;
+
+                checking = false;
+
+                // Si el server redirigió/mandó HTML por whitelist mal configurada,
+                // esto te ayuda a detectarlo rápido.
+                const raw = (xhr.responseText || '').trim();
+
+                if (xhr.status !== 200) {
+                    if (!silencioso) mostrarError();
+                    return;
+                }
+
+                // Intentar parsear JSON
+                let data = null;
+                try {
+                    data = JSON.parse(raw);
+                } catch (e) {
+                    // 🔥 Casi siempre pasa cuando el endpoint regresa HTML (pendiente) por bloqueo del __construct
+                    if (!silencioso) {
+                        Swal.fire({
+                            title: 'No se pudo validar el estado',
+                            html: 'El servidor no devolvió JSON. <br><small class="text-muted">Tip: revisa que <b>PortalClientes/verificarEstado</b> esté en whitelist del __construct().</small>',
+                            icon: 'warning',
+                            showConfirmButton: true,
+                            confirmButtonText: 'Recargar',
+                            showCancelButton: true,
+                            cancelButtonText: 'Cerrar',
+                            confirmButtonColor: '#0f172a',
+                            cancelButtonColor: '#6c757d'
+                        }).then((result) => {
+                            if (result.isConfirmed) window.location.reload();
+                        });
+                    }
+                    return;
+                }
+
+                // Validación defensiva
+                if (data && data.vinculado === true) {
+                    // 🚀 Ya está vinculado → al portal
+                    window.location.href = window.BASE_URL + 'PortalClientes';
+                    return;
+                }
+
+                // Sigue pendiente
+                if (!silencioso) {
+                    Swal.fire({
+                        title: 'Aún pendiente',
+                        text: 'Tu cuenta todavía no ha sido vinculada a un cliente.',
+                        icon: 'info',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#0f172a'
+                    });
+                }
+            };
+
+            xhr.onerror = function() {
+                checking = false;
+                if (!silencioso) mostrarError();
+            };
+
+            xhr.send();
+        }
+
+        function mostrarError() {
+            Swal.fire({
+                title: 'Estado pendiente de vinculación',
+                text: 'No se pudo verificar el estado. Intenta recargar la página.',
+                icon: 'warning',
+                showConfirmButton: true,
+                confirmButtonText: 'Recargar',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#0f172a',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) window.location.reload();
+            });
+        }
+
+        // Botón manual
+        const btn = document.getElementById('btnRevisarEstado');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                verificarEstado(false);
+            });
+        }
+
+        // Polling automático cada 30s (silencioso)
+        setInterval(function() {
+            verificarEstado(true);
+        }, 30000);
+    </script>
+
 
 </body>
 
