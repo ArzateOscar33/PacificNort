@@ -338,4 +338,54 @@ class PortalClientes extends Controller
             echo json_encode(['ok' => false, 'msg' => 'Error interno al listar eventos.']);
         }
     }
+
+
+    //listar documentos 
+    public function listarDocsOperacion()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            if (empty($_SESSION['cliente_id'])) {
+                echo json_encode([
+                    'ok'  => false,
+                    'msg' => 'Sesión sin cliente válido.'
+                ]);
+                return;
+            }
+
+            $clienteId = (int) $_SESSION['cliente_id'];
+
+            $in = $_POST ?: $_GET;
+            $opId = (int)($in['id_operacion'] ?? ($in['operacion_id'] ?? ($in['id'] ?? 0)));
+
+            if ($opId <= 0) {
+                echo json_encode([
+                    'ok'  => false,
+                    'msg' => 'ID de operación inválido.'
+                ]);
+                return;
+            }
+
+            // 🔎 Debug opcional (puedes comentar después)
+            // error_log("DocsPortal -> cliente: $clienteId | op: $opId");
+
+            $rows = $this->model
+                ->listarDocumentosOperacionCliente($clienteId, $opId);
+
+            echo json_encode([
+                'ok'    => true,
+                'rows'  => is_array($rows) ? $rows : [],
+                'total' => is_array($rows) ? count($rows) : 0
+            ]);
+        } catch (Throwable $e) {
+
+            error_log("PortalClientes::listarDocsOperacion ERROR: " . $e->getMessage());
+
+            echo json_encode([
+                'ok'  => false,
+                'msg' => 'Error interno al listar documentos.'
+            ]);
+        }
+    }
 }

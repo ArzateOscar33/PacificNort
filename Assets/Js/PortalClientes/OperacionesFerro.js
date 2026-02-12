@@ -90,7 +90,7 @@
     if (n.includes("entre")) return "text-bg-success";
     if (n.includes("bodega") || n.includes("yar")) return "text-bg-warning";
     if (n.includes("puer")) return "text-bg-secondary";
-    if (n.includes("en ag")) return "text-bg-danger";
+    if (n.includes("en ag") || n.includes("canc")) return "text-bg-danger";
     return "text-bg-primary";
   }
 

@@ -119,6 +119,7 @@
     if (t.includes("bodega") || t.includes("yar")) return "text-bg-warning";
     if (t.includes("puer")) return "text-bg-secondary";
     if (t.includes("en ag")) return "text-bg-primary";
+    if (t.includes("canc")) return "text-bg-danger";
 
     return "text-bg-primary";
   }

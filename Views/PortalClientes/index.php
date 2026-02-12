@@ -496,15 +496,7 @@
         </div>
 
         <div class="modal-body">
-          <div class="alert alert-info d-flex align-items-start gap-2">
-            <i data-feather="shield" class="mt-1"></i>
-            <div>
-              <div class="fw-semibold">Acceso restringido</div>
-              <div class="small mb-0">
-                Solo puedes ver/subir documentos de operaciones que pertenezcan a tu cuenta.
-              </div>
-            </div>
-          </div>
+
 
           <!-- Upload -->
           <div class="card rounded-4 border-0 shadow-sm mb-3" id="docsUploadCard">
@@ -839,7 +831,7 @@
 <!-- JS del portal -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesFerro.js"></script>
-
+<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosMaritimos.js"></script>
 
 <script>
   feather.replace();

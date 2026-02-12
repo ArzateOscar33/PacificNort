@@ -6,7 +6,7 @@ class PortalClientesModel extends Query
     {
         parent::__construct();
     }
-
+    // usuario para cuenta pendientes de vinculacion
     public function getUsuarioById(int $idUsuario): array
     {
         $sql = "SELECT id_usuario, nombre, correo, cliente_id
@@ -443,5 +443,54 @@ class PortalClientesModel extends Query
     ";
 
         return $this->selectAll($sql, [$opFerroId]) ?: [];
+    }
+
+
+    //DOCUMENTOS OP MARITIMAS
+    public function listarDocumentosOperacionCliente(int $clienteId, int $operacionId): array
+    {
+        if ($clienteId <= 0 || $operacionId <= 0) return [];
+
+        $sql = "
+        SELECT
+            d.id_documento,
+            o.numero_operacion,
+
+            cm.numero_contenedor AS contenedor_maritimo,
+
+            t.nombre AS tipo_nombre,
+            t.clave  AS tipo_clave,
+
+            d.nombre_archivo,
+            d.mime_type,
+            d.ruta_archivo,
+            d.fecha_subida,
+
+            COALESCE(
+                CONCAT(u.nombre,' ',u.apellido),
+                u.nombre,
+                u.apellido,
+                CAST(d.subido_por AS CHAR)
+            ) AS subido_por
+        FROM documentos_operacion d
+        JOIN tipos_documento t ON t.id_tipo_documento = d.tipo_documento_id
+        JOIN operaciones o     ON o.id_operacion      = d.operacion_id
+
+        LEFT JOIN contenedores_operacion co ON co.id_contenedor = d.contenedor_operacion_id
+
+        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = d.cont_maritimo_operacion_id
+        LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+
+        LEFT JOIN usuarios u ON u.id_usuario = d.subido_por
+
+        WHERE d.operacion_id = ?
+          AND (o.cliente_id = ? OR co.cliente_id = ?)
+
+        ORDER BY d.fecha_subida DESC, d.id_documento DESC
+        LIMIT 500
+    ";
+
+        // ✅ 3 parámetros para 3 placeholders
+        return $this->selectAll($sql, [$operacionId, $clienteId, $clienteId]) ?: [];
     }
 }
