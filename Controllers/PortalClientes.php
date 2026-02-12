@@ -393,4 +393,278 @@ class PortalClientes extends Controller
             echo json_encode(['ok' => false, 'msg' => 'Error interno al listar documentos.']);
         }
     }
+
+    public function listarTiposDocumentoOperacion()
+    {
+        // Solo AJAX
+        if (
+            empty($_SERVER['HTTP_X_REQUESTED_WITH']) ||
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest'
+        ) {
+            header("HTTP/1.1 403 Forbidden");
+            exit;
+        }
+
+        // Sesión cliente
+        $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+        if ($clienteId <= 0) {
+            echo json_encode(['ok' => false, 'msg' => 'Sesión no válida.']);
+            exit;
+        }
+
+        // Params
+        $tipo = strtoupper(trim((string)($_GET['tipo'] ?? $_POST['tipo'] ?? '')));
+        $operacionId = (int)($_GET['operacion_id'] ?? $_POST['operacion_id'] ?? 0);
+
+        if (!in_array($tipo, ['MAR', 'LBMF', 'FO'], true) || $operacionId <= 0) {
+            echo json_encode(['ok' => false, 'msg' => 'Parámetros inválidos.']);
+            exit;
+        }
+
+        // (Opcional recomendado) Validación de pertenencia al cliente antes de listar:
+        // - MAR/LBMF: operaciones.cliente_id
+        // - FO: operaciones_ferroviarias.cliente_id
+        // Si quieres, lo metemos ya en la siguiente iteración.
+
+        $rows = $this->model->listarTiposDocumentoParaOperacion($tipo, $operacionId);
+
+        echo json_encode([
+            'ok' => true,
+            'rows' => $rows
+        ]);
+        exit;
+    }
+    /* =========================
+ *  Path helpers (PORTABLE)
+ * ========================= */
+    private function getProjectRootPath(): string
+    {
+        if (defined('UPLOAD_ROOT')) {
+            return rtrim((string) constant('UPLOAD_ROOT'), "/\\");
+        }
+        return rtrim(dirname(__DIR__, 2), "/\\");
+    }
+
+    private function getPortalDocsBaseDirAbs(string $tipoOperacion): string
+    {
+        $root = $this->getProjectRootPath();
+        $baseDocuments = $root . DIRECTORY_SEPARATOR . 'Documents';
+
+        $tipoOperacion = strtoupper(trim($tipoOperacion));
+
+        if ($tipoOperacion === 'MAR') {
+            return $baseDocuments . DIRECTORY_SEPARATOR . 'DocumentosOperacion';
+        }
+        return $baseDocuments . DIRECTORY_SEPARATOR . 'DocumentosContenedor';
+    }
+
+    private function slugFolder(string $s): string
+    {
+        $s = trim($s);
+        $s = str_replace([" ", "\t"], "_", $s);
+        $s = preg_replace('/[^A-Za-z0-9_.-]/', "_", $s);
+        return preg_replace('/_+/', "_", $s);
+    }
+
+    private function jsonOut(array $payload, int $httpCode = 200): void
+    {
+        http_response_code($httpCode);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private function requireAjax(): void
+    {
+        if (
+            empty($_SERVER['HTTP_X_REQUESTED_WITH']) ||
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest'
+        ) {
+            $this->jsonOut(['ok' => false, 'msg' => 'Forbidden'], 403);
+        }
+    }
+
+    public function subirDocOperacion()
+    {
+        $this->requireAjax();
+
+        try {
+            $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+            $userId    = (int)($_SESSION['id_usuario'] ?? 0);
+
+            if ($clienteId <= 0) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Sesión no válida.'], 401);
+            }
+
+            // ===== Params =====
+            $opId      = (int)($_POST['id_operacion'] ?? 0);
+            $tipoOp    = strtoupper(trim((string)($_POST['tipo_operacion'] ?? '')));
+            $tipoDocId = (int)($_POST['tipo_documento'] ?? 0);
+
+            $contenedorId   = (int)($_POST['contenedor_id'] ?? 0);
+            $contenedorTipo = strtoupper(trim((string)($_POST['contenedor_tipo'] ?? ''))); // F|M
+
+            if ($opId <= 0 || $tipoDocId <= 0 || !in_array($tipoOp, ['MAR', 'LBMF', 'FO'], true)) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Parámetros inválidos.'], 400);
+            }
+
+            // ===== Contenedor (OBLIGATORIO por tu lógica de carpetas) =====
+            if ($contenedorId <= 0) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Debes seleccionar un contenedor.'], 400);
+            }
+
+            if ($tipoOp === 'MAR') {
+                if ($contenedorTipo === '') $contenedorTipo = 'M';
+                if ($contenedorTipo !== 'M') {
+                    $this->jsonOut(['ok' => false, 'msg' => 'MAR requiere contenedor_tipo=M.'], 400);
+                }
+            }
+
+            if ($tipoOp === 'FO') {
+                if ($contenedorTipo !== 'F') {
+                    $this->jsonOut(['ok' => false, 'msg' => 'FO requiere contenedor_tipo=F.'], 400);
+                }
+            }
+
+            if ($tipoOp === 'LBMF') {
+                if (!in_array($contenedorTipo, ['F', 'M'], true)) {
+                    $this->jsonOut(['ok' => false, 'msg' => 'LBMF requiere contenedor_tipo=F o M.'], 400);
+                }
+            }
+
+            // ===== Seguridad: validar pertenencia =====
+            if (method_exists($this->model, 'operacionPerteneceACliente')) {
+                if (!$this->model->operacionPerteneceACliente($tipoOp, $opId, $clienteId)) {
+                    $this->jsonOut(['ok' => false, 'msg' => 'Operación no pertenece al cliente.'], 403);
+                }
+            }
+
+            // ===== Validar tipo documento =====
+            $tipoDoc = $this->model->getTipoDocumentoById($tipoDocId);
+            if (empty($tipoDoc)) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Tipo de documento inválido.'], 400);
+            }
+
+            // ===== Archivo =====
+            if (empty($_FILES['archivo']) || !is_array($_FILES['archivo'])) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Archivo no recibido.'], 400);
+            }
+
+            $f = $_FILES['archivo'];
+
+            if (($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Error de carga (code ' . ($f['error'] ?? -1) . ').'], 400);
+            }
+
+            $origName = (string)($f['name'] ?? '');
+            $tmpPath  = (string)($f['tmp_name'] ?? '');
+            $size     = (int)($f['size'] ?? 0);
+
+            if ($origName === '' || $tmpPath === '' || $size <= 0) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Archivo inválido.'], 400);
+            }
+
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            $permit = ['pdf', 'jpg', 'jpeg', 'png'];
+            if (!in_array($ext, $permit, true)) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Extensión no permitida. Usa PDF/JPG/PNG.'], 400);
+            }
+
+            $maxBytes = 20 * 1024 * 1024; // 20MB
+            if ($size > $maxBytes) {
+                $this->jsonOut(['ok' => false, 'msg' => 'El archivo excede el límite (20MB).'], 400);
+            }
+
+            // ===== Operación (MODELO) =====
+            $numOp = (string)$this->model->getNumeroOperacion($tipoOp, $opId);
+            if (trim($numOp) === '') {
+                $this->jsonOut(['ok' => false, 'msg' => 'Operación no encontrada.'], 404);
+            }
+
+            // ===== Contenedor etiqueta (MODELO) =====
+            $etqCont = (string)$this->model->getEtiquetaContenedor($tipoOp, $contenedorTipo, $contenedorId);
+            if (trim($etqCont) === '') {
+                $this->jsonOut(['ok' => false, 'msg' => 'Contenedor no encontrado.'], 404);
+            }
+
+            // ===== Rutas =====
+            $baseAbs = $this->getPortalDocsBaseDirAbs($tipoOp);
+
+            if ($tipoOp === 'MAR') {
+                // Documents/DocumentosOperacion/NombreOperacion/ContenedorMaritimo
+                $opFolder   = $this->slugFolder(strtoupper($numOp));
+                $contFolder = $this->slugFolder(strtoupper($etqCont));
+                $destDirAbs = $baseAbs . DIRECTORY_SEPARATOR . $opFolder . DIRECTORY_SEPARATOR . $contFolder;
+            } else {
+                // Documents/DocumentosContenedor/NombreOperacion_Documentos/Contenedor
+                $opFolder   = $this->slugFolder(strtoupper($numOp) . '_Documentos');
+                $contFolder = $this->slugFolder(strtoupper($etqCont));
+                $destDirAbs = $baseAbs . DIRECTORY_SEPARATOR . $opFolder . DIRECTORY_SEPARATOR . $contFolder;
+            }
+
+            if (!is_dir($destDirAbs) && !@mkdir($destDirAbs, 0775, true)) {
+                $this->jsonOut(['ok' => false, 'msg' => 'No se pudo crear carpeta destino.'], 500);
+            }
+
+            // ===== Guardar archivo =====
+            $uuid     = bin2hex(random_bytes(8));
+            $sanOrig  = preg_replace('/[^A-Za-z0-9_.-]/', '_', $origName);
+            $fileName = $uuid . '_' . $sanOrig;
+
+            $destAbs = $destDirAbs . DIRECTORY_SEPARATOR . $fileName;
+
+            if (!move_uploaded_file($tmpPath, $destAbs)) {
+                $this->jsonOut(['ok' => false, 'msg' => 'No se pudo guardar el archivo.'], 500);
+            }
+
+            $mime = @mime_content_type($destAbs) ?: ($f['type'] ?? null);
+            $hash = @hash_file('sha256', $destAbs) ?: null;
+
+            // ===== Ruta relativa BD =====
+            $carpetaBase = ($tipoOp === 'MAR') ? 'DocumentosOperacion' : 'DocumentosContenedor';
+            $rutaRel = 'Documents/' . $carpetaBase . '/' . $opFolder . '/' . $contFolder . '/' . $fileName;
+
+            // ===== IDs contenedor para BD =====
+            $coId  = null;
+            $cmoId = null;
+
+            if ($tipoOp === 'FO') {
+                $coId = $contenedorId;
+            } elseif ($tipoOp === 'LBMF') {
+                if ($contenedorTipo === 'F') $coId = $contenedorId;
+                if ($contenedorTipo === 'M') $cmoId = $contenedorId;
+            } elseif ($tipoOp === 'MAR') {
+                $cmoId = $contenedorId; // MAR siempre M
+            }
+
+            // ===== Insert BD =====
+            $docId = (int)$this->model->insertarDocumentoOperacion([
+                'operacion_id' => $opId,
+                'tipo_documento_id' => $tipoDocId,
+                'contenedor_operacion_id' => $coId,
+                'cont_maritimo_operacion_id' => $cmoId,
+                'nombre_archivo' => $origName,
+                'mime_type' => $mime,
+                'tamano_bytes' => $size,
+                'hash_sha256' => $hash,
+                'ruta_archivo' => $rutaRel,
+                'subido_por' => ($userId > 0 ? $userId : null),
+            ]);
+
+            if ($docId <= 0) {
+                @unlink($destAbs);
+                $this->jsonOut(['ok' => false, 'msg' => 'No se pudo registrar el documento en BD.'], 500);
+            }
+
+            $this->jsonOut([
+                'ok' => true,
+                'msg' => 'Documento subido correctamente.',
+                'id_documento' => $docId,
+                'ruta_archivo' => $rutaRel,
+            ]);
+        } catch (Throwable $e) {
+            error_log("PortalClientes::subirDocOperacion ERROR: " . $e->getMessage());
+            $this->jsonOut(['ok' => false, 'msg' => 'Error interno al subir documento.'], 500);
+        }
+    }
 }

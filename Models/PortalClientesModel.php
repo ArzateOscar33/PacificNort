@@ -532,4 +532,233 @@ class PortalClientesModel extends Query
 
         return $this->selectAll($sql, $params) ?: [];
     }
+
+    public function listarTiposDocumentoPorSubtipo(int $subtipoId): array
+    {
+        if ($subtipoId <= 0) return [];
+
+        // 1) Obtener tipo_operacion_id desde el subtipo
+        $sqlTipo = "SELECT tipo_operacion_id
+                FROM subtipos_operacion
+                WHERE id_subtipo = ? AND estatus = 1
+                LIMIT 1";
+        $row = $this->select($sqlTipo, [$subtipoId]) ?: [];
+        $tipoOperacionId = (int)($row['tipo_operacion_id'] ?? 0);
+
+        // 2) Definir aplica_sobre permitido según tipo_operacion
+        $aplica = ['cualquiera', 'operacion']; // base mínima
+
+        if ($tipoOperacionId === 1) {
+            $aplica = ['cualquiera', 'operacion', 'contenedor_maritimo'];
+        } elseif ($tipoOperacionId === 2) {
+            $aplica = ['cualquiera', 'operacion', 'contenedor_fisico'];
+        } elseif ($tipoOperacionId === 11) {
+            $aplica = ['cualquiera', 'operacion', 'contenedor_maritimo', 'contenedor_fisico'];
+        }
+
+        // 3) Query catálogo
+        $placeholders = implode(',', array_fill(0, count($aplica), '?'));
+
+        $sql = "SELECT
+                id_tipo_documento,
+                clave,
+                nombre,
+                descripcion,
+                aplica_sobre,
+                obligatorio_por_defecto
+            FROM tipos_documento
+            WHERE activo = 1
+              AND aplica_sobre IN ($placeholders)
+            ORDER BY obligatorio_por_defecto DESC, nombre ASC";
+
+        return $this->selectAll($sql, $aplica) ?: [];
+    }
+
+    private function getSubtipoOperacionIdPorOperacion(string $tipo, int $operacionId): int
+    {
+        if ($operacionId <= 0) return 0;
+
+        $tipo = strtoupper(trim($tipo));
+
+        // MAR / LBMF viven en `operaciones`
+        if ($tipo === 'MAR' || $tipo === 'LBMF') {
+            $sql = "SELECT subtipo_operacion_id
+                FROM operaciones
+                WHERE id_operacion = ?
+                LIMIT 1";
+            $row = $this->select($sql, [$operacionId]) ?: [];
+            return (int)($row['subtipo_operacion_id'] ?? 0);
+        }
+
+        // FO (operaciones_ferroviarias)
+        if ($tipo === 'FO') {
+            $sql = "SELECT subtipo_operacion_id
+                FROM operaciones_ferroviarias
+                WHERE id_operacion_ferro = ?
+                LIMIT 1";
+            $row = $this->select($sql, [$operacionId]) ?: [];
+            return (int)($row['subtipo_operacion_id'] ?? 0);
+        }
+
+        return 0;
+    }
+
+    public function listarTiposDocumentoParaOperacion(string $tipo, int $operacionId): array
+    {
+        $subtipoId = $this->getSubtipoOperacionIdPorOperacion($tipo, $operacionId);
+        if ($subtipoId <= 0) return [];
+        return $this->listarTiposDocumentoPorSubtipo($subtipoId);
+    }
+
+    // En tu PortalClientesModel  
+    public function getTipoDocumentoById(int $id): array
+    {
+        if ($id <= 0) return [];
+
+        $sql = "SELECT id_tipo_documento, clave, nombre, aplica_sobre, activo
+            FROM tipos_documento
+            WHERE id_tipo_documento = ? AND activo = 1
+            LIMIT 1";
+
+        return $this->select($sql, [$id]) ?: [];
+    }
+
+    public function insertarDocumentoOperacion(array $d): int
+    {
+        // Validaciones mínimas (NOT NULL en tu BD)
+        $operacionId     = (int)($d['operacion_id'] ?? 0);
+        $tipoDocId       = (int)($d['tipo_documento_id'] ?? 0);
+        $nombreArchivo   = trim((string)($d['nombre_archivo'] ?? ''));
+        $rutaArchivo     = trim((string)($d['ruta_archivo'] ?? ''));
+
+        if ($operacionId <= 0 || $tipoDocId <= 0 || $nombreArchivo === '' || $rutaArchivo === '') {
+            return 0;
+        }
+
+        $sql = "INSERT INTO documentos_operacion
+            (operacion_id, tipo_documento_id, contenedor_operacion_id, cont_maritimo_operacion_id,
+             nombre_archivo, mime_type, tamano_bytes, hash_sha256, ruta_archivo, subido_por)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $params = [
+            $operacionId,
+            $tipoDocId,
+            isset($d['contenedor_operacion_id']) ? (int)$d['contenedor_operacion_id'] : null,
+            isset($d['cont_maritimo_operacion_id']) ? (int)$d['cont_maritimo_operacion_id'] : null,
+            $nombreArchivo,
+            $d['mime_type'] ?? null,
+            isset($d['tamano_bytes']) ? (int)$d['tamano_bytes'] : null,
+            $d['hash_sha256'] ?? null,
+            $rutaArchivo,
+            isset($d['subido_por']) ? (int)$d['subido_por'] : null,
+        ];
+
+        // Usamos insertar() para devolver lastInsertId()
+        return (int)$this->insertar($sql, $params);
+    }
+
+    public function operacionPerteneceACliente(string $tipo, int $operacionId, int $clienteId): bool
+    {
+        $tipo = strtoupper(trim($tipo));
+        if ($operacionId <= 0 || $clienteId <= 0) return false;
+
+        if ($tipo === 'FO') {
+            $sql = "SELECT 1
+                FROM operaciones_ferroviarias
+                WHERE id_operacion_ferro = ? AND cliente_id = ?
+                LIMIT 1";
+            return (bool)$this->select($sql, [$operacionId, $clienteId]);
+        }
+
+        // MAR / LBMF
+        $sql = "SELECT 1
+            FROM operaciones
+            WHERE id_operacion = ? AND cliente_id = ?
+            LIMIT 1";
+        return (bool)$this->select($sql, [$operacionId, $clienteId]);
+    }
+
+    public function getNumeroOperacion(string $tipo, int $operacionId): string
+    {
+        if ($operacionId <= 0) return '';
+
+        $tipo = strtoupper(trim($tipo));
+
+        if ($tipo === 'FO') {
+            $sql = "SELECT numero_operacion
+                FROM operaciones_ferroviarias
+                WHERE id_operacion_ferro = ?
+                LIMIT 1";
+            $row = $this->select($sql, [$operacionId]) ?: [];
+            return trim((string)($row['numero_operacion'] ?? ''));
+        }
+
+        // MAR / LBMF
+        $sql = "SELECT numero_operacion
+            FROM operaciones
+            WHERE id_operacion = ?
+            LIMIT 1";
+        $row = $this->select($sql, [$operacionId]) ?: [];
+        return trim((string)($row['numero_operacion'] ?? ''));
+    }
+
+
+    public function getEtiquetaContenedor(string $tipoOp, string $tipoCont, int $contenedorId): string
+    {
+        if ($contenedorId <= 0) return '';
+
+        $tipoOp   = strtoupper(trim($tipoOp));   // MAR|LBMF|FO
+        $tipoCont = strtoupper(trim($tipoCont)); // F|M
+
+        // ===== MAR: contenedorId = contenedores_maritimos_operacion.id =====
+        if ($tipoOp === 'MAR') {
+            $sql = "SELECT cm.numero_contenedor
+                FROM contenedores_maritimos_operacion cmo
+                INNER JOIN contenedores_maritimos cm
+                    ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+                WHERE cmo.id = ?
+                LIMIT 1";
+            $row = $this->select($sql, [$contenedorId]) ?: [];
+            return trim((string)($row['numero_contenedor'] ?? ''));
+        }
+
+        // ===== FO: contenedorId = contenedores_fisicos.id_fisico =====
+        if ($tipoOp === 'FO') {
+            $sql = "SELECT numero_ferro
+                FROM contenedores_fisicos
+                WHERE id_fisico = ?
+                LIMIT 1";
+            $row = $this->select($sql, [$contenedorId]) ?: [];
+            return trim((string)($row['numero_ferro'] ?? ''));
+        }
+
+        // ===== LBMF =====
+        if ($tipoOp === 'LBMF') {
+
+            // LBMF F: contenedorId = contenedores_operacion.id_contenedor
+            if ($tipoCont === 'F') {
+                $sql = "SELECT cf.numero_ferro
+                    FROM contenedores_operacion co
+                    INNER JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
+                    WHERE co.id_contenedor = ?
+                    LIMIT 1";
+                $row = $this->select($sql, [$contenedorId]) ?: [];
+                return trim((string)($row['numero_ferro'] ?? ''));
+            }
+
+            // LBMF M: contenedorId = contenedores_maritimos_operacion.id
+            if ($tipoCont === 'M') {
+                $sql = "SELECT cm.numero_contenedor
+                    FROM contenedores_maritimos_operacion cmo
+                    INNER JOIN contenedores_maritimos cm
+                        ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+                    WHERE cmo.id = ?
+                    LIMIT 1";
+                $row = $this->select($sql, [$contenedorId]) ?: [];
+                return trim((string)($row['numero_contenedor'] ?? ''));
+            }
+        }
+
+        return '';
+    }
 }

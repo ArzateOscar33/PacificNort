@@ -563,13 +563,33 @@
     if (action === "docs") {
       if (!modalDocs) return;
 
-      // Configurar modal docs para FO
       const opNum =
         a.getAttribute("data-num") || (row ? row.numero_operacion : "");
-      if (docsOperacionId) docsOperacionId.value = String(id);
-      if (docsTipoOperacion) docsTipoOperacion.value = "FO";
-      if (docsOperacionNumero)
-        docsOperacionNumero.textContent = opNum ? opNum : `FO-${id}`;
+
+      // refs modal docs
+      const elId = document.getElementById("docsOperacionId");
+      const elTipo = document.getElementById("docsTipoOperacion");
+      const elNum = document.getElementById("docsOperacionNumero");
+      const elContId = document.getElementById("docsContenedorId");
+      const elContTipo = document.getElementById("docsContenedorTipo");
+
+      if (elId) elId.value = String(id);
+      if (elTipo) elTipo.value = "FO";
+      if (elNum) elNum.textContent = opNum ? opNum : `FO-${id}`;
+
+      // ✅ FO: contenedor = FÍSICO (id_fisico)
+      // En tu listado ya viene "contenedor_fisico_id" según el SELECT que pegaste antes.
+      const contId = parseInt(row?.contenedor_fisico_id || "0", 10) || 0;
+
+      if (elContId) elContId.value = String(contId);
+      if (elContTipo) elContTipo.value = "F";
+
+      if (!contId) {
+        alert(
+          "Esta operación FO no tiene contenedor físico asignado (contenedor_fisico_id).",
+        );
+        return;
+      }
 
       if (window.feather) feather.replace();
       modalDocs.show();

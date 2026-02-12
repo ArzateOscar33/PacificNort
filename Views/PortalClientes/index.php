@@ -506,6 +506,9 @@
               <!-- ✅ hidden refs para JS -->
               <input type="hidden" id="docsOperacionId" value="0">
               <input type="hidden" id="docsTipoOperacion" value="MAR"><!-- MAR | FO | LBMF -->
+              <input type="hidden" id="docsContenedorId" value="0">
+              <input type="hidden" id="docsContenedorTipo" value="">
+
 
               <div class="row g-2 align-items-end">
                 <div class="col-12 col-md-5">

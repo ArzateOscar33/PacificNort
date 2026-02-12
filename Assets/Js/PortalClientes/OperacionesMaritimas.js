@@ -698,19 +698,37 @@
         const elId = document.getElementById("docsOperacionId");
         const elTipo = document.getElementById("docsTipoOperacion");
         const elNum = document.getElementById("docsOperacionNumero");
+        const elContId = document.getElementById("docsContenedorId");
+        const elContTipo = document.getElementById("docsContenedorTipo");
 
         if (elId) elId.value = String(opId);
         if (elNum) elNum.textContent = opNum || "—";
 
-        // tipo real (MAR/LBMF)
-        let tipo = "MAR";
+        // Buscar row
+        let row = null;
         for (let i = 0; i < state.rows.length; i++) {
           if (String(state.rows[i].id_operacion) === String(opId)) {
-            tipo = state.rows[i].tipo_clave || "MAR";
+            row = state.rows[i];
             break;
           }
         }
+
+        const tipo = (row?.tipo_clave || "MAR").toUpperCase();
         if (elTipo) elTipo.value = tipo;
+
+        // ✅ Contenedor principal para docs (debe venir del endpoint)
+        const contId = parseInt(row?.docs_cont_id || "0", 10) || 0;
+        const contTipo = String(row?.docs_cont_tipo || "M").toUpperCase();
+
+        if (elContId) elContId.value = String(contId);
+        if (elContTipo) elContTipo.value = contTipo;
+
+        if (!contId) {
+          alert(
+            "Esta operación no trae docs_cont_id. Agrega el ID del contenedor principal en el endpoint listarOperacionesCliente.",
+          );
+          return;
+        }
 
         const modalDocs = document.getElementById("modalDocs");
         if (modalDocs && window.bootstrap) {

@@ -3,7 +3,7 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
 {
     public function buscarOperacionesConContenedores(string $term): array
     {
-        $needle = '%'.mb_strtolower($term, 'UTF-8').'%';
+        $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
         $sql = "
             SELECT 
                 o.id_operacion             AS id,
@@ -16,7 +16,7 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
                 FROM contenedores_maritimos_operacion
                 GROUP BY operacion_id
             ) AS cnt_mar ON cnt_mar.operacion_id = o.id_operacion
-            WHERE o.estatus_id IN (1,5,6,7,9,10,11,12)
+            WHERE o.estatus_id IN (1,5,6,7,9,10,11,12,13)
               AND o.tipo_operacion_id = 11
               AND LOWER(o.numero_operacion) LIKE ?
             UNION ALL
@@ -30,7 +30,7 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
                 )                       AS contenedores,
                 'F'                     AS fuente
             FROM operaciones_ferroviarias ofe
-            WHERE ofe.estatus_id IN (1,5,6,7,9,10,11,12)
+            WHERE ofe.estatus_id IN (1,5,6,7,9,10,11,12,13)
               AND LOWER(ofe.numero_operacion) LIKE ?
             ORDER BY label DESC
             LIMIT 20
@@ -39,7 +39,8 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
     }
 
     /* === NUEVOS para el autocomplete de contenedor según fuente === */
-    public function contenedoresDeOperacionMF(int $operacion_id): array {
+    public function contenedoresDeOperacionMF(int $operacion_id): array
+    {
         $sql = "SELECT
                     cmo.id               AS id,
                     cm.numero_contenedor AS label,
@@ -52,7 +53,8 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
         return $this->selectAll($sql, [$operacion_id]);
     }
 
-    public function contenedorDeOperacionFO(int $op_ferro_id): array {
+    public function contenedorDeOperacionFO(int $op_ferro_id): array
+    {
         $sql = "SELECT 
                     cf.id_fisico    AS id,
                     cf.numero_ferro AS label,
@@ -67,7 +69,8 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
     }
 
     /* === Altas / consultas comunes (LBMF) === */
-    public function validarTipoDocumento(int $id_tipo, string $tipoCont): bool {
+    public function validarTipoDocumento(int $id_tipo, string $tipoCont): bool
+    {
         $row = $this->select("SELECT aplica_sobre, activo FROM tipos_documento WHERE id_tipo_documento = ? LIMIT 1", [$id_tipo]);
         if (!$row || (int)$row['activo'] !== 1) return false;
         if ($row['aplica_sobre'] === 'contenedor_fisico'   && $tipoCont !== 'F') return false;
@@ -75,37 +78,40 @@ class Operaciones_maritimo_ferro_documentosModel extends Query
         return true;
     }
 
-public function insertarDocumento(array $d): bool {
-    $sql = "INSERT INTO documentos_operacion
+    public function insertarDocumento(array $d): bool
+    {
+        $sql = "INSERT INTO documentos_operacion
            (operacion_id, contenedor_operacion_id, cont_maritimo_operacion_id,
             tipo_documento_id, nombre_archivo, ruta_archivo, mime_type, tamano_bytes, hash_sha256, subido_por)
             VALUES (?,?,?,?,?,?,?,?,?,?)";
-    return (bool)$this->insertar($sql, [
-        $d['operacion_id'],
-        $d['co_id'],     // LBMF-F: id_contenedor | FO-F: id_fisico | LBMF-M: null
-        $d['cmo_id'],    // LBMF-M: id de contenedores_maritimos_operacion | F: null
-        $d['tipo_doc_id'],
-        $d['nombre_orig'],
-        $d['ruta'],
-        $d['mime'],
-        $d['size'],
-        $d['hash'],
-        $d['subido_por']
-    ]);
-}
-public function insertarDocumentoFO(array $d): bool {
-    // $d['operacion_id'] = id_operacion_ferro (FO)
-    // $d['co_id'] = id_fisico (FO)
-    $d['cmo_id'] = null;
-    return $this->insertarDocumento($d);
-}
+        return (bool)$this->insertar($sql, [
+            $d['operacion_id'],
+            $d['co_id'],     // LBMF-F: id_contenedor | FO-F: id_fisico | LBMF-M: null
+            $d['cmo_id'],    // LBMF-M: id de contenedores_maritimos_operacion | F: null
+            $d['tipo_doc_id'],
+            $d['nombre_orig'],
+            $d['ruta'],
+            $d['mime'],
+            $d['size'],
+            $d['hash'],
+            $d['subido_por']
+        ]);
+    }
+    public function insertarDocumentoFO(array $d): bool
+    {
+        // $d['operacion_id'] = id_operacion_ferro (FO)
+        // $d['co_id'] = id_fisico (FO)
+        $d['cmo_id'] = null;
+        return $this->insertarDocumento($d);
+    }
 
-public function insertarDocumentoMF(array $d): bool {
-    // $d['operacion_id'] = id_operacion (LBMF)
-    // Si es F (LBMF), $d['co_id'] = id_contenedor (contenedores_operacion)
-    // Si es M (LBMF), $d['cmo_id'] = id de contenedores_maritimos_operacion
-    return $this->insertarDocumento($d);
-}
+    public function insertarDocumentoMF(array $d): bool
+    {
+        // $d['operacion_id'] = id_operacion (LBMF)
+        // Si es F (LBMF), $d['co_id'] = id_contenedor (contenedores_operacion)
+        // Si es M (LBMF), $d['cmo_id'] = id de contenedores_maritimos_operacion
+        return $this->insertarDocumento($d);
+    }
 
 
     public function tiposDocumentoFiltrados(?array $aplicaSobre, bool $soloActivos = true, ?string $q = null): array
@@ -115,16 +121,19 @@ public function insertarDocumentoMF(array $d): bool {
         if ($aplicaSobre && count($aplicaSobre) > 0) {
             $in = implode(',', array_fill(0, count($aplicaSobre), '?'));
             $where[] = "aplica_sobre IN ($in)";
-            foreach ($aplicaSobre as $v) { $params[] = $v; }
+            foreach ($aplicaSobre as $v) {
+                $params[] = $v;
+            }
         }
         if ($soloActivos) $where[] = "activo = 1";
         if ($q !== null && $q !== '') {
             $where[] = "(LOWER(nombre) LIKE ? OR LOWER(clave) LIKE ?)";
-            $needle = '%'.mb_strtolower($q, 'UTF-8').'%';
-            $params[] = $needle; $params[] = $needle;
+            $needle = '%' . mb_strtolower($q, 'UTF-8') . '%';
+            $params[] = $needle;
+            $params[] = $needle;
         }
 
-        $whereSql = count($where) ? ('WHERE '.implode(' AND ', $where)) : '';
+        $whereSql = count($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
         $sql = "
             SELECT id_tipo_documento AS id, clave, nombre, aplica_sobre, activo
             FROM tipos_documento
@@ -135,39 +144,41 @@ public function insertarDocumentoMF(array $d): bool {
         return $this->selectAll($sql, $params);
     }
 
-    public function getNumeroOperacion(int $operacion_id): ?string {
+    public function getNumeroOperacion(int $operacion_id): ?string
+    {
         $row = $this->select("SELECT numero_operacion FROM operaciones WHERE id_operacion = ? LIMIT 1", [$operacion_id]);
         return $row ? $row['numero_operacion'] : null;
     }
 
-public function getEtiquetaContenedor(string $tipo, int $contenedor_id): ?string {
-    if ($tipo === 'F') {
-        // 1) Caso clásico (LBMF con contenedores_operacion)
-        $row = $this->select("
+    public function getEtiquetaContenedor(string $tipo, int $contenedor_id): ?string
+    {
+        if ($tipo === 'F') {
+            // 1) Caso clásico (LBMF con contenedores_operacion)
+            $row = $this->select("
             SELECT cf.numero_ferro AS etiqueta
             FROM contenedores_operacion co
             JOIN contenedores_fisicos cf ON cf.id_fisico = co.id_fisico
             WHERE co.id_contenedor = ? LIMIT 1
         ", [$contenedor_id]);
-        if ($row) return $row['etiqueta'];
+            if ($row) return $row['etiqueta'];
 
-        // 2) Fallback FO: aquí el id que recibimos es id_fisico
-        $row = $this->select("
+            // 2) Fallback FO: aquí el id que recibimos es id_fisico
+            $row = $this->select("
             SELECT numero_ferro AS etiqueta
             FROM contenedores_fisicos
             WHERE id_fisico = ? LIMIT 1
         ", [$contenedor_id]);
-        return $row ? $row['etiqueta'] : null;
-    } else { // 'M'
-        $row = $this->select("
+            return $row ? $row['etiqueta'] : null;
+        } else { // 'M'
+            $row = $this->select("
             SELECT cm.numero_contenedor AS etiqueta
             FROM contenedores_maritimos_operacion cmo
             JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
             WHERE cmo.id = ? LIMIT 1
         ", [$contenedor_id]);
-        return $row ? $row['etiqueta'] : null;
+            return $row ? $row['etiqueta'] : null;
+        }
     }
-}
 
 
     public function listarDocumentosMixto(int $operacion_id, ?int $contenedor_id, ?string $tipo): array
@@ -175,9 +186,11 @@ public function getEtiquetaContenedor(string $tipo, int $contenedor_id): ?string
         $params = [$operacion_id];
         $filtro = '';
         if (!empty($contenedor_id) && $tipo === 'F') {
-            $filtro = ' AND d.contenedor_operacion_id = ? ';      $params[] = $contenedor_id;
+            $filtro = ' AND d.contenedor_operacion_id = ? ';
+            $params[] = $contenedor_id;
         } elseif (!empty($contenedor_id) && $tipo === 'M') {
-            $filtro = ' AND d.cont_maritimo_operacion_id = ? ';   $params[] = $contenedor_id;
+            $filtro = ' AND d.cont_maritimo_operacion_id = ? ';
+            $params[] = $contenedor_id;
         }
 
         $sql = "
@@ -226,7 +239,7 @@ public function getEtiquetaContenedor(string $tipo, int $contenedor_id): ?string
     public function eliminarDocumento(int $id): bool
     {
         $sql = "DELETE FROM documentos_operacion WHERE id_documento = ? LIMIT 1";
-        return (bool)$this->save($sql, [$id]); 
+        return (bool)$this->save($sql, [$id]);
     }
 
     public function faltantesMixto(int $operacion_id, int $contenedor_id, string $tipo): array
@@ -273,42 +286,43 @@ public function getEtiquetaContenedor(string $tipo, int $contenedor_id): ?string
             return $this->select($sql, [$operacion_id]) ?? [];
         }
     }
-    public function getNumeroOperacionMixto(int $operacion_id, ?string $fuente = null): ?string {
-    // Si sabemos que es FO, probamos primero en operaciones_ferroviarias
-    if ($fuente === 'F') {
+    public function getNumeroOperacionMixto(int $operacion_id, ?string $fuente = null): ?string
+    {
+        // Si sabemos que es FO, probamos primero en operaciones_ferroviarias
+        if ($fuente === 'F') {
+            $row = $this->select(
+                "SELECT numero_operacion FROM operaciones_ferroviarias WHERE id_operacion_ferro = ? LIMIT 1",
+                [$operacion_id]
+            );
+            if ($row) return $row['numero_operacion'];
+        }
+
+        // Intentar en operaciones (LBMF)
+        $row = $this->select(
+            "SELECT numero_operacion FROM operaciones WHERE id_operacion = ? LIMIT 1",
+            [$operacion_id]
+        );
+        if ($row) return $row['numero_operacion'];
+
+        // Fallback: si no nos pasaron fuente o no lo encontró en operaciones, intenta FO
         $row = $this->select(
             "SELECT numero_operacion FROM operaciones_ferroviarias WHERE id_operacion_ferro = ? LIMIT 1",
             [$operacion_id]
         );
-        if ($row) return $row['numero_operacion'];
+        return $row ? $row['numero_operacion'] : null;
     }
+    public function listarDocumentosFerro(int $op_ferro_id, ?int $contenedor_id, ?string $tipo): array
+    {
+        $params = [$op_ferro_id];
+        $filtro = '';
 
-    // Intentar en operaciones (LBMF)
-    $row = $this->select(
-        "SELECT numero_operacion FROM operaciones WHERE id_operacion = ? LIMIT 1",
-        [$operacion_id]
-    );
-    if ($row) return $row['numero_operacion'];
+        // En FO guardamos el id_fisico en documentos_operacion.contenedor_operacion_id
+        if (!empty($contenedor_id)) {
+            $filtro = ' AND d.contenedor_operacion_id = ? ';
+            $params[] = $contenedor_id;
+        }
 
-    // Fallback: si no nos pasaron fuente o no lo encontró en operaciones, intenta FO
-    $row = $this->select(
-        "SELECT numero_operacion FROM operaciones_ferroviarias WHERE id_operacion_ferro = ? LIMIT 1",
-        [$operacion_id]
-    );
-    return $row ? $row['numero_operacion'] : null;
-}
-public function listarDocumentosFerro(int $op_ferro_id, ?int $contenedor_id, ?string $tipo): array
-{
-    $params = [$op_ferro_id];
-    $filtro = '';
-
-    // En FO guardamos el id_fisico en documentos_operacion.contenedor_operacion_id
-    if (!empty($contenedor_id)) {
-        $filtro = ' AND d.contenedor_operacion_id = ? ';
-        $params[] = $contenedor_id;
-    }
-
-    $sql = "
+        $sql = "
         SELECT
             d.id_documento,
             ofe.numero_operacion,
@@ -332,14 +346,14 @@ public function listarDocumentosFerro(int $op_ferro_id, ?int $contenedor_id, ?st
         ORDER BY d.fecha_subida DESC, d.id_documento DESC
         LIMIT 500
     ";
-    return $this->selectAll($sql, $params);
-}
-public function faltantesFerro(int $op_ferro_id, int $contenedor_fisico_id, string $tipo): array
-{
-    // Para seguridad, si mandan 'M' no aplica en FO
-    if ($tipo !== 'F') return [];
+        return $this->selectAll($sql, $params);
+    }
+    public function faltantesFerro(int $op_ferro_id, int $contenedor_fisico_id, string $tipo): array
+    {
+        // Para seguridad, si mandan 'M' no aplica en FO
+        if ($tipo !== 'F') return [];
 
-    $sql = "
+        $sql = "
         SELECT t.id_tipo_documento AS id, t.nombre, t.clave, t.aplica_sobre
         FROM tipos_documento t
         LEFT JOIN documentos_operacion d
@@ -353,33 +367,32 @@ public function faltantesFerro(int $op_ferro_id, int $contenedor_fisico_id, stri
         ORDER BY t.nombre ASC
         LIMIT 500
     ";
-    return $this->selectAll($sql, [$op_ferro_id, $contenedor_fisico_id]);
-}
-public function getClienteInfoMixto(int $operacion_id, int $contenedor_id, string $tipo, ?string $fuente = null): array
-{
-    if ($fuente === 'F') {
-        // En FO, cliente viene directamente de la operación ferroviaria
-        $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
+        return $this->selectAll($sql, [$op_ferro_id, $contenedor_fisico_id]);
+    }
+    public function getClienteInfoMixto(int $operacion_id, int $contenedor_id, string $tipo, ?string $fuente = null): array
+    {
+        if ($fuente === 'F') {
+            // En FO, cliente viene directamente de la operación ferroviaria
+            $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
                 FROM operaciones_ferroviarias ofe
                 LEFT JOIN clientes cl ON cl.id_cliente = ofe.cliente_id
                 WHERE ofe.id_operacion_ferro = ? LIMIT 1";
-        return $this->select($sql, [$operacion_id]) ?? [];
-    }
+            return $this->select($sql, [$operacion_id]) ?? [];
+        }
 
-    // Lógica Mixto original
-    if ($tipo === 'F') {
-        $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
+        // Lógica Mixto original
+        if ($tipo === 'F') {
+            $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
                 FROM contenedores_operacion co
                 LEFT JOIN clientes cl ON cl.id_cliente = co.cliente_id
                 WHERE co.id_contenedor = ? LIMIT 1";
-        return $this->select($sql, [$contenedor_id]) ?? [];
-    } else {
-        $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
+            return $this->select($sql, [$contenedor_id]) ?? [];
+        } else {
+            $sql = "SELECT cl.nombre AS cliente_nombre, cl.correo AS cliente_email
                 FROM operaciones o
                 LEFT JOIN clientes cl ON cl.id_cliente = o.cliente_id
                 WHERE o.id_operacion = ? LIMIT 1";
-        return $this->select($sql, [$operacion_id]) ?? [];
+            return $this->select($sql, [$operacion_id]) ?? [];
+        }
     }
-}
-
 }

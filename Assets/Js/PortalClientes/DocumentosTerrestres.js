@@ -8,10 +8,10 @@
 
   const BASE_URL =
     window.BASE_URL || (typeof base_url !== "undefined" ? base_url : "");
-
   // Endpoints Portal Clientes
   const EP_LIST = BASE_URL + "PortalClientes/listarDocsOperacion";
-  const EP_UPLOAD = BASE_URL + "PortalClientes/subirDocOperacion"; // ajusta si cambia
+  const EP_TIPOS = BASE_URL + "PortalClientes/listarTiposDocumentoOperacion"; // ✅ NUEVO
+  const EP_UPLOAD = BASE_URL + "PortalClientes/subirDocOperacion";
 
   // Hidden refs (los setea OperacionesMaritimas.js / OperacionesFO.js al dar click)
   const opIdEl = document.getElementById("docsOperacionId");
@@ -143,6 +143,101 @@
 
     if (window.feather) feather.replace();
   }
+  function setTiposLoading() {
+    if (!selTipo) return;
+    selTipo.innerHTML = `<option value="">Cargando tipos...</option>`;
+    selTipo.disabled = true;
+  }
+
+  function setTiposEmpty() {
+    if (!selTipo) return;
+    selTipo.innerHTML = `<option value="">Sin tipos disponibles</option>`;
+    selTipo.disabled = true;
+  }
+
+  function setTiposError(msg) {
+    if (!selTipo) return;
+    selTipo.innerHTML = `<option value="">${esc(msg || "Error al cargar tipos")}</option>`;
+    selTipo.disabled = true;
+  }
+
+  function renderTipos(tipos) {
+    if (!selTipo) return;
+
+    if (!Array.isArray(tipos) || tipos.length === 0) {
+      setTiposEmpty();
+      return;
+    }
+
+    selTipo.innerHTML =
+      `<option value="">Selecciona un tipo...</option>` +
+      tipos
+        .map((t) => {
+          // aquí decide qué mandarás al backend al subir:
+          // recomendado: id_tipo_documento
+          const val = safe(t.id_tipo_documento || "");
+          const label = safe(t.nombre || t.clave || "Documento");
+          return `<option value="${esc(val)}">${esc(label)}</option>`;
+        })
+        .join("");
+
+    selTipo.disabled = false;
+  }
+  function cargarTiposDoc() {
+    const opId = parseInt(opIdEl?.value || "0", 10) || 0;
+    if (!opId) {
+      setTiposEmpty();
+      return;
+    }
+
+    const tipoOp = normalizeTipoOperacion(tipoOpEl?.value || "MAR");
+
+    setTiposLoading();
+
+    const http = new XMLHttpRequest();
+    http.open("POST", EP_TIPOS, true);
+    http.setRequestHeader(
+      "Content-Type",
+      "application/x-www-form-urlencoded; charset=UTF-8",
+    );
+    http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
+
+      if (this.status !== 200) {
+        setTiposError("Error HTTP " + this.status);
+        return;
+      }
+
+      let json = null;
+      try {
+        json = JSON.parse(this.responseText);
+      } catch {
+        setTiposError("Respuesta inválida del servidor.");
+        return;
+      }
+
+      if (!json || json.ok !== true) {
+        setTiposError(json?.msg || "No se pudieron cargar los tipos.");
+        return;
+      }
+
+      renderTipos(json.rows || []);
+    };
+
+    http.onerror = function () {
+      setTiposError("Error de red al cargar tipos.");
+    };
+
+    // Este endpoint espera: tipo + operacion_id (como lo definimos)
+    const payload = {
+      tipo: tipoOp,
+      operacion_id: String(opId),
+    };
+
+    http.send(toFormUrlEncoded(payload));
+  }
 
   // -------- XHR Listar --------
   function listarDocs() {
@@ -209,6 +304,14 @@
     const tipoDoc = safe(selTipo?.value || "").trim();
     const file = inpFile?.files?.[0] || null;
 
+    const contIdEl = document.getElementById("docsContenedorId");
+    const contTipoEl = document.getElementById("docsContenedorTipo");
+
+    const contId = parseInt(contIdEl?.value || "0", 10) || 0;
+    let contTipo = String(contTipoEl?.value || "")
+      .trim()
+      .toUpperCase(); // F|M
+
     if (!opId) return alert("Operación inválida.");
     if (!tipoDoc) return alert("Selecciona un tipo de documento.");
     if (!file) return alert("Selecciona un archivo.");
@@ -218,13 +321,37 @@
       return alert("Archivo no permitido. Usa PDF/JPG/PNG.");
     }
 
+    // ✅ Ahora el contenedor es OBLIGATORIO también para MAR (por tu nueva lógica de carpetas)
+    if (!contId) {
+      return alert("Selecciona un contenedor para subir documentos.");
+    }
+
+    // ✅ Normaliza contenedor_tipo según operación
+    if (tipoOp === "MAR") {
+      // MAR siempre M
+      contTipo = "M";
+    } else if (tipoOp === "FO") {
+      // FO siempre F
+      contTipo = "F";
+    } else {
+      // LBMF sí depende
+      if (!contTipo || !["F", "M"].includes(contTipo)) {
+        return alert("Selecciona un tipo de contenedor válido (F o M).");
+      }
+    }
+
     if (btnSubir) btnSubir.disabled = true;
 
+    // ✅ DECLARAR fd ANTES de usarlo (tu código actual usa fd.append antes y falla)
     const fd = new FormData();
     fd.append("id_operacion", String(opId));
     fd.append("tipo_operacion", tipoOp);
     fd.append("tipo_documento", tipoDoc);
     fd.append("archivo", file);
+
+    // ✅ Siempre mandar contenedor para MAR/LBMF/FO (backend lo requiere para enrutar carpetas)
+    fd.append("contenedor_id", String(contId));
+    fd.append("contenedor_tipo", contTipo); // F|M (MAR forzado a M, FO forzado a F)
 
     const http = new XMLHttpRequest();
     http.open("POST", EP_UPLOAD, true);
@@ -267,10 +394,17 @@
 
   // ===== Eventos =====
   modalEl.addEventListener("shown.bs.modal", function () {
+    cargarTiposDoc();
     listarDocs();
   });
 
   btnSubir?.addEventListener("click", function () {
+    // si el select está deshabilitado, probablemente no cargó tipos todavía
+    if (selTipo && selTipo.disabled) {
+      return alert(
+        "Aún se están cargando los tipos de documento. Intenta de nuevo.",
+      );
+    }
     subirDoc();
   });
 
@@ -281,6 +415,11 @@
     if (inpFile) inpFile.value = "";
     if (list) list.innerHTML = "";
     if (btnSubir) btnSubir.disabled = false;
+
+    const contIdEl = document.getElementById("docsContenedorId");
+    const contTipoEl = document.getElementById("docsContenedorTipo");
+    if (contIdEl) contIdEl.value = "0";
+    if (contTipoEl) contTipoEl.value = "";
   });
 
   // Exponer refresco por si lo quieres llamar desde otro módulo
