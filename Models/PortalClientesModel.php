@@ -447,50 +447,89 @@ class PortalClientesModel extends Query
 
 
     //DOCUMENTOS OP MARITIMAS
-    public function listarDocumentosOperacionCliente(int $clienteId, int $operacionId): array
-    {
+    public function listarDocumentosOperacionPortal(
+        int $clienteId,
+        int $operacionId,
+        string $tipoOperacion,
+        ?int $contenedorId = null
+    ): array {
         if ($clienteId <= 0 || $operacionId <= 0) return [];
+
+        $tipo = strtoupper(trim($tipoOperacion));
+
+        if ($tipo === 'FO') {
+            // FO: d.operacion_id apunta a operaciones_ferroviarias.id_operacion_ferro
+            $params = [$operacionId, $clienteId];
+
+            $filtro = '';
+            if (!empty($contenedorId)) {
+                $filtro = ' AND d.contenedor_operacion_id = ? ';
+                $params[] = $contenedorId;
+            }
+
+            $sql = "
+            SELECT
+                d.id_documento,
+                ofe.numero_operacion,
+                cf.numero_ferro AS contenedor,
+                t.nombre AS tipo_nombre,
+                t.clave  AS tipo_clave,
+                d.nombre_archivo,
+                d.mime_type,
+                d.ruta_archivo,
+                d.fecha_subida,
+                COALESCE(CONCAT(u.nombre,' ',u.apellido), u.nombre, u.apellido, CAST(d.subido_por AS CHAR)) AS subido_por
+            FROM documentos_operacion d
+            JOIN tipos_documento t ON t.id_tipo_documento = d.tipo_documento_id
+            JOIN operaciones_ferroviarias ofe ON ofe.id_operacion_ferro = d.operacion_id
+            LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = d.contenedor_operacion_id
+            LEFT JOIN usuarios u ON u.id_usuario = d.subido_por
+            WHERE d.operacion_id = ?
+              AND ofe.cliente_id = ?
+              $filtro
+            ORDER BY d.fecha_subida DESC, d.id_documento DESC
+            LIMIT 500
+        ";
+
+            return $this->selectAll($sql, $params) ?: [];
+        }
+
+        // MAR / LBMF: d.operacion_id apunta a operaciones.id_operacion
+        $params = [$operacionId, $clienteId, $clienteId];
+
+        $filtro = '';
+        if (!empty($contenedorId)) {
+            // aquí decides: si quieres filtrar por contenedor marítimo dentro de la operación
+            $filtro = ' AND d.cont_maritimo_operacion_id = ? ';
+            $params[] = $contenedorId;
+        }
 
         $sql = "
         SELECT
             d.id_documento,
             o.numero_operacion,
-
             cm.numero_contenedor AS contenedor_maritimo,
-
             t.nombre AS tipo_nombre,
             t.clave  AS tipo_clave,
-
             d.nombre_archivo,
             d.mime_type,
             d.ruta_archivo,
             d.fecha_subida,
-
-            COALESCE(
-                CONCAT(u.nombre,' ',u.apellido),
-                u.nombre,
-                u.apellido,
-                CAST(d.subido_por AS CHAR)
-            ) AS subido_por
+            COALESCE(CONCAT(u.nombre,' ',u.apellido), u.nombre, u.apellido, CAST(d.subido_por AS CHAR)) AS subido_por
         FROM documentos_operacion d
         JOIN tipos_documento t ON t.id_tipo_documento = d.tipo_documento_id
         JOIN operaciones o     ON o.id_operacion      = d.operacion_id
-
         LEFT JOIN contenedores_operacion co ON co.id_contenedor = d.contenedor_operacion_id
-
         LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = d.cont_maritimo_operacion_id
-        LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-
+        LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         LEFT JOIN usuarios u ON u.id_usuario = d.subido_por
-
         WHERE d.operacion_id = ?
           AND (o.cliente_id = ? OR co.cliente_id = ?)
-
+          $filtro
         ORDER BY d.fecha_subida DESC, d.id_documento DESC
         LIMIT 500
     ";
 
-        // ✅ 3 parámetros para 3 placeholders
-        return $this->selectAll($sql, [$operacionId, $clienteId, $clienteId]) ?: [];
+        return $this->selectAll($sql, $params) ?: [];
     }
 }

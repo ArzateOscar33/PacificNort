@@ -346,46 +346,51 @@ class PortalClientes extends Controller
         header('Content-Type: application/json; charset=utf-8');
 
         try {
-            if (empty($_SESSION['cliente_id'])) {
-                echo json_encode([
-                    'ok'  => false,
-                    'msg' => 'Sesión sin cliente válido.'
-                ]);
+            // ✅ sesión
+            $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+            if ($clienteId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'Sesión sin cliente válido.']);
                 return;
             }
 
-            $clienteId = (int) $_SESSION['cliente_id'];
-
+            // ✅ input (POST preferente, fallback GET)
             $in = $_POST ?: $_GET;
-            $opId = (int)($in['id_operacion'] ?? ($in['operacion_id'] ?? ($in['id'] ?? 0)));
 
+            $opId = (int)($in['id_operacion'] ?? ($in['operacion_id'] ?? ($in['id'] ?? 0)));
             if ($opId <= 0) {
-                echo json_encode([
-                    'ok'  => false,
-                    'msg' => 'ID de operación inválido.'
-                ]);
+                echo json_encode(['ok' => false, 'msg' => 'ID de operación inválido.']);
                 return;
             }
 
-            // 🔎 Debug opcional (puedes comentar después)
-            // error_log("DocsPortal -> cliente: $clienteId | op: $opId");
+            // ✅ tipo operación (MAR | LBMF | FO)
+            $tipoOp = strtoupper(trim((string)($in['tipo_operacion'] ?? ($in['tipo'] ?? 'MAR'))));
+            if (!in_array($tipoOp, ['MAR', 'LBMF', 'FO'], true)) {
+                // fallback seguro
+                $tipoOp = 'MAR';
+            }
 
-            $rows = $this->model
-                ->listarDocumentosOperacionCliente($clienteId, $opId);
+            // ✅ contenedor opcional (si luego lo ocupas)
+            $contenedorId = isset($in['contenedor_id']) ? (int)$in['contenedor_id'] : null;
+            if ($contenedorId !== null && $contenedorId <= 0) $contenedorId = null;
+
+            // 🔒 El MODEL decide el SQL correcto según tipoOp (FO vs MAR/LBMF)
+            $rows = $this->model->listarDocumentosOperacionPortal(
+                $clienteId,
+                $opId,
+                $tipoOp,
+                $contenedorId
+            );
 
             echo json_encode([
                 'ok'    => true,
                 'rows'  => is_array($rows) ? $rows : [],
-                'total' => is_array($rows) ? count($rows) : 0
+                'total' => is_array($rows) ? count($rows) : 0,
+                // útil para debug UI (opcional)
+                // 'tipo_operacion' => $tipoOp
             ]);
         } catch (Throwable $e) {
-
             error_log("PortalClientes::listarDocsOperacion ERROR: " . $e->getMessage());
-
-            echo json_encode([
-                'ok'  => false,
-                'msg' => 'Error interno al listar documentos.'
-            ]);
+            echo json_encode(['ok' => false, 'msg' => 'Error interno al listar documentos.']);
         }
     }
 }

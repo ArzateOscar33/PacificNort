@@ -102,17 +102,18 @@
             <div>
               <div class="fw-semibold">
                 ${esc(tipoNombre)}
-                ${clave ? ` <span class="badge text-bg-light border">${esc(clave)}</span>` : ""}
+ 
               </div>
               <div class="small pn-muted">${esc(nombre)}</div>
               <div class="small pn-muted">
                 ${fecha ? `Subido: ${esc(fecha)}` : ""}
-                ${subido ? ` · Por: ${esc(subido)}` : ""}
                 ${cont ? ` · Cont: ${esc(cont)}` : ""}
               </div>
             </div>
             <div class="text-nowrap small pn-muted">
+            <button type="button" class="btn btn-sm btn-outline-secondary p-2">
               Ver <i data-feather="external-link" class="ms-1"></i>
+              </button>
             </div>
           </a>
         `;

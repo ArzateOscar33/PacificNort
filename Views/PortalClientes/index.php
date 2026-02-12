@@ -831,7 +831,7 @@
 <!-- JS del portal -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesFerro.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosMaritimos.js"></script>
+<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosTerrestres.js"></script>
 
 <script>
   feather.replace();
