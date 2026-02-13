@@ -79,7 +79,7 @@ class PortalClientesModel extends Query
             $params[] = $estatus;
         }
 
-        // Rango ETA (si o.eta es DATETIME, esto evita broncas por hora)
+        // Rango ETA
         if ($etaIni !== '') {
             $where .= " AND DATE(o.eta) >= ? ";
             $params[] = $etaIni;
@@ -115,12 +115,12 @@ class PortalClientesModel extends Query
         LEFT JOIN contenedores_maritimos cm
                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         $where
-        ";
+    ";
 
         $rowTotal = $this->select($sqlTotal, $params);
         $total = $rowTotal ? (int)$rowTotal['total'] : 0;
 
-        // Rows
+        // Rows (✅ agregado docs_cont_id/docs_cont_tipo)
         $sql = "
         SELECT
             o.id_operacion,
@@ -132,7 +132,15 @@ class PortalClientesModel extends Query
             e.nombre AS estatus,
             st.clave  AS tipo_clave,
             st.nombre AS tipo_nombre,
-            GROUP_CONCAT(DISTINCT cm.numero_contenedor ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
+
+            /* ✅ Contenedor 'default' para abrir modal docs (MAR/LBMF) */
+            MIN(cmo.id) AS docs_cont_id,
+            'M' AS docs_cont_tipo,
+
+            GROUP_CONCAT(
+                DISTINCT cm.numero_contenedor
+                ORDER BY cm.numero_contenedor SEPARATOR ', '
+            ) AS contenedores
         FROM operaciones o
         LEFT JOIN subtipos_operacion st
             ON st.id_subtipo = o.subtipo_operacion_id
@@ -152,6 +160,7 @@ class PortalClientesModel extends Query
 
         return ['rows' => $rows, 'total' => $total];
     }
+
 
 
     public function obtenerDetalleMaritima(int $clienteId, int $operacionId): ?array
@@ -663,11 +672,7 @@ class PortalClientesModel extends Query
         if ($operacionId <= 0 || $clienteId <= 0) return false;
 
         if ($tipo === 'FO') {
-            $sql = "SELECT 1
-                FROM operaciones_ferroviarias
-                WHERE id_operacion_ferro = ? AND cliente_id = ?
-                LIMIT 1";
-            return (bool)$this->select($sql, [$operacionId, $clienteId]);
+            return $this->foPerteneceAClientePublic($clienteId, $operacionId);
         }
 
         // MAR / LBMF
@@ -760,5 +765,48 @@ class PortalClientesModel extends Query
         }
 
         return '';
+    }
+
+
+    public function foPerteneceAClientePublic(int $clienteId, int $opFerroId): bool
+    {
+        if ($clienteId <= 0 || $opFerroId <= 0) return false;
+
+        $sql = "
+        SELECT 1 AS ok
+        FROM operaciones_ferroviarias of
+        WHERE of.id_operacion_ferro = ?
+          AND (
+                of.cliente_id = ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedor_maritimo_ferro cmf
+                    INNER JOIN contenedores_maritimos_operacion cmo
+                            ON cmo.id = cmf.cont_maritimo_operacion_id
+                    INNER JOIN operaciones o
+                            ON o.id_operacion = cmo.operacion_id
+                    WHERE cmf.operacion_ferro_id = of.id_operacion_ferro
+                      AND o.cliente_id = ?
+                )
+          )
+        LIMIT 1
+    ";
+
+        $row = $this->select($sql, [$opFerroId, $clienteId, $clienteId]);
+        return !empty($row);
+    }
+
+
+    public function getTipoOperacionIdOperacion(int $operacionId): int
+    {
+        if ($operacionId <= 0) return 0;
+
+        $sql = "SELECT tipo_operacion_id
+            FROM operaciones
+            WHERE id_operacion = ?
+            LIMIT 1";
+
+        $row = $this->select($sql, [$operacionId]) ?: [];
+        return (int)($row['tipo_operacion_id'] ?? 0);
     }
 }

@@ -498,14 +498,19 @@ class PortalClientes extends Controller
 
             // ===== Params =====
             $opId      = (int)($_POST['id_operacion'] ?? 0);
-            $tipoOp    = strtoupper(trim((string)($_POST['tipo_operacion'] ?? '')));
             $tipoDocId = (int)($_POST['tipo_documento'] ?? 0);
 
             $contenedorId   = (int)($_POST['contenedor_id'] ?? 0);
             $contenedorTipo = strtoupper(trim((string)($_POST['contenedor_tipo'] ?? ''))); // F|M
 
-            if ($opId <= 0 || $tipoDocId <= 0 || !in_array($tipoOp, ['MAR', 'LBMF', 'FO'], true)) {
+            if ($opId <= 0 || $tipoDocId <= 0) {
                 $this->jsonOut(['ok' => false, 'msg' => 'Parámetros inválidos.'], 400);
+            }
+
+            // ✅ Tipo real por BD (FO/MAR/LBMF) - sin depender del subtipo/texto
+            $tipoOp = $this->resolverTipoOperacionReal($clienteId, $opId);
+            if ($tipoOp === '') {
+                $this->jsonOut(['ok' => false, 'msg' => 'Operación no encontrada o sin acceso.'], 403);
             }
 
             // ===== Contenedor (OBLIGATORIO por tu lógica de carpetas) =====
@@ -513,29 +518,19 @@ class PortalClientes extends Controller
                 $this->jsonOut(['ok' => false, 'msg' => 'Debes seleccionar un contenedor.'], 400);
             }
 
+            // Reglas contenedor_tipo por tipo normalizado
             if ($tipoOp === 'MAR') {
                 if ($contenedorTipo === '') $contenedorTipo = 'M';
                 if ($contenedorTipo !== 'M') {
                     $this->jsonOut(['ok' => false, 'msg' => 'MAR requiere contenedor_tipo=M.'], 400);
                 }
-            }
-
-            if ($tipoOp === 'FO') {
+            } elseif ($tipoOp === 'FO') {
                 if ($contenedorTipo !== 'F') {
                     $this->jsonOut(['ok' => false, 'msg' => 'FO requiere contenedor_tipo=F.'], 400);
                 }
-            }
-
-            if ($tipoOp === 'LBMF') {
+            } else { // LBMF
                 if (!in_array($contenedorTipo, ['F', 'M'], true)) {
                     $this->jsonOut(['ok' => false, 'msg' => 'LBMF requiere contenedor_tipo=F o M.'], 400);
-                }
-            }
-
-            // ===== Seguridad: validar pertenencia =====
-            if (method_exists($this->model, 'operacionPerteneceACliente')) {
-                if (!$this->model->operacionPerteneceACliente($tipoOp, $opId, $clienteId)) {
-                    $this->jsonOut(['ok' => false, 'msg' => 'Operación no pertenece al cliente.'], 403);
                 }
             }
 
@@ -633,7 +628,7 @@ class PortalClientes extends Controller
             } elseif ($tipoOp === 'LBMF') {
                 if ($contenedorTipo === 'F') $coId = $contenedorId;
                 if ($contenedorTipo === 'M') $cmoId = $contenedorId;
-            } elseif ($tipoOp === 'MAR') {
+            } else { // MAR
                 $cmoId = $contenedorId; // MAR siempre M
             }
 
@@ -666,5 +661,42 @@ class PortalClientes extends Controller
             error_log("PortalClientes::subirDocOperacion ERROR: " . $e->getMessage());
             $this->jsonOut(['ok' => false, 'msg' => 'Error interno al subir documento.'], 500);
         }
+    }
+
+
+    private function resolverTipoOperacionReal(int $clienteId, int $opId): string
+    {
+        if ($clienteId <= 0 || $opId <= 0) return '';
+
+        // 1) ¿Es FO (directa o vinculada)?
+        if (method_exists($this->model, 'foPerteneceAClientePublic')) {
+            if ($this->model->foPerteneceAClientePublic($clienteId, $opId)) {
+                return 'FO';
+            }
+        } else {
+            // fallback: tu validación vieja (menos robusta)
+            if (
+                method_exists($this->model, 'operacionPerteneceACliente') &&
+                $this->model->operacionPerteneceACliente('FO', $opId, $clienteId)
+            ) {
+                return 'FO';
+            }
+        }
+
+        // 2) Si no es FO, debe estar en operaciones
+        if (method_exists($this->model, 'operacionPerteneceACliente')) {
+            if (!$this->model->operacionPerteneceACliente('MAR', $opId, $clienteId)) {
+                return '';
+            }
+        }
+
+        // 3) Tipo real desde operaciones.tipo_operacion_id
+        if (!method_exists($this->model, 'getTipoOperacionIdOperacion')) {
+            return ''; // sin este método no podemos resolver “por tipo”
+        }
+
+        $tipoId = (int)$this->model->getTipoOperacionIdOperacion($opId);
+
+        return ($tipoId === 1) ? 'MAR' : 'LBMF';
     }
 }
