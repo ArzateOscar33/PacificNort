@@ -674,13 +674,19 @@
         console.log("bootstrap:", window.bootstrap);
 
         if (!modalMar) {
-          alert("No se encontró #modalDetalleMaritima en el DOM");
+          swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "No se encontró el modal de detalle marítima.",
+          });
           return;
         }
         if (!window.bootstrap || !window.bootstrap.Modal) {
-          alert(
-            "Bootstrap Modal no está disponible (window.bootstrap undefined)",
-          );
+          swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Bootstrap Modal no está disponible (window.bootstrap undefined)",
+          });
           return;
         }
 
@@ -691,7 +697,7 @@
         return;
       }
 
-      // ✅ 2) Abrir modal Docs (lo que ya tenías)
+      // ✅ 2) Abrir modal Docs (corregido para nueva lógica: NO depende de docs_cont_id)
       if (action === "docs") {
         const opNum = btn.getAttribute("data-num") || "";
 
@@ -706,29 +712,32 @@
 
         // Buscar row
         let row = null;
-        for (let i = 0; i < state.rows.length; i++) {
+        for (let i = 0; i < (state.rows || []).length; i++) {
           if (String(state.rows[i].id_operacion) === String(opId)) {
             row = state.rows[i];
             break;
           }
         }
 
-        const tipo = (row?.tipo_clave || "MAR").toUpperCase();
+        // Tipo según row (MAR/LBMF). Si no viene, default MAR.
+        const tipo = String(row?.tipo_clave || "MAR").toUpperCase();
         if (elTipo) elTipo.value = tipo;
 
-        // ✅ Contenedor principal para docs (debe venir del endpoint)
+        // ✅ Con la nueva lógica YA NO ES OBLIGATORIO traer docs_cont_id desde el listado.
+        // Si viene, lo ponemos. Si no, dejamos 0 para que el modal/flujo obligue a seleccionar contenedor antes de subir.
         const contId = parseInt(row?.docs_cont_id || "0", 10) || 0;
-        const contTipo = String(row?.docs_cont_tipo || "M").toUpperCase();
 
-        if (elContId) elContId.value = String(contId);
+        // Default contenedor_tipo:
+        // - MAR: M
+        // - LBMF: M por defecto (el usuario podrá cambiar/seleccionar)
+        // - FO: F (aunque aquí normalmente no aplica)
+        let contTipo = "M";
+        if (tipo === "FO") contTipo = "F";
+        if (row?.docs_cont_tipo)
+          contTipo = String(row.docs_cont_tipo).toUpperCase();
+
+        if (elContId) elContId.value = String(contId || 0);
         if (elContTipo) elContTipo.value = contTipo;
-
-        if (!contId) {
-          alert(
-            "Esta operación no trae docs_cont_id. Agrega el ID del contenedor principal en el endpoint listarOperacionesCliente.",
-          );
-          return;
-        }
 
         const modalDocs = document.getElementById("modalDocs");
         if (modalDocs && window.bootstrap) {

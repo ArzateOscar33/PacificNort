@@ -8,106 +8,9 @@
 
   <!-- Bootstrap 5.3.x -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
 
-  <style>
-    body {
-      background: #f6f7fb;
-    }
 
-    .pn-topnav {
-      background: #0f172a;
-      /* slate-900 */
-      color: #e2e8f0;
-      border-bottom: 1px solid rgba(226, 232, 240, .12);
-    }
-
-    .pn-brand {
-      display: flex;
-      align-items: center;
-      gap: .65rem;
-      color: #e2e8f0;
-      text-decoration: none;
-    }
-
-    .pn-brand .kpi-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: .9rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(226, 232, 240, .12);
-      background: rgba(148, 163, 184, .10);
-      color: #38bdf8;
-    }
-
-    .pn-muted {
-      color: #64748b;
-    }
-
-    .pn-muted-inv {
-      color: rgba(226, 232, 240, .75);
-    }
-
-    .pn-topbar {
-      background: #ffffff;
-      border-bottom: 1px solid rgba(15, 23, 42, .08);
-    }
-
-    .kpi-card {
-      border: 1px solid rgba(15, 23, 42, .08);
-      border-radius: 1rem;
-      background: #fff;
-    }
-
-    .kpi-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: .9rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(15, 23, 42, .08);
-      background: #f8fafc;
-    }
-
-    .table thead th {
-      background: #f8fafc;
-      border-bottom: 1px solid rgba(15, 23, 42, .08);
-      color: #0f172a;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .badge-soft {
-      background: rgba(15, 23, 42, .06);
-      color: #0f172a;
-      border: 1px solid rgba(15, 23, 42, .10);
-      font-weight: 600;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: .35rem;
-      padding: .15rem .55rem;
-      border-radius: 999px;
-      background: rgba(2, 132, 199, .08);
-      color: #075985;
-      border: 1px solid rgba(2, 132, 199, .18);
-      font-size: .825rem;
-      font-weight: 600;
-    }
-
-    .modal-xxl-wide {
-      max-width: min(1400px, calc(100vw - 2rem));
-    }
-
-    .search-hint {
-      font-size: .9rem;
-      color: #64748b;
-    }
-  </style>
 </head>
 
 <body>
@@ -170,41 +73,108 @@
     <div class="container-fluid py-4" id="pnContainer">
 
       <!-- KPIs -->
+      <!-- KPIs -->
       <div class="row g-3 mb-3" id="kpiRow">
-        <div class="col-12 col-md-4">
-          <div class="kpi-card p-3" id="kpiCardActivas">
+
+        <!-- Marítimas en agua -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-mar-agua" id="kpiCardMarAgua" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <div class="pn-muted small">Operaciones activas</div>
-                <div class="h4 mb-0" id="kpiOpsActivas">0</div>
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Marítimas en agua</div>
+                <div class="h4 mb-0" id="kpiMarEnAgua">0</div>
+                <div class="small pn-muted text-truncate" id="kpiMarEnAguaSub">En tránsito</div>
               </div>
-              <div class="kpi-icon"><i data-feather="activity"></i></div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="droplet"></i>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-12 col-md-4">
-          <div class="kpi-card p-3" id="kpiCardETA">
+
+        <!-- Terrestres en camino -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-ter-camino" id="kpiCardTerCamino" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <div class="pn-muted small">Arribos (ETA próximos)</div>
-                <div class="h4 mb-0" id="kpiArribosETA">0</div>
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Terrestres en camino</div>
+                <div class="h4 mb-0" id="kpiTerEnCamino">0</div>
+                <div class="small pn-muted text-truncate" id="kpiTerEnCaminoSub">Ruta activa</div>
               </div>
-              <div class="kpi-icon"><i data-feather="calendar"></i></div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="truck"></i>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-12 col-md-4">
-          <div class="kpi-card p-3" id="kpiCardDocs">
+
+        <!-- Marítimas en puerto -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-mar-puerto" id="kpiCardMarPuerto" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <div class="pn-muted small">Docs pendientes</div>
-                <div class="h4 mb-0" id="kpiDocsPendientes">0</div>
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Marítimas en puerto</div>
+                <div class="h4 mb-0" id="kpiMarEnPuerto">0</div>
+                <div class="small pn-muted text-truncate" id="kpiMarEnPuertoSub">Contenedores en puerto</div>
               </div>
-              <div class="kpi-icon"><i data-feather="file-text"></i></div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="anchor"></i>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- Bodegas -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-bodegas" id="kpiCardBodegas" role="button" tabindex="0">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Bodegas</div>
+                <div class="h4 mb-0" id="kpiBodegas">0</div>
+                <div class="small pn-muted text-truncate" id="kpiBodegasSub">TJ + SD</div>
+              </div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="package"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yardas -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-yardas" id="kpiCardYardas" role="button" tabindex="0">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Yardas</div>
+                <div class="h4 mb-0" id="kpiYardas">0</div>
+                <div class="small pn-muted text-truncate" id="kpiYardasSub">TJ + SD</div>
+              </div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="map-pin"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entregadas -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-entregadas" id="kpiCardEntregadas" role="button" tabindex="0">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Entregadas</div>
+                <div class="h4 mb-0" id="kpiEntregadas">0</div>
+                <div class="small pn-muted text-truncate" id="kpiEntregadasSub">Operaciones entregadas</div>
+              </div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="check-circle"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+
 
       <!-- Filtros -->
       <div class="card shadow-sm border-0 rounded-4 mb-3" id="cardFiltros">
@@ -832,6 +802,7 @@
 
 </html>
 <!-- JS del portal -->
+<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/Kpis.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesFerro.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosTerrestres.js"></script>

@@ -312,18 +312,41 @@
       .trim()
       .toUpperCase(); // F|M
 
-    if (!opId) return alert("Operación inválida.");
-    if (!tipoDoc) return alert("Selecciona un tipo de documento.");
-    if (!file) return alert("Selecciona un archivo.");
+    if (!opId)
+      return swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Operación inválida.",
+      });
+    if (!tipoDoc)
+      return swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Selecciona un tipo de documento.",
+      });
+    if (!file)
+      return swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Selecciona un archivo.",
+      });
 
     const name = (file.name || "").toLowerCase();
     if (!/\.(pdf|png|jpe?g)$/i.test(name)) {
-      return alert("Archivo no permitido. Usa PDF/JPG/PNG.");
+      return swal.fire({
+        icon: "error",
+        title: "Archivo no permitido",
+        text: "Usa PDF/JPG/PNG.",
+      });
     }
 
     // ✅ Ahora el contenedor es OBLIGATORIO también para MAR (por tu nueva lógica de carpetas)
     if (!contId) {
-      return alert("Selecciona un contenedor para subir documentos.");
+      return swal.fire({
+        icon: "warning",
+        title: "Selecciona contenedor",
+        text: "Selecciona un contenedor para subir documentos.",
+      });
     }
 
     // ✅ Normaliza contenedor_tipo según operación
@@ -336,7 +359,11 @@
     } else {
       // LBMF sí depende
       if (!contTipo || !["F", "M"].includes(contTipo)) {
-        return alert("Selecciona un tipo de contenedor válido (F o M).");
+        return swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Selecciona un tipo de contenedor válido (F o M).",
+        });
       }
     }
 
@@ -363,7 +390,11 @@
       if (btnSubir) btnSubir.disabled = false;
 
       if (this.status !== 200) {
-        alert("No se pudo subir el documento (HTTP " + this.status + ").");
+        swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo subir el documento (HTTP " + this.status + ").",
+        });
         return;
       }
 
@@ -371,12 +402,20 @@
       try {
         json = JSON.parse(this.responseText);
       } catch {
-        alert("Respuesta inválida del servidor.");
+        swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Respuesta inválida del servidor.",
+        });
         return;
       }
 
       if (!json || json.ok !== true) {
-        alert(json?.msg || "No se pudo subir el documento.");
+        swal.fire({
+          icon: "error",
+          title: "Error",
+          text: json?.msg || "No se pudo subir el documento.",
+        });
         return;
       }
 
@@ -386,7 +425,11 @@
 
     http.onerror = function () {
       if (btnSubir) btnSubir.disabled = false;
-      alert("Error de red al subir documento.");
+      swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error de red al subir documento.",
+      });
     };
 
     http.send(fd);
@@ -401,9 +444,11 @@
   btnSubir?.addEventListener("click", function () {
     // si el select está deshabilitado, probablemente no cargó tipos todavía
     if (selTipo && selTipo.disabled) {
-      return alert(
-        "Aún se están cargando los tipos de documento. Intenta de nuevo.",
-      );
+      return swal.fire({
+        icon: "warning",
+        title: "Espera un momento",
+        text: "Aún se están cargando los tipos de documento. Intenta de nuevo.",
+      });
     }
     subirDoc();
   });
