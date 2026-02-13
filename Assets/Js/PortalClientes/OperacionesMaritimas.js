@@ -674,13 +674,19 @@
         console.log("bootstrap:", window.bootstrap);
 
         if (!modalMar) {
-          alert("No se encontró #modalDetalleMaritima en el DOM");
+          swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "No se encontró el modal de detalle marítima.",
+          });
           return;
         }
         if (!window.bootstrap || !window.bootstrap.Modal) {
-          alert(
-            "Bootstrap Modal no está disponible (window.bootstrap undefined)",
-          );
+          swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Bootstrap Modal no está disponible (window.bootstrap undefined)",
+          });
           return;
         }
 
@@ -732,9 +738,6 @@
 
         if (elContId) elContId.value = String(contId || 0);
         if (elContTipo) elContTipo.value = contTipo;
-
-        // ❌ Ya NO bloqueamos si no hay contenedor principal
-        // if (!contId) { alert(...); return; }
 
         const modalDocs = document.getElementById("modalDocs");
         if (modalDocs && window.bootstrap) {

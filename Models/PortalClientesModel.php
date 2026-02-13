@@ -809,4 +809,96 @@ class PortalClientesModel extends Query
         $row = $this->select($sql, [$operacionId]) ?: [];
         return (int)($row['tipo_operacion_id'] ?? 0);
     }
+
+    /* =========================
+ * KPIs Portal Cliente
+ * ========================= */
+
+    public function kpisPortalCliente(int $clienteId): array
+    {
+        if ($clienteId <= 0) {
+            return [
+                'mar_agua' => 0,
+                'mar_puerto' => 0,
+                'fo_camino' => 0,
+                'entregadas' => 0,
+            ];
+        }
+
+        $marAgua   = $this->contarMaritimasPorEstatus($clienteId, 9);   // EN AGUA
+        $marPuerto = $this->contarMaritimasPorEstatus($clienteId, 11);  // PUERTO
+        $foCamino  = $this->contarFOporEstatus($clienteId, 1);          // CAMINO A DESTINO
+
+        // Entregadas = (MAR+LBMF entregadas) + (FO entregadas)
+        $entMar = $this->contarMaritimasPorEstatus($clienteId, 7);      // ENTREGADO
+        $entFO  = $this->contarFOporEstatus($clienteId, 7);             // ENTREGADO
+        $entregadas = $entMar + $entFO;
+
+        return [
+            'mar_agua' => $marAgua,
+            'mar_puerto' => $marPuerto,
+            'fo_camino' => $foCamino,
+            'entregadas' => $entregadas,
+        ];
+    }
+
+    /**
+/**
+     * Cuenta operaciones MAR + LBMF por estatus (filtrado por cliente_id).
+     * MAR = tipo_operacion_id 1
+     * LBMF = tipo_operacion_id 11
+     */
+    public function contarMaritimasPorEstatus(int $clienteId, int $estatusId): int
+    {
+        if ($clienteId <= 0 || $estatusId <= 0) return 0;
+
+        $sql = "
+        SELECT COUNT(DISTINCT o.id_operacion) AS n
+        FROM operaciones o
+        LEFT JOIN subtipos_operacion st
+               ON st.id_subtipo = o.subtipo_operacion_id
+        WHERE o.cliente_id = ?
+          AND (
+                o.tipo_operacion_id IN (1, 11)
+                OR st.tipo_operacion_id IN (1, 11)
+              )
+          AND o.estatus_id = ?
+    ";
+
+        $row = $this->select($sql, [$clienteId, $estatusId]);
+        return $row ? (int)$row['n'] : 0;
+    }
+
+    /**
+     * Cuenta operaciones FO por estatus, considerando:
+     * 1) FO directa del cliente (of.cliente_id = cliente)
+     * 2) FO vinculada a operación marítima del cliente (EXISTS ... o.cliente_id = cliente)
+     */
+    public function contarFOporEstatus(int $clienteId, int $estatusId): int
+    {
+        if ($clienteId <= 0 || $estatusId <= 0) return 0;
+
+        $sql = "
+        SELECT COUNT(DISTINCT of.id_operacion_ferro) AS n
+        FROM operaciones_ferroviarias of
+        WHERE
+            of.estatus_id = ?
+            AND (
+                of.cliente_id = ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedor_maritimo_ferro cmf
+                    INNER JOIN contenedores_maritimos_operacion cmo
+                            ON cmo.id = cmf.cont_maritimo_operacion_id
+                    INNER JOIN operaciones o
+                            ON o.id_operacion = cmo.operacion_id
+                    WHERE cmf.operacion_ferro_id = of.id_operacion_ferro
+                      AND o.cliente_id = ?
+                )
+            )
+    ";
+
+        $row = $this->select($sql, [$estatusId, $clienteId, $clienteId]);
+        return $row ? (int)$row['n'] : 0;
+    }
 }

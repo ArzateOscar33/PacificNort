@@ -78,12 +78,19 @@ class PortalClientes extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
-
+        $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
 
         $data['title'] = 'Portal Cliente';
         $data['nombre_cliente'] = $this->model->getNombreCliente();
         $data['nombre_usuario'] = $this->model->getNombreUsuario();
         $data['estatus_op'] = $this->model->getEstatusOp();
+        // ✅ KPIs iniciales (para pintar server-side si quieres)
+        $data['kpis'] = ($clienteId > 0) ? $this->model->kpisPortalCliente($clienteId) : [
+            'mar_agua' => 0,
+            'mar_puerto' => 0,
+            'fo_camino' => 0,
+            'entregadas' => 0
+        ];
 
         $this->views->getView('PortalClientes', 'index', $data);
     }
@@ -698,5 +705,30 @@ class PortalClientes extends Controller
         $tipoId = (int)$this->model->getTipoOperacionIdOperacion($opId);
 
         return ($tipoId === 1) ? 'MAR' : 'LBMF';
+    }
+
+
+    // ✅ NUEVO: KPIs del Portal Cliente (JSON)
+    public function kpis()
+    {
+        $this->requireAjax();
+
+        try {
+            $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+            if ($clienteId <= 0) {
+                $this->jsonOut(['ok' => false, 'msg' => 'Sesión sin cliente válido.'], 401);
+            }
+
+            // Llama al model (kpisPortalCliente + counts)
+            $kpis = $this->model->kpisPortalCliente($clienteId);
+
+            $this->jsonOut([
+                'ok' => true,
+                'kpis' => $kpis
+            ]);
+        } catch (Throwable $e) {
+            error_log("PortalClientes::kpis ERROR: " . $e->getMessage());
+            $this->jsonOut(['ok' => false, 'msg' => 'Error interno al cargar KPIs.'], 500);
+        }
     }
 }
