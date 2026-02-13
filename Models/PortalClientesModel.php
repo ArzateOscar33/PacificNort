@@ -818,10 +818,12 @@ class PortalClientesModel extends Query
     {
         if ($clienteId <= 0) {
             return [
-                'mar_agua' => 0,
-                'mar_puerto' => 0,
-                'fo_camino' => 0,
-                'entregadas' => 0,
+                'mar_agua'    => 0,
+                'mar_puerto'  => 0,
+                'fo_camino'   => 0,
+                'entregadas'  => 0,
+                'bodegas'     => 0,
+                'yardas'      => 0,
             ];
         }
 
@@ -834,16 +836,26 @@ class PortalClientesModel extends Query
         $entFO  = $this->contarFOporEstatus($clienteId, 7);             // ENTREGADO
         $entregadas = $entMar + $entFO;
 
+        // ✅ NUEVOS:
+        // Bodegas = BODEGA TJ(5) + BODEGA SD(6)  (sumando MAR/LBMF + FO)
+        $bodegas = $this->contarMaritimasPorEstatusIds($clienteId, [5, 6]) + $this->contarFOporEstatusIds($clienteId, [5, 6]);
+
+        // Yardas = YARDA SD(10) + YARDA TJ(12)  (sumando MAR/LBMF + FO)
+        $yardas  = $this->contarMaritimasPorEstatusIds($clienteId, [10, 12]) + $this->contarFOporEstatusIds($clienteId, [10, 12]);
+
         return [
-            'mar_agua' => $marAgua,
+            'mar_agua'   => $marAgua,
             'mar_puerto' => $marPuerto,
-            'fo_camino' => $foCamino,
+            'fo_camino'  => $foCamino,
             'entregadas' => $entregadas,
+            'bodegas'    => $bodegas,
+            'yardas'     => $yardas,
         ];
     }
 
+
     /**
-/**
+
      * Cuenta operaciones MAR + LBMF por estatus (filtrado por cliente_id).
      * MAR = tipo_operacion_id 1
      * LBMF = tipo_operacion_id 11
@@ -866,6 +878,73 @@ class PortalClientesModel extends Query
     ";
 
         $row = $this->select($sql, [$clienteId, $estatusId]);
+        return $row ? (int)$row['n'] : 0;
+    }
+    /**
+     * Cuenta operaciones MAR + LBMF por lista de estatus.
+     * MAR = tipo_operacion_id 1
+     * LBMF = tipo_operacion_id 11
+     */
+    public function contarMaritimasPorEstatusIds(int $clienteId, array $estatusIds): int
+    {
+        if ($clienteId <= 0 || empty($estatusIds)) return 0;
+
+        $estatusIds = array_values(array_filter(array_map('intval', $estatusIds), fn($x) => $x > 0));
+        if (empty($estatusIds)) return 0;
+
+        $ph = implode(',', array_fill(0, count($estatusIds), '?'));
+
+        $sql = "
+        SELECT COUNT(DISTINCT o.id_operacion) AS n
+        FROM operaciones o
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        WHERE o.cliente_id = ?
+          AND (
+                o.tipo_operacion_id IN (1, 11)
+                OR st.tipo_operacion_id IN (1, 11)
+              )
+          AND o.estatus_id IN ($ph)
+    ";
+
+        $params = array_merge([$clienteId], $estatusIds);
+        $row = $this->select($sql, $params);
+        return $row ? (int)$row['n'] : 0;
+    }
+
+    /**
+     * Cuenta operaciones FO por lista de estatus (directa o vinculada a marítima del cliente).
+     */
+    public function contarFOporEstatusIds(int $clienteId, array $estatusIds): int
+    {
+        if ($clienteId <= 0 || empty($estatusIds)) return 0;
+
+        $estatusIds = array_values(array_filter(array_map('intval', $estatusIds), fn($x) => $x > 0));
+        if (empty($estatusIds)) return 0;
+
+        $ph = implode(',', array_fill(0, count($estatusIds), '?'));
+
+        $sql = "
+        SELECT COUNT(DISTINCT of.id_operacion_ferro) AS n
+        FROM operaciones_ferroviarias of
+        WHERE
+            of.estatus_id IN ($ph)
+            AND (
+                of.cliente_id = ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedor_maritimo_ferro cmf
+                    INNER JOIN contenedores_maritimos_operacion cmo
+                            ON cmo.id = cmf.cont_maritimo_operacion_id
+                    INNER JOIN operaciones o
+                            ON o.id_operacion = cmo.operacion_id
+                    WHERE cmf.operacion_ferro_id = of.id_operacion_ferro
+                      AND o.cliente_id = ?
+                )
+            )
+    ";
+
+        $params = array_merge($estatusIds, [$clienteId, $clienteId]);
+        $row = $this->select($sql, $params);
         return $row ? (int)$row['n'] : 0;
     }
 

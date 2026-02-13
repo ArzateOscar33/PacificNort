@@ -8,303 +8,9 @@
 
   <!-- Bootstrap 5.3.x -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
 
-  <style>
-    body {
-      background: #f6f7fb;
-    }
 
-    .pn-topnav {
-      background: #0f172a;
-      /* slate-900 */
-      color: #e2e8f0;
-      border-bottom: 1px solid rgba(226, 232, 240, .12);
-    }
-
-    .pn-brand {
-      display: flex;
-      align-items: center;
-      gap: .65rem;
-      color: #e2e8f0;
-      text-decoration: none;
-    }
-
-    .pn-brand .kpi-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: .9rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(226, 232, 240, .12);
-      background: rgba(148, 163, 184, .10);
-      color: #38bdf8;
-    }
-
-    .pn-muted {
-      color: #64748b;
-    }
-
-    .pn-muted-inv {
-      color: rgba(226, 232, 240, .75);
-    }
-
-    .pn-topbar {
-      background: #ffffff;
-      border-bottom: 1px solid rgba(15, 23, 42, .08);
-    }
-
-    .kpi-card {
-      border: 1px solid rgba(15, 23, 42, .08);
-      border-radius: 1rem;
-      background: #fff;
-    }
-
-    .kpi-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: .9rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(15, 23, 42, .08);
-      background: #f8fafc;
-    }
-
-    .table thead th {
-      background: #f8fafc;
-      border-bottom: 1px solid rgba(15, 23, 42, .08);
-      color: #0f172a;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .badge-soft {
-      background: rgba(15, 23, 42, .06);
-      color: #0f172a;
-      border: 1px solid rgba(15, 23, 42, .10);
-      font-weight: 600;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: .35rem;
-      padding: .15rem .55rem;
-      border-radius: 999px;
-      background: rgba(2, 132, 199, .08);
-      color: #075985;
-      border: 1px solid rgba(2, 132, 199, .18);
-      font-size: .825rem;
-      font-weight: 600;
-    }
-
-    .modal-xxl-wide {
-      max-width: min(1400px, calc(100vw - 2rem));
-    }
-
-    .search-hint {
-      font-size: .9rem;
-      color: #64748b;
-    }
-
-    /* ===========================
-   KPI PRO (v2) — profesional
-   =========================== */
-
-    /* Tokens (ajustables) */
-    :root {
-      --pn-radius-kpi: 18px;
-      --pn-shadow-kpi: 0 10px 28px rgba(15, 23, 42, .10);
-      --pn-shadow-kpi-hover: 0 18px 42px rgba(15, 23, 42, .16);
-    }
-
-    /* Contenedor KPI: un poco más compacto y consistente */
-    #kpiRow .kpi-card {
-      position: relative;
-      overflow: hidden;
-      border-radius: var(--pn-radius-kpi);
-    }
-
-    /* Base pro: fondo con degradado + borde elegante */
-    .pn-kpi-pro {
-      background: linear-gradient(135deg, rgba(255, 255, 255, .95) 0%, rgba(248, 250, 252, .95) 50%, rgba(241, 245, 249, .95) 100%);
-      border: 1px solid rgba(15, 23, 42, .08);
-      box-shadow: var(--pn-shadow-kpi);
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
-      cursor: pointer;
-    }
-
-    /* “Sheen” sutil que se mueve en hover */
-    .pn-kpi-pro::before {
-      content: "";
-      position: absolute;
-      inset: -60% -40% auto -40%;
-      height: 220%;
-      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 60%);
-      transform: rotate(12deg);
-      opacity: .55;
-      pointer-events: none;
-      transition: opacity .25s ease, transform .25s ease;
-    }
-
-    /* Barra de acento (color por KPI) */
-    .pn-kpi-pro::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 6px;
-      border-radius: 18px 0 0 18px;
-      background: var(--kpi-accent, #38bdf8);
-      opacity: .95;
-      pointer-events: none;
-    }
-
-    /* Hover con elevación y glow */
-    .pn-kpi-pro:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--pn-shadow-kpi-hover);
-      border-color: rgba(15, 23, 42, .12);
-      filter: saturate(1.05);
-    }
-
-    .pn-kpi-pro:hover::before {
-      opacity: .78;
-      transform: rotate(12deg) translate3d(8px, -6px, 0);
-    }
-
-    .pn-kpi-pro:active {
-      transform: translateY(-1px) scale(.995);
-    }
-
-    .pn-kpi-pro:focus {
-      outline: none;
-      box-shadow: 0 0 0 4px rgba(56, 189, 248, .22), var(--pn-shadow-kpi-hover);
-    }
-
-    /* Tipografía KPI: más “dashboard-like” */
-    .pn-kpi-pro .pn-muted.small {
-      letter-spacing: .15px;
-    }
-
-    .pn-kpi-pro .h4 {
-      font-weight: 800;
-      letter-spacing: -.4px;
-    }
-
-    .pn-kpi-pro .small.pn-muted {
-      opacity: .85;
-    }
-
-    /* Icon container: degradado + borde + glow suave */
-    .pn-kpi-ic {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(15, 23, 42, .10);
-      background: linear-gradient(135deg, rgba(255, 255, 255, .95), rgba(241, 245, 249, .95));
-      box-shadow: 0 10px 18px rgba(15, 23, 42, .10);
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    }
-
-    /* Feather icon dentro */
-    .pn-kpi-ic svg {
-      width: 20px;
-      height: 20px;
-      stroke-width: 2.2;
-      color: var(--kpi-accent, #38bdf8);
-      filter: drop-shadow(0 8px 10px rgba(15, 23, 42, .12));
-    }
-
-    /* Hover: icon “pop” */
-    .pn-kpi-pro:hover .pn-kpi-ic {
-      transform: translateY(-1px) scale(1.03);
-      border-color: rgba(15, 23, 42, .14);
-      box-shadow: 0 14px 26px rgba(15, 23, 42, .14);
-    }
-
-    /* Subrayado sutil del KPI value cuando hover */
-    .pn-kpi-pro:hover .h4 {
-      text-decoration: none;
-    }
-
-    /* ================
-   Colores por KPI
-   ================ */
-
-    /* Marítimas en agua: Azul océano */
-    .kpi-mar-agua {
-      --kpi-accent: #0ea5e9;
-      /* sky-500 */
-    }
-
-    .kpi-mar-agua.pn-kpi-pro {
-      background: linear-gradient(135deg, rgba(224, 242, 254, .95) 0%, rgba(248, 250, 252, .95) 55%, rgba(241, 245, 249, .95) 100%);
-    }
-
-    .kpi-mar-agua.pn-kpi-pro:hover {
-      box-shadow: 0 18px 44px rgba(14, 165, 233, .22), var(--pn-shadow-kpi-hover);
-    }
-
-    /* Terrestres en camino: Ámbar “en ruta” (energía) */
-    .kpi-ter-camino {
-      --kpi-accent: #f59e0b;
-      /* amber-500 */
-    }
-
-    .kpi-ter-camino.pn-kpi-pro {
-      background: linear-gradient(135deg, rgba(254, 243, 199, .95) 0%, rgba(248, 250, 252, .95) 55%, rgba(241, 245, 249, .95) 100%);
-    }
-
-    .kpi-ter-camino.pn-kpi-pro:hover {
-      box-shadow: 0 18px 44px rgba(245, 158, 11, .20), var(--pn-shadow-kpi-hover);
-    }
-
-    /* Marítimas en puerto: Indigo/blue “operación en proceso” */
-    .kpi-mar-puerto {
-      --kpi-accent: #6366f1;
-      /* indigo-500 */
-    }
-
-    .kpi-mar-puerto.pn-kpi-pro {
-      background: linear-gradient(135deg, rgba(224, 231, 255, .95) 0%, rgba(248, 250, 252, .95) 55%, rgba(241, 245, 249, .95) 100%);
-    }
-
-    .kpi-mar-puerto.pn-kpi-pro:hover {
-      box-shadow: 0 18px 44px rgba(99, 102, 241, .20), var(--pn-shadow-kpi-hover);
-    }
-
-    /* Entregadas: Verde “success” */
-    .kpi-entregadas {
-      --kpi-accent: #22c55e;
-      /* green-500 */
-    }
-
-    .kpi-entregadas.pn-kpi-pro {
-      background: linear-gradient(135deg, rgba(220, 252, 231, .95) 0%, rgba(248, 250, 252, .95) 55%, rgba(241, 245, 249, .95) 100%);
-    }
-
-    .kpi-entregadas.pn-kpi-pro:hover {
-      box-shadow: 0 18px 44px rgba(34, 197, 94, .18), var(--pn-shadow-kpi-hover);
-    }
-
-    /* Ajuste de texto muted para que no se vea “lavado” */
-    .pn-muted {
-      color: #64748b;
-    }
-
-    /* Responsive: un pelín más aire en pantallas grandes */
-    @media (min-width: 1200px) {
-      .pn-kpi-pro {
-        padding: 18px !important;
-      }
-    }
-  </style>
 </head>
 
 <body>
@@ -367,10 +73,11 @@
     <div class="container-fluid py-4" id="pnContainer">
 
       <!-- KPIs -->
+      <!-- KPIs -->
       <div class="row g-3 mb-3" id="kpiRow">
 
         <!-- Marítimas en agua -->
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-mar-agua" id="kpiCardMarAgua" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
@@ -386,7 +93,7 @@
         </div>
 
         <!-- Terrestres en camino -->
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-ter-camino" id="kpiCardTerCamino" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
@@ -402,23 +109,55 @@
         </div>
 
         <!-- Marítimas en puerto -->
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-mar-puerto" id="kpiCardMarPuerto" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
                 <div class="pn-muted small text-truncate">Marítimas en puerto</div>
                 <div class="h4 mb-0" id="kpiMarEnPuerto">0</div>
-                <div class="small pn-muted text-truncate" id="kpiMarEnPuertoSub"> Contenedores en Puerto</div>
+                <div class="small pn-muted text-truncate" id="kpiMarEnPuertoSub">Contenedores en puerto</div>
               </div>
-              <div class=" kpi-icon pn-kpi-ic">
+              <div class="kpi-icon pn-kpi-ic">
                 <i data-feather="anchor"></i>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Bodegas -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-bodegas" id="kpiCardBodegas" role="button" tabindex="0">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Bodegas</div>
+                <div class="h4 mb-0" id="kpiBodegas">0</div>
+                <div class="small pn-muted text-truncate" id="kpiBodegasSub">TJ + SD</div>
+              </div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="package"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yardas -->
+        <div class="col-12 col-md-6 col-xl-2">
+          <div class="kpi-card p-3 pn-kpi-pro kpi-yardas" id="kpiCardYardas" role="button" tabindex="0">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="min-w-0">
+                <div class="pn-muted small text-truncate">Yardas</div>
+                <div class="h4 mb-0" id="kpiYardas">0</div>
+                <div class="small pn-muted text-truncate" id="kpiYardasSub">TJ + SD</div>
+              </div>
+              <div class="kpi-icon pn-kpi-ic">
+                <i data-feather="map-pin"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Entregadas -->
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-entregadas" id="kpiCardEntregadas" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
@@ -434,6 +173,7 @@
         </div>
 
       </div>
+
 
 
       <!-- Filtros -->

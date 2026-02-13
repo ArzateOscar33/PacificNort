@@ -86,10 +86,12 @@ class PortalClientes extends Controller
         $data['estatus_op'] = $this->model->getEstatusOp();
         // ✅ KPIs iniciales (para pintar server-side si quieres)
         $data['kpis'] = ($clienteId > 0) ? $this->model->kpisPortalCliente($clienteId) : [
-            'mar_agua' => 0,
+            'mar_agua'   => 0,
             'mar_puerto' => 0,
-            'fo_camino' => 0,
-            'entregadas' => 0
+            'fo_camino'  => 0,
+            'entregadas' => 0,
+            'bodegas'    => 0,
+            'yardas'     => 0,
         ];
 
         $this->views->getView('PortalClientes', 'index', $data);
