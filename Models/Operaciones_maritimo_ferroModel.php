@@ -276,7 +276,7 @@ class Operaciones_maritimo_ferroModel extends Query
             $args[] = $subtipoId;
         }
 
-        // (Opcional) filtro tipo: 1 o 11
+        // (Opcional) filtro tipo: 11
         if (!empty($filters['tipo']) && in_array((int)$filters['tipo'], [11], true)) {
             $where .= " AND st.tipo_operacion_id = ? ";
             $args[] = (int)$filters['tipo'];
@@ -294,21 +294,21 @@ class Operaciones_maritimo_ferroModel extends Query
             foreach ($terms as $t) {
                 $needle = '%' . $t . '%';
                 $where .= " AND (
-                    LOWER(o.numero_operacion) LIKE ?
-                    OR LOWER(o.numero_bl)     LIKE ?
-                    OR LOWER(p.nombre)        LIKE ?
-                    OR LOWER(e.nombre)        LIKE ?
-                    OR LOWER(c.nombre)        LIKE ?
-                    OR LOWER(s.nombre)        LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM contenedores_maritimos_operacion cmo2
-                        JOIN contenedores_maritimos cm2
-                          ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                        WHERE cmo2.operacion_id = o.id_operacion
-                          AND LOWER(cm2.numero_contenedor) LIKE ?
-                    )
-                )";
+                LOWER(o.numero_operacion) LIKE ?
+                OR LOWER(o.numero_bl)     LIKE ?
+                OR LOWER(p.nombre)        LIKE ?
+                OR LOWER(e.nombre)        LIKE ?
+                OR LOWER(c.nombre)        LIKE ?
+                OR LOWER(s.nombre)        LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedores_maritimos_operacion cmo2
+                    JOIN contenedores_maritimos cm2
+                      ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                    WHERE cmo2.operacion_id = o.id_operacion
+                      AND LOWER(cm2.numero_contenedor) LIKE ?
+                )
+            )";
                 array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
             }
         }
@@ -336,17 +336,17 @@ class Operaciones_maritimo_ferroModel extends Query
             $args[] = $ff;
         }
 
-        // Total
+        // Total (lo dejo igual; no necesitas joins extra para contar)
         $sqlCount = "
-            SELECT COUNT(DISTINCT o.id_operacion) AS total
-            FROM operaciones o
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-            $where
-        ";
+        SELECT COUNT(DISTINCT o.id_operacion) AS total
+        FROM operaciones o
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+        $where
+    ";
         $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
         $total    = (int)$rowCount['total'];
 
@@ -355,39 +355,67 @@ class Operaciones_maritimo_ferroModel extends Query
         $off   = (int)$offset;
 
         $sqlData = "
-            SELECT
-                o.id_operacion,
-                o.numero_operacion,
-                st.nombre  AS subtipo,
-                st.tipo_operacion_id AS tipo,
-                o.numero_bl,
-                p.nombre   AS puerto_arribo,
-                n.nombre   AS naviera,
-                f.nombre   AS forwarder,
-                c.nombre   AS cliente,
-                o.etd, o.eta,
-                e.nombre   AS estatus,
-                o.isf,
-                o.cita_puerto,
-                GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                             ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores
-            FROM operaciones o
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-            LEFT JOIN navieras n          ON n.id_naviera = o.naviera_id
-            LEFT JOIN forwarders f        ON f.id_forwarder = o.forwarder_id
-            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-            LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
-            LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-            $where
-            GROUP BY o.id_operacion, o.numero_operacion, st.nombre, st.tipo_operacion_id,
-            o.numero_bl, p.nombre, n.nombre, f.nombre, c.nombre, o.etd, o.eta, e.nombre,
-            o.isf, o.cita_puerto
-            ORDER BY o.id_operacion DESC
-            LIMIT $limit OFFSET $off
-        ";
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            st.nombre  AS subtipo,
+            st.tipo_operacion_id AS tipo,
+            o.numero_bl,
+            p.nombre   AS puerto_arribo,
+            n.nombre   AS naviera,
+            f.nombre   AS forwarder,
+            c.nombre   AS cliente,
+            o.etd, o.eta,
+            e.nombre   AS estatus,
+            o.isf,
+            o.cita_puerto,     
+            o.shipper_id AS shipper_id,
+            s.nombre     AS shipper, 
+            GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                         ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores, 
+            o.peso_total AS peso_total,
+            tr.nombre    AS transportista,
+            COALESCE(SUM(cmo.bultos),0) AS bultos_total,
+            MAX(cm.tipo) AS tipo_contenedor,
+            GROUP_CONCAT(DISTINCT b.nombre
+                         ORDER BY b.nombre SEPARATOR ', ') AS brokers
+
+        FROM operaciones o
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN navieras n          ON n.id_naviera = o.naviera_id
+        LEFT JOIN forwarders f        ON f.id_forwarder = o.forwarder_id
+        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
+        LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id 
+        LEFT JOIN transportistas tr   ON tr.id_transportista = o.transportista_id
+        LEFT JOIN operacion_brokers ob ON ob.operacion_id = o.id_operacion
+        LEFT JOIN brokers b            ON b.id_broker = ob.broker_id 
+
+        $where
+        GROUP BY
+            o.id_operacion,
+            o.numero_operacion,
+            st.nombre,
+            st.tipo_operacion_id,
+            o.numero_bl,
+            p.nombre,
+            n.nombre,
+            f.nombre,
+            c.nombre,
+            o.etd,
+            o.eta,
+            e.nombre,
+            o.isf,
+            o.cita_puerto,
+            o.peso_total,
+            tr.nombre
+        ORDER BY o.id_operacion DESC
+        LIMIT $limit OFFSET $off
+    ";
+
         $rows = $this->selectAll($sqlData, $args) ?: [];
 
         return [
@@ -398,6 +426,7 @@ class Operaciones_maritimo_ferroModel extends Query
             'total_pages' => max(1, (int)ceil($total / $perPage)),
         ];
     }
+
 
     /* =========================
        ===  INSERT PRINCIPAL  ===
@@ -659,5 +688,24 @@ class Operaciones_maritimo_ferroModel extends Query
             $this->save("ROLLBACK", []);
             return ['status' => 'error', 'msg' => 'Error inesperado al desactivar'];
         }
+    }
+
+    //getBrokers
+    public function getBrokers()
+    {
+        $sql = "SELECT id_broker, nombre
+                FROM brokers
+                WHERE estatus = 1
+                ORDER BY nombre";
+        return $this->selectAll($sql) ?: [];
+    }
+    //getTransportistas
+    public function getTransportistas()
+    {
+        $sql = "SELECT id_transportista, nombre
+                FROM transportistas
+                WHERE estatus = 1
+                ORDER BY nombre";
+        return $this->selectAll($sql) ?: [];
     }
 }

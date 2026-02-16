@@ -235,20 +235,7 @@
                 style="position:absolute; z-index:1055; width:100%; display:none;"></div>
             </div>
 
-            <!-- Naviera -->
-            <div class="col-md-3" id="campoNaviera_mf">
-              <label class="form-label">Naviera</label>
-              <select id="navieraId_mf" name="naviera_id_mf" class="form-control">
-                <option value="">Seleccione...</option>
-                <?php if (!empty($data['navieras'])): ?>
-                  <?php foreach ($data['navieras'] as $n): ?>
-                    <option value="<?= (int)$n['id_naviera']; ?>">
-                      <?= htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                    </option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
-            </div>
+
 
             <!-- CONTENEDOR ÚNICO -->
             <div class="col-12">
@@ -325,9 +312,22 @@
                 </div>
               </template>
             </div>
-
+            <!-- Naviera -->
+            <div class="col-md-2" id="campoNaviera_mf">
+              <label class="form-label">Naviera</label>
+              <select id="navieraId_mf" name="naviera_id_mf" class="form-control">
+                <option value="">Seleccione...</option>
+                <?php if (!empty($data['navieras'])): ?>
+                  <?php foreach ($data['navieras'] as $n): ?>
+                    <option value="<?= (int)$n['id_naviera']; ?>">
+                      <?= htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+            </div>
             <!-- FORWARDER + SHIPPER + BROKER + TRANSPORTISTA en el MISMO RENGLÓN -->
-            <div class="col-md-3" id="campoForwarder_mf">
+            <div class="col-md-2" id="campoForwarder_mf">
               <label class="form-label">Forwarder</label>
               <select id="forwarderId_mf" name="forwarder_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
@@ -341,7 +341,7 @@
               </select>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label">Shipper</label>
               <select id="shipperId_mf" name="shipper_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
@@ -355,10 +355,17 @@
               </select>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label">Broker</label>
               <select id="brokerId_mf" name="broker_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
+                <?php if (!empty($data['brokers'])): ?>
+                  <?php foreach ($data['brokers'] as $b): ?>
+                    <option value="<?= (int)$b['id_broker']; ?>">
+                      <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
 
@@ -366,6 +373,13 @@
               <label class="form-label">Transportista</label>
               <select id="transportistaId_mf" name="transportista_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
+                <?php if (!empty($data['transportistas'])): ?>
+                  <?php foreach ($data['transportistas'] as $t): ?>
+                    <option value="<?= (int)$t['id_transportista']; ?>">
+                      <?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
 

@@ -102,12 +102,12 @@
         <td>${safe(item.contenedores)}</td>
         <td>${safe(item.naviera)}</td>
         <td>${safe(item.forwarder)}</td>
-        <td>Sin Shipper</td>
-        <td>19,000 Kg</td>
-        <td>500</td>
-        <td>40HQ</td>
-        <td>ALPI</td>
-        <td>ALPI//ACE</td>
+        <td>${safe(item.shipper)}</td>
+        <td>${safe(item.peso_total)} Kg</td>
+        <td>${safe(item.bultos_total)}</td>
+        <td>${safe(item.tipo_contenedor)}</td>
+        <td>${safe(item.transportista)}</td>
+        <td>${safe(item.brokers)}</td>
         <td>${safe(item.numero_bl)}</td>
         <td>${safe(item.puerto_arribo)}</td>
         <td>${safe(item.cliente)}</td> 
@@ -115,10 +115,10 @@
         <td>${safe(item.estatus)}</td>
         <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
         <td>${safe(item.cita_puerto) || "-"}</td>
-        <td>FXEU123445</td>
-        <td>Pantaco</td>
-        <td>16/02/2026</td>  
-        <td>Gudalajara</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>  
+        <td>-</td>
         <td>
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
@@ -241,6 +241,7 @@
 
       if (x.status !== 200) {
         console.error("listar_operaciones error:", x.responseText);
+        console.log(this.responseText);
         renderTabla([]);
         renderPaginacion({ page: 1, total_pages: 1 });
         renderResumen({ total: 0, page: 1, per_page: perPage, total_pages: 1 });

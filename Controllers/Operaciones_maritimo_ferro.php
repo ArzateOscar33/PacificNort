@@ -11,7 +11,7 @@ class Operaciones_maritimo_ferro extends Controller
             header("Location: " . BASE_URL);
             exit;
         }
-       $this->contenedoresModel               = new Operaciones_maritimo_ferro_contenedoresModel();
+        $this->contenedoresModel               = new Operaciones_maritimo_ferro_contenedoresModel();
     }
 
     /* ================================
@@ -21,7 +21,8 @@ class Operaciones_maritimo_ferro extends Controller
     /** Vista principal: carga catálogos que tu vista usa (subtipos, estatus) */
     public function index()
     {
-        $data['title']      = 'Operaciones Marítimo-Ferroviarias';  
+        $data['title']      = 'Operaciones Marítimo-Ferroviarias';
+        $data['brokers']    = $this->model->getBrokers();
         $this->views->getView($this, "Operaciones_maritimo_ferro", $data);
     }
 
@@ -147,222 +148,221 @@ class Operaciones_maritimo_ferro extends Controller
     /* =============================
        ========== ALTA Y EDICION ===
        ============================= */
-       public function guardar()
-{
-    // Solo POST
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return $this->jsonError('Método no permitido', 405);
-    }
-
-    // ====== 1) Recibir y sanear ======
-    $subtipoId = (int)($_POST['maritimo_ferro_subtipo'] ?? 0);
-    if ($subtipoId <= 0) return $this->jsonError('Subtipo requerido', 400);
-
-    // Si viene readonly el número, tu JS lo manda vacío para que el modelo lo genere
-    $numeroOp  = trim((string)($_POST['maritimo_ferro_numeroOperacion'] ?? ''));
-
-    $estatusId = (int)($_POST['maritimo_ferro_estatus'] ?? 9);
-    $etd       = trim((string)($_POST['maritimo_ferro_etd'] ?? '')) ?: null;
-    $eta       = trim((string)($_POST['maritimo_ferro_eta'] ?? '')) ?: null;
-
-    // BL: deja solo alfanumérico como ya haces en el front
-    $blRaw = (string)($_POST['maritimo_ferro_numeroBL'] ?? '');
-    $bl    = preg_replace('/[^A-Za-z0-9]/', '', $blRaw) ?: null;
-
-    $clienteIdRaw = trim((string)($_POST['maritimo_ferro_clienteId'] ?? ''));
-    $clienteId = ctype_digit($clienteIdRaw) ? (int)$clienteIdRaw : 0;
-    $clienteId = ($clienteId > 0) ? $clienteId : null;
-
-
-
-    $navieraId   = (int)($_POST['maritimo_ferro_navieraId'] ?? 0);
-    $forwarderId = (int)($_POST['maritimo_ferro_forwarderId'] ?? 0);
-    $shipperId   = (int)($_POST['maritimo_ferro_shipperId'] ?? 0);
-    $notas       = trim((string)($_POST['maritimo_ferro_notas'] ?? '')) ?: null;
-
- 
-
-    $citaRaw = trim((string)($_POST['maritimo_ferro_cita_puerto'] ?? ''));
-    $cita = null;
-    if ($citaRaw !== '') {
-        $cita = str_replace('T', ' ', $citaRaw);
-        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $cita)) $cita .= ':00';
-    }
-    $isf = (int)($_POST['maritimo_ferro_isf'] ?? 0);
-    // ====== 2) Armar payload para el modelo ======
-    $op = [
-        'numero_operacion'      => $numeroOp,          // '' => el modelo genera folio
-        'subtipo_operacion_id'  => $subtipoId,
-        'etd'                   => $etd,
-        'eta'                   => $eta,
-        'numero_bl'             => $bl,
-        'cliente_id'            => $clienteId,
-        'estatus_id'            => $estatusId,
-        'naviera_id'            => $navieraId ?: null,
-        'forwarder_id'          => $forwarderId ?: null,
-        'shipper_id'            => $shipperId ?: null,
-        'notas'                 => $notas,
-        'isf'                   => $isf,    
-        'cita_puerto'           => $cita,
-    ];
-
-    // ====== 3) Contenedores (ids / numeros / bultos) ======
-    $ids   = $_POST['maritimo_ferro_contenedores_ids']     ?? [];
-    $nums  = $_POST['maritimo_ferro_contenedores_numeros'] ?? [];
-    $bults = $_POST['maritimo_ferro_contenedores_bultos']  ?? [];
-
-    $contenedores = [];
-    $n = max(count($ids), count($nums), count($bults));
-    for ($i = 0; $i < $n; $i++) {
-        $cid  = isset($ids[$i])   ? (int)$ids[$i]   : 0;
-        $cnum = isset($nums[$i])  ? trim((string)$nums[$i]) : '';
-        $cbul = isset($bults[$i]) && $bults[$i] !== '' ? (int)$bults[$i] : null;
-
-        // ignora filas vacías
-        if ($cid > 0 || $cnum !== '') {
-            $contenedores[] = ['id' => $cid, 'numero' => $cnum, 'bultos' => $cbul];
-        }
-    }
-
-    // ====== 4) Usuario (para bitácora) ======
-    $usuarioId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
-
-    // ====== 5) Llamar modelo ======
-    $res = $this->model->insertarOperacion($op, $contenedores, $usuarioId);
-
-    // $res viene con ['status'=>..., 'msg'=>..., 'id_operacion'=>..., 'numero_operacion'=>...]
-    if (!is_array($res) || ($res['status'] ?? 'error') !== 'success') {
-        // Devuelve tal cual el mensaje del modelo (warning/error)
-        $status = $res['status'] ?? 'error';
-        $msg    = $res['msg']    ?? 'No se pudo guardar';
-        // Si tienes jsonWarn/jsonError, usa el que aplique; aquí homogenizamos con jsonError
-        return $this->jsonError($msg, 200); // 200 para que tu JS entre al branch y muestre Swal con msg
-    }
-
-    // ====== 6) Respuesta en el shape que espera tu JS ======
-    // Tu JS lee res.data.numero_operacion o res.numero_operacion (soportemos el primero)
-    return $this->jsonOk([
-        'id_operacion'     => (int)$res['id_operacion'],
-        'numero_operacion' => (string)$res['numero_operacion'],
-        'msg'              => (string)($res['msg'] ?? 'Operación creada'),
-    ]);
-}
-
-public function obtener_operacion()
-{
-    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-    if ($id <= 0) return $this->jsonError('id requerido', 400);
-
-    // Datos base de la operación (incluye info de subtipo/estatus/cliente, etc.)
-    $op = $this->model->obtenerOperacion($id);
-    if (!$op) return $this->jsonError('Operación no encontrada', 404);
-
-    // (Opcional) Si quieres mandar contenedores para mostrarlos en edición (aunque estén readonly):
-    if (method_exists($this->model, 'getContenedoresDeOperacion')) {
-        $op['contenedores'] = $this->model->getContenedoresDeOperacion($id);
-    } else {
-        $op['contenedores'] = []; // si aún no implementas la lectura
-    }
-
-    return $this->jsonOk($op);
-}
-public function actualizar()
-{
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return $this->jsonError('Método no permitido', 405);
-    }
-
-    $id = (int)($_POST['id_operacion_mf'] ?? 0);
-    if ($id <= 0) return $this->jsonError('id_operacion requerido', 400);
-
-    $actual = $this->model->getOperacionById($id);
-    if (!$actual) return $this->jsonError('Operación no existe', 404);
-
-    // --- payload base (sin tocar numero_operacion) ---
-    $subtipoId = (int)($_POST['maritimo_ferro_subtipo'] ?? 0);
-    if ($subtipoId <= 0) $subtipoId = (int)$actual['subtipo_operacion_id'];
-
-    $blRaw = (string)($_POST['maritimo_ferro_numeroBL'] ?? $actual['numero_bl'] ?? '');
-    $numeroBL = preg_replace('/[^A-Za-z0-9]/', '', $blRaw);
-
-    $navieraId   = $_POST['maritimo_ferro_navieraId']   ?? $actual['naviera_id']   ?? '';
-    $forwarderId = $_POST['maritimo_ferro_forwarderId'] ?? $actual['forwarder_id'] ?? '';
-    $shipperId   = $_POST['maritimo_ferro_shipperId']   ?? $actual['shipper_id']   ?? '';
-    $citaRaw = trim((string)($_POST['cita_puerto'] ?? ''));
-    $cita = null;
-    if ($citaRaw !== '') {
-        $cita = str_replace('T', ' ', $citaRaw);
-        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $cita)) $cita .= ':00';
-    }
-
-    $op = [
-        'id_operacion'          => $id,
-        'subtipo_operacion_id'  => $subtipoId,
-        'etd'                   => trim((string)($_POST['maritimo_ferro_etd'] ?? $actual['etd'] ?? '')) ?: null,
-        'eta'                   => trim((string)($_POST['maritimo_ferro_eta'] ?? $actual['eta'] ?? '')) ?: null,
-        'numero_bl'             => $numeroBL ?: null,
-        'cliente_id'            => (int)($_POST['maritimo_ferro_clienteId'] ?? $actual['cliente_id'] ?? 0),
-        'estatus_id'            => (int)($_POST['maritimo_ferro_estatus']   ?? $actual['estatus_id'] ?? 0),
-        'naviera_id'            => ($navieraId   !== '') ? (int)$navieraId   : null,
-        'forwarder_id'          => ($forwarderId !== '') ? (int)$forwarderId : null,
-        'shipper_id'            => ($shipperId   !== '') ? (int)$shipperId   : null,
-        'notas'                 => trim((string)($_POST['maritimo_ferro_notas'] ?? $actual['notas'] ?? '')) ?: null,
-        'isf' => (int)($_POST['isf'] ?? ($actual['isf'] ?? 0)),
- 
-        'cita_puerto' => $cita,
-    ];
-
-    // ======= NUEVO: recoger arrays de IDs y BULTOS desde el form de edición =======
-    $ids   = $_POST['maritimo_ferro_contenedores_ids']    ?? [];
-    $bults = $_POST['maritimo_ferro_contenedores_bultos'] ?? [];
-
-    // Actualizamos operación + bultos en una transacción
-    try {
-        $this->model->save("START TRANSACTION", []);
-
-        // 1) actualizar operación
-        if (!$this->model->actualizarOperacion($op)) {
-            $this->model->save("ROLLBACK", []);
-            return $this->jsonError('No se pudo actualizar la operación', 200);
+    public function guardar()
+    {
+        // Solo POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->jsonError('Método no permitido', 405);
         }
 
-        // 2) actualizar bultos por cada contenedor (si vienen en el POST)
-        if (is_array($ids) && is_array($bults) && count($ids) > 0) {
-            $n = max(count($ids), count($bults));
-            for ($i = 0; $i < $n; $i++) {
-                $cid = isset($ids[$i]) ? (int)$ids[$i] : 0;
-                if ($cid <= 0) continue;
+        // ====== 1) Recibir y sanear ======
+        $subtipoId = (int)($_POST['maritimo_ferro_subtipo'] ?? 0);
+        if ($subtipoId <= 0) return $this->jsonError('Subtipo requerido', 400);
 
-                $bul = isset($bults[$i]) && $bults[$i] !== '' ? (int)$bults[$i] : null;
-                if ($bul !== null && $bul < 0) $bul = 0; // clamp simple
+        // Si viene readonly el número, tu JS lo manda vacío para que el modelo lo genere
+        $numeroOp  = trim((string)($_POST['maritimo_ferro_numeroOperacion'] ?? ''));
 
-                $okB = $this->model->actualizarBultos($id, $cid, $bul);
-                if ($okB === false) {
-                    $this->model->save("ROLLBACK", []);
-                    return $this->jsonError("No se pudo actualizar bultos del contenedor $cid", 200);
-                }
+        $estatusId = (int)($_POST['maritimo_ferro_estatus'] ?? 9);
+        $etd       = trim((string)($_POST['maritimo_ferro_etd'] ?? '')) ?: null;
+        $eta       = trim((string)($_POST['maritimo_ferro_eta'] ?? '')) ?: null;
+
+        // BL: deja solo alfanumérico como ya haces en el front
+        $blRaw = (string)($_POST['maritimo_ferro_numeroBL'] ?? '');
+        $bl    = preg_replace('/[^A-Za-z0-9]/', '', $blRaw) ?: null;
+
+        $clienteIdRaw = trim((string)($_POST['maritimo_ferro_clienteId'] ?? ''));
+        $clienteId = ctype_digit($clienteIdRaw) ? (int)$clienteIdRaw : 0;
+        $clienteId = ($clienteId > 0) ? $clienteId : null;
+
+
+
+        $navieraId   = (int)($_POST['maritimo_ferro_navieraId'] ?? 0);
+        $forwarderId = (int)($_POST['maritimo_ferro_forwarderId'] ?? 0);
+        $shipperId   = (int)($_POST['maritimo_ferro_shipperId'] ?? 0);
+        $notas       = trim((string)($_POST['maritimo_ferro_notas'] ?? '')) ?: null;
+
+
+
+        $citaRaw = trim((string)($_POST['maritimo_ferro_cita_puerto'] ?? ''));
+        $cita = null;
+        if ($citaRaw !== '') {
+            $cita = str_replace('T', ' ', $citaRaw);
+            if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $cita)) $cita .= ':00';
+        }
+        $isf = (int)($_POST['maritimo_ferro_isf'] ?? 0);
+        // ====== 2) Armar payload para el modelo ======
+        $op = [
+            'numero_operacion'      => $numeroOp,          // '' => el modelo genera folio
+            'subtipo_operacion_id'  => $subtipoId,
+            'etd'                   => $etd,
+            'eta'                   => $eta,
+            'numero_bl'             => $bl,
+            'cliente_id'            => $clienteId,
+            'estatus_id'            => $estatusId,
+            'naviera_id'            => $navieraId ?: null,
+            'forwarder_id'          => $forwarderId ?: null,
+            'shipper_id'            => $shipperId ?: null,
+            'notas'                 => $notas,
+            'isf'                   => $isf,
+            'cita_puerto'           => $cita,
+        ];
+
+        // ====== 3) Contenedores (ids / numeros / bultos) ======
+        $ids   = $_POST['maritimo_ferro_contenedores_ids']     ?? [];
+        $nums  = $_POST['maritimo_ferro_contenedores_numeros'] ?? [];
+        $bults = $_POST['maritimo_ferro_contenedores_bultos']  ?? [];
+
+        $contenedores = [];
+        $n = max(count($ids), count($nums), count($bults));
+        for ($i = 0; $i < $n; $i++) {
+            $cid  = isset($ids[$i])   ? (int)$ids[$i]   : 0;
+            $cnum = isset($nums[$i])  ? trim((string)$nums[$i]) : '';
+            $cbul = isset($bults[$i]) && $bults[$i] !== '' ? (int)$bults[$i] : null;
+
+            // ignora filas vacías
+            if ($cid > 0 || $cnum !== '') {
+                $contenedores[] = ['id' => $cid, 'numero' => $cnum, 'bultos' => $cbul];
             }
         }
 
-        // 3) log
-        if (method_exists($this->model, 'crearLog')) {
-            $uid = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
-            $this->model->crearLog($id, $uid, 'edicion', 'Operación actualizada (incluye bultos)');
+        // ====== 4) Usuario (para bitácora) ======
+        $usuarioId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+
+        // ====== 5) Llamar modelo ======
+        $res = $this->model->insertarOperacion($op, $contenedores, $usuarioId);
+
+        // $res viene con ['status'=>..., 'msg'=>..., 'id_operacion'=>..., 'numero_operacion'=>...]
+        if (!is_array($res) || ($res['status'] ?? 'error') !== 'success') {
+            // Devuelve tal cual el mensaje del modelo (warning/error)
+            $status = $res['status'] ?? 'error';
+            $msg    = $res['msg']    ?? 'No se pudo guardar';
+            // Si tienes jsonWarn/jsonError, usa el que aplique; aquí homogenizamos con jsonError
+            return $this->jsonError($msg, 200); // 200 para que tu JS entre al branch y muestre Swal con msg
         }
 
-        $this->model->save("COMMIT", []);
-
+        // ====== 6) Respuesta en el shape que espera tu JS ======
+        // Tu JS lee res.data.numero_operacion o res.numero_operacion (soportemos el primero)
         return $this->jsonOk([
-            'id_operacion'     => $id,
-            'numero_operacion' => (string)$actual['numero_operacion'],
-            'msg'              => 'Operación y bultos actualizados',
+            'id_operacion'     => (int)$res['id_operacion'],
+            'numero_operacion' => (string)$res['numero_operacion'],
+            'msg'              => (string)($res['msg'] ?? 'Operación creada'),
         ]);
-
-    } catch (\Throwable $e) {
-        $this->model->save("ROLLBACK", []);
-        return $this->jsonError('Error inesperado al actualizar', 200);
     }
-}
+
+    public function obtener_operacion()
+    {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) return $this->jsonError('id requerido', 400);
+
+        // Datos base de la operación (incluye info de subtipo/estatus/cliente, etc.)
+        $op = $this->model->obtenerOperacion($id);
+        if (!$op) return $this->jsonError('Operación no encontrada', 404);
+
+        // (Opcional) Si quieres mandar contenedores para mostrarlos en edición (aunque estén readonly):
+        if (method_exists($this->model, 'getContenedoresDeOperacion')) {
+            $op['contenedores'] = $this->model->getContenedoresDeOperacion($id);
+        } else {
+            $op['contenedores'] = []; // si aún no implementas la lectura
+        }
+
+        return $this->jsonOk($op);
+    }
+    public function actualizar()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->jsonError('Método no permitido', 405);
+        }
+
+        $id = (int)($_POST['id_operacion_mf'] ?? 0);
+        if ($id <= 0) return $this->jsonError('id_operacion requerido', 400);
+
+        $actual = $this->model->getOperacionById($id);
+        if (!$actual) return $this->jsonError('Operación no existe', 404);
+
+        // --- payload base (sin tocar numero_operacion) ---
+        $subtipoId = (int)($_POST['maritimo_ferro_subtipo'] ?? 0);
+        if ($subtipoId <= 0) $subtipoId = (int)$actual['subtipo_operacion_id'];
+
+        $blRaw = (string)($_POST['maritimo_ferro_numeroBL'] ?? $actual['numero_bl'] ?? '');
+        $numeroBL = preg_replace('/[^A-Za-z0-9]/', '', $blRaw);
+
+        $navieraId   = $_POST['maritimo_ferro_navieraId']   ?? $actual['naviera_id']   ?? '';
+        $forwarderId = $_POST['maritimo_ferro_forwarderId'] ?? $actual['forwarder_id'] ?? '';
+        $shipperId   = $_POST['maritimo_ferro_shipperId']   ?? $actual['shipper_id']   ?? '';
+        $citaRaw = trim((string)($_POST['cita_puerto'] ?? ''));
+        $cita = null;
+        if ($citaRaw !== '') {
+            $cita = str_replace('T', ' ', $citaRaw);
+            if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $cita)) $cita .= ':00';
+        }
+
+        $op = [
+            'id_operacion'          => $id,
+            'subtipo_operacion_id'  => $subtipoId,
+            'etd'                   => trim((string)($_POST['maritimo_ferro_etd'] ?? $actual['etd'] ?? '')) ?: null,
+            'eta'                   => trim((string)($_POST['maritimo_ferro_eta'] ?? $actual['eta'] ?? '')) ?: null,
+            'numero_bl'             => $numeroBL ?: null,
+            'cliente_id'            => (int)($_POST['maritimo_ferro_clienteId'] ?? $actual['cliente_id'] ?? 0),
+            'estatus_id'            => (int)($_POST['maritimo_ferro_estatus']   ?? $actual['estatus_id'] ?? 0),
+            'naviera_id'            => ($navieraId   !== '') ? (int)$navieraId   : null,
+            'forwarder_id'          => ($forwarderId !== '') ? (int)$forwarderId : null,
+            'shipper_id'            => ($shipperId   !== '') ? (int)$shipperId   : null,
+            'notas'                 => trim((string)($_POST['maritimo_ferro_notas'] ?? $actual['notas'] ?? '')) ?: null,
+            'isf' => (int)($_POST['isf'] ?? ($actual['isf'] ?? 0)),
+
+            'cita_puerto' => $cita,
+        ];
+
+        // ======= NUEVO: recoger arrays de IDs y BULTOS desde el form de edición =======
+        $ids   = $_POST['maritimo_ferro_contenedores_ids']    ?? [];
+        $bults = $_POST['maritimo_ferro_contenedores_bultos'] ?? [];
+
+        // Actualizamos operación + bultos en una transacción
+        try {
+            $this->model->save("START TRANSACTION", []);
+
+            // 1) actualizar operación
+            if (!$this->model->actualizarOperacion($op)) {
+                $this->model->save("ROLLBACK", []);
+                return $this->jsonError('No se pudo actualizar la operación', 200);
+            }
+
+            // 2) actualizar bultos por cada contenedor (si vienen en el POST)
+            if (is_array($ids) && is_array($bults) && count($ids) > 0) {
+                $n = max(count($ids), count($bults));
+                for ($i = 0; $i < $n; $i++) {
+                    $cid = isset($ids[$i]) ? (int)$ids[$i] : 0;
+                    if ($cid <= 0) continue;
+
+                    $bul = isset($bults[$i]) && $bults[$i] !== '' ? (int)$bults[$i] : null;
+                    if ($bul !== null && $bul < 0) $bul = 0; // clamp simple
+
+                    $okB = $this->model->actualizarBultos($id, $cid, $bul);
+                    if ($okB === false) {
+                        $this->model->save("ROLLBACK", []);
+                        return $this->jsonError("No se pudo actualizar bultos del contenedor $cid", 200);
+                    }
+                }
+            }
+
+            // 3) log
+            if (method_exists($this->model, 'crearLog')) {
+                $uid = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+                $this->model->crearLog($id, $uid, 'edicion', 'Operación actualizada (incluye bultos)');
+            }
+
+            $this->model->save("COMMIT", []);
+
+            return $this->jsonOk([
+                'id_operacion'     => $id,
+                'numero_operacion' => (string)$actual['numero_operacion'],
+                'msg'              => 'Operación y bultos actualizados',
+            ]);
+        } catch (\Throwable $e) {
+            $this->model->save("ROLLBACK", []);
+            return $this->jsonError('Error inesperado al actualizar', 200);
+        }
+    }
 
 
 
@@ -386,7 +386,7 @@ public function actualizar()
         exit;
     }
 
-   /* ==========================================
+    /* ==========================================
        ==========  VISTAS  =========
        ========================================== */
 
@@ -401,7 +401,8 @@ public function actualizar()
         $data['forwarders'] = $this->model->catalogoForwarders();
         $data['shippers']   = $this->model->catalogoShippers();
         $data['puertos']    = $this->model->catalogoPuertos();
-   
+        $data['brokers']    = $this->model->getBrokers();
+        $data['transportistas'] = $this->model->getTransportistas();
 
 
         $this->views->getView('admin/Operaciones_maritimo_ferro', "ver", $data);
