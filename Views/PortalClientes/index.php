@@ -72,7 +72,7 @@
 
     <div class="container-fluid py-4" id="pnContainer">
 
-      <!-- KPIs -->
+
       <!-- KPIs -->
       <div class="row g-3 mb-3" id="kpiRow">
 

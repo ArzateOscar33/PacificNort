@@ -1,4 +1,6 @@
 <?php
+//const BASE_URL = "http://192.168.1.200/PacificNort/";
+
 const BASE_URL = "http://localhost/PacificNort/";
 const HOST = "localhost";
 const USER = "root";
@@ -15,5 +17,3 @@ const HOST_SMTP = "mailc75.carrierzone.com";
 
 // Raíz física del proyecto (filesystem), portable para local y servidor
 define('UPLOAD_ROOT', rtrim(dirname(__DIR__), "/\\"));
-
-?>

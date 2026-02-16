@@ -28,11 +28,11 @@
           style="max-width:240px;">
           <option value="">Subtipo (Todos)</option>
           <?php if (!empty($data['subtipos'])): ?>
-          <?php foreach ($data['subtipos'] as $st): ?>
-          <option value="<?= (int)$st['id_subtipo']; ?>">
-            <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-          </option>
-          <?php endforeach; ?>
+            <?php foreach ($data['subtipos'] as $st): ?>
+              <option value="<?= (int)$st['id_subtipo']; ?>">
+                <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+              </option>
+            <?php endforeach; ?>
           <?php endif; ?>
         </select>
 
@@ -76,22 +76,35 @@
       </div>
 
       <!-- Tabla -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle" id="operaciones_mar_TablaExportar">
-          <thead class="table-success">
+      <div class="table-responsive table-sm">
+        <table class="table table-hover align-middle  " id="operaciones_mar_TablaExportar">
+          <thead class="table-success mt-1 p-2 mb-2">
             <tr class="text-center">
-              <th style="width:140px;">Código</th>
-              <th style="width:160px;">Subtipo</th>
-              <th style="width:120px;">ETA</th>
-              <th style="min-width:220px;">Contenedores</th>
+              <th> Código</th>
+              <th>Subtipo</th>
+              <th>ETD</th>
+              <th>ETA</th>
+              <th>Contenedor</th>
+              <th>Naviera</th>
+              <th>Forwarder</th>
+              <th>Shipper</th>
+              <th>Peso</th>
+              <th>Bultos</th>
+              <th>Tipo Contenedor</th>
+              <th style="width:180px;">Transportista</th>
+              <th>Broker</th>
               <th style="width:180px;">BL</th>
               <th>Puerto</th>
               <th>Cliente</th>
-              <th>Naviera</th>
               <th>Forwarder</th>
               <th>Estatus</th>
               <th>ISF </th>
               <th>Cita en Puerto </th>
+              <th>Caja/Ferro</th>
+              <th>Destino</th>
+              <th>Fecha Salida Ferro/Caja</th>
+              <th>Ubicacion Actual</th>
+
               <th style="width:120px;">Acciones</th>
             </tr>
           </thead>
@@ -115,6 +128,7 @@
 <div class="modal fade" id="modalMaritimoFerro" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
+
       <div class="modal-header bg-success text-white">
         <h5 class="modal-title">
           <i data-feather="plus-square" class="me-2"></i>
@@ -128,17 +142,18 @@
           <input type="hidden" id="id_operacion_mf" name="id_operacion_mf" value="">
 
           <div class="row g-3">
+
             <!-- SUBTIPO -->
             <div class="col-md-4">
               <label class="form-label">Subtipo</label>
               <select id="subtipoOperacion_mf" name="subtipo_operacion_id_mf" class="form-control" required>
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['subtipos'])): ?>
-                <?php foreach ($data['subtipos'] as $st): ?>
-                <option value="<?= (int)$st['id_subtipo']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-                <?php endforeach; ?>
+                  <?php foreach ($data['subtipos'] as $st): ?>
+                    <option value="<?= (int)$st['id_subtipo']; ?>">
+                      <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
@@ -146,8 +161,7 @@
             <!-- Número de Operación -->
             <div class="col-md-4">
               <label class="form-label">Número de Operación</label>
-              <input type="text" id="numeroOperacion_mf" name="numero_operacion_mf" class="form-control"
-                placeholder="JL-61">
+              <input type="text" id="numeroOperacion_mf" name="numero_operacion_mf" class="form-control" placeholder="JL-61">
               <small id="folioHelp_mf" class="text-muted d-block mt-1">Folio Preliminar</small>
             </div>
 
@@ -157,11 +171,11 @@
               <select id="estatusId_mf" name="estatus_id_mf" class="form-control" required>
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['estatus'])): ?>
-                <?php foreach ($data['estatus'] as $es): ?>
-                <option value="<?= (int)$es['id_estatus']; ?>">
-                  <?= htmlspecialchars($es['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-                <?php endforeach; ?>
+                  <?php foreach ($data['estatus'] as $es): ?>
+                    <option value="<?= (int)$es['id_estatus']; ?>">
+                      <?= htmlspecialchars($es['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
@@ -169,11 +183,24 @@
             <!-- Fechas -->
             <div class="col-md-3">
               <label class="form-label">ETD</label>
-              <input type="date" id="etd_mf" name="etd_mf" class="form-control">
+              <input type="date" id="etd_mf" name="etd_mf" class="form-control form-control-lg">
             </div>
+
             <div class="col-md-3">
               <label class="form-label">ETA</label>
-              <input type="date" id="eta_mf" name="eta_mf" class="form-control">
+              <input type="date" id="eta_mf" name="eta_mf" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Cita en Puerto</label>
+              <input type="date" id="cita_puerto" name="cita_puerto" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-3 d-flex flex-column">
+              <label class="form-label">ISF</label>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="chkIsf" name="isf" value="1">
+              </div>
             </div>
 
             <!-- BL -->
@@ -190,21 +217,20 @@
               <select id="puertoArribo_mf" name="puerto_arribo_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['puertos'])): ?>
-                <?php foreach ($data['puertos'] as $p): ?>
-                <option value="<?= (int)$p['id_puerto']; ?>">
-                  <?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-                <?php endforeach; ?>
+                  <?php foreach ($data['puertos'] as $p): ?>
+                    <option value="<?= (int)$p['id_puerto']; ?>">
+                      <?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
 
             <!-- Cliente -->
-            <div class="col-md-6">
+            <div class="col-md-6 position-relative">
               <label class="form-label">Cliente</label>
               <input type="hidden" id="clienteId_mf" name="cliente_id_mf">
-              <input type="text" id="clienteNombre_mf" class="form-control"
-                placeholder="Escribe para buscar cliente...">
+              <input type="text" id="clienteNombre_mf" class="form-control" placeholder="Escribe para buscar cliente...">
               <div id="sugerenciasCliente_mf" class="list-group"
                 style="position:absolute; z-index:1055; width:100%; display:none;"></div>
             </div>
@@ -215,106 +241,132 @@
               <select id="navieraId_mf" name="naviera_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['navieras'])): ?>
-                <?php foreach ($data['navieras'] as $n): ?>
-                <option value="<?= (int)$n['id_naviera']; ?>">
-                  <?= htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-                <?php endforeach; ?>
+                  <?php foreach ($data['navieras'] as $n): ?>
+                    <option value="<?= (int)$n['id_naviera']; ?>">
+                      <?= htmlspecialchars($n['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
 
-            <!-- Forwarder -->
-            <div class="col-md-3" id="campoForwarder_mf">
-              <label class="form-label">Forwarder</label>
-              <select id="forwarderId_mf" name="forwarder_id_mf" class="form-control">
-                <option value="">Seleccione...</option>
-                <?php if (!empty($data['forwarders'])): ?>
-                <?php foreach ($data['forwarders'] as $fw): ?>
-                <option value="<?= (int)$fw['id_forwarder']; ?>">
-                  <?= htmlspecialchars($fw['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-                <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
-            </div>
-
-            <!-- Contenedores -->
-            <div class="col-6">
-
+            <!-- CONTENEDOR ÚNICO -->
+            <div class="col-12">
               <div id="contenedoresRepeater_mf" class="vstack gap-2">
                 <div class="contenedor-item position-relative border rounded p-2">
                   <input type="hidden" class="contenedor-id_mf">
+
                   <div class="row g-2 align-items-end">
-                    <div class="col-md-6">
+
+                    <div class="col-md-5 position-relative">
                       <label class="form-label">Contenedor Maritimo</label>
                       <input type="text" class="form-control contenedor-input_mf" placeholder="Ej. MSKU1234567">
                       <div class="list-group sugerencias-contenedor_mf"
                         style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                     </div>
-                    <div class="col-md-4">
+
+                    <div class="col-md-2">
                       <label class="form-label">Bultos</label>
                       <input type="number" min="0" step="1" class="form-control contenedor-bultos_mf" placeholder="0">
                     </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label">Tipo Contenedor</label>
+                      <select id="tipoContenedor_mf" name="tipo_contenedor_mf" class="form-control">
+                        <option value="">Seleccione...</option>
+                        <option value="20GP">20GP</option>
+                        <option value="40GP">40GP</option>
+                        <option value="40HC">40HC</option>
+                        <option value="45HC">45HC</option>
+                      </select>
+                    </div>
+
+                    <!-- PESO a un lado del tipo contenedor -->
+                    <div class="col-md-2">
+                      <label class="form-label">Peso (Kg)</label>
+                      <input type="number" min="0" step="0.01" id="pesoOperacion_mf" name="peso_operacion_mf"
+                        class="form-control" placeholder="0.00">
+                    </div>
+
                   </div>
                 </div>
               </div>
+
+              <!-- Template (compatibilidad si tu JS lo referencia) -->
               <template id="contenedorTemplate_mf">
                 <div class="contenedor-item position-relative border rounded p-2">
                   <input type="hidden" class="contenedor-id_mf">
                   <div class="row g-2 align-items-end">
-                    <div class="col-md-6">
-                      <label class="form-label">Contenedor</label>
+                    <div class="col-md-5 position-relative">
+                      <label class="form-label">Contenedor Maritimo</label>
                       <input type="text" class="form-control contenedor-input_mf" placeholder="Ej. MSKU1234567">
                       <div class="list-group sugerencias-contenedor_mf"
                         style="position:absolute; z-index:1055; width:100%; display:none;"></div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                       <label class="form-label">Bultos</label>
                       <input type="number" min="0" step="1" class="form-control contenedor-bultos_mf" placeholder="0">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Tipo Contenedor</label>
+                      <select class="form-control">
+                        <option value="">Seleccione...</option>
+                        <option value="20GP">20GP</option>
+                        <option value="40GP">40GP</option>
+                        <option value="40HC">40HC</option>
+                        <option value="45HC">45HC</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Peso (Kg)</label>
+                      <input type="number" min="0" step="0.01" class="form-control" placeholder="0.00">
                     </div>
                   </div>
                 </div>
               </template>
             </div>
 
-            <!-- Shipper -->
-            <div class="col-3">
+            <!-- FORWARDER + SHIPPER + BROKER + TRANSPORTISTA en el MISMO RENGLÓN -->
+            <div class="col-md-3" id="campoForwarder_mf">
+              <label class="form-label">Forwarder</label>
+              <select id="forwarderId_mf" name="forwarder_id_mf" class="form-control">
+                <option value="">Seleccione...</option>
+                <?php if (!empty($data['forwarders'])): ?>
+                  <?php foreach ($data['forwarders'] as $fw): ?>
+                    <option value="<?= (int)$fw['id_forwarder']; ?>">
+                      <?= htmlspecialchars($fw['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+            </div>
+
+            <div class="col-md-3">
               <label class="form-label">Shipper</label>
               <select id="shipperId_mf" name="shipper_id_mf" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['shippers'])): ?>
-                <?php foreach ($data['shippers'] as $s): ?>
-                <option value="<?= (int)$s['id_shipper']; ?>">
-                  <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-                <?php endforeach; ?>
+                  <?php foreach ($data['shippers'] as $s): ?>
+                    <option value="<?= (int)$s['id_shipper']; ?>">
+                      <?= htmlspecialchars($s['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
-            <div class="col-3 ">
 
-              <div class="row text-center">
-                <!-- CITA EN PUERTO -->
-                <div class="col-8" >
-                  <label class="form-label mb-1">
-                    Cita en Puerto
-                  </label>
-                   
-                    <input type="date" id="cita_puerto" name="cita_puerto" class="form-control ">
-                 
-                </div>
-                <!-- ISF -->
-                <div class="col-3 mt-1"  >
-                  <label class="form-label mb-1">
-                    ISF
-                  </label>
-                  <div class="form-check d-flex justify-content-center ">
-                    <input class="form-check-input" type="checkbox" id="chkIsf" name="isf" value="1">
-                  </div>
-                </div>
+            <div class="col-md-3">
+              <label class="form-label">Broker</label>
+              <select id="brokerId_mf" name="broker_id_mf" class="form-control">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
 
-              </div>
+            <div class="col-md-3">
+              <label class="form-label">Transportista</label>
+              <select id="transportistaId_mf" name="transportista_id_mf" class="form-control">
+                <option value="">Seleccione...</option>
+              </select>
             </div>
 
             <!-- Notas -->
@@ -323,9 +375,10 @@
               <textarea id="notas_mf" name="notas_mf" class="form-control" rows="2"
                 placeholder="Observaciones generales"></textarea>
             </div>
-          </div>
+
+          </div><!-- row -->
         </form>
-      </div>
+      </div><!-- modal-body -->
 
       <div class="modal-footer d-flex justify-content-between">
         <div class="d-flex gap-2">
@@ -337,27 +390,208 @@
           </button>
         </div>
       </div>
+
     </div>
   </div>
 </div>
+
+
+
+<!-- =========================================================
+     MODAL: Asignar Caja/Ferro a Operación Marítima (N↔N)
+     - NO muestra FO-id (interno)
+     - Identificador visible: numero_ferro / caja (contenedor físico)
+========================================================= -->
+<div class="modal fade" id="modalAsignarFerroCaja" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <i data-feather="truck" class="me-1"></i>
+          Asignar Caja/Ferro
+          <span class="badge bg-light text-dark ms-2" id="asigFerro_badgeCodigo">—</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Hidden refs: los setea el JS cuando abres el modal -->
+        <input type="hidden" id="asigFerro_operacionId" value="">
+        <input type="hidden" id="asigFerro_operacionCodigo" value="">
+
+        <div class="row g-3">
+
+          <!-- =======================
+               Columna izquierda: asignar
+          ======================== -->
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-semibold">
+                    <i data-feather="link" class="me-1"></i> Vincular esta operación a un Ferro/Caja
+                  </div>
+                  <span class="text-muted small">No se muestra FO (interno)</span>
+                </div>
+
+                <div class="row g-2 align-items-end">
+                  <!-- Ferro/Caja input -->
+                  <div class="col-md-7 position-relative">
+                    <label class="form-label">Ferro/Caja</label>
+                    <input type="text" class="form-control" id="asigFerro_inputNumero"
+                      placeholder="Ej. FXEU12345 / CAJA-001" autocomplete="off">
+                    <div id="asigFerro_sugerencias"
+                      class="list-group"
+                      style="position:absolute; z-index:1060; width:100%; display:none;"></div>
+
+
+                  </div>
+
+                  <!-- Bultos asignados -->
+                  <div class="col-md-5">
+                    <label class="form-label">Bultos asignados</label>
+                    <input type="number" min="0" step="1" class="form-control" id="asigFerro_inputBultos"
+                      placeholder="0">
+
+                  </div>
+
+                  <!-- Fecha salida-->
+                  <div class="col-md-6 mt-2">
+                    <label class="form-label">Fecha salida</label>
+                    <input type="date" class="form-control" id="asigFerro_inputFechaSalida">
+
+                  </div>
+
+                  <!-- Destino/Notas rápidas (opcional) -->
+                  <div class="col-md-6 mt-2">
+                    <label class="form-label">Notas (opcional)</label>
+                    <input type="text" class="form-control" id="asigFerro_inputNotas" maxlength="255"
+                      placeholder="Ej. Sale por patio 3 / Transfer a SD">
+                  </div>
+
+                  <!-- Botones -->
+                  <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-success" id="asigFerro_btnVincular">
+                      <i data-feather="check-circle" class="me-1"></i> Vincular
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="asigFerro_btnLimpiar">
+                      <i data-feather="x" class="me-1"></i> Limpiar
+                    </button>
+                  </div>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- Lista de ferros/cajas vinculados a esta operación -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-semibold">
+                    <i data-feather="list" class="me-1"></i> Ferros/Cajas de esta operación
+                  </div>
+                  <span class="text-muted small" id="asigFerro_countFerros">0</span>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr class="text-center">
+                        <th class="text-start">Ferro/Caja</th>
+                        <th style="width:130px;">Bultos</th>
+                        <th style="width:140px;">Fecha salida</th>
+                        <th style="width:90px;">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="asigFerro_tbFerrosOperacion">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted py-3">
+                          Sin vínculos todavía.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- =======================
+               Columna derecha: consolidado por ferro
+          ======================== -->
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="fw-semibold">
+                    <i data-feather="layers" class="me-1"></i> Operaciones en el Ferro/Caja seleccionado
+                  </div>
+                  <span class="badge bg-light text-dark" id="asigFerro_badgeFerroSel">—</span>
+                </div>
+
+
+
+                <hr class="my-3">
+
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr class="text-center">
+                        <th style="width:140px;">Código</th>
+                        <th class="text-start">Cliente</th>
+                        <th style="width:120px;">ETA</th>
+                        <th style="width:110px;">Subtipo</th>
+                      </tr>
+                    </thead>
+                    <tbody id="asigFerro_tbOpsEnFerro">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted py-3">
+                          Selecciona un Ferro/Caja de la lista izquierda.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+
+
+              </div>
+            </div>
+          </div>
+
+        </div><!-- row -->
+      </div><!-- modal-body -->
+
+      <div class="modal-footer d-flex justify-content-between">
+
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i data-feather="x-circle" class="me-1"></i> Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_llenado_catalogo.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_registrar.js"></script>
 <script>
-// Mayúsculas automáticas (MF) para contenedores (incluye filas agregadas por template)
-document.getElementById("contenedoresRepeater_mf").addEventListener("input", function (e) {
-  if (e.target.classList.contains("contenedor-input_mf")) {
-    e.target.value = e.target.value.toUpperCase();
-  }
-});
+  // Mayúsculas automáticas (MF) para contenedores (incluye filas agregadas por template)
+  document.getElementById("contenedoresRepeater_mf").addEventListener("input", function(e) {
+    if (e.target.classList.contains("contenedor-input_mf")) {
+      e.target.value = e.target.value.toUpperCase();
+    }
+  });
 
 
-document.getElementById("contenedoresRepeater_mf").addEventListener("input", function (e) {
-  if (e.target.classList.contains("contenedor-bultos_mf")) {
-    // Enteros >= 0
-    let v = e.target.value === "" ? "" : String(parseInt(e.target.value, 10));
-    if (v === "NaN") v = "";
-    if (v !== "" && parseInt(v, 10) < 0) v = "0";
-    e.target.value = v;
-  }
-});
+  document.getElementById("contenedoresRepeater_mf").addEventListener("input", function(e) {
+    if (e.target.classList.contains("contenedor-bultos_mf")) {
+      // Enteros >= 0
+      let v = e.target.value === "" ? "" : String(parseInt(e.target.value, 10));
+      if (v === "NaN") v = "";
+      if (v !== "" && parseInt(v, 10) < 0) v = "0";
+      e.target.value = v;
+    }
+  });
 </script>

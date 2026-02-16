@@ -34,33 +34,33 @@ class Operaciones_maritimo_ferroModel extends Query
         return str_pad((string)$n, ($n < 100 ? 2 : strlen((string)$n)), '0', STR_PAD_LEFT);
     }
 
-private function nextConsecutivoSeguro(int $subtipoId): int
-{
-    $ok = $this->save(
-        "INSERT INTO secuencias_operacion (subtipo_id, valor)
+    private function nextConsecutivoSeguro(int $subtipoId): int
+    {
+        $ok = $this->save(
+            "INSERT INTO secuencias_operacion (subtipo_id, valor)
          VALUES (?, 1)
          ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
-        [$subtipoId]
-    );
-    if ($ok === false) return 0;
+            [$subtipoId]
+        );
+        if ($ok === false) return 0;
 
-    $row = $this->select("SELECT LAST_INSERT_ID() AS n");
-    return (int)($row['n'] ?? 0);
-}
+        $row = $this->select("SELECT LAST_INSERT_ID() AS n");
+        return (int)($row['n'] ?? 0);
+    }
 
 
 
     /** Genera código por secuencia (seguro) */
-public function generarCodigoPorSecuencia(int $subtipoId): ?string
-{
-    $pref = $this->getPrefijoSubtipo($subtipoId);
-    if (!$pref) return null;
+    public function generarCodigoPorSecuencia(int $subtipoId): ?string
+    {
+        $pref = $this->getPrefijoSubtipo($subtipoId);
+        if (!$pref) return null;
 
-    $consec = $this->nextConsecutivoSeguro($subtipoId);
-    if ($consec <= 0) return null;
+        $consec = $this->nextConsecutivoSeguro($subtipoId);
+        if ($consec <= 0) return null;
 
-    return $pref . '-' . $this->lpadNumeroN($consec);
-}
+        return $pref . '-' . $this->lpadNumeroN($consec);
+    }
 
 
     /** Preview de folio para UI (sin bloquear) */
@@ -69,10 +69,12 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
         $pref = $this->getPrefijoSubtipo($subtipoId);
         if (!$pref) return null;
 
-        $row = $this->select("
+        $row = $this->select(
+            "
             SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion,'-',-1) AS UNSIGNED)), 0) AS maxn
             FROM operaciones
-            WHERE subtipo_operacion_id = ?", [$subtipoId]
+            WHERE subtipo_operacion_id = ?",
+            [$subtipoId]
         );
         $next = (int)($row['maxn'] ?? 0) + 1;
 
@@ -126,7 +128,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
                 ORDER BY nombre";
         return $this->selectAll($sql) ?: [];
     }
-        public function catalogoShippers(): array
+    public function catalogoShippers(): array
     {
         $sql = "SELECT id_shipper, nombre
                 FROM shippers
@@ -150,7 +152,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
 
     public function buscarClientes(string $term): array
     {
-        $like = '%'.mb_strtolower($term, 'UTF-8').'%';
+        $like = '%' . mb_strtolower($term, 'UTF-8') . '%';
         $sql = "SELECT id_cliente, nombre
                 FROM clientes
                 WHERE estatus = 1
@@ -163,7 +165,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
     /** Catálogo contenedor marítimo */
     public function buscarContenedoresMar(string $term): array
     {
-        $like = '%'.mb_strtolower($term, 'UTF-8').'%';
+        $like = '%' . mb_strtolower($term, 'UTF-8') . '%';
         $sql = "SELECT id_contenedor_maritimo, numero_contenedor
                 FROM contenedores_maritimos
                 WHERE estatus = 1
@@ -175,7 +177,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
 
     public function buscarShippers(string $term): array
     {
-        $like = '%'.mb_strtolower($term, 'UTF-8').'%';
+        $like = '%' . mb_strtolower($term, 'UTF-8') . '%';
         $sql = "SELECT id_shipper, nombre
                 FROM shippers
                 WHERE estatus = 1 AND LOWER(nombre) LIKE ?
@@ -188,7 +190,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
        ===  MARÍTIMO (base)  ===
        ========================= */
 
-   /* public function getSubtipo(int $id): ?array
+    /* public function getSubtipo(int $id): ?array
     {
         $sql = "SELECT id_subtipo, nombre, requiere_naviera, requiere_forwarder, puerto_arribo_default_id
                 FROM subtipos_operacion
@@ -268,7 +270,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
 
         // Filtro opcional por subtipo
         $subtipoId = isset($filters['filtroSubtipo']) ? (int)$filters['filtroSubtipo']
-                  : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
+            : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
         if ($subtipoId > 0) {
             $where .= " AND o.subtipo_operacion_id = ? ";
             $args[] = $subtipoId;
@@ -290,7 +292,7 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
             $terms = array_slice($terms, 0, 5);
 
             foreach ($terms as $t) {
-                $needle = '%'.$t.'%';
+                $needle = '%' . $t . '%';
                 $where .= " AND (
                     LOWER(o.numero_operacion) LIKE ?
                     OR LOWER(o.numero_bl)     LIKE ?
@@ -314,12 +316,14 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
         // Filtro por fechas (ETA)
         $fi = trim($filters['fecha_inicio'] ?? '');
         $ff = trim($filters['fecha_fin'] ?? '');
-        $isDate = static function(string $d): bool {
+        $isDate = static function (string $d): bool {
             return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $d);
         };
         if ($fi !== '' && !$isDate($fi)) $fi = '';
         if ($ff !== '' && !$isDate($ff)) $ff = '';
-        if ($fi !== '' && $ff !== '' && $fi > $ff) { [$fi, $ff] = [$ff, $fi]; }
+        if ($fi !== '' && $ff !== '' && $fi > $ff) {
+            [$fi, $ff] = [$ff, $fi];
+        }
 
         if ($fi !== '' && $ff !== '') {
             $where .= " AND DATE(o.eta) BETWEEN ? AND ? ";
@@ -439,20 +443,20 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
             cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             $paramsOp = [
-            trim($op['numero_operacion']),
-            (int)$st['tipo_operacion_id'],
-            (int)$op['subtipo_operacion_id'],
-            $op['etd'] ?? null,
-            $op['eta'] ?? null,
-            $op['numero_bl'] ?? null,
-            !empty($op['cliente_id']) ? (int)$op['cliente_id'] : null,
-            (int)($op['estatus_id'] ?? 9),
-            !empty($op['naviera_id'])   ? (int)$op['naviera_id']   : null,
-            !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
-            !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null, 
-            $op['notas'] ?? null,
-            (int)($op['isf'] ?? 0),
-            (!empty($op['cita_puerto']) ? $op['cita_puerto'] : null),
+                trim($op['numero_operacion']),
+                (int)$st['tipo_operacion_id'],
+                (int)$op['subtipo_operacion_id'],
+                $op['etd'] ?? null,
+                $op['eta'] ?? null,
+                $op['numero_bl'] ?? null,
+                !empty($op['cliente_id']) ? (int)$op['cliente_id'] : null,
+                (int)($op['estatus_id'] ?? 9),
+                !empty($op['naviera_id'])   ? (int)$op['naviera_id']   : null,
+                !empty($op['forwarder_id']) ? (int)$op['forwarder_id'] : null,
+                !empty($op['shipper_id'])   ? (int)$op['shipper_id']   : null,
+                $op['notas'] ?? null,
+                (int)($op['isf'] ?? 0),
+                (!empty($op['cita_puerto']) ? $op['cita_puerto'] : null),
             ];
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
             if ($opId <= 0) {
@@ -508,9 +512,12 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
             ];
         } catch (\Throwable $ex) {
             error_log("insertarOperacion error: " . $ex->getMessage());
-    error_log("PAYLOAD op: " . json_encode($op, JSON_UNESCAPED_UNICODE));
-    error_log("CONTENEDORES: " . json_encode($contenedores, JSON_UNESCAPED_UNICODE));
-            try { $this->save("ROLLBACK", []); } catch (\Throwable $e2) {}
+            error_log("PAYLOAD op: " . json_encode($op, JSON_UNESCAPED_UNICODE));
+            error_log("CONTENEDORES: " . json_encode($contenedores, JSON_UNESCAPED_UNICODE));
+            try {
+                $this->save("ROLLBACK", []);
+            } catch (\Throwable $e2) {
+            }
             error_log("insertarOperacion error: " . $ex->getMessage());
             return ['status' => 'error', 'msg' => 'Error inesperado al guardar'];
         }
@@ -592,32 +599,33 @@ public function generarCodigoPorSecuencia(int $subtipoId): ?string
                     notas                 = ?
                 WHERE id_operacion = ?
                 LIMIT 1";
-                $args = [
-                (int)$st['tipo_operacion_id'],
-                (int)($d['subtipo_operacion_id'] ?? 0),
-                !empty($d['etd']) ? $d['etd'] : null,
-                !empty($d['eta']) ? $d['eta'] : null,
-                trim($d['numero_bl'] ?? ''),
-                !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
-                !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
-                ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
-                ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
-                ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
+        $args = [
+            (int)$st['tipo_operacion_id'],
+            (int)($d['subtipo_operacion_id'] ?? 0),
+            !empty($d['etd']) ? $d['etd'] : null,
+            !empty($d['eta']) ? $d['eta'] : null,
+            trim($d['numero_bl'] ?? ''),
+            !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
+            !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
+            ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
+            ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
+            ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
 
-                // ORDEN CORRECTO para: isf=?, cita_puerto=?, notas=?, id_operacion=?
-                (int)($d['isf'] ?? 0),
-                ($d['cita_puerto'] ?? null),
-                ($d['notas'] ?? null),
-                (int)$d['id_operacion'],
-                ];
+            // ORDEN CORRECTO para: isf=?, cita_puerto=?, notas=?, id_operacion=?
+            (int)($d['isf'] ?? 0),
+            ($d['cita_puerto'] ?? null),
+            ($d['notas'] ?? null),
+            (int)$d['id_operacion'],
+        ];
 
 
         $res = $this->save($sql, $args);
         return $res !== false;
     }
 
-public function getContenedoresDeOperacion(int $id): array {
-    $sql = "SELECT 
+    public function getContenedoresDeOperacion(int $id): array
+    {
+        $sql = "SELECT 
                 cm.id_contenedor_maritimo, 
                 cm.numero_contenedor,
                 cmo.bultos
@@ -626,8 +634,8 @@ public function getContenedoresDeOperacion(int $id): array {
                 ON cmo.contenedor_maritimo_id = cm.id_contenedor_maritimo
             WHERE cmo.operacion_id = ?
             ORDER BY cm.numero_contenedor";
-    return $this->selectAll($sql, [$id]) ?: [];
-}
+        return $this->selectAll($sql, [$id]) ?: [];
+    }
 
 
     /* =========================
@@ -642,15 +650,14 @@ public function getContenedoresDeOperacion(int $id): array {
             $res = $this->save("UPDATE operaciones SET estatus_id = 6 WHERE id_operacion = ?", [$id]);
             if (!$res) {
                 $this->save("ROLLBACK", []);
-                return ['status'=>'error','msg'=>'No se pudo desactivar la operación'];
+                return ['status' => 'error', 'msg' => 'No se pudo desactivar la operación'];
             }
             $this->crearLog($id, $usuarioId, 'eliminar', 'Operación desactivada');
             $this->save("COMMIT", []);
-            return ['status'=>'success','msg'=>'Operación desactivada'];
+            return ['status' => 'success', 'msg' => 'Operación desactivada'];
         } catch (\Throwable $e) {
             $this->save("ROLLBACK", []);
-            return ['status'=>'error','msg'=>'Error inesperado al desactivar'];
+            return ['status' => 'error', 'msg' => 'Error inesperado al desactivar'];
         }
     }
-    
 }
