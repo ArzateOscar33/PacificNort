@@ -38,8 +38,8 @@ class Operaciones_maritimo_ferroModel extends Query
     {
         $ok = $this->save(
             "INSERT INTO secuencias_operacion (subtipo_id, valor)
-         VALUES (?, 1)
-         ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
+             VALUES (?, 1)
+             ON DUPLICATE KEY UPDATE valor = LAST_INSERT_ID(valor + 1)",
             [$subtipoId]
         );
         if ($ok === false) return 0;
@@ -47,8 +47,6 @@ class Operaciones_maritimo_ferroModel extends Query
         $row = $this->select("SELECT LAST_INSERT_ID() AS n");
         return (int)($row['n'] ?? 0);
     }
-
-
 
     /** Genera código por secuencia (seguro) */
     public function generarCodigoPorSecuencia(int $subtipoId): ?string
@@ -62,7 +60,6 @@ class Operaciones_maritimo_ferroModel extends Query
         return $pref . '-' . $this->lpadNumeroN($consec);
     }
 
-
     /** Preview de folio para UI (sin bloquear) */
     public function previewCodigoSubtipo(int $subtipoId): ?array
     {
@@ -70,10 +67,9 @@ class Operaciones_maritimo_ferroModel extends Query
         if (!$pref) return null;
 
         $row = $this->select(
-            "
-            SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion,'-',-1) AS UNSIGNED)), 0) AS maxn
-            FROM operaciones
-            WHERE subtipo_operacion_id = ?",
+            "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_operacion,'-',-1) AS UNSIGNED)), 0) AS maxn
+             FROM operaciones
+             WHERE subtipo_operacion_id = ?",
             [$subtipoId]
         );
         $next = (int)($row['maxn'] ?? 0) + 1;
@@ -110,7 +106,6 @@ class Operaciones_maritimo_ferroModel extends Query
         return $this->selectAll($sql) ?: [];
     }
 
-    //Tomara el puerto de la consulta de subtipomaritimoFerro
     public function catalogoPuertos(): array
     {
         $sql = "SELECT id_puerto, nombre
@@ -128,6 +123,7 @@ class Operaciones_maritimo_ferroModel extends Query
                 ORDER BY nombre";
         return $this->selectAll($sql) ?: [];
     }
+
     public function catalogoShippers(): array
     {
         $sql = "SELECT id_shipper, nombre
@@ -162,7 +158,6 @@ class Operaciones_maritimo_ferroModel extends Query
         return $this->selectAll($sql, [$like]) ?: [];
     }
 
-    /** Catálogo contenedor marítimo */
     public function buscarContenedoresMar(string $term): array
     {
         $like = '%' . mb_strtolower($term, 'UTF-8') . '%';
@@ -187,17 +182,8 @@ class Operaciones_maritimo_ferroModel extends Query
     }
 
     /* =========================
-       ===  MARÍTIMO (base)  ===
+       ===  HELPERS CONTENEDOR ===
        ========================= */
-
-    /* public function getSubtipo(int $id): ?array
-    {
-        $sql = "SELECT id_subtipo, nombre, requiere_naviera, requiere_forwarder, puerto_arribo_default_id
-                FROM subtipos_operacion
-                WHERE id_subtipo = ?
-                LIMIT 1";
-        return $this->select($sql, [$id]) ?: null;
-    }*/
 
     public function findContenedorByNumero(string $numero): ?array
     {
@@ -208,67 +194,164 @@ class Operaciones_maritimo_ferroModel extends Query
         return $this->select($sql, [$numero]) ?: null;
     }
 
-    public function createContenedor(string $numero): int
+    public function createContenedor(string $numero, ?string $tipo = null): int
     {
-        $sql = "INSERT INTO contenedores_maritimos (numero_contenedor, estatus) VALUES (?, 1)";
-        return (int)$this->insertar($sql, [$numero]);
+        $tipo = trim((string)$tipo);
+        if ($tipo === '') $tipo = null;
+
+        $sql = "INSERT INTO contenedores_maritimos (numero_contenedor, tipo, estatus)
+                VALUES (?, ?, 1)";
+        return (int)$this->insertar($sql, [$numero, $tipo]);
     }
 
-    public function linkContenedorOperacion(int $opId, int $contenedorId, $bultos = null): int
+    public function updateContenedorTipo(int $contenedorId, ?string $tipo): bool
     {
-        $sql = "INSERT INTO contenedores_maritimos_operacion (operacion_id, contenedor_maritimo_id, bultos)
-                VALUES (?, ?, ?)";
+        $tipo = trim((string)$tipo);
+        if ($contenedorId <= 0 || $tipo === '') return true;
+
+        $res = $this->save(
+            "UPDATE contenedores_maritimos
+             SET tipo = ?
+             WHERE id_contenedor_maritimo = ?
+             LIMIT 1",
+            [$tipo, $contenedorId]
+        );
+        return $res !== false;
+    }
+
+    /** UPSERT lógico: si ya existe vínculo, actualiza bultos; si no, inserta */
+    public function upsertLinkContenedorOperacion(int $opId, int $contenedorId, $bultos = null): bool
+    {
         $valBultos = ($bultos === '' || $bultos === null) ? null : (is_numeric($bultos) ? (int)$bultos : null);
-        return (int)$this->insertar($sql, [$opId, $contenedorId, $valBultos]);
+
+        $exists = $this->select(
+            "SELECT 1 AS ok
+             FROM contenedores_maritimos_operacion
+             WHERE operacion_id = ? AND contenedor_maritimo_id = ?
+             LIMIT 1",
+            [$opId, $contenedorId]
+        );
+
+        if ($exists) {
+            $res = $this->save(
+                "UPDATE contenedores_maritimos_operacion
+                 SET bultos = ?
+                 WHERE operacion_id = ? AND contenedor_maritimo_id = ?
+                 LIMIT 1",
+                [$valBultos, $opId, $contenedorId]
+            );
+            return $res !== false;
+        }
+
+        $ins = $this->insertar(
+            "INSERT INTO contenedores_maritimos_operacion (operacion_id, contenedor_maritimo_id, bultos)
+             VALUES (?, ?, ?)",
+            [$opId, $contenedorId, $valBultos]
+        );
+        return ((int)$ins) > 0;
     }
 
-    public function actualizarBultos(int $operacionId, int $contenedorMaritimoId, $bultos): bool
+    /** Sincroniza: elimina los que ya no vienen, y upsert de los que vienen */
+    public function syncContenedoresOperacion(int $opId, array $contenedores, array $opFallback = []): bool
     {
-        $sql = "UPDATE contenedores_maritimos_operacion
-                SET bultos = ?
-                WHERE operacion_id = ? AND contenedor_maritimo_id = ?
-                LIMIT 1";
-        $valBultos = ($bultos === '' || $bultos === null) ? null : (is_numeric($bultos) ? (int)$bultos : null);
-        return $this->save($sql, [$valBultos, $operacionId, $contenedorMaritimoId]) !== false;
+        // Normalizar lista deseada a IDs
+        $desiredIds = [];
+        $items = [];
+
+        foreach ($contenedores as $c) {
+            $cid   = isset($c['id']) ? (int)$c['id'] : 0;
+            $cnum  = trim($c['numero'] ?? '');
+            $cbul  = $c['bultos'] ?? null;
+
+            // tipo puede venir por contenedor o uno general (fallback)
+            $ctipo = trim((string)($c['tipo'] ?? ($opFallback['tipo_contenedor'] ?? '')));
+
+            if ($cid <= 0 && $cnum === '') continue;
+
+            if ($cid <= 0) {
+                $found = $this->findContenedorByNumero($cnum);
+                if ($found) {
+                    $cid = (int)$found['id_contenedor_maritimo'];
+                } else {
+                    $cid = (int)$this->createContenedor($cnum, $ctipo);
+                }
+                if ($cid <= 0) return false;
+            }
+
+            // Guardar item normalizado
+            $desiredIds[$cid] = true;
+            $items[] = ['id' => $cid, 'bultos' => $cbul, 'tipo' => $ctipo];
+        }
+
+        // 1) borrar vínculos que ya no vienen
+        $current = $this->selectAll(
+            "SELECT contenedor_maritimo_id
+             FROM contenedores_maritimos_operacion
+             WHERE operacion_id = ?",
+            [$opId]
+        ) ?: [];
+
+        foreach ($current as $row) {
+            $cid = (int)($row['contenedor_maritimo_id'] ?? 0);
+            if ($cid > 0 && !isset($desiredIds[$cid])) {
+                $res = $this->save(
+                    "DELETE FROM contenedores_maritimos_operacion
+                     WHERE operacion_id = ? AND contenedor_maritimo_id = ?
+                     LIMIT 1",
+                    [$opId, $cid]
+                );
+                if ($res === false) return false;
+            }
+        }
+
+        // 2) upsert de los que vienen + update tipo siempre que venga
+        foreach ($items as $it) {
+            $cid = (int)$it['id'];
+            if (!$this->updateContenedorTipo($cid, $it['tipo'])) return false;
+            if (!$this->upsertLinkContenedorOperacion($opId, $cid, $it['bultos'])) return false;
+        }
+
+        return true;
     }
 
-    public function getContenedoresByOperacion(int $opId): array
+    /* =========================
+       ===  HELPERS BROKER   ===
+       ========================= */
+
+    public function upsertOperacionBroker(int $operacionId, int $brokerId): bool
     {
-        $sql = "SELECT
-                    cm.id_contenedor_maritimo,
-                    cm.numero_contenedor,
-                    cmo.bultos
-                FROM contenedores_maritimos_operacion cmo
-                INNER JOIN contenedores_maritimos cm
-                    ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-                WHERE cmo.operacion_id = ?
-                ORDER BY cm.numero_contenedor";
-        return $this->selectAll($sql, [$opId]) ?: [];
+        // Limpia relación
+        $this->save("DELETE FROM operacion_brokers WHERE operacion_id = ?", [$operacionId]);
+
+        if ($brokerId > 0) {
+            $ok = $this->insertar(
+                "INSERT INTO operacion_brokers (operacion_id, broker_id) VALUES (?, ?)",
+                [$operacionId, $brokerId]
+            );
+            if (((int)$ok) <= 0) return false;
+        }
+
+        // Mantener también broker_id en operaciones consistente (NULL si 0)
+        $res = $this->save(
+            "UPDATE operaciones SET broker_id = ? WHERE id_operacion = ? LIMIT 1",
+            [$brokerId > 0 ? $brokerId : null, $operacionId]
+        );
+        return $res !== false;
     }
-
-
-
-
 
     /* =========================
        ===       LISTAR      ===
        ========================= */
 
-    /**
-     * Lista operaciones Marítimo/Ferro (subtipo.tipo_operacion_id IN (1,11))
-     * Filtros: filtroSubtipo|subtipo_id, term (multi-coma), fecha_inicio/fecha_fin (ETA)
-     */
     public function listarPaginado(array $filters = [], int $page = 1, int $perPage = 10): array
     {
         $page    = max(1, (int)$page);
         $perPage = max(1, (int)$perPage);
         $offset  = ($page - 1) * $perPage;
 
-        // Base: mostrar subtipos marítimo o ferro
         $where = "WHERE st.tipo_operacion_id IN (11)";
         $args  = [];
 
-        // Filtro opcional por subtipo
         $subtipoId = isset($filters['filtroSubtipo']) ? (int)$filters['filtroSubtipo']
             : (isset($filters['subtipo_id']) ? (int)$filters['subtipo_id'] : 0);
         if ($subtipoId > 0) {
@@ -276,13 +359,11 @@ class Operaciones_maritimo_ferroModel extends Query
             $args[] = $subtipoId;
         }
 
-        // (Opcional) filtro tipo: 11
         if (!empty($filters['tipo']) && in_array((int)$filters['tipo'], [11], true)) {
             $where .= " AND st.tipo_operacion_id = ? ";
             $args[] = (int)$filters['tipo'];
         }
 
-        // Búsqueda multi-término (separado por coma)
         $raw = trim($filters['term'] ?? '');
         if ($raw !== '') {
             $terms = array_values(array_filter(array_map(
@@ -294,26 +375,25 @@ class Operaciones_maritimo_ferroModel extends Query
             foreach ($terms as $t) {
                 $needle = '%' . $t . '%';
                 $where .= " AND (
-                LOWER(o.numero_operacion) LIKE ?
-                OR LOWER(o.numero_bl)     LIKE ?
-                OR LOWER(p.nombre)        LIKE ?
-                OR LOWER(e.nombre)        LIKE ?
-                OR LOWER(c.nombre)        LIKE ?
-                OR LOWER(s.nombre)        LIKE ?
-                OR EXISTS (
-                    SELECT 1
-                    FROM contenedores_maritimos_operacion cmo2
-                    JOIN contenedores_maritimos cm2
-                      ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                    WHERE cmo2.operacion_id = o.id_operacion
-                      AND LOWER(cm2.numero_contenedor) LIKE ?
-                )
-            )";
+                    LOWER(o.numero_operacion) LIKE ?
+                    OR LOWER(o.numero_bl)     LIKE ?
+                    OR LOWER(p.nombre)        LIKE ?
+                    OR LOWER(e.nombre)        LIKE ?
+                    OR LOWER(c.nombre)        LIKE ?
+                    OR LOWER(s.nombre)        LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM contenedores_maritimos_operacion cmo2
+                        JOIN contenedores_maritimos cm2
+                          ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                        WHERE cmo2.operacion_id = o.id_operacion
+                          AND LOWER(cm2.numero_contenedor) LIKE ?
+                    )
+                )";
                 array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
             }
         }
 
-        // Filtro por fechas (ETA)
         $fi = trim($filters['fecha_inicio'] ?? '');
         $ff = trim($filters['fecha_fin'] ?? '');
         $isDate = static function (string $d): bool {
@@ -336,85 +416,81 @@ class Operaciones_maritimo_ferroModel extends Query
             $args[] = $ff;
         }
 
-        // Total (lo dejo igual; no necesitas joins extra para contar)
         $sqlCount = "
-        SELECT COUNT(DISTINCT o.id_operacion) AS total
-        FROM operaciones o
-        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-        $where
-    ";
+            SELECT COUNT(DISTINCT o.id_operacion) AS total
+            FROM operaciones o
+            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+            $where
+        ";
         $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
         $total    = (int)$rowCount['total'];
 
-        // Data
         $limit = (int)$perPage;
         $off   = (int)$offset;
 
         $sqlData = "
-        SELECT
-            o.id_operacion,
-            o.numero_operacion,
-            st.nombre  AS subtipo,
-            st.tipo_operacion_id AS tipo,
-            o.numero_bl,
-            p.nombre   AS puerto_arribo,
-            n.nombre   AS naviera,
-            f.nombre   AS forwarder,
-            c.nombre   AS cliente,
-            o.etd, o.eta,
-            e.nombre   AS estatus,
-            o.isf,
-            o.cita_puerto,     
-            o.shipper_id AS shipper_id,
-            s.nombre     AS shipper, 
-            GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                         ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores, 
-            o.peso_total AS peso_total,
-            tr.nombre    AS transportista,
-            COALESCE(SUM(cmo.bultos),0) AS bultos_total,
-            MAX(cm.tipo) AS tipo_contenedor,
-            GROUP_CONCAT(DISTINCT b.nombre
-                         ORDER BY b.nombre SEPARATOR ', ') AS brokers
-
-        FROM operaciones o
-        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-        LEFT JOIN navieras n          ON n.id_naviera = o.naviera_id
-        LEFT JOIN forwarders f        ON f.id_forwarder = o.forwarder_id
-        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
-        LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id 
-        LEFT JOIN transportistas tr   ON tr.id_transportista = o.transportista_id
-        LEFT JOIN operacion_brokers ob ON ob.operacion_id = o.id_operacion
-        LEFT JOIN brokers b            ON b.id_broker = ob.broker_id 
-
-        $where
-        GROUP BY
-            o.id_operacion,
-            o.numero_operacion,
-            st.nombre,
-            st.tipo_operacion_id,
-            o.numero_bl,
-            p.nombre,
-            n.nombre,
-            f.nombre,
-            c.nombre,
-            o.etd,
-            o.eta,
-            e.nombre,
-            o.isf,
-            o.cita_puerto,
-            o.peso_total,
-            tr.nombre
-        ORDER BY o.id_operacion DESC
-        LIMIT $limit OFFSET $off
-    ";
+            SELECT
+                o.id_operacion,
+                o.numero_operacion,
+                st.nombre  AS subtipo,
+                st.tipo_operacion_id AS tipo,
+                o.numero_bl,
+                p.nombre   AS puerto_arribo,
+                n.nombre   AS naviera,
+                f.nombre   AS forwarder,
+                c.nombre   AS cliente,
+                o.etd, o.eta,
+                e.nombre   AS estatus,
+                o.isf,
+                o.cita_puerto,
+                o.shipper_id AS shipper_id,
+                s.nombre     AS shipper,
+                GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                             ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores,
+                o.peso_total AS peso_total,
+                tr.nombre    AS transportista,
+                COALESCE(SUM(cmo.bultos),0) AS bultos_total,
+                MAX(cm.tipo) AS tipo_contenedor,
+                GROUP_CONCAT(DISTINCT b.nombre
+                             ORDER BY b.nombre SEPARATOR ', ') AS brokers
+            FROM operaciones o
+            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+            LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+            LEFT JOIN navieras n          ON n.id_naviera = o.naviera_id
+            LEFT JOIN forwarders f        ON f.id_forwarder = o.forwarder_id
+            LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+            LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.operacion_id = o.id_operacion
+            LEFT JOIN contenedores_maritimos cm            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+            LEFT JOIN transportistas tr   ON tr.id_transportista = o.transportista_id
+            LEFT JOIN operacion_brokers ob ON ob.operacion_id = o.id_operacion
+            LEFT JOIN brokers b            ON b.id_broker = ob.broker_id
+            $where
+            GROUP BY
+                o.id_operacion,
+                o.numero_operacion,
+                st.nombre,
+                st.tipo_operacion_id,
+                o.numero_bl,
+                p.nombre,
+                n.nombre,
+                f.nombre,
+                c.nombre,
+                o.etd,
+                o.eta,
+                e.nombre,
+                o.isf,
+                o.cita_puerto,
+                o.peso_total,
+                tr.nombre
+            ORDER BY o.id_operacion DESC
+            LIMIT $limit OFFSET $off
+        ";
 
         $rows = $this->selectAll($sqlData, $args) ?: [];
 
@@ -427,21 +503,13 @@ class Operaciones_maritimo_ferroModel extends Query
         ];
     }
 
-
     /* =========================
        ===  INSERT PRINCIPAL  ===
        ========================= */
 
-    /**
-     * Inserta operación (marítima o ferroviaria) y relaciones marítimas.
-     * NOTA: tipo_operacion_id se deriva del SUBTIPO.
-     * @param array $op Campos de 'operaciones' (sin tipo_operacion_id)
-     * @param array $contenedores [['id'=>?, 'numero'=>?, 'bultos'=>?], ...]
-     */
     public function insertarOperacion(array $op, array $contenedores, int $usuarioId): array
     {
         try {
-            // A) Folio
             if (empty($op['numero_operacion'])) {
                 $codigo = $this->generarCodigoPorSecuencia((int)$op['subtipo_operacion_id']);
                 if (!$codigo) return ['status' => 'error', 'msg' => 'No se pudo generar el folio'];
@@ -450,7 +518,6 @@ class Operaciones_maritimo_ferroModel extends Query
 
             $this->save("START TRANSACTION", []);
 
-            // B) Subtipo + tipo derivado
             $st = $this->getSubtipoFull((int)$op['subtipo_operacion_id']);
             if (!$st) {
                 $this->save("ROLLBACK", []);
@@ -466,11 +533,12 @@ class Operaciones_maritimo_ferroModel extends Query
                 return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
             }
 
-            // C) Insert en operaciones
             $sqlOp = "INSERT INTO operaciones
-            (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
-            cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
+                 cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto,
+                 peso_total, transportista_id, broker_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
             $paramsOp = [
                 trim($op['numero_operacion']),
                 (int)$st['tipo_operacion_id'],
@@ -486,46 +554,33 @@ class Operaciones_maritimo_ferroModel extends Query
                 $op['notas'] ?? null,
                 (int)($op['isf'] ?? 0),
                 (!empty($op['cita_puerto']) ? $op['cita_puerto'] : null),
+
+                (isset($op['peso_total']) && $op['peso_total'] !== '' ? (float)$op['peso_total'] : null),
+                (!empty($op['transportista_id']) ? (int)$op['transportista_id'] : null),
+                (!empty($op['broker_id']) ? (int)$op['broker_id'] : null),
             ];
+
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
             if ($opId <= 0) {
                 $this->save("ROLLBACK", []);
                 return ['status' => 'error', 'msg' => 'No se pudo guardar la operación'];
             }
 
-            // D) Contenedores marítimos (catálogo + vínculo + bultos)
+            // Broker pivot + sync broker_id NULL si aplica
+            $brokerId = !empty($op['broker_id']) ? (int)$op['broker_id'] : 0;
+            if (!$this->upsertOperacionBroker($opId, $brokerId)) {
+                $this->save("ROLLBACK", []);
+                return ['status' => 'error', 'msg' => 'No se pudo vincular el broker a la operación'];
+            }
+
+            // Contenedores: sync (en alta funciona igual: inserta/actualiza tipo/bultos)
             if (!empty($contenedores)) {
-                $vistos = [];
-                foreach ($contenedores as $c) {
-                    $cid  = isset($c['id']) ? (int)$c['id'] : 0;
-                    $cnum = trim($c['numero'] ?? '');
-                    $cbul = $c['bultos'] ?? null;
-
-                    if ($cid <= 0 && $cnum === '') continue;
-
-                    $key = $cid > 0 ? 'id:' . $cid : 'num:' . mb_strtolower($cnum, 'UTF-8');
-                    if (isset($vistos[$key])) continue;
-                    $vistos[$key] = true;
-
-                    if ($cid <= 0) {
-                        $found = $this->findContenedorByNumero($cnum);
-                        if ($found) $cid = (int)$found['id_contenedor_maritimo'];
-                        else        $cid = (int)$this->createContenedor($cnum);
-                        if ($cid <= 0) {
-                            $this->save("ROLLBACK", []);
-                            return ['status' => 'error', 'msg' => "No se pudo crear el contenedor: {$cnum}"];
-                        }
-                    }
-
-                    $linkId = $this->linkContenedorOperacion($opId, $cid, $cbul);
-                    if ($linkId <= 0) {
-                        $this->save("ROLLBACK", []);
-                        return ['status' => 'error', 'msg' => 'No se pudo relacionar contenedor con la operación'];
-                    }
+                if (!$this->syncContenedoresOperacion($opId, $contenedores, $op)) {
+                    $this->save("ROLLBACK", []);
+                    return ['status' => 'error', 'msg' => 'No se pudieron guardar contenedores'];
                 }
             }
 
-            // E) Log
             $logId = $this->crearLog($opId, $usuarioId, 'creacion', 'Operación creada');
             if ($logId <= 0) {
                 $this->save("ROLLBACK", []);
@@ -541,13 +596,10 @@ class Operaciones_maritimo_ferroModel extends Query
             ];
         } catch (\Throwable $ex) {
             error_log("insertarOperacion error: " . $ex->getMessage());
-            error_log("PAYLOAD op: " . json_encode($op, JSON_UNESCAPED_UNICODE));
-            error_log("CONTENEDORES: " . json_encode($contenedores, JSON_UNESCAPED_UNICODE));
             try {
                 $this->save("ROLLBACK", []);
             } catch (\Throwable $e2) {
             }
-            error_log("insertarOperacion error: " . $ex->getMessage());
             return ['status' => 'error', 'msg' => 'Error inesperado al guardar'];
         }
     }
@@ -572,100 +624,229 @@ class Operaciones_maritimo_ferroModel extends Query
     public function obtenerOperacion(int $id): ?array
     {
         $sql = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            o.subtipo_operacion_id,
+            st.tipo_operacion_id,
+            st.nombre AS subtipo_nombre,
+            st.requiere_naviera,
+            st.requiere_forwarder,
+
+            o.shipper_id,
+            s.nombre AS shipper_nombre,
+
+            st.puerto_arribo_default_id AS puerto_arribo_id_prefill,
+            p.nombre AS puerto_arribo_nombre,
+
+            o.numero_bl,
+            o.naviera_id,
+            o.forwarder_id,
+
+            o.cliente_id,
+            c.nombre AS cliente_nombre,
+
+            o.etd,
+            o.eta,
+
+            o.estatus_id,
+            e.nombre AS estatus_nombre,
+
+            o.isf,
+            o.cita_puerto,
+            o.notas,
+
+            o.peso_total,
+
+            o.transportista_id,
+            tr.nombre AS transportista_nombre,
+
+             
+
+            /* Broker: si existe vínculo en operacion_brokers, ese manda */
+            COALESCE(MIN(ob.broker_id), o.broker_id) AS broker_id_real,
+            COALESCE(MIN(b.nombre), br.nombre)       AS broker_nombre
+
+        FROM operaciones o
+        LEFT JOIN shippers s             ON s.id_shipper = o.shipper_id
+        LEFT JOIN subtipos_operacion st  ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p              ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN clientes c             ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e              ON e.id_estatus = o.estatus_id
+
+        LEFT JOIN transportistas tr      ON tr.id_transportista = o.transportista_id
+
+        /* Si tu broker se maneja por tabla puente */
+        LEFT JOIN operacion_brokers ob   ON ob.operacion_id = o.id_operacion
+        LEFT JOIN brokers b              ON b.id_broker = ob.broker_id
+
+        /* Fallback: broker directo en operaciones (si lo tienes) */
+        LEFT JOIN brokers br             ON br.id_broker = o.broker_id
+
+        WHERE o.id_operacion = ?
+        GROUP BY
+            o.id_operacion,
+            o.numero_operacion,
+            o.subtipo_operacion_id,
+            st.tipo_operacion_id,
+            st.nombre,
+            st.requiere_naviera,
+            st.requiere_forwarder,
+            o.shipper_id,
+            s.nombre,
+            st.puerto_arribo_default_id,
+            p.nombre,
+            o.numero_bl,
+            o.naviera_id,
+            o.forwarder_id,
+            o.cliente_id,
+            c.nombre,
+            o.etd,
+            o.eta,
+            o.estatus_id,
+            e.nombre,
+            o.isf,
+            o.cita_puerto,
+            o.notas,
+            o.peso_total,
+            o.transportista_id,
+            tr.nombre,
+            o.broker_id,
+            br.nombre
+        LIMIT 1
+    ";
+
+        $row = $this->select($sql, [$id]);
+        if (!$row) return null;
+
+        // Para que tu JS use broker_id "normal"
+        $row['broker_id'] = (int)($row['broker_id_real'] ?? 0);
+
+        return $row;
+    }
+
+
+    public function getContenedoresDeOperacion(int $operacionId): array
+    {
+        $sql = "
             SELECT
-                o.id_operacion,
-                o.numero_operacion,
-                o.subtipo_operacion_id,
-                st.tipo_operacion_id,
-                st.nombre AS subtipo_nombre,
-                st.requiere_naviera,
-                st.requiere_forwarder,
-                s.nombre AS shipper_nombre,
-                o.shipper_id,
-                st.puerto_arribo_default_id AS puerto_arribo_id_prefill,
-                p.nombre AS puerto_arribo_nombre,
-                o.numero_bl,
-                o.naviera_id,
-                o.forwarder_id,
-                o.cliente_id,
-                c.nombre AS cliente_nombre,
-                o.etd, o.eta,
-                o.estatus_id,
-                e.nombre AS estatus_nombre,
-                o.isf,
-                o.cita_puerto,
-                o.notas
-            FROM operaciones o
-            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
-            LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
-            WHERE o.id_operacion = ?
-            LIMIT 1
-        ";
-        return $this->select($sql, [$id]) ?: null;
-    }
-
-    public function actualizarOperacion(array $d): bool
-    {
-        $st = $this->getSubtipoFull((int)($d['subtipo_operacion_id'] ?? 0));
-        if (!$st) return false;
-
-        $sql = "UPDATE operaciones
-                SET tipo_operacion_id     = ?,
-                    subtipo_operacion_id  = ?,
-                    etd                   = ?,
-                    eta                   = ?,
-                    numero_bl             = ?,
-                    cliente_id            = ?,
-                    estatus_id            = ?,
-                    naviera_id            = ?,
-                    forwarder_id          = ?,
-                    shipper_id            = ?,
-                    isf                   = ?,
-                    cita_puerto           = ?,
-                    notas                 = ?
-                WHERE id_operacion = ?
-                LIMIT 1";
-        $args = [
-            (int)$st['tipo_operacion_id'],
-            (int)($d['subtipo_operacion_id'] ?? 0),
-            !empty($d['etd']) ? $d['etd'] : null,
-            !empty($d['eta']) ? $d['eta'] : null,
-            trim($d['numero_bl'] ?? ''),
-            !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
-            !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
-            ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
-            ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
-            ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
-
-            // ORDEN CORRECTO para: isf=?, cita_puerto=?, notas=?, id_operacion=?
-            (int)($d['isf'] ?? 0),
-            ($d['cita_puerto'] ?? null),
-            ($d['notas'] ?? null),
-            (int)$d['id_operacion'],
-        ];
-
-
-        $res = $this->save($sql, $args);
-        return $res !== false;
-    }
-
-    public function getContenedoresDeOperacion(int $id): array
-    {
-        $sql = "SELECT 
-                cm.id_contenedor_maritimo, 
-                cm.numero_contenedor,
-                cmo.bultos
-            FROM contenedores_maritimos cm
-            INNER JOIN contenedores_maritimos_operacion cmo
-                ON cmo.contenedor_maritimo_id = cm.id_contenedor_maritimo
+                cmo.contenedor_maritimo_id        AS id,
+                cm.numero_contenedor              AS numero,
+                cmo.bultos                        AS bultos,
+                cm.tipo                           AS tipo
+            FROM contenedores_maritimos_operacion cmo
+            INNER JOIN contenedores_maritimos cm
+                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
             WHERE cmo.operacion_id = ?
-            ORDER BY cm.numero_contenedor";
-        return $this->selectAll($sql, [$id]) ?: [];
+            ORDER BY cm.numero_contenedor ASC
+        ";
+
+        $rows = $this->selectAll($sql, [$operacionId]);
+        return is_array($rows) ? $rows : [];
     }
 
+
+    /** EDITAR (ahora completo: tx + broker + contenedores + log) */
+    public function actualizarOperacion(array $d, array $contenedores = [], int $usuarioId = 0): array
+    {
+        try {
+            $opId = (int)($d['id_operacion'] ?? 0);
+            if ($opId <= 0) return ['status' => 'error', 'msg' => 'ID operación inválido'];
+
+            $st = $this->getSubtipoFull((int)($d['subtipo_operacion_id'] ?? 0));
+            if (!$st) return ['status' => 'error', 'msg' => 'Subtipo inválido'];
+
+            if ((int)$st['requiere_naviera'] === 1 && empty($d['naviera_id'])) {
+                return ['status' => 'warning', 'msg' => 'Selecciona una naviera'];
+            }
+            if ((int)$st['requiere_forwarder'] === 1 && empty($d['forwarder_id'])) {
+                return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
+            }
+
+            $this->save("START TRANSACTION", []);
+
+            $sql = "UPDATE operaciones
+                    SET tipo_operacion_id     = ?,
+                        subtipo_operacion_id  = ?,
+                        etd                   = ?,
+                        eta                   = ?,
+                        numero_bl             = ?,
+                        cliente_id            = ?,
+                        estatus_id            = ?,
+                        naviera_id            = ?,
+                        forwarder_id          = ?,
+                        shipper_id            = ?,
+                        isf                   = ?,
+                        cita_puerto           = ?,
+                        notas                 = ?,
+                        peso_total            = ?,
+                        transportista_id      = ?,
+                        broker_id             = ?
+                    WHERE id_operacion = ?
+                    LIMIT 1";
+
+            $args = [
+                (int)$st['tipo_operacion_id'],
+                (int)($d['subtipo_operacion_id'] ?? 0),
+                !empty($d['etd']) ? $d['etd'] : null,
+                !empty($d['eta']) ? $d['eta'] : null,
+                trim($d['numero_bl'] ?? ''),
+                !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
+                !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
+                ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
+                ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
+                ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
+                (int)($d['isf'] ?? 0),
+                ($d['cita_puerto'] ?? null),
+                ($d['notas'] ?? null),
+
+                (isset($d['peso_total']) && $d['peso_total'] !== '' ? (float)$d['peso_total'] : null),
+                (!empty($d['transportista_id']) ? (int)$d['transportista_id'] : null),
+                (!empty($d['broker_id']) ? (int)$d['broker_id'] : null),
+
+                $opId,
+            ];
+
+            $res = $this->save($sql, $args);
+            if ($res === false) {
+                $this->save("ROLLBACK", []);
+                return ['status' => 'error', 'msg' => 'No se pudo actualizar la operación'];
+            }
+
+            // Broker pivot + sync broker_id NULL si aplica
+            $brokerId = !empty($d['broker_id']) ? (int)$d['broker_id'] : 0;
+            if (!$this->upsertOperacionBroker($opId, $brokerId)) {
+                $this->save("ROLLBACK", []);
+                return ['status' => 'error', 'msg' => 'No se pudo actualizar el broker'];
+            }
+
+            // Contenedores (si tu UI los manda en editar)
+            if (is_array($contenedores) && !empty($contenedores)) {
+                if (!$this->syncContenedoresOperacion($opId, $contenedores, $d)) {
+                    $this->save("ROLLBACK", []);
+                    return ['status' => 'error', 'msg' => 'No se pudieron actualizar contenedores'];
+                }
+            }
+
+            // Log edición
+            if ($usuarioId > 0) {
+                $logId = $this->crearLog($opId, $usuarioId, 'edicion', 'Operación actualizada');
+                if ($logId <= 0) {
+                    $this->save("ROLLBACK", []);
+                    return ['status' => 'error', 'msg' => 'No se pudo registrar la bitácora de edición'];
+                }
+            }
+
+            $this->save("COMMIT", []);
+            return ['status' => 'success', 'msg' => 'Operación actualizada'];
+        } catch (\Throwable $e) {
+            try {
+                $this->save("ROLLBACK", []);
+            } catch (\Throwable $e2) {
+            }
+            return ['status' => 'error', 'msg' => 'Error inesperado al actualizar'];
+        }
+    }
 
     /* =========================
        ===  BAJA LÓGICA      ===
@@ -675,7 +856,6 @@ class Operaciones_maritimo_ferroModel extends Query
     {
         try {
             $this->save("START TRANSACTION", []);
-            // Define tu estatus de baja (ej. 6 = cancelada)
             $res = $this->save("UPDATE operaciones SET estatus_id = 6 WHERE id_operacion = ?", [$id]);
             if (!$res) {
                 $this->save("ROLLBACK", []);
@@ -685,13 +865,19 @@ class Operaciones_maritimo_ferroModel extends Query
             $this->save("COMMIT", []);
             return ['status' => 'success', 'msg' => 'Operación desactivada'];
         } catch (\Throwable $e) {
-            $this->save("ROLLBACK", []);
+            try {
+                $this->save("ROLLBACK", []);
+            } catch (\Throwable $e2) {
+            }
             return ['status' => 'error', 'msg' => 'Error inesperado al desactivar'];
         }
     }
 
-    //getBrokers
-    public function getBrokers()
+    /* =========================
+       ===   CATÁLOGOS EXTRA  ===
+       ========================= */
+
+    public function getBrokers(): array
     {
         $sql = "SELECT id_broker, nombre
                 FROM brokers
@@ -699,8 +885,8 @@ class Operaciones_maritimo_ferroModel extends Query
                 ORDER BY nombre";
         return $this->selectAll($sql) ?: [];
     }
-    //getTransportistas
-    public function getTransportistas()
+
+    public function getTransportistas(): array
     {
         $sql = "SELECT id_transportista, nombre
                 FROM transportistas

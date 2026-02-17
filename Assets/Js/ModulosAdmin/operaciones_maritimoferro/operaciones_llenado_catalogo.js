@@ -39,6 +39,7 @@
   const selNaviera = document.getElementById("navieraId_mf");
   const selForwarder = document.getElementById("forwarderId_mf");
   const selShipper = document.getElementById("shipperId_mf");
+  const selTipoContenedor = document.getElementById("tipoContenedor_mf");
 
   const inpClienteNom = document.getElementById("clienteNombre_mf");
   const hidCliente = document.getElementById("clienteId_mf");
@@ -123,6 +124,7 @@
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
             <i data-feather="edit"></i>
+            </button>
            
             <button class="btn btn-sm btn-outline-success"
               data-bs-toggle="modal"
@@ -786,6 +788,7 @@
   // ===== Cargar operación para editar =====
   function cargarOperacionParaEditar(id) {
     resetModal("edit");
+
     const x = new XMLHttpRequest();
     x.open(
       "GET",
@@ -794,20 +797,25 @@
         encodeURIComponent(id),
       true,
     );
+    x.setRequestHeader("X-Requested-With", "XMLHttpRequest");
     x.send();
+
     x.onreadystatechange = async function () {
       if (x.readyState !== 4) return;
+
       if (x.status !== 200) {
         console.error("obtener_operacion error:", x.responseText);
         Swal?.fire("Error", "No se pudo obtener la operación", "error");
         return;
       }
+
       let payload = {};
       try {
         payload = JSON.parse(x.responseText);
       } catch (e) {
         payload = {};
       }
+
       if (payload.status !== "success" || !payload.data) {
         Swal?.fire(
           "Aviso",
@@ -816,53 +824,109 @@
         );
         return;
       }
+
       const op = payload.data;
 
-      // Cargar reglas de subtipo y puerto default
+      // ✅ reglas de subtipo (si aplica)
       await fetchSubtipoInfo(Number(op.subtipo_operacion_id || 0));
 
-      if (inpIdOperacion) inpIdOperacion.value = op.id_operacion || "";
-      if (inpNumeroOp) inpNumeroOp.value = op.numero_operacion || "";
+      // ===== Helpers internos =====
+      const val = (v) => (v === undefined || v === null ? "" : String(v));
+      const pick = (obj, keys, fallback = "") => {
+        for (const k of keys) {
+          const v = obj?.[k];
+          if (v !== undefined && v !== null && String(v).trim() !== "")
+            return v;
+        }
+        return fallback;
+      };
+
+      // ===== Pintar campos =====
+      if (inpIdOperacion) inpIdOperacion.value = val(op.id_operacion);
+      if (inpNumeroOp) inpNumeroOp.value = val(op.numero_operacion);
+
       setSelectValue(selSubtipo, op.subtipo_operacion_id);
       setSelectValue(selEstatus, op.estatus_id);
-      if (inpETD) inpETD.value = op.etd || "";
-      if (inpETA) inpETA.value = op.eta || "";
-      if (inpBL) inpBL.value = op.numero_bl || "";
-      if (hidCliente) hidCliente.value = op.cliente_id || "";
-      if (inpClienteNom) inpClienteNom.value = op.cliente_nombre || "";
-      if (txtNotas) txtNotas.value = op.notas || "";
+
+      if (inpETD) inpETD.value = val(op.etd);
+      if (inpETA) inpETA.value = val(op.eta);
+      if (inpBL) inpBL.value = val(op.numero_bl);
+
+      if (hidCliente) hidCliente.value = val(op.cliente_id);
+      if (inpClienteNom) inpClienteNom.value = val(op.cliente_nombre);
+
+      if (txtNotas) txtNotas.value = val(op.notas);
+
       if (chkISF) chkISF.checked = Number(op.isf) === 1;
+
       if (inpCitaPuerto) {
-        const raw = (op.cita_puerto || "").toString().trim();
-        inpCitaPuerto.value = raw ? raw.slice(0, 10) : ""; // toma YYYY-MM-DD
+        const raw = val(op.cita_puerto).trim();
+        inpCitaPuerto.value = raw ? raw.slice(0, 10) : "";
       }
 
+      // selects catálogos
       setSelectValue(selNaviera, op.naviera_id);
       setSelectValue(selForwarder, op.forwarder_id);
       setSelectValue(selShipper, op.shipper_id);
+      // Tipo contenedor (viene dentro de op.contenedores[i].tipo)
+      const tipoPrimero =
+        Array.isArray(op.contenedores) && op.contenedores[0]
+          ? val(op.contenedores[0].tipo)
+          : "";
+      console.log("Tipo contenedor en edición:", tipoPrimero);
 
-      // Puerto: si viene prefill úsalo; si no, aplica default
+      // Puerto: si viene, úsalo; si no, default del subtipo
       if (selPuerto) {
-        if (op.puerto_arribo_id_prefill)
-          setSelectValue(selPuerto, op.puerto_arribo_id_prefill);
+        const p = pick(
+          op,
+          ["puerto_arribo_id_prefill", "puerto_arribo_id"],
+          "",
+        );
+        if (p) setSelectValue(selPuerto, p);
         else applyPuertoDefault();
       }
 
-      // Contenedores (si el backend manda un arreglo)
-      if (Array.isArray(op.contenedores) && op.contenedores.length) {
-        repeater.innerHTML = "";
-        op.contenedores.forEach((c) => {
+      // ===== Contenedores (CORRECCIÓN DE LLAVES) =====
+      if (repeater) repeater.innerHTML = "";
+
+      const conts = Array.isArray(op.contenedores) ? op.contenedores : [];
+      if (conts.length) {
+        conts.forEach((c) => {
           const row = addRow();
-          row.querySelector(".contenedor-id_mf").value =
-            c.id_contenedor_maritimo || "";
-          row.querySelector(".contenedor-input_mf").value =
-            c.numero_contenedor || "";
+
+          // backend puede venir como {id, numero, bultos, tipo}
+          // o como {id_contenedor_maritimo, numero_contenedor, bultos, tipo_contenedor}
+          const cid = pick(
+            c,
+            ["id_contenedor_maritimo", "id", "contenedor_id"],
+            "",
+          );
+          const cnum = pick(c, ["numero_contenedor", "numero", "codigo"], "");
+          const cbul = pick(c, ["bultos", "bultos_total"], "");
+          const ctpo = pick(c, ["tipo_contenedor", "tipo"], "");
+
+          const hid = row.querySelector(".contenedor-id_mf");
+          const inp = row.querySelector(".contenedor-input_mf");
           const inpBul = row.querySelector(".contenedor-bultos_mf");
-          if (inpBul) inpBul.value = c.bultos ?? "";
+          const inpTipo = row.querySelector(".contenedor-tipo_mf"); // si existe en tu template
+
+          if (hid) hid.value = val(cid);
+          if (inp) inp.value = val(cnum);
+          if (inpBul) inpBul.value = val(cbul);
+          if (inpTipo) inpTipo.value = val(ctpo);
         });
+      } else {
+        // si no hay contenedores, deja al menos 1 fila limpia
+        resetRepeater();
       }
+
+      // En edición: readonly a contenedores
       mf_setContenedoresReadonly(true);
-      //modalInstance?.show();
+
+      // ✅ IMPORTANTE: habilitar Guardar en edición
+      btnGuardarOp?.removeAttribute("disabled");
+
+      // Mostrar modal (respetando tu forma)
       const el = document.getElementById("modalMaritimoFerro");
       const modal =
         el && window.bootstrap ? bootstrap.Modal.getOrCreateInstance(el) : null;

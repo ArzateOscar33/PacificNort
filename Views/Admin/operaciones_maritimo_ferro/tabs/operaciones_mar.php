@@ -257,17 +257,6 @@
                       <input type="number" min="0" step="1" class="form-control contenedor-bultos_mf" placeholder="0">
                     </div>
 
-                    <div class="col-md-3">
-                      <label class="form-label">Tipo Contenedor</label>
-                      <select id="tipoContenedor_mf" name="tipo_contenedor_mf" class="form-control">
-                        <option value="">Seleccione...</option>
-                        <option value="20GP">20GP</option>
-                        <option value="40GP">40GP</option>
-                        <option value="40HC">40HC</option>
-                        <option value="45HC">45HC</option>
-                      </select>
-                    </div>
-
                     <!-- PESO a un lado del tipo contenedor -->
                     <div class="col-md-2">
                       <label class="form-label">Peso (Kg)</label>
@@ -296,7 +285,8 @@
                     </div>
                     <div class="col-md-3">
                       <label class="form-label">Tipo Contenedor</label>
-                      <select class="form-control">
+                      <select class="form-control contenedor-tipo_mf" name="tipo_contenedor_mf[]">
+
                         <option value="">Seleccione...</option>
                         <option value="20GP">20GP</option>
                         <option value="40GP">40GP</option>
