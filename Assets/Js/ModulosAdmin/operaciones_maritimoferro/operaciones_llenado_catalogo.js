@@ -13,6 +13,9 @@
   const inpFechaIni = document.getElementById("maritimo_ferro_fechaInicio");
   const inpFechaFin = document.getElementById("maritimo_ferro_fechaFin");
 
+  const selBroker = document.getElementById("brokerId_mf");
+  const selTransportista = document.getElementById("transportistaId_mf");
+
   let currentPage = 1;
   let perPage = parseInt(selectPerPage?.value || "10", 10);
   let currentListXHR = null;
@@ -25,6 +28,9 @@
   const btnNuevaOp = document.getElementById(
     "maritimo_ferro_btnNuevaOperacion",
   );
+  const inpPesoOperacion =
+    modalEl?.querySelector("#pesoOperacion_mf") ||
+    modalEl?.querySelector(".pesoOperacion_mf");
   const btnGuardarOp = document.getElementById("btnGuardarOperacion_mf");
 
   const inpIdOperacion = document.getElementById("id_operacion_mf");
@@ -39,7 +45,6 @@
   const selNaviera = document.getElementById("navieraId_mf");
   const selForwarder = document.getElementById("forwarderId_mf");
   const selShipper = document.getElementById("shipperId_mf");
-  const selTipoContenedor = document.getElementById("tipoContenedor_mf");
 
   const inpClienteNom = document.getElementById("clienteNombre_mf");
   const hidCliente = document.getElementById("clienteId_mf");
@@ -72,8 +77,23 @@
   function setSelectValue(sel, val) {
     if (!sel) return;
     const s = String(val ?? "");
+    if (s === "") {
+      sel.value = "";
+      return;
+    }
+
     const has = Array.from(sel.options).some((o) => String(o.value) === s);
-    if (has) sel.value = s;
+    if (has) {
+      sel.value = s;
+      return;
+    }
+
+    // ✅ si el option no existe, crea uno temporal para que se vea
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = `#${s}`;
+    sel.appendChild(opt);
+    sel.value = s;
   }
 
   function renderCargando() {
@@ -868,6 +888,22 @@
       setSelectValue(selNaviera, op.naviera_id);
       setSelectValue(selForwarder, op.forwarder_id);
       setSelectValue(selShipper, op.shipper_id);
+
+      setSelectValue(selBroker, op.broker_id);
+      setSelectValue(selTransportista, op.transportista_id);
+
+      const pesoEl =
+        modalEl?.querySelector("#pesoOperacion_mf") ||
+        modalEl?.querySelector(".pesoOperacion_mf");
+
+      if (pesoEl) {
+        pesoEl.value = val(op.peso_total);
+        pesoEl.dispatchEvent(new Event("input", { bubbles: true })); // opcional, por si hay listeners
+      }
+
+      console.log("Peso total en edición:", inpPesoOperacion?.value);
+      console.log("Peso total bruto en edición:", val(op.peso_total));
+
       // Tipo contenedor (viene dentro de op.contenedores[i].tipo)
       const tipoPrimero =
         Array.isArray(op.contenedores) && op.contenedores[0]

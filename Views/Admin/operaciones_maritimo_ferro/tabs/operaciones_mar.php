@@ -258,11 +258,16 @@
                     </div>
 
                     <!-- PESO a un lado del tipo contenedor -->
-                    <div class="col-md-2">
-                      <label class="form-label">Peso (Kg)</label>
-                      <input type="number" min="0" step="0.01" id="pesoOperacion_mf" name="peso_operacion_mf"
-                        class="form-control" placeholder="0.00">
+                    <div class="col-md-3">
+                      <label class="form-label">Peso Total (Kg)</label>
+                      <input type="number"
+                        min="0"
+                        step="0.01"
+                        id="pesoOperacion_mf"
+                        class="form-control"
+                        placeholder="0.00">
                     </div>
+
 
                   </div>
                 </div>
@@ -296,7 +301,13 @@
                     </div>
                     <div class="col-md-2">
                       <label class="form-label">Peso (Kg)</label>
-                      <input type="number" min="0" step="0.01" class="form-control" placeholder="0.00">
+                      <input type="number"
+                        min="0"
+                        step="0.01"
+                        class="form-control pesoOperacion_mf"
+                        name="peso_operacion_mf"
+                        placeholder="0.00">
+
                     </div>
                   </div>
                 </div>
