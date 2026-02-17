@@ -261,7 +261,6 @@
 
       if (x.status !== 200) {
         console.error("listar_operaciones error:", x.responseText);
-        console.log(this.responseText);
         renderTabla([]);
         renderPaginacion({ page: 1, total_pages: 1 });
         renderResumen({ total: 0, page: 1, per_page: perPage, total_pages: 1 });
@@ -362,6 +361,9 @@
     setSelectValue(selPuerto, "");
     if (chkISF) chkISF.checked = false;
     if (inpCitaPuerto) inpCitaPuerto.value = "";
+    if (selBroker) setSelectValue(selBroker, "");
+    if (selTransportista) setSelectValue(selTransportista, "");
+    if (pesoInputActual) pesoInputActual.value = "";
 
     resetRepeater();
     if (btnGuardarOp) btnGuardarOp.setAttribute("disabled", "disabled");
@@ -921,9 +923,6 @@
           const ctpo = pick(c, ["tipo_contenedor", "tipo"], "");
           const ctPeso = pick(c, ["peso_total", "peso_total"], "Sin peso");
 
-          console.log("Contenedor:", { cid, cnum, cbul, ctpo, ctPeso });
-          console.log("Peso operación (BD):", val(op.peso_total));
-
           const hid = row.querySelector(".contenedor-id_mf");
           const inp = row.querySelector(".contenedor-input_mf");
           const inpBul = row.querySelector(".contenedor-bultos_mf");
@@ -951,10 +950,6 @@
           modalEl?.querySelector(".pesoOperacion_mf");
         if (pesoEl) pesoEl.value = val(op.peso_total);
       }
-
-      // Debug real (ya con el input vivo)
-      console.log("Peso total (BD):", val(op.peso_total));
-      console.log("Peso total (input):", pesoInputActual?.value);
 
       // En edición: readonly a contenedores
       mf_setContenedoresReadonly(true);
