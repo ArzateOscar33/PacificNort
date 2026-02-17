@@ -28,9 +28,7 @@
   const btnNuevaOp = document.getElementById(
     "maritimo_ferro_btnNuevaOperacion",
   );
-  const inpPesoOperacion =
-    modalEl?.querySelector("#pesoOperacion_mf") ||
-    modalEl?.querySelector(".pesoOperacion_mf");
+  const pesoInputActual = modalEl.querySelector("#pesoOperacion_mf");
   const btnGuardarOp = document.getElementById("btnGuardarOperacion_mf");
 
   const inpIdOperacion = document.getElementById("id_operacion_mf");
@@ -888,28 +886,8 @@
       setSelectValue(selNaviera, op.naviera_id);
       setSelectValue(selForwarder, op.forwarder_id);
       setSelectValue(selShipper, op.shipper_id);
-
       setSelectValue(selBroker, op.broker_id);
       setSelectValue(selTransportista, op.transportista_id);
-
-      const pesoEl =
-        modalEl?.querySelector("#pesoOperacion_mf") ||
-        modalEl?.querySelector(".pesoOperacion_mf");
-
-      if (pesoEl) {
-        pesoEl.value = val(op.peso_total);
-        pesoEl.dispatchEvent(new Event("input", { bubbles: true })); // opcional, por si hay listeners
-      }
-
-      console.log("Peso total en edición:", inpPesoOperacion?.value);
-      console.log("Peso total bruto en edición:", val(op.peso_total));
-
-      // Tipo contenedor (viene dentro de op.contenedores[i].tipo)
-      const tipoPrimero =
-        Array.isArray(op.contenedores) && op.contenedores[0]
-          ? val(op.contenedores[0].tipo)
-          : "";
-      console.log("Tipo contenedor en edición:", tipoPrimero);
 
       // Puerto: si viene, úsalo; si no, default del subtipo
       if (selPuerto) {
@@ -922,7 +900,10 @@
         else applyPuertoDefault();
       }
 
-      // ===== Contenedores (CORRECCIÓN DE LLAVES) =====
+      // =========================================================
+      // ✅ CONTENEDORES (tu repeater borra el DOM, incluido el peso
+      // si tu input de peso está dentro del repeater)
+      // =========================================================
       if (repeater) repeater.innerHTML = "";
 
       const conts = Array.isArray(op.contenedores) ? op.contenedores : [];
@@ -930,8 +911,6 @@
         conts.forEach((c) => {
           const row = addRow();
 
-          // backend puede venir como {id, numero, bultos, tipo}
-          // o como {id_contenedor_maritimo, numero_contenedor, bultos, tipo_contenedor}
           const cid = pick(
             c,
             ["id_contenedor_maritimo", "id", "contenedor_id"],
@@ -940,11 +919,15 @@
           const cnum = pick(c, ["numero_contenedor", "numero", "codigo"], "");
           const cbul = pick(c, ["bultos", "bultos_total"], "");
           const ctpo = pick(c, ["tipo_contenedor", "tipo"], "");
+          const ctPeso = pick(c, ["peso_total", "peso_total"], "Sin peso");
+
+          console.log("Contenedor:", { cid, cnum, cbul, ctpo, ctPeso });
+          console.log("Peso operación (BD):", val(op.peso_total));
 
           const hid = row.querySelector(".contenedor-id_mf");
           const inp = row.querySelector(".contenedor-input_mf");
           const inpBul = row.querySelector(".contenedor-bultos_mf");
-          const inpTipo = row.querySelector(".contenedor-tipo_mf"); // si existe en tu template
+          const inpTipo = row.querySelector(".contenedor-tipo_mf");
 
           if (hid) hid.value = val(cid);
           if (inp) inp.value = val(cnum);
@@ -956,13 +939,30 @@
         resetRepeater();
       }
 
+      // ✅ AHORA SÍ: setear el peso DESPUÉS de reconstruir el repeater
+      // (porque antes se lo tragaba el innerHTML="")
+      if (pesoInputActual) {
+        pesoInputActual.value = val(op.peso_total);
+      } else {
+        // fallback si el input se busca por selector dentro del modal
+        const modalEl = document.getElementById("modalMaritimoFerro");
+        const pesoEl =
+          modalEl?.querySelector("#pesoOperacion_mf") ||
+          modalEl?.querySelector(".pesoOperacion_mf");
+        if (pesoEl) pesoEl.value = val(op.peso_total);
+      }
+
+      // Debug real (ya con el input vivo)
+      console.log("Peso total (BD):", val(op.peso_total));
+      console.log("Peso total (input):", pesoInputActual?.value);
+
       // En edición: readonly a contenedores
       mf_setContenedoresReadonly(true);
 
       // ✅ IMPORTANTE: habilitar Guardar en edición
       btnGuardarOp?.removeAttribute("disabled");
 
-      // Mostrar modal (respetando tu forma)
+      // Mostrar modal
       const el = document.getElementById("modalMaritimoFerro");
       const modal =
         el && window.bootstrap ? bootstrap.Modal.getOrCreateInstance(el) : null;

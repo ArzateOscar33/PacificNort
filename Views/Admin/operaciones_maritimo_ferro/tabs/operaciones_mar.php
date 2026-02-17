@@ -257,23 +257,23 @@
                       <input type="number" min="0" step="1" class="form-control contenedor-bultos_mf" placeholder="0">
                     </div>
 
-                    <!-- PESO a un lado del tipo contenedor -->
+                    <!-- PESO a un lado del tipo contenedor 
                     <div class="col-md-3">
                       <label class="form-label">Peso Total (Kg)</label>
                       <input type="number"
-                        min="0"
-                        step="0.01"
+
                         id="pesoOperacion_mf"
                         class="form-control"
-                        placeholder="0.00">
-                    </div>
+                        placeholder="0.00"
+                        name="peso_operacion_mf">
+                    </div>-->
 
 
                   </div>
                 </div>
               </div>
 
-              <!-- Template (compatibilidad si tu JS lo referencia) -->
+              <!-- Template (compatibilidad si tu JS lo referencia) --->
               <template id="contenedorTemplate_mf">
                 <div class="contenedor-item position-relative border rounded p-2">
                   <input type="hidden" class="contenedor-id_mf">
@@ -303,7 +303,7 @@
                       <label class="form-label">Peso (Kg)</label>
                       <input type="number"
                         min="0"
-                        step="0.01"
+
                         class="form-control pesoOperacion_mf"
                         name="peso_operacion_mf"
                         placeholder="0.00">
