@@ -475,20 +475,6 @@
                         class="list-group shadow-sm"
                         style="position:absolute; z-index:1060; width:100%; display:none;"></div>
                     </div>
-
-                    <!-- Bultos -->
-                    <div class="col-md-6">
-                      <label class="form-label">Bultos asignados</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        class="form-control"
-                        id="asigFerro_inputBultos"
-                        name="asigFerro_bultos"
-                        placeholder="0">
-                    </div>
-
                     <!-- Empresa transportista -->
                     <div class="col-md-6">
                       <label class="form-label">Empresa transportista</label>
@@ -506,6 +492,20 @@
                         <?php endif; ?>
                       </select>
                     </div>
+                    <!-- Bultos -->
+                    <div class="col-md-6">
+                      <label class="form-label">Bultos asignados</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        class="form-control"
+                        id="asigFerro_inputBultos"
+                        name="asigFerro_bultos"
+                        placeholder="0">
+                    </div>
+
+
 
                     <!-- Destino -->
                     <div class="col-md-6">
@@ -525,8 +525,16 @@
                         <?php endif; ?>
                       </select>
                     </div>
-
                     <!-- Fechas -->
+                    <div class="col-md-6">
+                      <label class="form-label">Fecha carga</label>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="asigFerro_inputFechaCarga"
+                        name="asigFerro_fecha_carga">
+                    </div>
+
                     <div class="col-md-6">
                       <label class="form-label">Fecha salida</label>
                       <input
@@ -536,14 +544,6 @@
                         name="asigFerro_fecha_salida">
                     </div>
 
-                    <div class="col-md-6">
-                      <label class="form-label">Fecha carga</label>
-                      <input
-                        type="date"
-                        class="form-control"
-                        id="asigFerro_inputFechaCarga"
-                        name="asigFerro_fecha_carga">
-                    </div>
 
                     <!-- Notas -->
                     <div class="col-12">
@@ -573,7 +573,7 @@
                 <hr class="my-3">
 
                 <!-- Lista de ferros/cajas vinculados a esta operación -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 ">
                   <div class="fw-semibold">
                     <i data-feather="list" class="me-1"></i> Ferros/Cajas de esta operación
                   </div>
@@ -581,11 +581,13 @@
                 </div>
 
                 <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle mb-0">
+                  <table class="table table-sm table-hover align-middle mb-0 p-3">
                     <thead class="table-light">
                       <tr class="text-center">
                         <th class="text-start">Ferro/Caja</th>
+                        <th style="width:120px;">Transportista</th>
                         <th style="width:120px;">Bultos</th>
+                        <th style="width:140px;">F. carga</th>
                         <th style="width:140px;">F. salida</th>
                         <th style="width:90px;">Acción</th>
                       </tr>

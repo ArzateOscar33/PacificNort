@@ -81,4 +81,36 @@ class Operaciones_maritimo_ferro_asignacion_ferro extends Controller
             echo json_encode(['status' => 'error', 'msg' => 'Error interno', 'rows' => []], JSON_UNESCAPED_UNICODE);
         }
     }
+
+    public function registrarVinculacion()
+    {
+        try {
+            $operacionId = (int)($_POST['operacion_id'] ?? 0);
+
+            $payload = [
+                'operacion_id'     => $operacionId,
+                'numero_ferro'     => trim((string)($_POST['numero_ferro'] ?? '')),
+                'bultos'           => (int)($_POST['bultos'] ?? 0),
+                'destino_id'       => (int)($_POST['destino_id'] ?? 0),
+                'transportista_id' => (int)($_POST['transportista_id'] ?? 0),
+                'fecha_salida'     => trim((string)($_POST['fecha_salida'] ?? '')),
+                'fecha_carga'      => trim((string)($_POST['fecha_carga'] ?? '')),
+                'notas'            => trim((string)($_POST['notas'] ?? '')),
+                'usuario_id'       => (int)($_SESSION['id_usuario'] ?? 0),
+
+            ];
+
+            $r = $this->model->registrarVinculacionMF($payload);
+
+            echo json_encode([
+                'status' => $r['ok'] ? 'success' : 'error',
+                'msg'    => $r['msg'] ?? '',
+                'fo_id'  => (int)($r['fo_id'] ?? 0),
+                'action' => $r['action'] ?? 'none'
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            error_log("registrarVinculacion error: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Error interno'], JSON_UNESCAPED_UNICODE);
+        }
+    }
 }

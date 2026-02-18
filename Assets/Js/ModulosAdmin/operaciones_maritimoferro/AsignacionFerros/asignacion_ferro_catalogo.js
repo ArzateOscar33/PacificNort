@@ -5,7 +5,6 @@
   const BASE_URL =
     window.BASE_URL || (typeof base_url !== "undefined" ? base_url : "");
 
-  // === ENDPOINTS (los que ya tienes en tu controlador) ===
   const EP_LISTAR_FERROS =
     BASE_URL +
     "Operaciones_maritimo_ferro_asignacion_ferro/listarFerrosOperacion";

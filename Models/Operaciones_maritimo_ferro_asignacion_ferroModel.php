@@ -68,7 +68,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
     public function obtenerFOPorFerroFecha(int $contenedorFisicoId, string $fecha): ?array
     {
         $sql = "SELECT id_operacion_ferro, numero_operacion, contenedor_fisico_id, destino_id,
-                       transportista_id, fecha, bultos_total, estatus_id, comentarios
+                       transportista_id, fecha,fecha_carga, bultos_total, estatus_id, comentarios
                 FROM operaciones_ferroviarias
                 WHERE contenedor_fisico_id = ? AND fecha = ?
                 LIMIT 1";
@@ -99,40 +99,40 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
      * - destino_id se fija al crear
      * - transportista_id se puede editar después
      */
+
     public function crearFO(array $data): int
     {
         $contenedorFisicoId = (int)($data['contenedor_fisico_id'] ?? 0);
-        $fecha              = (string)($data['fecha'] ?? '');
+        $fecha              = trim((string)($data['fecha'] ?? ''));          // salida
+        $fecha_carga        = trim((string)($data['fecha_carga'] ?? ''));    // carga (puede ir vacío)
         $destinoId          = (int)($data['destino_id'] ?? 0);
         $transportistaId    = (int)($data['transportista_id'] ?? 0);
-        $comentarios        = (string)($data['comentarios'] ?? '');
+        $comentarios        = trim((string)($data['comentarios'] ?? ''));
         $creadoPor          = (int)($data['creado_por'] ?? 0);
 
-        // Subtipo FO si lo manejas (si no, se queda null)
         $subtipoFOId = (int)($data['subtipo_operacion_id'] ?? 0);
         $numeroFO    = $this->generarNumeroFO($subtipoFOId);
 
         if ($numeroFO === '') {
-            // fallback muy simple (por si falla SP)
             $numeroFO = "FO-" . date("ymd") . "-" . substr((string)time(), -4);
         }
 
         $sql = "INSERT INTO operaciones_ferroviarias
-                    (numero_operacion, contenedor_fisico_id, destino_id, transportista_id, fecha,
-                     estatus_id, comentarios, bultos_total, tipo_operacion_id, subtipo_operacion_id,
-                     creado_por)
-                VALUES
-                    (?, ?, ?, ?, ?, 9, ?, 0, 2, ?, ?)";
+                (numero_operacion, contenedor_fisico_id, destino_id, transportista_id, fecha, fecha_carga,
+                 estatus_id, comentarios, bultos_total, tipo_operacion_id, subtipo_operacion_id, creado_por)
+            VALUES
+                (?, ?, ?, ?, ?, ?, 9, ?, 0, 2, ?, ?)";
 
         return (int)$this->insertar($sql, [
             $numeroFO,
             $contenedorFisicoId ?: null,
             $destinoId ?: null,
             $transportistaId ?: null,
-            $fecha,
-            $comentarios !== '' ? $comentarios : null,
-            $subtipoFOId ?: null,
-            $creadoPor ?: null
+            $fecha,                              // YYYY-MM-DD
+            ($fecha_carga !== '' ? $fecha_carga : null),  // YYYY-MM-DD o NULL
+            ($comentarios !== '' ? $comentarios : null),
+            ($subtipoFOId ?: null),
+            ($creadoPor ?: null),
         ]);
     }
 
@@ -146,6 +146,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
     public function getOrCreateFOConReglas(
         int $contenedorFisicoId,
         string $fecha,
+        string $fechaCarga,
         int $destinoId,
         int $transportistaId,
         string $comentarios = '',
@@ -160,6 +161,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
             $id = $this->crearFO([
                 'contenedor_fisico_id'   => $contenedorFisicoId,
                 'fecha'                  => $fecha,
+                'fecha_carga'            => $fechaCarga,
                 'destino_id'             => $destinoId,
                 'transportista_id'       => $transportistaId,
                 'comentarios'            => $comentarios,
@@ -196,6 +198,105 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
 
         return ['ok' => true, 'fo' => $fo, 'msg' => 'FO reutilizada.'];
     }
+
+    public function actualizarFechaCargaFO(int $foId, string $fechaCarga): int
+    {
+        $fechaCarga = trim($fechaCarga);
+        if ($fechaCarga === '') return 0;
+
+        return (int)$this->save(
+            "UPDATE operaciones_ferroviarias SET fecha_carga = ? WHERE id_operacion_ferro = ?",
+            [$fechaCarga, $foId]
+        );
+    }
+
+    /**
+     * Registro completo: MF -> FO (ferro+fecha_salida) -> detalle bultos
+     * Retorna: ['ok'=>bool,'msg'=>string,'fo_id'=>int,'action'=>'insert|update|delete|none']
+     */
+    public function registrarVinculacionMF(array $p): array
+    {
+        $operacionId     = (int)($p['operacion_id'] ?? 0);
+        $numeroFerro     = trim((string)($p['numero_ferro'] ?? ''));
+        $bultos          = (int)($p['bultos'] ?? 0);
+        $destinoId       = (int)($p['destino_id'] ?? 0);
+        $transportistaId = (int)($p['transportista_id'] ?? 0);
+        $fechaSalida     = trim((string)($p['fecha_salida'] ?? ''));   // ofe.fecha
+        $fechaCarga      = trim((string)($p['fecha_carga'] ?? ''));    // ofe.fecha_carga
+        $notas           = trim((string)($p['notas'] ?? ''));
+        $usuarioId       = (int)($p['usuario_id'] ?? 0);
+        $subtipoFOId     = (int)($p['subtipo_fo_id'] ?? 0);
+
+        if ($operacionId <= 0) return ['ok' => false, 'msg' => 'operacion_id requerido', 'fo_id' => 0, 'action' => 'none'];
+        if ($numeroFerro === '') return ['ok' => false, 'msg' => 'Ferro/Caja requerido', 'fo_id' => 0, 'action' => 'none'];
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaSalida)) return ['ok' => false, 'msg' => 'Fecha salida inválida', 'fo_id' => 0, 'action' => 'none'];
+        if ($fechaCarga !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaCarga)) return ['ok' => false, 'msg' => 'Fecha carga inválida', 'fo_id' => 0, 'action' => 'none'];
+        if ($destinoId <= 0) return ['ok' => false, 'msg' => 'Destino requerido', 'fo_id' => 0, 'action' => 'none'];
+
+        // 1) CMO único
+        $cmo = $this->obtenerCMOUnicoPorOperacion($operacionId);
+        if (!$cmo) return ['ok' => false, 'msg' => 'La operación no tiene contenedor marítimo (CMO).', 'fo_id' => 0, 'action' => 'none'];
+        $cmoId = (int)$cmo['id'];
+
+        // 2) Ferro físico
+        $ferroId = $this->getOrCreateFerroId($numeroFerro);
+        if ($ferroId <= 0) return ['ok' => false, 'msg' => 'No se pudo obtener/crear el ferro.', 'fo_id' => 0, 'action' => 'none'];
+
+        // === Transacción (recomendado) ===
+        $this->save("START TRANSACTION", []);
+
+        try {
+            // 3) FO por (ferro, fechaSalida) con reglas
+            $rFO = $this->getOrCreateFOConReglas(
+                $ferroId,
+                $fechaSalida,
+                $fechaCarga,
+                $destinoId,
+                $transportistaId,
+                $notas,
+                $usuarioId,
+                $subtipoFOId
+            );
+            if (!$rFO['ok'] || empty($rFO['fo']['id_operacion_ferro'])) {
+                $this->save("ROLLBACK", []);
+                return ['ok' => false, 'msg' => $rFO['msg'] ?? 'No se pudo crear/reusar FO.', 'fo_id' => 0, 'action' => 'none'];
+            }
+
+            $foId = (int)$rFO['fo']['id_operacion_ferro'];
+
+            // 4) fecha_carga (si aplica)
+            if ($fechaCarga !== '') {
+                $this->actualizarFechaCargaFO($foId, $fechaCarga);
+            }
+
+            // 5) Asignación detalle (parcialidades)
+            $rDet = $this->upsertAsignacionDetalle(
+                $foId,
+                $cmoId,
+                $ferroId,
+                $bultos,
+                $notas
+            );
+            if (!$rDet['ok']) {
+                $this->save("ROLLBACK", []);
+                return ['ok' => false, 'msg' => $rDet['msg'] ?? 'No se pudo guardar asignación.', 'fo_id' => $foId, 'action' => 'none'];
+            }
+
+            // 6) Cabecera opcional (para usar la tabla operacion_ferro_operacion como “puente”)
+            // Nota: aquí puedes decidir si guardas siempre la cabecera o solo si bultos>0
+            $this->upsertCabeceraOperacionEnFO($operacionId, $foId, $bultos, $notas);
+
+            $this->save("COMMIT", []);
+
+            return ['ok' => true, 'msg' => $rDet['msg'] ?? 'Vinculación guardada.', 'fo_id' => $foId, 'action' => $rDet['action'] ?? 'none'];
+        } catch (Exception $e) {
+            $this->save("ROLLBACK", []);
+            error_log("registrarVinculacionMF error: " . $e->getMessage());
+            return ['ok' => false, 'msg' => 'Error interno al registrar.', 'fo_id' => 0, 'action' => 'none'];
+        }
+    }
+
+
 
     public function actualizarTransportistaFO(int $foId, int $transportistaId): int
     {
@@ -467,6 +568,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
                     ofe.id_operacion_ferro AS fo_id,
                     cf.numero_ferro,
                     ofe.fecha,
+                    ofe.fecha_carga,
                     ofe.destino_id,
                     ci.nombre_ciudad AS destino_nombre,
                     ofe.transportista_id,
