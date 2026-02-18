@@ -343,7 +343,8 @@ class Operaciones_maritimo_ferro extends Controller
 
         $notas = trim((string)($_POST['notas_mf'] ?? ($actual['notas'] ?? ''))) ?: null;
 
-        $isf = isset($_POST['isf']) ? 1 : 0;
+        $isf = (!empty($_POST['isf']) && (int)$_POST['isf'] === 1) ? 1 : 0;
+
 
         $citaRaw = trim((string)($_POST['cita_puerto'] ?? ($actual['cita_puerto'] ?? '')));
         $cita = ($citaRaw !== '') ? $citaRaw : null;

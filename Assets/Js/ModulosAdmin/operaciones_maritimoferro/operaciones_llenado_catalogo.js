@@ -977,82 +977,85 @@
   });
 
   function guardarEdicionMF() {
+    const modalEl = document.getElementById("modalMaritimoFerro");
+    const form = document.getElementById("formOperacionMaritimoFerro");
     const id = parseInt(
       document.getElementById("id_operacion_mf")?.value || "0",
       10,
     );
+
+    if (!form) {
+      Swal?.fire("Error", "No se encontró el formulario.", "error");
+      return;
+    }
     if (!id) {
       Swal?.fire("Error", "Falta id de la operación.", "error");
       return;
     }
 
-    const fd = new FormData();
-    fd.append("id_operacion_mf", String(id));
+    // ✅ 1) Tomar TODO desde los name="" reales de la vista
+    const fd = new FormData(form);
 
-    fd.append(
-      "maritimo_ferro_subtipo",
-      document.getElementById("subtipoOperacion_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_estatus",
-      document.getElementById("estatusId_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_etd",
-      document.getElementById("etd_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_eta",
-      document.getElementById("eta_mf")?.value || "",
-    );
+    // Asegurar ID (por si acaso)
+    fd.set("id_operacion_mf", String(id));
 
-    const bl = (document.getElementById("numeroBL_mf")?.value || "")
-      .replace(/[^A-Za-z0-9]/g, "")
-      .toUpperCase();
-    fd.append("maritimo_ferro_numeroBL", bl);
+    // ✅ 2) Normalizar BL (tu input tiene name="numero_bl_mf")
+    const blInp = document.getElementById("numeroBL_mf");
+    const bl = (blInp?.value || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    fd.set("numero_bl_mf", bl);
 
-    fd.append(
-      "maritimo_ferro_clienteId",
-      document.getElementById("clienteId_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_navieraId",
-      document.getElementById("navieraId_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_forwarderId",
-      document.getElementById("forwarderId_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_shipperId",
-      document.getElementById("shipperId_mf")?.value || "",
-    );
-    fd.append(
-      "maritimo_ferro_notas",
-      (document.getElementById("notas_mf")?.value || "").trim(),
-    );
+    // ✅ 3) ISF: tu controlador suele usar isset($_POST['isf'])
+    // - Si no está checked, NO debe existir la key isf en POST
+    const chkIsf = document.getElementById("chkIsf");
+    fd.delete("isf");
+    if (chkIsf && chkIsf.checked) {
+      fd.set("isf", "1");
+    }
 
-    // === NUEVOS CAMPOS ===
+    // ✅ 4) Contenedores: tu repeater NO tiene name="", así que hay que agregarlos aquí
+    // Limpia por si el form ya tuviera algo (defensivo)
+    fd.delete("contenedores_id[]");
+    fd.delete("contenedores_codigo[]");
+    fd.delete("contenedores_bultos[]");
+    fd.delete("contenedores_tipo[]");
+    fd.delete("contenedores_peso[]");
 
-    fd.append("isf", chkISF?.checked ? "1" : "0");
-    fd.append("cita_puerto", (inpCitaPuerto?.value || "").trim());
+    // Recorrer filas
+    const rows = document.querySelectorAll(
+      "#contenedoresRepeater_mf .contenedor-item",
+    );
+    rows.forEach((row) => {
+      const idInp = row.querySelector(".contenedor-id_mf");
+      const numInp = row.querySelector(".contenedor-input_mf");
+      const bInp = row.querySelector(".contenedor-bultos_mf");
 
-    // === BULTOS (si aplica en edición) ===
-    document
-      .querySelectorAll("#contenedoresRepeater_mf .contenedor-item")
-      .forEach((row) => {
-        const idInp = row.querySelector(".contenedor-id_mf");
-        const bInp = row.querySelector(".contenedor-bultos_mf");
-        const cid = (idInp?.value || "").trim();
-        const bul = (bInp?.value || "").trim();
-        if (cid) {
-          fd.append("maritimo_ferro_contenedores_ids[]", cid);
-          fd.append("maritimo_ferro_contenedores_bultos[]", bul); // '' => NULL (tu controlador ya lo soporta)
-        }
-      });
+      // En algunas filas quizá exista tipo/peso (si las agregas con template)
+      const tSel = row.querySelector(".contenedor-tipo_mf"); // select
+      const pInp = row.querySelector(".pesoOperacion_mf"); // input
 
+      const cid = (idInp?.value || "").trim();
+      const codigo = (numInp?.value || "").trim().toUpperCase();
+      const bultos = (bInp?.value || "").trim();
+      const tipo = (tSel?.value || "").trim();
+      const peso = (pInp?.value || "").trim();
+
+      // Solo enviamos si hay contenedor seleccionado
+      // (si tu flujo depende del id, esto es correcto)
+      if (!cid) return;
+
+      fd.append("contenedores_id[]", cid);
+      fd.append("contenedores_codigo[]", codigo);
+      fd.append("contenedores_bultos[]", bultos);
+
+      // Estos dos van aunque estén vacíos; tu backend puede decidir si los usa
+      fd.append("contenedores_tipo[]", tipo);
+      fd.append("contenedores_peso[]", peso);
+    });
+
+    // ✅ 5) Enviar
     const x = new XMLHttpRequest();
     x.open("POST", base_url + "Operaciones_maritimo_ferro/actualizar", true);
+
     x.onreadystatechange = function () {
       if (x.readyState !== 4) return;
 
@@ -1060,6 +1063,7 @@
       try {
         res = JSON.parse(x.responseText || "{}");
       } catch (e) {}
+
       if (!res || x.status !== 200) {
         Swal?.fire("Error", "No se pudo actualizar.", "error");
         return;
@@ -1071,9 +1075,11 @@
           res.data?.msg || "Operación actualizada",
           "success",
         );
-        bootstrap?.Modal.getOrCreateInstance(
-          document.getElementById("modalMaritimoFerro"),
-        )?.hide();
+
+        // Cerrar modal
+        bootstrap?.Modal.getOrCreateInstance(modalEl)?.hide();
+
+        // Refrescar lista
         try {
           listar?.();
         } catch (e) {}
@@ -1081,6 +1087,7 @@
         Swal?.fire("Error", res.msg || "No se pudo actualizar", "error");
       }
     };
+
     x.send(fd);
   }
 

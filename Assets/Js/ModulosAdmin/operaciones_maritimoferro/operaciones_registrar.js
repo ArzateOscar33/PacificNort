@@ -62,11 +62,15 @@ function collectContenedoresMF() {
     const bulV = valStr(
       item.querySelector(".contenedor-bultos_mf")?.value || "",
     );
+    const tipo = valStr(item.querySelector(".contenedor-tipo_mf")?.value || "");
+    const peso = valStr(item.querySelector(".pesoOperacion_mf")?.value || "");
     if (id !== "" || num !== "") {
       out.push({
         id: id || 0,
         numero: num,
         bultos: bulV === "" ? null : Number(bulV),
+        tipo: tipo || null,
+        peso: peso === "" ? null : Number(peso),
       });
     }
   });

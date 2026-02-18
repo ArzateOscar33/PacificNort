@@ -782,6 +782,7 @@ class Operaciones_maritimo_ferroModel extends Query
                         peso_total            = ?,
                         transportista_id      = ?,
                         broker_id             = ?
+
                     WHERE id_operacion = ?
                     LIMIT 1";
 
