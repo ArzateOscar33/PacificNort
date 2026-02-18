@@ -144,14 +144,16 @@
             <i data-feather="edit"></i>
             </button>
            
-            <button class="btn btn-sm btn-outline-success"
-              data-bs-toggle="modal"
-              data-bs-target="#modalAsignarFerroCaja"
-              data-mf-action="ferro"
-              data-id="80"
-              data-codigo="LBMF-80">
-              <i data-feather="truck" class="me-1"></i> Caja/Ferro
-            </button>
+ 
+        <button class="btn btn-sm btn-outline-success"
+          data-bs-toggle="modal"
+          data-bs-target="#modalAsignarFerroCaja"
+          data-mf-action="ferro"
+          data-id="${safe(item.id_operacion)}"
+          data-codigo="${safe(item.numero_operacion)}">
+          <i data-feather="truck" class="me-1"></i> Caja/Ferro
+        </button>
+
           </div>
         </td>
       

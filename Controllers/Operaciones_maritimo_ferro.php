@@ -1,5 +1,6 @@
 <?php
 include_once 'Models/Operaciones_maritimo_ferro_contenedoresModel.php';
+include_once 'Models/Operaciones_maritimo_ferro_asignacion_ferroModel.php';
 
 class Operaciones_maritimo_ferro extends Controller
 {
@@ -34,6 +35,8 @@ class Operaciones_maritimo_ferro extends Controller
         $data['puertos']        = $this->model->catalogoPuertos();
         $data['brokers']        = $this->model->getBrokers();
         $data['transportistas'] = $this->model->getTransportistas();
+        $data['ciudades']       = $this->model->listarDestinos();
+
 
         $this->views->getView($this, "Operaciones_maritimo_ferro", $data);
     }
@@ -486,6 +489,7 @@ class Operaciones_maritimo_ferro extends Controller
         $data['puertos']        = $this->model->catalogoPuertos();
         $data['brokers']        = $this->model->getBrokers();
         $data['transportistas'] = $this->model->getTransportistas();
+        $data['ciudades']       = $this->model->listarDestinos();
 
         $this->views->getView('admin/Operaciones_maritimo_ferro', "ver", $data);
     }

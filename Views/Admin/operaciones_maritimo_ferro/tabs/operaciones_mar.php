@@ -417,85 +417,158 @@
      - NO muestra FO-id (interno)
      - Identificador visible: numero_ferro / caja (contenedor físico)
 ========================================================= -->
+
+<!-- Modal: Asignar Ferro/Caja -->
 <div class="modal fade" id="modalAsignarFerroCaja" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
 
+      <!-- ===== Header ===== -->
       <div class="modal-header bg-success text-white">
-        <h5 class="modal-title d-flex align-items-center gap-2">
-          <i data-feather="truck" class="me-1"></i>
-          Asignar Caja/Ferro
+        <h5 class="modal-title d-flex align-items-center gap-2 mb-0">
+          <i data-feather="truck"></i>
+          <span>Asignar Caja/Ferro</span>
           <span class="badge bg-light text-dark ms-2" id="asigFerro_badgeCodigo">—</span>
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
+      <!-- ===== Body ===== -->
       <div class="modal-body">
-        <!-- Hidden refs: los setea el JS cuando abres el modal -->
-        <input type="hidden" id="asigFerro_operacionId" value="">
-        <input type="hidden" id="asigFerro_operacionCodigo" value="">
+
+        <!-- Hidden refs (los setea el JS cuando abres el modal) -->
+        <input type="hidden" id="asigFerro_operacionId" name="asigFerro_operacionId" value="">
+        <input type="hidden" id="asigFerro_operacionCodigo" name="asigFerro_operacionCodigo" value="">
 
         <div class="row g-3">
 
           <!-- =======================
-               Columna izquierda: asignar
+               Izquierda: Vincular
           ======================== -->
           <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
               <div class="card-body">
 
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                   <div class="fw-semibold">
-                    <i data-feather="link" class="me-1"></i> Vincular esta operación a un Ferro/Caja
-                  </div>
-                  <span class="text-muted small">No se muestra FO (interno)</span>
-                </div>
-
-                <div class="row g-2 align-items-end">
-                  <!-- Ferro/Caja input -->
-                  <div class="col-md-7 position-relative">
-                    <label class="form-label">Ferro/Caja</label>
-                    <input type="text" class="form-control" id="asigFerro_inputNumero"
-                      placeholder="Ej. FXEU12345 / CAJA-001" autocomplete="off">
-                    <div id="asigFerro_sugerencias"
-                      class="list-group"
-                      style="position:absolute; z-index:1060; width:100%; display:none;"></div>
-
-
-                  </div>
-
-                  <!-- Bultos asignados -->
-                  <div class="col-md-5">
-                    <label class="form-label">Bultos asignados</label>
-                    <input type="number" min="0" step="1" class="form-control" id="asigFerro_inputBultos"
-                      placeholder="0">
-
-                  </div>
-
-                  <!-- Fecha salida-->
-                  <div class="col-md-6 mt-2">
-                    <label class="form-label">Fecha salida</label>
-                    <input type="date" class="form-control" id="asigFerro_inputFechaSalida">
-
-                  </div>
-
-                  <!-- Destino/Notas rápidas (opcional) -->
-                  <div class="col-md-6 mt-2">
-                    <label class="form-label">Notas (opcional)</label>
-                    <input type="text" class="form-control" id="asigFerro_inputNotas" maxlength="255"
-                      placeholder="Ej. Sale por patio 3 / Transfer a SD">
-                  </div>
-
-                  <!-- Botones -->
-                  <div class="col-12 d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-success" id="asigFerro_btnVincular">
-                      <i data-feather="check-circle" class="me-1"></i> Vincular
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" id="asigFerro_btnLimpiar">
-                      <i data-feather="x" class="me-1"></i> Limpiar
-                    </button>
+                    <i data-feather="link" class="me-1"></i>
+                    Vincular esta operación a un Ferro/Caja
                   </div>
                 </div>
+
+                <!-- Form de captura -->
+                <form id="asigFerro_formVincular" autocomplete="off">
+                  <div class="row g-2">
+
+                    <!-- Ferro/Caja -->
+                    <div class="col-md-6 position-relative">
+                      <label class="form-label">Ferro/Caja</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="asigFerro_inputNumero"
+                        name="asigFerro_numero"
+                        placeholder="Ej. FXEU12345 / CAJA-001"
+                        autocomplete="off">
+                      <div
+                        id="asigFerro_sugerencias"
+                        class="list-group shadow-sm"
+                        style="position:absolute; z-index:1060; width:100%; display:none;"></div>
+                    </div>
+
+                    <!-- Bultos -->
+                    <div class="col-md-6">
+                      <label class="form-label">Bultos asignados</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        class="form-control"
+                        id="asigFerro_inputBultos"
+                        name="asigFerro_bultos"
+                        placeholder="0">
+                    </div>
+
+                    <!-- Empresa transportista -->
+                    <div class="col-md-6">
+                      <label class="form-label">Empresa transportista</label>
+                      <select
+                        id="asigFerro_empresaTransportista"
+                        name="asigFerro_empresaTransportista"
+                        class="form-control">
+                        <option value="">Seleccione...</option>
+                        <?php if (!empty($data['transportistas'])): ?>
+                          <?php foreach ($data['transportistas'] as $et): ?>
+                            <option value="<?= (int)$et['id_transportista']; ?>">
+                              <?= htmlspecialchars($et['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </select>
+                    </div>
+
+                    <!-- Destino -->
+                    <div class="col-md-6">
+                      <label class="form-label">Destino</label>
+                      <?php if (empty($data['ciudades'])): ?>
+                        <div class="alert alert-warning py-2">No llegaron ciudades (data['ciudades'] vacío).</div>
+                      <?php endif; ?>
+
+                      <select id="asigFerro_destino" name="asigFerro_destino" class="form-control">
+                        <option value="">Seleccione...</option>
+                        <?php if (!empty($data['ciudades'])): ?>
+                          <?php foreach ($data['ciudades'] as $c): ?>
+                            <option value="<?= (int)$c['id_ciudad']; ?>">
+                              <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </select>
+                    </div>
+
+                    <!-- Fechas -->
+                    <div class="col-md-6">
+                      <label class="form-label">Fecha salida</label>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="asigFerro_inputFechaSalida"
+                        name="asigFerro_fecha_salida">
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Fecha carga</label>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="asigFerro_inputFechaCarga"
+                        name="asigFerro_fecha_carga">
+                    </div>
+
+                    <!-- Notas -->
+                    <div class="col-12">
+                      <label class="form-label">Notas (opcional)</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="asigFerro_inputNotas"
+                        name="asigFerro_notas"
+                        maxlength="255"
+                        placeholder="Ej. Sale por patio 3 / Transfer a SD">
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="col-12 d-flex gap-2 pt-2">
+                      <button type="button" class="btn btn-success" id="asigFerro_btnVincular">
+                        <i data-feather="check-circle" class="me-1"></i> Vincular
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" id="asigFerro_btnLimpiar">
+                        <i data-feather="x" class="me-1"></i> Limpiar
+                      </button>
+                    </div>
+
+                  </div>
+                </form>
 
                 <hr class="my-3">
 
@@ -512,8 +585,8 @@
                     <thead class="table-light">
                       <tr class="text-center">
                         <th class="text-start">Ferro/Caja</th>
-                        <th style="width:130px;">Bultos</th>
-                        <th style="width:140px;">Fecha salida</th>
+                        <th style="width:120px;">Bultos</th>
+                        <th style="width:140px;">F. salida</th>
                         <th style="width:90px;">Acción</th>
                       </tr>
                     </thead>
@@ -532,20 +605,22 @@
           </div>
 
           <!-- =======================
-               Columna derecha: consolidado por ferro
+               Derecha: Ops del Ferro/Caja
           ======================== -->
           <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
               <div class="card-body">
 
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center gap-2">
                   <div class="fw-semibold">
                     <i data-feather="layers" class="me-1"></i> Operaciones en el Ferro/Caja seleccionado
                   </div>
                   <span class="badge bg-light text-dark" id="asigFerro_badgeFerroSel">—</span>
                 </div>
 
-
+                <div class="text-muted small mt-1">
+                  Selecciona un Ferro/Caja desde la lista de la izquierda para ver su consolidado.
+                </div>
 
                 <hr class="my-3">
 
@@ -569,8 +644,6 @@
                   </table>
                 </div>
 
-
-
               </div>
             </div>
           </div>
@@ -578,8 +651,8 @@
         </div><!-- row -->
       </div><!-- modal-body -->
 
+      <!-- ===== Footer ===== -->
       <div class="modal-footer d-flex justify-content-between">
-
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i data-feather="x-circle" class="me-1"></i> Cerrar
         </button>
@@ -589,8 +662,10 @@
   </div>
 </div>
 
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_llenado_catalogo.js"></script>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/operaciones_registrar.js"></script>
+
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_registrar.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/asignacion_ferro_catalogo.js"></script>
 <script>
   // Mayúsculas automáticas (MF) para contenedores (incluye filas agregadas por template)
   document.getElementById("contenedoresRepeater_mf").addEventListener("input", function(e) {

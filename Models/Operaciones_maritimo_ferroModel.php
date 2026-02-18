@@ -895,4 +895,12 @@ class Operaciones_maritimo_ferroModel extends Query
                 ORDER BY nombre";
         return $this->selectAll($sql) ?: [];
     }
+    public function listarDestinos(): array
+    {
+        $sql = "SELECT id_ciudad,nombre_ciudad 
+                FROM ciudades   
+                WHERE estatus = 1 
+                ORDER BY nombre_ciudad";
+        return $this->selectAll($sql) ?: [];
+    }
 }
