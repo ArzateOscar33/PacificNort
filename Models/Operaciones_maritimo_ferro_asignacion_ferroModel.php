@@ -572,6 +572,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
                     ofe.destino_id,
                     ci.nombre_ciudad AS destino_nombre,
                     ofe.transportista_id,
+                    ofe.comentarios AS notas,
                     t.nombre AS transportista_nombre,
                     SUM(cmf.bultos_asignados) AS bultos
                 FROM contenedor_maritimo_ferro cmf
@@ -594,24 +595,48 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
     public function listarOperacionesEnFerroFecha(string $numeroFerro, string $fecha): array
     {
         $sql = "SELECT DISTINCT
-                    o.id_operacion,
-                    o.numero_operacion AS codigo,
-                    c.nombre AS cliente,
-                    o.eta,
-                    st.nombre AS subtipo
-                FROM operaciones_ferroviarias ofe
-                INNER JOIN contenedores_fisicos cf ON cf.id_fisico = ofe.contenedor_fisico_id
-                INNER JOIN contenedor_maritimo_ferro cmf ON cmf.operacion_ferro_id = ofe.id_operacion_ferro AND cmf.estatus = 1
-                INNER JOIN contenedores_maritimos_operacion cmo ON cmo.id = cmf.cont_maritimo_operacion_id
-                INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
-                LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
-                LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-                WHERE cf.numero_ferro = ?
-                  AND ofe.fecha = ?
-                ORDER BY o.numero_operacion ASC";
+                o.id_operacion,
+                o.numero_operacion AS codigo,
+                c.nombre AS cliente,
+                o.eta,
+                st.nombre AS subtipo,
+
+                cm.numero_contenedor AS contenedor_maritimo,
+                cmo.bultos           AS bultos_totales,
+                cmf.bultos_asignados AS bultos_asignados
+
+            FROM operaciones_ferroviarias ofe
+            INNER JOIN contenedores_fisicos cf
+                ON cf.id_fisico = ofe.contenedor_fisico_id
+
+            INNER JOIN contenedor_maritimo_ferro cmf
+                ON cmf.operacion_ferro_id = ofe.id_operacion_ferro
+               AND cmf.estatus = 1
+
+            INNER JOIN contenedores_maritimos_operacion cmo
+                ON cmo.id = cmf.cont_maritimo_operacion_id
+
+            INNER JOIN contenedores_maritimos cm
+                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+
+            INNER JOIN operaciones o
+                ON o.id_operacion = cmo.operacion_id
+
+            LEFT JOIN clientes c
+                ON c.id_cliente = o.cliente_id
+
+            LEFT JOIN subtipos_operacion st
+                ON st.id_subtipo = o.subtipo_operacion_id
+
+            WHERE cf.numero_ferro = ?
+              AND ofe.fecha = ?
+
+            ORDER BY o.numero_operacion ASC";
+
         $rows = $this->selectAll($sql, [trim($numeroFerro), $fecha]);
         return is_array($rows) ? $rows : [];
     }
+
 
     /**
      * Para tu tabla principal: obtener “la asignación más reciente” de una operación

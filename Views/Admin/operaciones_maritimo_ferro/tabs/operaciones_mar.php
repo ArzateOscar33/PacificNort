@@ -632,8 +632,9 @@
                       <tr class="text-center">
                         <th style="width:140px;">Código</th>
                         <th class="text-start">Cliente</th>
-                        <th style="width:120px;">ETA</th>
-                        <th style="width:110px;">Subtipo</th>
+                        <th style="width:120px;">Contenedor</th>
+                        <th style="width:110px;">Bultos/Cartones/Rollos Totales</th>
+                        <th style="width:110px;">Bultos/Cartones/Rollos Enviados</th>
                       </tr>
                     </thead>
                     <tbody id="asigFerro_tbOpsEnFerro">

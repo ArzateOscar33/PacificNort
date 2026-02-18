@@ -5,11 +5,17 @@
   const BASE_URL =
     window.BASE_URL || (typeof base_url !== "undefined" ? base_url : "");
 
+  // === ENDPOINTS (controlador) ===
   const EP_LISTAR_FERROS =
     BASE_URL +
     "Operaciones_maritimo_ferro_asignacion_ferro/listarFerrosOperacion";
+
   const EP_LISTAR_OPS =
     BASE_URL + "Operaciones_maritimo_ferro_asignacion_ferro/listarOpsEnFerro";
+
+  const EP_REGISTRAR =
+    BASE_URL +
+    "Operaciones_maritimo_ferro_asignacion_ferro/registrarVinculacion";
 
   // === Refs modal (IDs reales de tu HTML) ===
   const modalEl = document.getElementById("modalAsignarFerroCaja");
@@ -17,6 +23,7 @@
 
   const hidOperacionId = document.getElementById("asigFerro_operacionId");
   const hidOperacionCodigo = document.getElementById(
+    "asigFerro_operacionCodigo",
   );
 
   const badgeCodigo = document.getElementById("asigFerro_badgeCodigo");
@@ -29,11 +36,121 @@
 
   const elCountFerros = document.getElementById("asigFerro_countFerros");
 
+  // === Form inputs (lado izquierdo) ===
+  const inpNumero = document.getElementById("asigFerro_inputNumero");
+  const inpBultos = document.getElementById("asigFerro_inputBultos");
+  const selTransportista = document.getElementById(
+    "asigFerro_empresaTransportista",
+  );
+  const selDestino = document.getElementById("asigFerro_destino");
+  const inpFechaSalida = document.getElementById("asigFerro_inputFechaSalida");
+  const inpFechaCarga = document.getElementById("asigFerro_inputFechaCarga");
+  const inpNotas = document.getElementById("asigFerro_inputNotas");
+
+  const btnVincular = document.getElementById("asigFerro_btnVincular");
+  const btnLimpiar = document.getElementById("asigFerro_btnLimpiar");
+
   let currentOperacionId = 0;
   let currentOperacionCodigo = "";
 
+  // ===== Estado de edición =====
+  const editState = {
+    isEdit: false,
+    foId: 0,
+    numeroFerro: "",
+    fechaSalida: "",
+    rowEl: null,
+  };
+
   // ===== Helpers =====
   const safe = (v) => (v === undefined || v === null ? "" : String(v));
+
+  function setBtnText(el, html) {
+    if (!el) return;
+    el.innerHTML = html;
+  }
+
+  function setInputsLockForEdit(lock) {
+    // Reglas:
+    // - FO = (ferro, fecha_salida) => bloquear para no “crear otro” FO
+    // - destino inmutable => bloquear en edición
+    if (inpNumero) inpNumero.readOnly = !!lock;
+    if (inpFechaSalida) inpFechaSalida.disabled = !!lock;
+    if (selDestino) selDestino.disabled = !!lock;
+  }
+
+  function enterEditModeFromRow(row) {
+    if (!row) return;
+
+    // Tomamos datos del dataset de la fila
+    const numeroFerro = safe(row.dataset.numeroFerro).trim();
+    const fechaSalida = safe(row.dataset.fecha).trim();
+    const fechaCarga = safe(row.dataset.fechaCarga).trim();
+    const bultos = safe(row.dataset.bultos).trim();
+    const destinoId = safe(row.dataset.destinoId).trim();
+    const transportistaId = safe(row.dataset.transportistaId).trim();
+    const foId = Number(row.dataset.foId || 0);
+    const notas = safe(row.dataset.notas).trim();
+
+    // Llenar inputs
+    if (inpNumero) inpNumero.value = numeroFerro;
+    if (inpFechaSalida) inpFechaSalida.value = fechaSalida;
+    if (inpFechaCarga) inpFechaCarga.value = fechaCarga || "";
+    if (inpBultos) inpBultos.value = bultos !== "" ? bultos : "0";
+    if (selDestino) selDestino.value = destinoId || "";
+    if (selTransportista) selTransportista.value = transportistaId || "";
+    if (inpNotas) inpNotas.value = notas || "";
+
+    // Estado
+    editState.isEdit = true;
+    editState.foId = foId;
+    editState.numeroFerro = numeroFerro;
+    editState.fechaSalida = fechaSalida;
+    editState.rowEl = row;
+
+    // UI
+    setInputsLockForEdit(true);
+
+    // Botón Vincular => Actualizar
+    setBtnText(
+      btnVincular,
+      `<i data-feather="save" class="me-1"></i> Actualizar`,
+    );
+    btnVincular?.classList.remove("btn-success");
+    btnVincular?.classList.add("btn-primary");
+
+    // Resaltado fila
+    Array.from(tbFerrosOperacion?.querySelectorAll("tr") || []).forEach((tr) =>
+      tr.classList.remove("table-active"),
+    );
+    row.classList.add("table-active");
+
+    // Foco útil
+    inpBultos?.focus();
+
+    // Re-render icons si usas feather
+    if (window.feather?.replace) window.feather.replace();
+  }
+
+  function exitEditMode() {
+    editState.isEdit = false;
+    editState.foId = 0;
+    editState.numeroFerro = "";
+    editState.fechaSalida = "";
+    editState.rowEl = null;
+
+    setInputsLockForEdit(false);
+
+    // Botón vuelve a Vincular
+    setBtnText(
+      btnVincular,
+      `<i data-feather="check-circle" class="me-1"></i> Vincular`,
+    );
+    btnVincular?.classList.remove("btn-primary");
+    btnVincular?.classList.add("btn-success");
+
+    if (window.feather?.replace) window.feather.replace();
+  }
 
   function xhrGET(url, cb) {
     const x = new XMLHttpRequest();
@@ -50,15 +167,32 @@
     x.send();
   }
 
+  function xhrPOST(url, fd, cb) {
+    const x = new XMLHttpRequest();
+    x.open("POST", url, true);
+    x.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      let payload = null;
+      try {
+        payload = JSON.parse(x.responseText || "{}");
+      } catch (e) {}
+      cb(x.status, payload, x.responseText);
+    };
+    x.send(fd);
+  }
+
   function renderLoadingLeft() {
     if (!tbFerrosOperacion) return;
-    tbFerrosOperacion.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Cargando...</td></tr>`;
+    tbFerrosOperacion.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">Cargando...</td></tr>`;
     if (elCountFerros) elCountFerros.textContent = "0";
   }
 
   function renderEmptyLeft(msg) {
     if (!tbFerrosOperacion) return;
-    tbFerrosOperacion.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">${msg || "Sin vínculos todavía."}</td></tr>`;
+    tbFerrosOperacion.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">${
+      msg || "Sin vínculos todavía."
+    }</td></tr>`;
     if (elCountFerros) elCountFerros.textContent = "0";
   }
 
@@ -69,7 +203,19 @@
 
   function renderEmptyRight(msg) {
     if (!tbOpsEnFerro) return;
-    tbOpsEnFerro.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">${msg || "Selecciona un Ferro/Caja de la lista izquierda."}</td></tr>`;
+    tbOpsEnFerro.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">${
+      msg || "Selecciona un Ferro/Caja de la lista izquierda."
+    }</td></tr>`;
+  }
+
+  function limpiarFormulario() {
+    if (inpNumero) inpNumero.value = "";
+    if (inpBultos) inpBultos.value = "";
+    if (selTransportista) selTransportista.value = "";
+    if (selDestino) selDestino.value = "";
+    if (inpFechaSalida) inpFechaSalida.value = "";
+    if (inpFechaCarga) inpFechaCarga.value = "";
+    if (inpNotas) inpNotas.value = "";
   }
 
   // ===== API: listar ferros de operación (izquierda) =====
@@ -89,7 +235,6 @@
         renderEmptyLeft("Error al cargar vínculos.");
         return;
       }
-
       if (res.status !== "success") {
         renderEmptyLeft(res.msg || "No se pudieron cargar vínculos.");
         return;
@@ -103,40 +248,59 @@
 
       if (elCountFerros) elCountFerros.textContent = String(rows.length);
 
-      // Tu query devuelve:
-      // fo_id, numero_ferro, fecha, destino_nombre, transportista_nombre, bultos
       tbFerrosOperacion.innerHTML = "";
 
       rows.forEach((r) => {
+        const foId = Number(r.fo_id || 0);
         const numero = safe(r.numero_ferro);
-        const fecha = safe(r.fecha);
+        const transportista = safe(r.transportista_nombre) || "—";
+        const fecha = safe(r.fecha); // salida
+        const fechaCarga = safe(r.fecha_carga); // carga
         const bultos = safe(r.bultos);
         const destino = safe(r.destino_nombre) || "—";
+        const destinoId = safe(r.destino_id || "");
+        const transportistaId = safe(r.transportista_id || "");
+
+        // IMPORTANTE:
+        // Tu backend ya lo modificaste: asegúrate que venga "notas" o "comentarios" (según tu query).
+        // Aquí soportamos ambos nombres.
+        const notas = safe(r.notas || r.comentarios || "");
 
         const tr = document.createElement("tr");
         tr.classList.add("text-center");
         tr.style.cursor = "pointer";
 
-        // Guardamos ferro+fecha en dataset para cargar el lado derecho
+        // Dataset para lado derecho
         tr.dataset.numeroFerro = numero;
         tr.dataset.fecha = fecha;
+
+        // Dataset para editar
+        tr.dataset.foId = String(foId);
+        tr.dataset.destinoId = destinoId;
+        tr.dataset.transportistaId = transportistaId;
+        tr.dataset.fechaCarga = fechaCarga;
+        tr.dataset.bultos = bultos;
+        tr.dataset.notas = notas;
 
         tr.innerHTML = `
           <td class="text-start">
             <div class="fw-semibold">${numero}</div>
             <div class="small text-muted">Destino: ${destino}</div>
           </td>
+          <td>${transportista}</td>
           <td>${bultos}</td>
+          <td class="text-nowrap">${fechaCarga || "—"}</td>
           <td class="text-nowrap">${fecha}</td>
-          <td>
-            <button type="button" class="btn btn-sm btn-outline-primary asigFerro_btnVerOps">
-              Ver
-            </button>
+          <td class="text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-primary asigFerro_btnVerOps">Ver</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-1 asigFerro_btnEdit">Editar</button>
           </td>
         `;
 
         tbFerrosOperacion.appendChild(tr);
       });
+
+      if (window.feather?.replace) window.feather.replace();
     });
   }
 
@@ -167,7 +331,6 @@
         renderEmptyRight("Error al cargar operaciones.");
         return;
       }
-
       if (res.status !== "success") {
         renderEmptyRight(res.msg || "No se pudieron cargar operaciones.");
         return;
@@ -179,8 +342,6 @@
         return;
       }
 
-      // Tu query devuelve:
-      // id_operacion, codigo, cliente, eta, subtipo
       tbOpsEnFerro.innerHTML = "";
       rows.forEach((r) => {
         const tr = document.createElement("tr");
@@ -188,52 +349,173 @@
         tr.innerHTML = `
           <td class="text-nowrap">${safe(r.codigo)}</td>
           <td class="text-start">${safe(r.cliente) || "—"}</td>
-          <td class="text-nowrap">${safe(r.eta) || "—"}</td>
-          <td class="text-nowrap">${safe(r.subtipo) || "—"}</td>
+          <td class="text-nowrap">${safe(r.contenedor_maritimo) || "—"}</td>
+          <td class="text-nowrap">${safe(r.bultos_totales) || "—"}</td>
+          <td class="text-nowrap">${safe(r.bultos_asignados) || "—"}</td>
         `;
         tbOpsEnFerro.appendChild(tr);
       });
     });
   }
 
+  // ===== Registrar / Actualizar (mismo endpoint) =====
+  function registrarVinculacion() {
+    if (!currentOperacionId) {
+      Swal?.fire("Error", "Falta operacion_id.", "error");
+      return;
+    }
+
+    const numeroFerro = (inpNumero?.value || "").trim();
+    const bultos = Number(inpBultos?.value || 0);
+    const destinoId = Number(selDestino?.value || 0);
+    const transportistaId = Number(selTransportista?.value || 0);
+    const fechaSalida = (inpFechaSalida?.value || "").trim();
+    const fechaCarga = (inpFechaCarga?.value || "").trim();
+    const notas = (inpNotas?.value || "").trim();
+
+    // Validaciones mínimas
+    if (!numeroFerro) {
+      Swal?.fire("Faltan datos", "Captura el Ferro/Caja.", "warning");
+      inpNumero?.focus();
+      return;
+    }
+    if (!fechaSalida) {
+      Swal?.fire("Faltan datos", "Selecciona fecha de salida.", "warning");
+      inpFechaSalida?.focus();
+      return;
+    }
+    if (!destinoId) {
+      Swal?.fire("Faltan datos", "Selecciona destino.", "warning");
+      selDestino?.focus();
+      return;
+    }
+    if (!Number.isFinite(bultos) || bultos < 0) {
+      Swal?.fire("Dato inválido", "Bultos debe ser 0 o mayor.", "warning");
+      inpBultos?.focus();
+      return;
+    }
+
+    // Extra: si estás en edición, y por alguna razón alguien habilitó los campos clave
+    // (o se editó desde consola), evitamos que se cambien.
+    if (editState.isEdit) {
+      if (
+        numeroFerro !== editState.numeroFerro ||
+        fechaSalida !== editState.fechaSalida
+      ) {
+        Swal?.fire(
+          "No permitido",
+          "En edición no puedes cambiar Ferro/Caja ni Fecha salida (definen el viaje). Usa Limpiar y crea otro viaje.",
+          "warning",
+        );
+        return;
+      }
+    }
+
+    const fd = new FormData();
+    fd.append("operacion_id", String(currentOperacionId));
+    fd.append("numero_ferro", numeroFerro);
+    fd.append("bultos", String(bultos));
+    fd.append("destino_id", String(destinoId));
+    fd.append("transportista_id", String(transportistaId || 0));
+    fd.append("fecha_salida", fechaSalida);
+    fd.append("fecha_carga", fechaCarga);
+    fd.append("notas", notas);
+
+    btnVincular && (btnVincular.disabled = true);
+
+    xhrPOST(EP_REGISTRAR, fd, (status, res, raw) => {
+      btnVincular && (btnVincular.disabled = false);
+
+      if (status !== 200 || !res) {
+        console.error("registrarVinculacion error:", raw);
+        Swal?.fire("Error", "No se pudo guardar.", "error");
+        return;
+      }
+
+      if (res.status === "success") {
+        const msgOk =
+          res.msg ||
+          (editState.isEdit ? "Actualizado." : "Vinculación registrada.");
+        Swal?.fire("Listo", msgOk, "success");
+
+        // Salimos de edición y refrescamos lista
+        exitEditMode();
+        limpiarFormulario();
+        cargarFerrosDeOperacion(currentOperacionId);
+      } else {
+        Swal?.fire("Error", res.msg || "No se pudo guardar.", "error");
+      }
+    });
+  }
+
   // ===== Eventos =====
 
-  // 1) Al abrir modal: toma id/código desde el botón que lo abrió
+  // Al abrir modal: toma id/código desde el botón que lo abrió
   modalEl.addEventListener("show.bs.modal", (ev) => {
-    const btn = ev.relatedTarget; // botón "Caja/Ferro" desde la tabla MF
+    const btn = ev.relatedTarget;
     currentOperacionId = Number(btn?.getAttribute("data-id") || 0);
     currentOperacionCodigo = String(btn?.getAttribute("data-codigo") || "");
 
     if (hidOperacionId) hidOperacionId.value = String(currentOperacionId || "");
     if (hidOperacionCodigo)
       hidOperacionCodigo.value = String(currentOperacionCodigo || "");
-
     if (badgeCodigo) badgeCodigo.textContent = currentOperacionCodigo || "—";
 
-    // Carga izquierda
+    exitEditMode();
+    limpiarFormulario();
     cargarFerrosDeOperacion(currentOperacionId);
   });
 
-  // 2) Click en una fila izquierda o botón "Ver": carga derecha
+  // Click en tabla izquierda:
+  // - Si clic en Editar => cargar inputs (modo edición)
+  // - Si clic normal => cargar derecha
   tbFerrosOperacion?.addEventListener("click", (e) => {
+    const btnEdit = e.target.closest(".asigFerro_btnEdit");
+    const btnVer = e.target.closest(".asigFerro_btnVerOps");
     const row = e.target.closest("tr");
     if (!row) return;
 
-    const numeroFerro = row.dataset.numeroFerro || "";
-    const fecha = row.dataset.fecha || "";
+    // EDITAR
+    if (btnEdit) {
+      e.preventDefault();
+      e.stopPropagation();
+      enterEditModeFromRow(row);
+      return;
+    }
 
-    // resalta seleccionado (visual)
-    Array.from(tbFerrosOperacion.querySelectorAll("tr")).forEach((tr) =>
-      tr.classList.remove("table-active"),
-    );
-    row.classList.add("table-active");
+    // VER (y también click normal de fila)
+    if (btnVer || row) {
+      const numeroFerro = row.dataset.numeroFerro || "";
+      const fecha = row.dataset.fecha || "";
 
-    cargarOperacionesEnFerro(numeroFerro, fecha);
+      Array.from(tbFerrosOperacion.querySelectorAll("tr")).forEach((tr) =>
+        tr.classList.remove("table-active"),
+      );
+      row.classList.add("table-active");
+
+      cargarOperacionesEnFerro(numeroFerro, fecha);
+    }
   });
 
-  // Exponer para debug
+  // Botón Vincular / Actualizar
+  btnVincular?.addEventListener("click", (e) => {
+    e.preventDefault();
+    registrarVinculacion();
+  });
+
+  // Botón Limpiar:
+  // - si estás editando, sale de edición
+  // - limpia inputs
+  btnLimpiar?.addEventListener("click", (e) => {
+    e.preventDefault();
+    exitEditMode();
+    limpiarFormulario();
+    inpNumero?.focus();
+  });
+
   window.MFAsignacionFerroModal = {
     refresh: () => cargarFerrosDeOperacion(currentOperacionId),
     getOperacionId: () => currentOperacionId,
+    isEditing: () => editState.isEdit,
   };
 })();
