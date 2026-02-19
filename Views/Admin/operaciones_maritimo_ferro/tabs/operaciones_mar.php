@@ -92,6 +92,14 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+
+  .badge-asignacion.is-linked {
+    outline: 2px solid rgba(255, 255, 255, .95);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, .55);
+    /* azul bootstrap */
+    transform: scaleY(1.2) scaleX(1.2) translateY(-1px);
+    transition: 0.2s ease-in;
+  }
 </style>
 
 <div class="container py-4 col-md-12">

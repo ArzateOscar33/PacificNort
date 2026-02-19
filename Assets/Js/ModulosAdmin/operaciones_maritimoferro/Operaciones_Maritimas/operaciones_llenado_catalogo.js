@@ -103,6 +103,46 @@
       </tr>`;
   }
 
+  function renderAsignacionesCols(item) {
+    const ferrosStr = (item.ferros_cajas || "").trim();
+    const destinosStr = (item.destinos_ferros_cajas || "").trim();
+    const fechasStr = (item.fechas_salida_ferros_cajas || "").trim();
+
+    if (!ferrosStr) return { ferros: "-", destinos: "-", fechas: "-" };
+
+    const ferros = ferrosStr
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const destinos = destinosStr
+      ? destinosStr.split(",").map((s) => s.trim())
+      : [];
+    const fechas = fechasStr ? fechasStr.split(",").map((s) => s.trim()) : [];
+
+    const opId = item.id_operacion || "";
+
+    const mkBadge = (txt, i) => `
+    <span
+      class="badge badge-asignacion bg-primary text-white w-100 text-start text-truncate mt-1"
+      data-op="${safe(opId)}"
+      data-asig="${i}"
+      title="${safe(txt)}"
+    >${safe(txt)}</span>
+  `;
+
+    const mkStack = (arr) => `
+    <div class="d-flex flex-column align-items-stretch">
+      ${arr.join("")}
+    </div>
+  `;
+
+    return {
+      ferros: mkStack(ferros.map((v, i) => mkBadge(v || "—", i))),
+      destinos: mkStack(ferros.map((_, i) => mkBadge(destinos[i] || "—", i))),
+      fechas: mkStack(ferros.map((_, i) => mkBadge(fechas[i] || "—", i))),
+    };
+  }
+
   function renderTabla(rows) {
     if (!tablaBody) return;
     tablaBody.innerHTML = "";
@@ -113,6 +153,7 @@
     }
     rows.forEach((item) => {
       const tr = document.createElement("tr");
+      const asig = renderAsignacionesCols(item);
       tr.classList.add("text-center");
       tr.innerHTML = `
         <td class="sticky-col sticky-col-1 text-center ">${safe(item.numero_operacion)}</td>
@@ -136,9 +177,10 @@
         <td>${safe(item.estatus)}</td>
         <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
         <td>${safe(item.cita_puerto) || "-"}</td>
-        <td>${safe(item.ferro_caja)}</td>
-        <td>${safe(item.destino_ferro_caja)}</td>
-        <td>${safe(item.fecha_salida_ferro_caja)}</td>  
+
+        <td>${asig.ferros} </td>
+        <td>${asig.destinos}</td>
+        <td>${asig.fechas}</td>
         <td>-</td>
         <td>
         <div class="d-flex justify-content-center">
@@ -166,6 +208,43 @@
     });
     if (window.feather) feather.replace();
   }
+
+  (function bindAsignacionesHover() {
+    let lastKey = null;
+
+    document.addEventListener("mouseover", (e) => {
+      const badge = e.target.closest(".badge-asignacion");
+      if (!badge) return;
+
+      const op = badge.getAttribute("data-op");
+      const i = badge.getAttribute("data-asig");
+      const key = `${op}|${i}`;
+      if (key === lastKey) return;
+      lastKey = key;
+
+      document
+        .querySelectorAll(
+          `.badge-asignacion[data-op="${CSS.escape(op)}"][data-asig="${CSS.escape(i)}"]`,
+        )
+        .forEach((el) => el.classList.add("is-linked"));
+    });
+
+    document.addEventListener("mouseout", (e) => {
+      const badge = e.target.closest(".badge-asignacion");
+      if (!badge) return;
+
+      const op = badge.getAttribute("data-op");
+      const i = badge.getAttribute("data-asig");
+
+      document
+        .querySelectorAll(
+          `.badge-asignacion[data-op="${CSS.escape(op)}"][data-asig="${CSS.escape(i)}"]`,
+        )
+        .forEach((el) => el.classList.remove("is-linked"));
+
+      lastKey = null;
+    });
+  })();
 
   function renderResumen(meta) {
     if (!metaResumen) return;
