@@ -71,9 +71,6 @@
   }
 
   function setInputsLockForEdit(lock) {
-    // Reglas:
-    // - FO = (ferro, fecha_salida) => bloquear para no “crear otro” FO
-    // - destino inmutable => bloquear en edición
     if (inpNumero) inpNumero.readOnly = !!lock;
     if (inpFechaSalida) inpFechaSalida.disabled = !!lock;
     if (selDestino) selDestino.disabled = !!lock;
@@ -82,7 +79,6 @@
   function enterEditModeFromRow(row) {
     if (!row) return;
 
-    // Tomamos datos del dataset de la fila
     const numeroFerro = safe(row.dataset.numeroFerro).trim();
     const fechaSalida = safe(row.dataset.fecha).trim();
     const fechaCarga = safe(row.dataset.fechaCarga).trim();
@@ -92,7 +88,6 @@
     const foId = Number(row.dataset.foId || 0);
     const notas = safe(row.dataset.notas).trim();
 
-    // Llenar inputs
     if (inpNumero) inpNumero.value = numeroFerro;
     if (inpFechaSalida) inpFechaSalida.value = fechaSalida;
     if (inpFechaCarga) inpFechaCarga.value = fechaCarga || "";
@@ -101,17 +96,14 @@
     if (selTransportista) selTransportista.value = transportistaId || "";
     if (inpNotas) inpNotas.value = notas || "";
 
-    // Estado
     editState.isEdit = true;
     editState.foId = foId;
     editState.numeroFerro = numeroFerro;
     editState.fechaSalida = fechaSalida;
     editState.rowEl = row;
 
-    // UI
     setInputsLockForEdit(true);
 
-    // Botón Vincular => Actualizar
     setBtnText(
       btnVincular,
       `<i data-feather="save" class="me-1"></i> Actualizar`,
@@ -119,16 +111,12 @@
     btnVincular?.classList.remove("btn-success");
     btnVincular?.classList.add("btn-primary");
 
-    // Resaltado fila
     Array.from(tbFerrosOperacion?.querySelectorAll("tr") || []).forEach((tr) =>
       tr.classList.remove("table-active"),
     );
     row.classList.add("table-active");
 
-    // Foco útil
     inpBultos?.focus();
-
-    // Re-render icons si usas feather
     if (window.feather?.replace) window.feather.replace();
   }
 
@@ -141,7 +129,6 @@
 
     setInputsLockForEdit(false);
 
-    // Botón vuelve a Vincular
     setBtnText(
       btnVincular,
       `<i data-feather="check-circle" class="me-1"></i> Vincular`,
@@ -190,22 +177,18 @@
 
   function renderEmptyLeft(msg) {
     if (!tbFerrosOperacion) return;
-    tbFerrosOperacion.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">${
-      msg || "Sin vínculos todavía."
-    }</td></tr>`;
+    tbFerrosOperacion.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">${msg || "Sin vínculos todavía."}</td></tr>`;
     if (elCountFerros) elCountFerros.textContent = "0";
   }
 
   function renderLoadingRight() {
     if (!tbOpsEnFerro) return;
-    tbOpsEnFerro.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Cargando...</td></tr>`;
+    tbOpsEnFerro.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>`;
   }
 
   function renderEmptyRight(msg) {
     if (!tbOpsEnFerro) return;
-    tbOpsEnFerro.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">${
-      msg || "Selecciona un Ferro/Caja de la lista izquierda."
-    }</td></tr>`;
+    tbOpsEnFerro.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">${msg || "Selecciona un Ferro/Caja de la lista izquierda."}</td></tr>`;
   }
 
   function limpiarFormulario() {
@@ -225,6 +208,9 @@
     renderLoadingLeft();
     renderEmptyRight("Selecciona un Ferro/Caja de la lista izquierda.");
     if (badgeFerroSel) badgeFerroSel.textContent = "—";
+
+    // 👇 al cambiar operación, también resetea trazabilidad
+    window.MFTrazabilidad?.reset?.();
 
     const url =
       EP_LISTAR_FERROS + "?operacion_id=" + encodeURIComponent(operacionId);
@@ -247,7 +233,6 @@
       }
 
       if (elCountFerros) elCountFerros.textContent = String(rows.length);
-
       tbFerrosOperacion.innerHTML = "";
 
       rows.forEach((r) => {
@@ -260,28 +245,23 @@
         const destino = safe(r.destino_nombre) || "—";
         const destinoId = safe(r.destino_id || "");
         const transportistaId = safe(r.transportista_id || "");
-
-        // IMPORTANTE:
-        // Tu backend ya lo modificaste: asegúrate que venga "notas" o "comentarios" (según tu query).
-        // Aquí soportamos ambos nombres.
         const notas = safe(r.notas || r.comentarios || "");
+        const fisicoId = safe(r.contenedor_fisico_id || ""); // ✅ CLAVE
 
         const tr = document.createElement("tr");
         tr.classList.add("text-center");
         tr.style.cursor = "pointer";
 
-        // Dataset para lado derecho
         tr.dataset.numeroFerro = numero;
         tr.dataset.fecha = fecha;
-
-        // Dataset para editar
         tr.dataset.foId = String(foId);
         tr.dataset.destinoId = destinoId;
         tr.dataset.transportistaId = transportistaId;
         tr.dataset.fechaCarga = fechaCarga;
         tr.dataset.bultos = bultos;
         tr.dataset.notas = notas;
-        tr.dataset.fisicoId = String(r.contenedor_fisico_id || "");
+        tr.dataset.fisicoId = fisicoId;
+
         tr.innerHTML = `
           <td class="text-start">
             <div class="fw-semibold">${numero}</div>
@@ -296,7 +276,6 @@
             <button type="button" class="btn btn-sm btn-outline-secondary ms-1 asigFerro_btnEdit">Editar</button>
           </td>
         `;
-
         tbFerrosOperacion.appendChild(tr);
       });
 
@@ -315,7 +294,6 @@
     }
 
     if (badgeFerroSel) badgeFerroSel.textContent = `${numeroFerro} • ${fecha}`;
-
     renderLoadingRight();
 
     const url =
@@ -358,7 +336,7 @@
     });
   }
 
-  // ===== Registrar / Actualizar (mismo endpoint) =====
+  // ===== Registrar / Actualizar =====
   function registrarVinculacion() {
     if (!currentOperacionId) {
       Swal?.fire("Error", "Falta operacion_id.", "error");
@@ -373,7 +351,6 @@
     const fechaCarga = (inpFechaCarga?.value || "").trim();
     const notas = (inpNotas?.value || "").trim();
 
-    // Validaciones mínimas
     if (!numeroFerro) {
       Swal?.fire("Faltan datos", "Captura el Ferro/Caja.", "warning");
       inpNumero?.focus();
@@ -395,8 +372,6 @@
       return;
     }
 
-    // Extra: si estás en edición, y por alguna razón alguien habilitó los campos clave
-    // (o se editó desde consola), evitamos que se cambien.
     if (editState.isEdit) {
       if (
         numeroFerro !== editState.numeroFerro ||
@@ -404,7 +379,7 @@
       ) {
         Swal?.fire(
           "No permitido",
-          "En edición no puedes cambiar Ferro/Caja ni Fecha salida (definen el viaje). Usa Limpiar y crea otro viaje.",
+          "En edición no puedes cambiar Ferro/Caja ni Fecha salida.",
           "warning",
         );
         return;
@@ -433,15 +408,19 @@
       }
 
       if (res.status === "success") {
-        const msgOk =
+        Swal?.fire(
+          "Listo",
           res.msg ||
-          (editState.isEdit ? "Actualizado." : "Vinculación registrada.");
-        Swal?.fire("Listo", msgOk, "success");
+            (editState.isEdit ? "Actualizado." : "Vinculación registrada."),
+          "success",
+        );
 
-        // Salimos de edición y refrescamos lista
         exitEditMode();
         limpiarFormulario();
         cargarFerrosDeOperacion(currentOperacionId);
+
+        // opcional: refrescar trazabilidad si estabas parado en ese viaje
+        window.MFTrazabilidad?.refresh?.();
       } else {
         Swal?.fire("Error", res.msg || "No se pudo guardar.", "error");
       }
@@ -450,7 +429,6 @@
 
   // ===== Eventos =====
 
-  // Al abrir modal: toma id/código desde el botón que lo abrió
   modalEl.addEventListener("show.bs.modal", (ev) => {
     const btn = ev.relatedTarget;
     currentOperacionId = Number(btn?.getAttribute("data-id") || 0);
@@ -466,16 +444,12 @@
     cargarFerrosDeOperacion(currentOperacionId);
   });
 
-  // Click en tabla izquierda:
-  // - Si clic en Editar => cargar inputs (modo edición)
-  // - Si clic normal => cargar derecha
   tbFerrosOperacion?.addEventListener("click", (e) => {
     const btnEdit = e.target.closest(".asigFerro_btnEdit");
     const btnVer = e.target.closest(".asigFerro_btnVerOps");
     const row = e.target.closest("tr");
     if (!row) return;
 
-    // EDITAR
     if (btnEdit) {
       e.preventDefault();
       e.stopPropagation();
@@ -483,29 +457,30 @@
       return;
     }
 
-    // VER (y también click normal de fila)
-    if (btnVer || row) {
-      const numeroFerro = row.dataset.numeroFerro || "";
-      const fecha = row.dataset.fecha || "";
+    // VER o click en fila
+    const numeroFerro = row.dataset.numeroFerro || "";
+    const fecha = row.dataset.fecha || "";
+    const fisicoId = row.dataset.fisicoId || "";
 
-      Array.from(tbFerrosOperacion.querySelectorAll("tr")).forEach((tr) =>
-        tr.classList.remove("table-active"),
-      );
-      row.classList.add("table-active");
+    Array.from(tbFerrosOperacion.querySelectorAll("tr")).forEach((tr) =>
+      tr.classList.remove("table-active"),
+    );
+    row.classList.add("table-active");
 
-      cargarOperacionesEnFerro(numeroFerro, fecha);
-    }
+    cargarOperacionesEnFerro(numeroFerro, fecha);
+
+    // ✅ Aquí SIEMPRE sincronizas la trazabilidad
+    window.MFTrazabilidad?.select?.({
+      fisicoId: fisicoId,
+      fechaSalida: fecha,
+    });
   });
 
-  // Botón Vincular / Actualizar
   btnVincular?.addEventListener("click", (e) => {
     e.preventDefault();
     registrarVinculacion();
   });
 
-  // Botón Limpiar:
-  // - si estás editando, sale de edición
-  // - limpia inputs
   btnLimpiar?.addEventListener("click", (e) => {
     e.preventDefault();
     exitEditMode();
