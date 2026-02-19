@@ -134,10 +134,10 @@
         <td>${safe(item.estatus)}</td>
         <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
         <td>${safe(item.cita_puerto) || "-"}</td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>  
-        <td>-</td>
+        <td>${safe(item.ferro_caja)}</td>
+        <td>${safe(item.destino_ferro_caja)}</td>
+        <td>${safe(item.fecha_salida_ferro_caja)}</td>  
+        <td>${safe(item.fecha_carga_ferro_caja)}</td>
         <td>
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
