@@ -281,7 +281,7 @@
         tr.dataset.fechaCarga = fechaCarga;
         tr.dataset.bultos = bultos;
         tr.dataset.notas = notas;
-
+        tr.dataset.fisicoId = String(r.contenedor_fisico_id || "");
         tr.innerHTML = `
           <td class="text-start">
             <div class="fw-semibold">${numero}</div>

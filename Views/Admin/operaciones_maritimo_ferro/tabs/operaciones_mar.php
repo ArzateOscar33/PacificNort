@@ -100,6 +100,15 @@
     transform: scaleY(1.2) scaleX(1.2) translateY(-1px);
     transition: 0.2s ease-in;
   }
+
+  .input-uppercase {
+    text-transform: uppercase;
+  }
+
+  td,
+  th {
+    text-transform: uppercase;
+  }
 </style>
 
 <div class="container py-4 col-md-12">
@@ -491,7 +500,7 @@
             <!-- Descripción Mercancia -->
             <div class="col-md-12">
               <label class="form-label">Descripción Mercancia</label>
-              <textarea id="descripcion_mercancia_mf" name="descripcion_mercancia_mf" class="form-control" rows="2"
+              <textarea id="descripcion_mercancia_mf" name="descripcion_mercancia_mf" class="form-control input-uppercase" rows="2"
                 placeholder=""></textarea>
             </div>
             <!-- Notas -->
@@ -580,7 +589,7 @@
                       <label class="form-label">Ferro/Caja</label>
                       <input
                         type="text"
-                        class="form-control"
+                        class="form-control input-uppercase"
                         id="asigFerro_inputNumero"
                         name="asigFerro_numero"
                         placeholder="Ej. FXEU12345 / CAJA-001"
@@ -625,9 +634,7 @@
                     <!-- Destino -->
                     <div class="col-md-6">
                       <label class="form-label">Destino</label>
-                      <?php if (empty($data['ciudades'])): ?>
-                        <div class="alert alert-warning py-2">No llegaron ciudades (data['ciudades'] vacío).</div>
-                      <?php endif; ?>
+
 
                       <select id="asigFerro_destino" name="asigFerro_destino" class="form-control">
                         <option value="">Seleccione...</option>
@@ -665,7 +672,7 @@
                       <label class="form-label">Notas (opcional)</label>
                       <input
                         type="text"
-                        class="form-control"
+                        class="form-control input-uppercase"
                         id="asigFerro_inputNotas"
                         name="asigFerro_notas"
                         maxlength="255"
@@ -909,6 +916,7 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_registrar.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/asignacion_ferro_catalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/trazabilidad_catalogo.js"></script>
 <script>
   // Mayúsculas automáticas (MF) para contenedores (incluye filas agregadas por template)
   document.getElementById("contenedoresRepeater_mf").addEventListener("input", function(e) {

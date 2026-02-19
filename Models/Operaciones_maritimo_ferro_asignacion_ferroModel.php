@@ -570,6 +570,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
                     ofe.fecha,
                     ofe.fecha_carga,
                     ofe.destino_id,
+                    ofe.contenedor_fisico_id AS contenedor_fisico_id,
                     ci.nombre_ciudad AS destino_nombre,
                     ofe.transportista_id,
                     ofe.comentarios AS notas,
@@ -599,7 +600,7 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
                 o.numero_operacion AS codigo,
                 c.nombre AS cliente,
                 o.eta,
-                st.nombre AS subtipo,
+                st.nombre AS subtipo, 
 
                 cm.numero_contenedor AS contenedor_maritimo,
                 cmo.bultos           AS bultos_totales,
