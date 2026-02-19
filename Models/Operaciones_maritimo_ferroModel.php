@@ -444,6 +444,7 @@ class Operaciones_maritimo_ferroModel extends Query
         f.nombre   AS forwarder,
         c.nombre   AS cliente,
         o.etd, o.eta,
+        o.descripcion_mercancia as mercancia,
         e.nombre   AS estatus,
         o.isf,
         o.cita_puerto,
@@ -589,8 +590,8 @@ class Operaciones_maritimo_ferroModel extends Query
             $sqlOp = "INSERT INTO operaciones
                 (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
                  cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto,
-                 peso_total, transportista_id, broker_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                 peso_total, transportista_id, broker_id,descripcion_mercancia)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
             $paramsOp = [
                 trim($op['numero_operacion']),
@@ -611,6 +612,7 @@ class Operaciones_maritimo_ferroModel extends Query
                 (isset($op['peso_total']) && $op['peso_total'] !== '' ? (float)$op['peso_total'] : null),
                 (!empty($op['transportista_id']) ? (int)$op['transportista_id'] : null),
                 (!empty($op['broker_id']) ? (int)$op['broker_id'] : null),
+                $op['descripcion_mercancia'] ?? null,
             ];
 
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
@@ -712,6 +714,7 @@ class Operaciones_maritimo_ferroModel extends Query
             o.peso_total,
 
             o.transportista_id,
+            o.descripcion_mercancia as mercancia,
             tr.nombre AS transportista_nombre,
 
              
@@ -819,25 +822,26 @@ class Operaciones_maritimo_ferroModel extends Query
             $this->save("START TRANSACTION", []);
 
             $sql = "UPDATE operaciones
-                    SET tipo_operacion_id     = ?,
-                        subtipo_operacion_id  = ?,
-                        etd                   = ?,
-                        eta                   = ?,
-                        numero_bl             = ?,
-                        cliente_id            = ?,
-                        estatus_id            = ?,
-                        naviera_id            = ?,
-                        forwarder_id          = ?,
-                        shipper_id            = ?,
-                        isf                   = ?,
-                        cita_puerto           = ?,
-                        notas                 = ?,
-                        peso_total            = ?,
-                        transportista_id      = ?,
-                        broker_id             = ?
+                SET tipo_operacion_id     = ?,
+                    subtipo_operacion_id  = ?,
+                    etd                   = ?,
+                    eta                   = ?,
+                    numero_bl             = ?,
+                    cliente_id            = ?,
+                    estatus_id            = ?,
+                    naviera_id            = ?,
+                    forwarder_id          = ?,
+                    shipper_id            = ?,
+                    isf                   = ?,
+                    cita_puerto           = ?,
+                    notas                 = ?,
+                    peso_total            = ?,
+                    transportista_id      = ?,
+                    broker_id             = ?,
+                    descripcion_mercancia = ?
+                WHERE id_operacion = ?
+                LIMIT 1";
 
-                    WHERE id_operacion = ?
-                    LIMIT 1";
 
             $args = [
                 (int)$st['tipo_operacion_id'],
@@ -857,7 +861,9 @@ class Operaciones_maritimo_ferroModel extends Query
                 (isset($d['peso_total']) && $d['peso_total'] !== '' ? (float)$d['peso_total'] : null),
                 (!empty($d['transportista_id']) ? (int)$d['transportista_id'] : null),
                 (!empty($d['broker_id']) ? (int)$d['broker_id'] : null),
-
+                (isset($d['descripcion_mercancia']) && trim((string)$d['descripcion_mercancia']) !== '')
+                    ? trim((string)$d['descripcion_mercancia'])
+                    : null,
                 $opId,
             ];
 

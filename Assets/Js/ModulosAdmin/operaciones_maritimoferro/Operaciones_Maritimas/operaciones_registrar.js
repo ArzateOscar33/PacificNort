@@ -25,6 +25,9 @@ const inpClienteMF = document.getElementById("clienteNombre_mf");
 const helpFolioMF = document.getElementById("folioHelp_mf");
 const chkISF_MF = document.getElementById("chkIsf"); // checkbox o select
 const inpCita_MF = document.getElementById("cita_puerto"); // input date/datetime
+const inpDescripcionMercancia_MF = document.getElementById(
+  "descripcion_mercancia_mf",
+); // textarea
 
 // Repeater MF
 const repeaterMF = document.getElementById("contenedoresRepeater_mf");
@@ -212,6 +215,10 @@ function guardarOperacionMF() {
     fd.append("naviera_id_mf", selNavieraMF?.value || "");
     fd.append("forwarder_id_mf", selForwarderMF?.value || "");
     fd.append("shipper_id_mf", selShipperMF?.value || "");
+    fd.append(
+      "descripcion_mercancia_mf",
+      inpDescripcionMercancia_MF?.value.trim() || "",
+    );
 
     // extras
     fd.append(

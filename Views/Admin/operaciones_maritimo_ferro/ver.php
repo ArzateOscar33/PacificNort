@@ -1,53 +1,53 @@
 <?php include 'Views/Template/admin_header.php'; ?>
 
 <div class="container mt-4 col-md-12">
- 
+
 
     <ul class="nav nav-tabs" id="operacionTabs" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true"><i data-feather="zap"></i>Resumen</a>
         </li>
-         <!--  MARITIMA -->
-         <li class="nav-item">
-            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operación Maritima</a>
+        <!--  MARITIMA -->
+        <li class="nav-item">
+            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operaciones</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos  Maritimos</a>
+            <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos Maritimos</a>
         </li>
-   <!-- FIN MARITMA -->
+        <!-- FIN MARITMA -->
 
         <!-- FERRO/TERRESTRE -->
         <li class="nav-item">
             <a class="nav-link" id="en-piso-tab" data-bs-toggle="tab" href="#en-piso" role="tab" aria-controls="en-piso" aria-selected="false"><i data-feather="home"></i>En Bodega</a>
-        </li> 
+        </li>
         <li class="nav-item">
             <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false"><i data-feather="truck"></i>En Transito</a>
-        </li> 
+        </li>
 
         <li class="nav-item">
-            <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false"><i data-feather="calendar"></i>Eventos  Terrestres</a>
-        </li> 
-          <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
-            <i data-feather="shuffle"></i> Trazabilidad
-        </a>
+            <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false"><i data-feather="calendar"></i>Eventos Terrestres</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
+                <i data-feather="shuffle"></i> Trazabilidad
+            </a>
 
         <li class="nav-item">
             <a class="nav-link" id="documentos-tab" data-bs-toggle="tab" href="#documentos" role="tab" aria-controls="documentos" aria-selected="false"><i data-feather="file-plus"></i>Documentos</a>
         </li>
 
-              
 
- 
- <!-- FIN FERRO/TERRESTRE -->
 
-        </li>  
-                <li class="nav-item">
+
+        <!-- FIN FERRO/TERRESTRE -->
+
+        </li>
+        <li class="nav-item">
             <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Operaciones</a>
         </li>
-                 <li class="nav-item">
+        <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Contenedor</a>
-        </li> 
+        </li>
     </ul>
 
     <div class="tab-content mt-3">
@@ -59,7 +59,7 @@
         </div>
         <div class="tab-pane fade" id="crear_operaciones_ferro" role="tabpanel" aria-labelledby="crear_operaciones_ferro-tab">
             <?php include 'tabs/operaciones_ferro.php'; ?>
-        </div> 
+        </div>
         <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
             <?php include 'tabs/costos_combinados.php'; ?>
         </div>
@@ -75,22 +75,22 @@
         <div class="tab-pane fade" id="documentos" role="tabpanel" aria-labelledby="documentos-tab">
             <?php include 'tabs/documentos.php'; ?>
         </div>
- 
+
         <div class="tab-pane fade" id="log" role="tabpanel" aria-labelledby="log-tab">
             <?php include 'tabs/log.php'; ?>
-        </div> 
+        </div>
         <div class="tab-pane fade" id="trazabilidad" role="tabpanel" aria-labelledby="trazabilidad-tab">
             <?php include 'tabs/trazabilidad.php'; ?>
-        </div> 
+        </div>
         <div class="tab-pane fade" id="detalles-logisticos" role="tabpanel" aria-labelledby="detalles-logisticos-tab">
             <?php include 'tabs/detalles_logisticos.php'; ?>
-        </div> 
+        </div>
         <div class="tab-pane fade" id="en-piso" role="tabpanel" aria-labelledby="en-piso-tab">
             <?php include 'tabs/en_piso.php'; ?>
         </div>
-         <div class="tab-pane fade" id="costos-contenedor" role="tabpanel" aria-labelledby="log-tab">
+        <div class="tab-pane fade" id="costos-contenedor" role="tabpanel" aria-labelledby="log-tab">
             <?php include 'tabs/costos.php'; ?>
-        </div> 
+        </div>
     </div>
 </div>
 
@@ -98,7 +98,7 @@
 <script>
     const triggerTabList = document.querySelectorAll('#operacionTabs a');
     triggerTabList.forEach(tab => {
-        tab.addEventListener('click', function (e) {
+        tab.addEventListener('click', function(e) {
             e.preventDefault();
             let instance = new bootstrap.Tab(this);
             instance.show();
@@ -109,7 +109,7 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/xlsx.full.min.js"></script>
 
 
- 
+
 <!--<script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script> -->
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
 <!--<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script> -->

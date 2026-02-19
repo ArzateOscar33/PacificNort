@@ -1,9 +1,96 @@
 <style>
-  .form-check-input {
-    width: 1.3em;
-    height: 1.3em;
-    accent-color: var(--bs-primary);
-    cursor: pointer;
+  /* ===== Sticky header (scroll vertical = página) ===== */
+  :root {
+    --mf-sticky-top: 0px;
+    /* AJUSTA a tu navbar real */
+    --mf-col1-w: 200px;
+    /* ancho real Código */
+    --mf-col2-w: 200px;
+    /* ancho real Contenedor */
+  }
+
+  /* Tabla: importante para sticky + fondos */
+  .mf-table {
+    font-size: .875rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    /* clave: evita “encogimientos” raros con overflow-x */
+  }
+
+  /* Base cells */
+  .mf-table th,
+  .mf-table td {
+    padding: .55rem .75rem;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  /* ===== Header sticky ===== */
+  .mf-table thead th {
+    position: sticky;
+    top: var(--mf-sticky-top);
+    z-index: 40;
+    /* base header */
+    background: var(--bs-success-bg-subtle, #d1e7dd);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, .06);
+  }
+
+  /* ===== Sticky columns base ===== */
+  .mf-table .sticky-col {
+    position: sticky;
+    background: #fff;
+    /* SOLIDO: evita transparencia */
+    background-clip: padding-box;
+    /* evita “bleed” por bordes */
+    z-index: 20;
+    /* base sticky cols */
+  }
+
+  /* Col 1 (Código) */
+  .mf-table .sticky-col-1 {
+    left: 0;
+    min-width: var(--mf-col1-w);
+    width: var(--mf-col1-w);
+    z-index: 30;
+    /* encima de celdas normales */
+    box-shadow: 2px 0 0 rgba(0, 0, 0, .06);
+    background: #f8f9fa;
+    /* sólido */
+  }
+
+  /* Col 2 (Contenedor) */
+  .mf-table .sticky-col-2 {
+    left: var(--mf-col1-w);
+    min-width: var(--mf-col2-w);
+    width: var(--mf-col2-w);
+    z-index: 30;
+    border-right: 2px solid rgba(0, 0, 0, .08);
+    background: #f8f9fa;
+    /* sólido */
+  }
+
+  /* ===== Intersección: header + sticky cols (lo más arriba) ===== */
+  .mf-table thead th.sticky-col {
+    z-index: 60;
+    /* encima del resto del header */
+    background: var(--bs-success-bg-subtle, #d1e7dd);
+  }
+
+  /* Zebra: asegura fondo también en sticky cols */
+  .mf-table tbody tr:nth-child(odd) {
+    background-color: rgba(0, 0, 0, .015);
+  }
+
+  .mf-table tbody tr:nth-child(odd) td.sticky-col {
+    background-color: #eef1f4;
+    /* sólido (no rgba) */
+  }
+
+  /* Wrapper: SOLO scroll horizontal */
+  .mf-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 </style>
 
@@ -12,7 +99,7 @@
 
     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
-        <i data-feather="anchor" class="me-1"></i> Operaciones Marítimas-Ferroviarias
+        <i data-feather="anchor" class="me-1"></i> Operaciones
       </h5>
       <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalMaritimoFerro"
         id="maritimo_ferro_btnNuevaOperacion">
@@ -76,38 +163,48 @@
       </div>
 
       <!-- Tabla -->
-      <div class="table-responsive table-sm">
-        <table class="table table-hover align-middle  " id="operaciones_mar_TablaExportar">
-          <thead class="table-success mt-1 p-2 mb-2">
+      <div class="mf-table-wrap position-relative">
+
+        <table class="table align-middle mf-table " id="operaciones_mar_TablaExportar">
+          <thead class="table-success">
             <tr class="text-center">
-              <th> Código</th>
-              <th>Subtipo</th>
+              <th class="col-md sticky-col sticky-col-1">Código</th>
+              <th class="col-md sticky-col sticky-col-2">Contenedor</th>
+              <th class="col-md">Subtipo</th>
               <th>ETD</th>
               <th>ETA</th>
-              <th>Contenedor</th>
-              <th>Naviera</th>
-              <th>Forwarder</th>
-              <th>Shipper</th>
+
+
+              <th class="col-ellipsis col-lg">Naviera</th>
+              <th class="col-ellipsis col-xl">Forwarder</th>
+              <th class="col-ellipsis col-xl">Shipper</th>
+
               <th>Peso</th>
               <th>Bultos</th>
-              <th>Tipo Contenedor</th>
-              <th style="width:180px;">Transportista</th>
-              <th>Broker</th>
-              <th style="width:180px;">BL</th>
-              <th>Puerto</th>
-              <th>Cliente</th>
-              <th>Forwarder</th>
-              <th>Estatus</th>
-              <th>ISF </th>
-              <th>Cita en Puerto </th>
-              <th>Caja/Ferro</th>
-              <th>Destino</th>
-              <th>Fecha Salida Ferro/Caja</th>
-              <th>Ubicacion Actual</th>
+              <th>Medida</th>
+              <th>Mercancia</th>
 
-              <th style="width:120px;">Acciones</th>
+              <th class="col-ellipsis col-lg">Transportista</th>
+              <th class="col-ellipsis col-lg">Broker</th>
+
+              <th class="col-md">BL</th>
+              <th class="col-ellipsis col-lg">Puerto</th>
+
+              <th class="col-wrap col-xl">Cliente</th>
+
+              <th>Estatus</th>
+              <th>ISF</th>
+              <th class="col-md">Cita en Puerto</th>
+
+              <th class="col-md">Caja/Ferro</th>
+              <th class="col-ellipsis col-md">Destino</th>
+              <th class="col-md">Fecha Salida</th>
+              <th class="col-ellipsis col-md">Ubicación Actual</th>
+
+              <th class="col-actions">Acciones</th>
             </tr>
           </thead>
+
           <tbody id="maritimo_ferro_tablaBody"></tbody>
         </table>
 
@@ -289,7 +386,7 @@
                       <input type="number" min="0" step="1" class="form-control contenedor-bultos_mf" placeholder="0">
                     </div>
                     <div class="col-md-3">
-                      <label class="form-label">Tipo Contenedor</label>
+                      <label class="form-label">Medida Contenedor</label>
                       <select class="form-control contenedor-tipo_mf" name="tipo_contenedor_mf[]">
 
                         <option value="">Seleccione...</option>
@@ -383,7 +480,12 @@
                 <?php endif; ?>
               </select>
             </div>
-
+            <!-- Descripción Mercancia -->
+            <div class="col-md-12">
+              <label class="form-label">Descripción Mercancia</label>
+              <textarea id="descripcion_mercancia_mf" name="descripcion_mercancia_mf" class="form-control" rows="2"
+                placeholder=""></textarea>
+            </div>
             <!-- Notas -->
             <div class="col-md-12">
               <label class="form-label">Notas</label>
@@ -418,6 +520,7 @@
      - Identificador visible: numero_ferro / caja (contenedor físico)
 ========================================================= -->
 
+
 <!-- Modal: Asignar Ferro/Caja -->
 <div class="modal fade" id="modalAsignarFerroCaja" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -440,6 +543,10 @@
         <input type="hidden" id="asigFerro_operacionId" name="asigFerro_operacionId" value="">
         <input type="hidden" id="asigFerro_operacionCodigo" name="asigFerro_operacionCodigo" value="">
 
+        <!-- NUEVO: refs del ferro/caja seleccionado (los setea el JS al seleccionar una fila) -->
+        <input type="hidden" id="asigFerro_ferroFisicoId" name="asigFerro_ferroFisicoId" value="">
+        <input type="hidden" id="asigFerro_asignacionId" name="asigFerro_asignacionId" value="">
+
         <div class="row g-3">
 
           <!-- =======================
@@ -457,7 +564,7 @@
                 </div>
 
                 <!-- Form de captura -->
-                <form id="asigFerro_formVincular" autocomplete="off">
+                <form id="asigFerro_formVincular" name="asigFerro_formVincular" autocomplete="off">
                   <div class="row g-2">
 
                     <!-- Ferro/Caja -->
@@ -475,6 +582,7 @@
                         class="list-group shadow-sm"
                         style="position:absolute; z-index:1060; width:100%; display:none;"></div>
                     </div>
+
                     <!-- Empresa transportista -->
                     <div class="col-md-6">
                       <label class="form-label">Empresa transportista</label>
@@ -492,6 +600,7 @@
                         <?php endif; ?>
                       </select>
                     </div>
+
                     <!-- Bultos -->
                     <div class="col-md-6">
                       <label class="form-label">Bultos asignados</label>
@@ -504,8 +613,6 @@
                         name="asigFerro_bultos"
                         placeholder="0">
                     </div>
-
-
 
                     <!-- Destino -->
                     <div class="col-md-6">
@@ -525,6 +632,7 @@
                         <?php endif; ?>
                       </select>
                     </div>
+
                     <!-- Fechas -->
                     <div class="col-md-6">
                       <label class="form-label">Fecha carga</label>
@@ -543,7 +651,6 @@
                         id="asigFerro_inputFechaSalida"
                         name="asigFerro_fecha_salida">
                     </div>
-
 
                     <!-- Notas -->
                     <div class="col-12">
@@ -594,7 +701,7 @@
                     </thead>
                     <tbody id="asigFerro_tbFerrosOperacion">
                       <tr>
-                        <td colspan="4" class="text-center text-muted py-3">
+                        <td colspan="6" class="text-center text-muted py-3">
                           Sin vínculos todavía.
                         </td>
                       </tr>
@@ -607,7 +714,7 @@
           </div>
 
           <!-- =======================
-               Derecha: Ops del Ferro/Caja
+               Derecha: Ops + Trazabilidad (NUEVO)
           ======================== -->
           <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
@@ -621,11 +728,12 @@
                 </div>
 
                 <div class="text-muted small mt-1">
-                  Selecciona un Ferro/Caja desde la lista de la izquierda para ver su consolidado.
+                  Selecciona un Ferro/Caja desde la lista de la izquierda para ver su consolidado y registrar trazabilidad.
                 </div>
 
                 <hr class="my-3">
 
+                <!-- Tabla de operaciones del ferro/caja -->
                 <div class="table-responsive">
                   <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="table-light">
@@ -633,19 +741,142 @@
                         <th style="width:140px;">Código</th>
                         <th class="text-start">Cliente</th>
                         <th style="width:120px;">Contenedor</th>
-                        <th style="width:110px;">Bultos/Cartones/Rollos Totales</th>
-                        <th style="width:110px;">Bultos/Cartones/Rollos Enviados</th>
+                        <th style="width:110px;">Bultos Totales</th>
+                        <th style="width:110px;">Bultos Enviados</th>
                       </tr>
                     </thead>
                     <tbody id="asigFerro_tbOpsEnFerro">
                       <tr>
-                        <td colspan="4" class="text-center text-muted py-3">
+                        <td colspan="5" class="text-center text-muted py-3">
                           Selecciona un Ferro/Caja de la lista izquierda.
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <!-- ===== NUEVO: Panel Trazabilidad ===== -->
+                <hr class="my-3">
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="fw-semibold">
+                    <i data-feather="map-pin" class="me-1"></i> Trazabilidad del Ferro/Caja
+                  </div>
+                  <span class="text-muted small" id="asigFerro_trackHint">—</span>
+                </div>
+
+                <!-- Resumen Origen/Destino/Actual -->
+                <div class="row g-2 mt-2">
+                  <div class="col-md-4">
+                    <label class="form-label small mb-1">Origen (Puerto)</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="asigFerro_trackOrigen"
+                      name="asigFerro_trackOrigen"
+                      value=""
+                      readonly>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small mb-1">Ubicación actual</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="asigFerro_trackUltima"
+                      name="asigFerro_trackUltima"
+                      value=""
+                      readonly>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small mb-1">Destino</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="asigFerro_trackDestino"
+                      name="asigFerro_trackDestino"
+                      value=""
+                      readonly>
+                  </div>
+
+
+                </div>
+
+                <!-- Form registro trazabilidad -->
+                <form id="asigFerro_formTrazabilidad" name="asigFerro_formTrazabilidad" class="mt-3" autocomplete="off">
+                  <div class="row g-2 align-items-end">
+
+                    <!-- Ubicación actual -->
+                    <div class="col-md-6">
+                      <label class="form-label">Ubicación actual</label>
+                      <select
+                        id="asigFerro_trackUbicacionId"
+                        name="asigFerro_trackUbicacionId"
+                        class="form-control">
+                        <option value="">Seleccione...</option>
+                        <?php if (!empty($data['ciudades'])): ?>
+                          <?php foreach ($data['ciudades'] as $c): ?>
+                            <option value="<?= (int)$c['id_ciudad']; ?>">
+                              <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </select>
+
+                    </div>
+
+
+
+                    <!-- Fecha/Hora -->
+                    <div class="col-md-6">
+                      <label class="form-label">Fecha</label>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="asigFerro_trackFechaHora"
+                        name="asigFerro_trackFechaHora">
+                    </div>
+
+                    <!-- Referencia / Guía -->
+                    <div class="col-md-12">
+                      <label class="form-label">Direccion(opcional)</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="asigFerro_trackReferencia"
+                        name="asigFerro_trackReferencia"
+                        maxlength="80"
+                        placeholder="">
+                    </div>
+
+
+
+                    <!-- Notas -->
+                    <div class="col-12">
+                      <label class="form-label">Notas</label>
+                      <textarea
+                        class="form-control"
+                        id="asigFerro_trackNotas"
+                        name="asigFerro_trackNotas"
+                        rows="2"
+                        maxlength="255"
+                        placeholder=""></textarea>
+                    </div>
+
+                    <!-- Acciones trazabilidad -->
+                    <div class="col-12 d-flex gap-2 pt-2">
+                      <button type="button" class="btn btn-primary" id="asigFerro_btnGuardarTrazabilidad" disabled>
+                        <i data-feather="save" class="me-1"></i> Guardar ubicación
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" id="asigFerro_btnLimpiarTrazabilidad" disabled>
+                        <i data-feather="x" class="me-1"></i> Limpiar
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+
+
+
 
               </div>
             </div>
@@ -664,6 +895,7 @@
     </div>
   </div>
 </div>
+
 
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js"></script>

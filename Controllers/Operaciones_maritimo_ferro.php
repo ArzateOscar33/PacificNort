@@ -242,6 +242,7 @@ class Operaciones_maritimo_ferro extends Controller
                 ];
             }
         }
+        $mercancia = trim((string)($_POST['descripcion_mercancia_mf'] ?? ''));
 
         // Si no mandaron pesos, dejamos null (para no “inventar” 0)
         $pesoOperacion = $tienePeso ? $pesoTotal : null;
@@ -265,6 +266,7 @@ class Operaciones_maritimo_ferro extends Controller
             'peso_total'            => $pesoOperacion,
             'broker_id'             => $brokerId ?: null,
             'transportista_id'      => $transportistaId ?: null,
+            'descripcion_mercancia'             => $mercancia,
         ];
 
         $usuarioId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
@@ -345,6 +347,8 @@ class Operaciones_maritimo_ferro extends Controller
         $transportistaId = (int)($_POST['transportista_id_mf'] ?? ($actual['transportista_id'] ?? 0));
 
         $notas = trim((string)($_POST['notas_mf'] ?? ($actual['notas'] ?? ''))) ?: null;
+        $mercancia = trim((string)($_POST['descripcion_mercancia_mf'] ?? ($actual['descripcion_mercancia'] ?? '')));
+        $mercancia = ($mercancia !== '') ? $mercancia : null;
 
         $isf = (!empty($_POST['isf']) && (int)$_POST['isf'] === 1) ? 1 : 0;
 
@@ -405,10 +409,10 @@ class Operaciones_maritimo_ferro extends Controller
             'isf'                   => $isf,
             'cita_puerto'           => $cita,
 
-            // ✅ NUEVOS
             'peso_total'            => $pesoOperacion,
             'broker_id'             => $brokerId ?: null,
             'transportista_id'      => $transportistaId ?: null,
+            'descripcion_mercancia' => $mercancia,
         ];
 
         $usuarioId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;

@@ -51,6 +51,7 @@
   const txtNotas = document.getElementById("notas_mf");
   const chkISF = document.getElementById("chkIsf"); // checkbox
   const inpCitaPuerto = document.getElementById("cita_puerto"); // input date
+  const txtMercancia = document.getElementById("descripcion_mercancia_mf");
 
   // Repeater (contenedores marítimos)
   const repeater = document.getElementById("contenedoresRepeater_mf");
@@ -114,34 +115,35 @@
       const tr = document.createElement("tr");
       tr.classList.add("text-center");
       tr.innerHTML = `
-        <td>${safe(item.numero_operacion)}</td>
+        <td class="sticky-col sticky-col-1 text-center ">${safe(item.numero_operacion)}</td>
+        <td class="sticky-col sticky-col-2 text-center">${safe(item.contenedores)}</td>
         <td>${safe(item.subtipo || item.subtipo_operacion)}</td>
         <td>${safe(item.etd)}</td>
         <td>${safe(item.eta)}</td>
-        <td>${safe(item.contenedores)}</td>
+        
         <td>${safe(item.naviera)}</td>
         <td>${safe(item.forwarder)}</td>
         <td>${safe(item.shipper)}</td>
         <td>${safe(item.peso_total)} Kg</td>
         <td>${safe(item.bultos_total)}</td>
         <td>${safe(item.tipo_contenedor)}</td>
+        <td>${safe(item.mercancia) ? item.mercancia : "-"}</td>
         <td>${safe(item.transportista)}</td>
         <td>${safe(item.brokers)}</td>
         <td>${safe(item.numero_bl)}</td>
         <td>${safe(item.puerto_arribo)}</td>
         <td>${safe(item.cliente)}</td> 
-        <td>${safe(item.forwarder)}</td>
         <td>${safe(item.estatus)}</td>
         <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
         <td>${safe(item.cita_puerto) || "-"}</td>
         <td>${safe(item.ferro_caja)}</td>
         <td>${safe(item.destino_ferro_caja)}</td>
         <td>${safe(item.fecha_salida_ferro_caja)}</td>  
-        <td>${safe(item.fecha_carga_ferro_caja)}</td>
+        <td>-</td>
         <td>
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
-            <i data-feather="edit"></i>
+            <i data-feather="edit"></i>Editar Operacion
             </button>
            
  
@@ -184,7 +186,7 @@
 
     const liPrev = document.createElement("li");
     liPrev.className = "page-item" + (page <= 1 ? " disabled" : "");
-    liPrev.innerHTML = `<a class="page-link" href="#" aria-label="Anterior">&laquo;</a>`;
+    liPrev.innerHTML = `<a class="page-link " href="#" aria-label="Anterior">&laquo;</a>`;
     liPrev.onclick = (e) => {
       e.preventDefault();
       if (page > 1) {
@@ -346,7 +348,7 @@
           : "Nueva Operación Marítimo-Ferroviaria";
     }
     if (formOp) formOp.dataset.mode = mode;
-
+    if (txtMercancia) txtMercancia.value = "";
     if (inpIdOperacion) inpIdOperacion.value = "";
     if (inpNumeroOp) inpNumeroOp.value = "";
     setSelectValue(selSubtipo, "");
@@ -866,7 +868,9 @@
       // ===== Pintar campos =====
       if (inpIdOperacion) inpIdOperacion.value = val(op.id_operacion);
       if (inpNumeroOp) inpNumeroOp.value = val(op.numero_operacion);
-
+      if (txtMercancia) {
+        txtMercancia.value = val(op.mercancia ?? op.descripcion_mercancia);
+      }
       setSelectValue(selSubtipo, op.subtipo_operacion_id);
       setSelectValue(selEstatus, op.estatus_id);
 
