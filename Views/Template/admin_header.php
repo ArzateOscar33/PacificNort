@@ -27,6 +27,10 @@
     <!--<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>-->
     <!-- SweetAlert2 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> -->
+
+    <style>
+
+    </style>
 </head>
 
 <body>

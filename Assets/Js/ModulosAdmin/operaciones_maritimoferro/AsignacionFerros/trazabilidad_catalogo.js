@@ -191,7 +191,12 @@
       Swal?.fire("Error", json?.msg || "No se pudo guardar.", "error");
       return;
     }
-
+    // ✅ aquí ya guardó bien
+    document.dispatchEvent(
+      new CustomEvent("mf:refresh-list", {
+        detail: { operacion_id: operacionId },
+      }),
+    );
     // refresca resumen
     const panel = json.panel || {};
     if (inpOrigen) inpOrigen.value = panel.origen_puerto || "";

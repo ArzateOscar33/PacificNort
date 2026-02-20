@@ -1338,6 +1338,42 @@
       }
     }
   });
+
+  // =========================================================
+  // ✅ Bridge: refrescar tabla cuando otro módulo actualiza
+  //    asignaciones o trazabilidad
+  // =========================================================
+  (function bindRefreshEvents() {
+    let refreshTO = null;
+
+    function requestRefresh(detail) {
+      // opcional: si quieres forzar volver a página 1
+      // currentPage = 1;
+
+      // Debounce corto para evitar 2-3 refrescos seguidos
+      clearTimeout(refreshTO);
+      refreshTO = setTimeout(() => {
+        try {
+          listar();
+        } catch (e) {
+          console.warn("No se pudo refrescar MF listar()", e);
+        }
+      }, 120);
+    }
+
+    // Evento único para todo MF
+    document.addEventListener("mf:refresh-list", (ev) => {
+      requestRefresh(ev.detail || {});
+    });
+
+    // (Opcional) si quieres diferenciar acciones
+    document.addEventListener("mf:asignacion-updated", (ev) => {
+      requestRefresh(ev.detail || {});
+    });
+    document.addEventListener("mf:trazabilidad-updated", (ev) => {
+      requestRefresh(ev.detail || {});
+    });
+  })();
 })();
 // ===============================
 // Exportaciones

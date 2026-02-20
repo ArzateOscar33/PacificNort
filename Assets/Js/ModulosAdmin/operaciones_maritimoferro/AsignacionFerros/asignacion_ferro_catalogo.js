@@ -419,6 +419,13 @@
         limpiarFormulario();
         cargarFerrosDeOperacion(currentOperacionId);
 
+        // o si prefieres un evento genérico:
+        document.dispatchEvent(
+          new CustomEvent("mf:refresh-list", {
+            detail: { operacion_id: currentOperacionId },
+          }),
+        );
+
         // opcional: refrescar trazabilidad si estabas parado en ese viaje
         window.MFTrazabilidad?.refresh?.();
       } else {

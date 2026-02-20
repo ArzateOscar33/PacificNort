@@ -9,6 +9,13 @@
     /* ancho real Contenedor */
   }
 
+  .form-check-input {
+    width: 1.3em;
+    height: 1.3em;
+    accent-color: var(--bs-primary);
+    cursor: pointer;
+  }
+
   /* Tabla: importante para sticky + fondos */
   .mf-table {
     font-size: .875rem;
@@ -108,6 +115,32 @@
   td,
   th {
     text-transform: uppercase;
+  }
+
+  /* ===== Scroll horizontal superior ===== */
+  .mf-top-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 14px;
+    /* altura de la barra */
+    position: sticky;
+    /* se queda visible al hacer scroll vertical */
+    top: var(--mf-sticky-top);
+    /* mismo top que tu header sticky */
+    z-index: 80;
+    /* arriba del header */
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 8px;
+    margin-bottom: .5rem;
+  }
+
+  /* El “relleno” que crea el ancho scrolleable */
+  .mf-top-scroll-inner {
+    height: 1px;
+    /* mínimo, solo para generar ancho */
+    width: 0px;
+    /* se actualiza por JS */
   }
 </style>
 
@@ -267,6 +300,7 @@
           <div class="d-flex align-items-end   gap-2">
             <label for="maritimo_ferro_perPage" class="mb-0 small text-muted">Mostrar</label>
             <select id="maritimo_ferro_perPage" name="maritimo_ferro_perPage" class="form-control" style="width:90px;">
+
               <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -274,6 +308,7 @@
               <option value="500">500</option>
               <option value="1000">1000</option>
               <option value="10000000">Todos</option>
+
             </select>
             <span class="small text-muted">por página</span>
           </div>
@@ -282,6 +317,10 @@
       </div>
 
       <!-- Tabla -->
+      <!-- Scroll horizontal superior (sincronizado con la tabla) -->
+      <div class="mf-top-scroll" id="mf_topScroll">
+        <div class="mf-top-scroll-inner" id="mf_topScrollInner"></div>
+      </div>
       <div class="mf-table-wrap position-relative">
 
         <table class="table align-middle mf-table " id="operaciones_mar_TablaExportar">
@@ -966,4 +1005,61 @@
       e.target.value = v;
     }
   });
+</script>
+<script>
+  (function() {
+    "use strict";
+
+    const topScroll = document.getElementById("mf_topScroll");
+    const topInner = document.getElementById("mf_topScrollInner");
+    const wrap = document.querySelector(".mf-table-wrap");
+    const table = document.getElementById("operaciones_mar_TablaExportar");
+
+    if (!topScroll || !topInner || !wrap || !table) return;
+
+    let syncing = false;
+
+    function syncWidths() {
+      // El ancho real scrolleable es el scrollWidth de la tabla (o del wrap)
+      const w = Math.max(table.scrollWidth, wrap.scrollWidth);
+      topInner.style.width = w + "px";
+
+      // Si no hay overflow horizontal, ocultamos la barra de arriba
+      const hasOverflow = (wrap.scrollWidth > wrap.clientWidth);
+      topScroll.style.display = hasOverflow ? "block" : "none";
+    }
+
+    // scroll top -> wrap
+    topScroll.addEventListener("scroll", () => {
+      if (syncing) return;
+      syncing = true;
+      wrap.scrollLeft = topScroll.scrollLeft;
+      syncing = false;
+    });
+
+    // scroll wrap -> top
+    wrap.addEventListener("scroll", () => {
+      if (syncing) return;
+      syncing = true;
+      topScroll.scrollLeft = wrap.scrollLeft;
+      syncing = false;
+    });
+
+    // Ajustar al cargar
+    syncWidths();
+
+    // Ajustar si cambia tamaño de ventana
+    window.addEventListener("resize", syncWidths);
+
+    // Ajustar si tu JS vuelve a renderizar la tabla (paginación/filtros)
+    // Usa MutationObserver para recalcular el ancho al cambiar tbody
+    const tbody = document.getElementById("maritimo_ferro_tablaBody");
+    if (tbody) {
+      const obs = new MutationObserver(() => syncWidths());
+      obs.observe(tbody, {
+        childList: true,
+        subtree: true
+      });
+    }
+  })();
 </script>
