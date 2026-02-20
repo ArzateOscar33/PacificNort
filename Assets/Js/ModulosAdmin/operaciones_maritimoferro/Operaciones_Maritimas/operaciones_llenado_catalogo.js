@@ -12,12 +12,25 @@
   const metaResumen = document.getElementById("maritimo_ferro_metaResumen");
   const inpFechaIni = document.getElementById("maritimo_ferro_fechaInicio");
   const inpFechaFin = document.getElementById("maritimo_ferro_fechaFin");
+  // ===== NUEVOS FILTROS =====
+  const selectEstatus = document.getElementById("maritimo_ferro_filtroEstatus");
+  const selectNaviera = document.getElementById("maritimo_ferro_filtroNaviera");
+  const selectForwarder = document.getElementById(
+    "maritimo_ferro_filtroForwarder",
+  );
+  const selectShipper = document.getElementById("maritimo_ferro_filtroShipper");
+  const selectTransportista = document.getElementById(
+    "maritimo_ferro_filtroTransportista",
+  );
+  const selectMedida = document.getElementById(
+    "maritimo_ferro_filtroMedidaContenedor",
+  );
 
   const selBroker = document.getElementById("brokerId_mf");
   const selTransportista = document.getElementById("transportistaId_mf");
 
   let currentPage = 1;
-  let perPage = parseInt(selectPerPage?.value || "10", 10);
+  let perPage = (selectPerPage?.value || "10").toString(); // "10" | "25" | ... | "todos"
   let currentListXHR = null;
   let debounceId = null;
 
@@ -263,23 +276,64 @@
   function renderResumen(meta) {
     if (!metaResumen) return;
     const { total = 0, page = 1, per_page = perPage, total_pages = 1 } = meta;
+
     if (total === 0) {
       metaResumen.textContent = "Mostrando 0–0 de 0";
       return;
     }
-    const start = (page - 1) * per_page + 1;
-    const end = Math.min(total, page * per_page);
+
+    const isAll = String(per_page).toLowerCase() === "todos";
+    if (isAll) {
+      metaResumen.textContent = `Mostrando 1–${total} de ${total} | pág 1 de 1`;
+      return;
+    }
+
+    const pp = Number(per_page || 10);
+    const start = (page - 1) * pp + 1;
+    const end = Math.min(total, page * pp);
     metaResumen.textContent = `Mostrando ${start}–${end} de ${total} | pág ${page} de ${total_pages}`;
   }
 
   function renderPaginacion(meta) {
     if (!ulPaginacion) return;
-    const { page = 1, total_pages = 1 } = meta;
+
+    // Normaliza
+    const pageRaw = meta?.page ?? 1;
+    const totalRaw = meta?.total_pages ?? 1;
+    const perRaw = meta?.per_page ?? perPage;
+
+    const isAll = String(perRaw).toLowerCase() === "todos";
+
+    // Si es "todos", forzamos UI simple (sin paginación)
+    if (isAll) {
+      ulPaginacion.innerHTML = `
+      <li class="page-item active">
+        <a class="page-link" href="#" onclick="return false;">1</a>
+      </li>
+    `;
+      return;
+    }
+
+    // Ya es paginado: asegurar números válidos
+    const total_pages = Math.max(1, parseInt(totalRaw, 10) || 1);
+    const page = Math.min(total_pages, Math.max(1, parseInt(pageRaw, 10) || 1));
+
+    // Si solo hay una página, puedes mostrar "1" o dejar vacío
+    if (total_pages <= 1) {
+      ulPaginacion.innerHTML = `
+      <li class="page-item active">
+        <a class="page-link" href="#" onclick="return false;">1</a>
+      </li>
+    `;
+      return;
+    }
+
     ulPaginacion.innerHTML = "";
 
+    // Prev
     const liPrev = document.createElement("li");
     liPrev.className = "page-item" + (page <= 1 ? " disabled" : "");
-    liPrev.innerHTML = `<a class="page-link " href="#" aria-label="Anterior">&laquo;</a>`;
+    liPrev.innerHTML = `<a class="page-link" href="#" aria-label="Anterior">&laquo;</a>`;
     liPrev.onclick = (e) => {
       e.preventDefault();
       if (page > 1) {
@@ -289,6 +343,7 @@
     };
     ulPaginacion.appendChild(liPrev);
 
+    // Ventana de páginas
     const windowSize = 5;
     let start = Math.max(1, page - Math.floor(windowSize / 2));
     let end = Math.min(total_pages, start + windowSize - 1);
@@ -308,6 +363,7 @@
       ulPaginacion.appendChild(li);
     }
 
+    // Next
     const liNext = document.createElement("li");
     liNext.className = "page-item" + (page >= total_pages ? " disabled" : "");
     liNext.innerHTML = `<a class="page-link" href="#" aria-label="Siguiente">&raquo;</a>`;
@@ -328,14 +384,30 @@
     const term = (inputBuscar?.value || "").trim();
     const fi = (inpFechaIni?.value || "").trim();
     const ff = (inpFechaFin?.value || "").trim();
+    const estatus = (selectEstatus?.value || "").trim();
+    const naviera = (selectNaviera?.value || "").trim();
+    const forwarder = (selectForwarder?.value || "").trim();
+    const shipper = (selectShipper?.value || "").trim();
+    const transportista = (selectTransportista?.value || "").trim();
+    const medida = (selectMedida?.value || "").trim();
 
     if (subtipo !== "") params.append("maritimo_ferro_filtroSubtipo", subtipo);
     if (term !== "") params.append("maritimo_ferro_buscarOperacion", term);
     if (fi !== "") params.append("maritimo_ferro_fechaInicio", fi);
     if (ff !== "") params.append("maritimo_ferro_fechaFin", ff);
-
-    params.append("page", String(currentPage));
+    if (estatus !== "") params.append("maritimo_ferro_filtroEstatus", estatus);
+    if (naviera !== "") params.append("maritimo_ferro_filtroNaviera", naviera);
+    if (forwarder !== "")
+      params.append("maritimo_ferro_filtroForwarder", forwarder);
+    if (shipper !== "") params.append("maritimo_ferro_filtroShipper", shipper);
+    if (transportista !== "")
+      params.append("maritimo_ferro_filtroTransportista", transportista);
+    if (medida !== "")
+      params.append("maritimo_ferro_filtroMedidaContenedor", medida);
+    const isAll = String(perPage).toLowerCase() === "todos";
+    params.append("page", String(isAll ? 1 : currentPage));
     params.append("perPage", String(perPage));
+    if (isAll) currentPage = 1;
 
     const url =
       base_url +
@@ -376,11 +448,14 @@
       const rows = payload.data || [];
       renderTabla(rows);
 
+      const pp = payload.per_page ?? perPage;
+      const isAll = String(pp).toLowerCase() === "todos";
+
       const meta = {
         total: Number(payload.total || 0),
         page: Number(payload.page || 1),
-        per_page: Number(payload.per_page || perPage),
-        total_pages: Number(payload.total_pages || 1),
+        per_page: isAll ? "todos" : Number(pp || 10),
+        total_pages: isAll ? 1 : Number(payload.total_pages || 1),
       };
       renderPaginacion(meta);
       renderResumen(meta);
@@ -566,9 +641,20 @@
   }
 
   // ===== Eventos de filtros/listado =====
-  selectSubtipo?.addEventListener("change", () => {
-    currentPage = 1;
-    listar();
+  // Refrescar al cambiar cualquier filtro nuevo
+  [
+    selectEstatus,
+    selectNaviera,
+    selectForwarder,
+    selectShipper,
+    selectTransportista,
+    selectMedida,
+    selectSubtipo,
+  ].forEach((sel) => {
+    sel?.addEventListener("change", () => {
+      currentPage = 1;
+      listar();
+    });
   });
   inputBuscar?.addEventListener("keyup", () => {
     clearTimeout(debounceId);
@@ -578,7 +664,7 @@
     }, 250);
   });
   selectPerPage?.addEventListener("change", () => {
-    perPage = parseInt(selectPerPage.value, 10) || 10;
+    perPage = (selectPerPage.value || "10").toString(); // puede ser "todos"
     currentPage = 1;
     listar();
   });
@@ -594,7 +680,7 @@
   });
 
   window.addEventListener("DOMContentLoaded", () => {
-    perPage = parseInt(selectPerPage?.value || "10", 10);
+    perPage = (selectPerPage?.value || "10").toString();
     listar();
     if (window.feather) feather.replace();
   });

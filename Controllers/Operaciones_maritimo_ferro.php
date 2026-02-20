@@ -53,16 +53,28 @@ class Operaciones_maritimo_ferro extends Controller
         $fechaFin    = isset($_GET['maritimo_ferro_fechaFin'])    ? trim($_GET['maritimo_ferro_fechaFin'])    : '';
         $page        = isset($_GET['page'])    ? (int)$_GET['page']    : 1;
         $perPage     = isset($_GET['perPage']) ? (int)$_GET['perPage'] : (isset($_GET['maritimo_ferro_perPage']) ? (int)$_GET['maritimo_ferro_perPage'] : 10);
-
+        $estatusId       = isset($_GET['maritimo_ferro_filtroEstatus']) ? (int)$_GET['maritimo_ferro_filtroEstatus'] : 0;
+        $navieraId       = isset($_GET['maritimo_ferro_filtroNaviera']) ? (int)$_GET['maritimo_ferro_filtroNaviera'] : 0;
+        $forwarderId     = isset($_GET['maritimo_ferro_filtroForwarder']) ? (int)$_GET['maritimo_ferro_filtroForwarder'] : 0;
+        $shipperId       = isset($_GET['maritimo_ferro_filtroShipper']) ? (int)$_GET['maritimo_ferro_filtroShipper'] : 0;
+        $transportistaId = isset($_GET['maritimo_ferro_filtroTransportista']) ? (int)$_GET['maritimo_ferro_filtroTransportista'] : 0;
+        $medida          = isset($_GET['maritimo_ferro_filtroMedidaContenedor']) ? trim($_GET['maritimo_ferro_filtroMedidaContenedor']) : '';
         if ($page < 1) $page = 1;
-        $allowedPer = [10, 25, 50, 100, 200];
+        $allowedPer = [10, 25, 50, 100, 200, 500, 1000, 10000000];
         if (!in_array($perPage, $allowedPer, true)) $perPage = 10;
 
         $filters = [
-            'filtroSubtipo' => $subtipoId,
-            'term'          => mb_strtolower($term, 'UTF-8'),
-            'fecha_inicio'  => $fechaInicio,
-            'fecha_fin'     => $fechaFin,
+            'filtroSubtipo'         => $subtipoId,
+            'filtroEstatus'         => $estatusId,
+            'filtroNaviera'         => $navieraId,
+            'filtroForwarder'       => $forwarderId,
+            'filtroShipper'         => $shipperId,
+            'filtroTransportista'   => $transportistaId,
+            'filtroMedidaContenedor' => $medida,
+
+            'term'                  => mb_strtolower($term, 'UTF-8'),
+            'fecha_inicio'          => $fechaInicio,
+            'fecha_fin'             => $fechaFin,
         ];
 
         $res = $this->model->listarPaginado($filters, $page, $perPage);

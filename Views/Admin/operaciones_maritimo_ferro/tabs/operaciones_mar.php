@@ -127,56 +127,158 @@
     <div class="card-body">
 
       <!-- Filtros -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <select id="maritimo_ferro_filtroSubtipo" name="maritimo_ferro_filtroSubtipo" class="form-control"
-          style="max-width:240px;">
-          <option value="">Subtipo (Todos)</option>
-          <?php if (!empty($data['subtipos'])): ?>
-            <?php foreach ($data['subtipos'] as $st): ?>
-              <option value="<?= (int)$st['id_subtipo']; ?>">
-                <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-              </option>
-            <?php endforeach; ?>
-          <?php endif; ?>
-        </select>
 
-        <input id="maritimo_ferro_buscarOperacion" class="form-control" style="max-width:260px;"
-          placeholder="Buscar por código, BL o contenedor">
+      <div class="mb-3 col-md-12 ">
 
-        <div class="col-md-2">
-          <button class="btn btn-sm btn-outline-success" id="operaciones_mar_ExportarExcel">
-            <i data-feather="file-text" class="me-1"></i> Excel
-          </button>
-          <button class="btn btn-sm btn-outline-warning" id="operaciones_mar_ExportarPDF">
-            <i data-feather="file" class="me-1"></i> PDF
-          </button>
+
+        <!-- ===== FILA 1: Logística + rango de fechas ===== -->
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2 ">
+
+
+          <!-- Búsqueda global (DEJAR AL FINAL, sin cambiar id/name) -->
+          <input id="maritimo_ferro_buscarOperacion" class="form-control col-md-9"
+            placeholder="Buscar por código, BL o contenedor">
+          <!-- Rango de fechas -->
+          <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+            <div class="d-flex align-items-end gap-2">
+              <i data-feather="calendar"></i>
+              <span class="small text-muted">Rango:</span>
+            </div>
+
+            <input type="date" id="maritimo_ferro_fechaInicio" name="maritimo_ferro_fechaInicio" class="form-control"
+              style="max-width:165px;" aria-label="Fecha inicio" />
+
+            <input type="date" id="maritimo_ferro_fechaFin" name="maritimo_ferro_fechaFin" class="form-control"
+              style="max-width:165px;" aria-label="Fecha fin" />
+          </div>
         </div>
 
-        <!-- Filtro: Rango de fechas -->
-        <div class="d-flex flex-wrap align-items-center gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <i data-feather="calendar"></i>
-            <span class="small text-muted">Rango:</span>
+        <!-- ===== FILA 2: Catálogos principales ===== -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+
+          <!-- Subtipo -->
+          <select id="maritimo_ferro_filtroSubtipo" name="maritimo_ferro_filtroSubtipo" class="form-control"
+            style="max-width:240px;">
+            <option value="">Subtipo (Todos)</option>
+            <?php if (!empty($data['subtipos'])): ?>
+              <?php foreach ($data['subtipos'] as $st): ?>
+                <option value="<?= (int)$st['id_subtipo']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+
+          <!-- Estatus -->
+          <select id="maritimo_ferro_filtroEstatus" name="maritimo_ferro_filtroEstatus" class="form-control"
+            style="max-width:240px;">
+            <option value="">Estatus (Todos)</option>
+            <?php if (!empty($data['estatus'])): ?>
+              <?php foreach ($data['estatus'] as $st): ?>
+                <option value="<?= (int)$st['id_estatus']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+
+          <!-- Naviera -->
+          <select id="maritimo_ferro_filtroNaviera" name="maritimo_ferro_filtroNaviera" class="form-control"
+            style="max-width:240px;">
+            <option value="">Naviera (Todas)</option>
+            <?php if (!empty($data['navieras'])): ?>
+              <?php foreach ($data['navieras'] as $st): ?>
+                <option value="<?= (int)$st['id_naviera']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+
+          <!-- Forwarder -->
+          <select id="maritimo_ferro_filtroForwarder" name="maritimo_ferro_filtroForwarder" class="form-control"
+            style="max-width:240px;">
+            <option value="">Forwarder (Todas)</option>
+            <?php if (!empty($data['forwarders'])): ?>
+              <?php foreach ($data['forwarders'] as $st): ?>
+                <option value="<?= (int)$st['id_forwarder']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+
+          <!-- Shipper -->
+          <select id="maritimo_ferro_filtroShipper" name="maritimo_ferro_filtroShipper" class="form-control"
+            style="max-width:240px;">
+            <option value="">Shipper (Todas)</option>
+            <?php if (!empty($data['shippers'])): ?>
+              <?php foreach ($data['shippers'] as $st): ?>
+                <option value="<?= (int)$st['id_shipper']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+          <!-- Transportista -->
+          <select id="maritimo_ferro_filtroTransportista" name="maritimo_ferro_filtroTransportista" class="form-control"
+            style="max-width:240px;">
+            <option value="">Transportista (Todos)</option>
+            <?php if (!empty($data['transportistas'])): ?>
+              <?php foreach ($data['transportistas'] as $st): ?>
+                <option value="<?= (int)$st['id_transportista']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+          <!-- Medida contenedor -->
+          <select id="maritimo_ferro_filtroMedidaContenedor" name="maritimo_ferro_filtroMedidaContenedor"
+            class="form-control" style="max-width:240px;">
+            <option value="">Medida del Contenedor (Todas)</option>
+            <option value="20GP">20GP</option>
+            <option value="40GP">40GP</option>
+            <option value="40HC">40HC</option>
+            <option value="45HC">45HC</option>
+          </select>
+
+        </div>
+
+
+
+        <!-- ===== FILA 3: Paginación + export + búsqueda global (último) ===== -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+
+
+          <!-- Export -->
+          <div class="d-flex align-items-center gap-2 ms-auto">
+            <button class="btn btn-sm btn-outline-success" id="operaciones_mar_ExportarExcel" type="button">
+              <i data-feather="file-text" class="me-1"></i> Excel
+            </button>
+            <button class="btn btn-sm btn-outline-warning" id="operaciones_mar_ExportarPDF" type="button">
+              <i data-feather="file" class="me-1"></i> PDF
+            </button>
           </div>
 
-          <input type="date" id="maritimo_ferro_fechaInicio" name="maritimo_ferro_fechaInicio" class="form-control"
-            style="max-width: 165px;" aria-label="Fecha inicio" />
 
-          <input type="date" id="maritimo_ferro_fechaFin" name="maritimo_ferro_fechaFin" class="form-control"
-            style="max-width: 165px;" aria-label="Fecha fin" />
+
+
+          <!-- Paginación -->
+          <div class="d-flex align-items-end   gap-2">
+            <label for="maritimo_ferro_perPage" class="mb-0 small text-muted">Mostrar</label>
+            <select id="maritimo_ferro_perPage" name="maritimo_ferro_perPage" class="form-control" style="width:90px;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="10000000">Todos</option>
+            </select>
+            <span class="small text-muted">por página</span>
+          </div>
         </div>
 
-        <!-- Paginación -->
-        <div class="ms-auto d-flex align-items-center gap-2">
-          <label for="maritimo_ferro_perPage" class="mb-0 small text-muted">Mostrar</label>
-          <select id="maritimo_ferro_perPage" name="maritimo_ferro_perPage" class="form-control" style="width: 90px;">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-          <span class="small text-muted">por página</span>
-        </div>
       </div>
 
       <!-- Tabla -->
@@ -190,7 +292,6 @@
               <th class="col-md">Subtipo</th>
               <th>ETD</th>
               <th>ETA</th>
-
 
               <th class="col-ellipsis col-lg">Naviera</th>
               <th class="col-ellipsis col-xl">Forwarder</th>
@@ -275,7 +376,8 @@
             <!-- Número de Operación -->
             <div class="col-md-4">
               <label class="form-label">Número de Operación</label>
-              <input type="text" id="numeroOperacion_mf" name="numero_operacion_mf" class="form-control" placeholder="JL-61">
+              <input type="text" id="numeroOperacion_mf" name="numero_operacion_mf" class="form-control"
+                placeholder="JL-61">
               <small id="folioHelp_mf" class="text-muted d-block mt-1">Folio Preliminar</small>
             </div>
 
@@ -344,12 +446,11 @@
             <div class="col-md-6 position-relative">
               <label class="form-label">Cliente</label>
               <input type="hidden" id="clienteId_mf" name="cliente_id_mf">
-              <input type="text" id="clienteNombre_mf" class="form-control" placeholder="Escribe para buscar cliente...">
+              <input type="text" id="clienteNombre_mf" class="form-control"
+                placeholder="Escribe para buscar cliente...">
               <div id="sugerenciasCliente_mf" class="list-group"
                 style="position:absolute; z-index:1055; width:100%; display:none;"></div>
             </div>
-
-
 
             <!-- CONTENEDOR ÚNICO -->
             <div class="col-12">
@@ -381,7 +482,6 @@
                         placeholder="0.00"
                         name="peso_operacion_mf">
                     </div>-->
-
 
                   </div>
                 </div>
@@ -415,11 +515,7 @@
                     </div>
                     <div class="col-md-2">
                       <label class="form-label">Peso (Kg)</label>
-                      <input type="number"
-                        min="0"
-
-                        class="form-control pesoOperacion_mf"
-                        name="peso_operacion_mf"
+                      <input type="number" min="0" class="form-control pesoOperacion_mf" name="peso_operacion_mf"
                         placeholder="0.00">
 
                     </div>
@@ -500,8 +596,8 @@
             <!-- Descripción Mercancia -->
             <div class="col-md-12">
               <label class="form-label">Descripción Mercancia</label>
-              <textarea id="descripcion_mercancia_mf" name="descripcion_mercancia_mf" class="form-control input-uppercase" rows="2"
-                placeholder=""></textarea>
+              <textarea id="descripcion_mercancia_mf" name="descripcion_mercancia_mf"
+                class="form-control input-uppercase" rows="2" placeholder=""></textarea>
             </div>
             <!-- Notas -->
             <div class="col-md-12">
@@ -529,14 +625,11 @@
   </div>
 </div>
 
-
-
 <!-- =========================================================
      MODAL: Asignar Caja/Ferro a Operación Marítima (N↔N)
      - NO muestra FO-id (interno)
      - Identificador visible: numero_ferro / caja (contenedor físico)
 ========================================================= -->
-
 
 <!-- Modal: Asignar Ferro/Caja -->
 <div class="modal fade" id="modalAsignarFerroCaja" tabindex="-1" aria-hidden="true">
@@ -587,25 +680,16 @@
                     <!-- Ferro/Caja -->
                     <div class="col-md-6 position-relative">
                       <label class="form-label">Ferro/Caja</label>
-                      <input
-                        type="text"
-                        class="form-control input-uppercase"
-                        id="asigFerro_inputNumero"
-                        name="asigFerro_numero"
-                        placeholder="Ej. FXEU12345 / CAJA-001"
-                        autocomplete="off">
-                      <div
-                        id="asigFerro_sugerencias"
-                        class="list-group shadow-sm"
+                      <input type="text" class="form-control input-uppercase" id="asigFerro_inputNumero"
+                        name="asigFerro_numero" placeholder="Ej. FXEU12345 / CAJA-001" autocomplete="off">
+                      <div id="asigFerro_sugerencias" class="list-group shadow-sm"
                         style="position:absolute; z-index:1060; width:100%; display:none;"></div>
                     </div>
 
                     <!-- Empresa transportista -->
                     <div class="col-md-6">
                       <label class="form-label">Empresa transportista</label>
-                      <select
-                        id="asigFerro_empresaTransportista"
-                        name="asigFerro_empresaTransportista"
+                      <select id="asigFerro_empresaTransportista" name="asigFerro_empresaTransportista"
                         class="form-control">
                         <option value="">Seleccione...</option>
                         <?php if (!empty($data['transportistas'])): ?>
@@ -621,20 +705,13 @@
                     <!-- Bultos -->
                     <div class="col-md-6">
                       <label class="form-label">Bultos asignados</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        class="form-control"
-                        id="asigFerro_inputBultos"
-                        name="asigFerro_bultos"
-                        placeholder="0">
+                      <input type="number" min="0" step="1" class="form-control" id="asigFerro_inputBultos"
+                        name="asigFerro_bultos" placeholder="0">
                     </div>
 
                     <!-- Destino -->
                     <div class="col-md-6">
                       <label class="form-label">Destino</label>
-
 
                       <select id="asigFerro_destino" name="asigFerro_destino" class="form-control">
                         <option value="">Seleccione...</option>
@@ -651,32 +728,21 @@
                     <!-- Fechas -->
                     <div class="col-md-6">
                       <label class="form-label">Fecha carga</label>
-                      <input
-                        type="date"
-                        class="form-control"
-                        id="asigFerro_inputFechaCarga"
+                      <input type="date" class="form-control" id="asigFerro_inputFechaCarga"
                         name="asigFerro_fecha_carga">
                     </div>
 
                     <div class="col-md-6">
                       <label class="form-label">Fecha salida</label>
-                      <input
-                        type="date"
-                        class="form-control"
-                        id="asigFerro_inputFechaSalida"
+                      <input type="date" class="form-control" id="asigFerro_inputFechaSalida"
                         name="asigFerro_fecha_salida">
                     </div>
 
                     <!-- Notas -->
                     <div class="col-12">
                       <label class="form-label">Notas (opcional)</label>
-                      <input
-                        type="text"
-                        class="form-control input-uppercase"
-                        id="asigFerro_inputNotas"
-                        name="asigFerro_notas"
-                        maxlength="255"
-                        placeholder="Ej. Sale por patio 3 / Transfer a SD">
+                      <input type="text" class="form-control input-uppercase" id="asigFerro_inputNotas"
+                        name="asigFerro_notas" maxlength="255" placeholder="Ej. Sale por patio 3 / Transfer a SD">
                     </div>
 
                     <!-- Acciones -->
@@ -743,7 +809,8 @@
                 </div>
 
                 <div class="text-muted small mt-1">
-                  Selecciona un Ferro/Caja desde la lista de la izquierda para ver su consolidado y registrar trazabilidad.
+                  Selecciona un Ferro/Caja desde la lista de la izquierda para ver su consolidado y registrar
+                  trazabilidad.
                 </div>
 
                 <hr class="my-3">
@@ -784,35 +851,19 @@
                 <div class="row g-2 mt-2">
                   <div class="col-md-4">
                     <label class="form-label small mb-1">Origen (Puerto)</label>
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      id="asigFerro_trackOrigen"
-                      name="asigFerro_trackOrigen"
-                      value=""
-                      readonly>
+                    <input type="text" class="form-control form-control-sm" id="asigFerro_trackOrigen"
+                      name="asigFerro_trackOrigen" value="" readonly>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label small mb-1">Ubicación actual</label>
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      id="asigFerro_trackUltima"
-                      name="asigFerro_trackUltima"
-                      value=""
-                      readonly>
+                    <input type="text" class="form-control form-control-sm" id="asigFerro_trackUltima"
+                      name="asigFerro_trackUltima" value="" readonly>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label small mb-1">Destino</label>
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      id="asigFerro_trackDestino"
-                      name="asigFerro_trackDestino"
-                      value=""
-                      readonly>
+                    <input type="text" class="form-control form-control-sm" id="asigFerro_trackDestino"
+                      name="asigFerro_trackDestino" value="" readonly>
                   </div>
-
 
                 </div>
 
@@ -823,10 +874,7 @@
                     <!-- Ubicación actual -->
                     <div class="col-md-6">
                       <label class="form-label">Ubicación actual</label>
-                      <select
-                        id="asigFerro_trackUbicacionId"
-                        name="asigFerro_trackUbicacionId"
-                        class="form-control">
+                      <select id="asigFerro_trackUbicacionId" name="asigFerro_trackUbicacionId" class="form-control">
                         <option value="">Seleccione...</option>
                         <?php if (!empty($data['ciudades'])): ?>
                           <?php foreach ($data['ciudades'] as $c): ?>
@@ -839,42 +887,25 @@
 
                     </div>
 
-
-
                     <!-- Fecha/Hora -->
                     <div class="col-md-6">
                       <label class="form-label">Fecha</label>
-                      <input
-                        type="date"
-                        class="form-control"
-                        id="asigFerro_trackFechaHora"
+                      <input type="date" class="form-control" id="asigFerro_trackFechaHora"
                         name="asigFerro_trackFechaHora">
                     </div>
 
                     <!-- Referencia / Guía -->
                     <div class="col-md-12">
                       <label class="form-label">Direccion(opcional)</label>
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="asigFerro_trackReferencia"
-                        name="asigFerro_trackReferencia"
-                        maxlength="80"
-                        placeholder="">
+                      <input type="text" class="form-control" id="asigFerro_trackReferencia"
+                        name="asigFerro_trackReferencia" maxlength="80" placeholder="">
                     </div>
-
-
 
                     <!-- Notas -->
                     <div class="col-12">
                       <label class="form-label">Notas</label>
-                      <textarea
-                        class="form-control"
-                        id="asigFerro_trackNotas"
-                        name="asigFerro_trackNotas"
-                        rows="2"
-                        maxlength="255"
-                        placeholder=""></textarea>
+                      <textarea class="form-control" id="asigFerro_trackNotas" name="asigFerro_trackNotas" rows="2"
+                        maxlength="255" placeholder=""></textarea>
                     </div>
 
                     <!-- Acciones trazabilidad -->
@@ -882,16 +913,13 @@
                       <button type="button" class="btn btn-primary" id="asigFerro_btnGuardarTrazabilidad" disabled>
                         <i data-feather="save" class="me-1"></i> Guardar ubicación
                       </button>
-                      <button type="button" class="btn btn-outline-secondary" id="asigFerro_btnLimpiarTrazabilidad" disabled>
+                      <button type="button" class="btn btn-outline-secondary" id="asigFerro_btnLimpiarTrazabilidad"
+                        disabled>
                         <i data-feather="x" class="me-1"></i> Limpiar
                       </button>
                     </div>
                   </div>
                 </form>
-
-
-
-
 
               </div>
             </div>
@@ -911,12 +939,17 @@
   </div>
 </div>
 
-
-
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js"></script>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_registrar.js"></script>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/asignacion_ferro_catalogo.js"></script>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/trazabilidad_catalogo.js"></script>
+<script
+  src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js">
+</script>
+<script
+  src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_registrar.js">
+</script>
+<script
+  src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/asignacion_ferro_catalogo.js">
+</script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/AsignacionFerros/trazabilidad_catalogo.js">
+</script>
 <script>
   // Mayúsculas automáticas (MF) para contenedores (incluye filas agregadas por template)
   document.getElementById("contenedoresRepeater_mf").addEventListener("input", function(e) {
@@ -924,8 +957,6 @@
       e.target.value = e.target.value.toUpperCase();
     }
   });
-
-
   document.getElementById("contenedoresRepeater_mf").addEventListener("input", function(e) {
     if (e.target.classList.contains("contenedor-bultos_mf")) {
       // Enteros >= 0
