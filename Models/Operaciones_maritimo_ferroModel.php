@@ -375,21 +375,21 @@ class Operaciones_maritimo_ferroModel extends Query
             foreach ($terms as $t) {
                 $needle = '%' . $t . '%';
                 $where .= " AND (
-                            LOWER(o.numero_operacion) LIKE ?
-                            OR LOWER(o.numero_bl)     LIKE ?
-                            OR LOWER(p.nombre)        LIKE ?
-                            OR LOWER(e.nombre)        LIKE ?
-                            OR LOWER(c.nombre)        LIKE ?
-                            OR LOWER(s.nombre)        LIKE ?
-                            OR EXISTS (
-                                SELECT 1
-                                FROM contenedores_maritimos_operacion cmo2
-                                JOIN contenedores_maritimos cm2
-                                ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                                WHERE cmo2.operacion_id = o.id_operacion
-                                AND LOWER(cm2.numero_contenedor) LIKE ?
-                            )
-                        )";
+                        LOWER(o.numero_operacion) LIKE ?
+                        OR LOWER(o.numero_bl)     LIKE ?
+                        OR LOWER(p.nombre)        LIKE ?
+                        OR LOWER(e.nombre)        LIKE ?
+                        OR LOWER(c.nombre)        LIKE ?
+                        OR LOWER(s.nombre)        LIKE ?
+                        OR EXISTS (
+                            SELECT 1
+                            FROM contenedores_maritimos_operacion cmo2
+                            JOIN contenedores_maritimos cm2
+                              ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                            WHERE cmo2.operacion_id = o.id_operacion
+                              AND LOWER(cm2.numero_contenedor) LIKE ?
+                        )
+                    )";
                 array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
             }
         }
@@ -417,15 +417,15 @@ class Operaciones_maritimo_ferroModel extends Query
         }
 
         $sqlCount = "
-                    SELECT COUNT(DISTINCT o.id_operacion) AS total
-                    FROM operaciones o
-                    LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-                    LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
-                    LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-                    LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-                    LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
-                    $where
-                ";
+        SELECT COUNT(DISTINCT o.id_operacion) AS total
+        FROM operaciones o
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
+        LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+        $where
+    ";
         $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
         $total    = (int)$rowCount['total'];
 
@@ -433,137 +433,160 @@ class Operaciones_maritimo_ferroModel extends Query
         $off   = (int)$offset;
 
         $sqlData = "
-SELECT
-    o.id_operacion,
-    o.numero_operacion,
-    st.nombre  AS subtipo,
-    st.tipo_operacion_id AS tipo,
-    o.numero_bl,
-    p.nombre   AS puerto_arribo,
-    n.nombre   AS naviera,
-    f.nombre   AS forwarder,
-    c.nombre   AS cliente,
-    o.etd, o.eta,
-    o.descripcion_mercancia AS mercancia,
-    e.nombre   AS estatus,
-    o.isf,
-    o.cita_puerto,
-    o.shipper_id,
-    s.nombre     AS shipper,
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            st.nombre  AS subtipo,
+            st.tipo_operacion_id AS tipo,
+            o.numero_bl,
+            p.nombre   AS puerto_arribo,
+            n.nombre   AS naviera,
+            f.nombre   AS forwarder,
+            c.nombre   AS cliente,
+            o.etd, o.eta,
+            o.descripcion_mercancia AS mercancia,
+            e.nombre   AS estatus,
+            o.isf,
+            o.cita_puerto,
+            o.shipper_id,
+            s.nombre     AS shipper,
 
-    /* ===== agregados sin fan-out ===== */
-    cont.contenedores,
-    cont.bultos_total,
-    cont.tipo_contenedor,
+            /* ===== agregados sin fan-out ===== */
+            cont.contenedores,
+            cont.bultos_total,
+            cont.tipo_contenedor,
 
-    bro.brokers,
+            bro.brokers,
 
-    o.peso_total,
-    tr.nombre AS transportista,
+            o.peso_total,
+            tr.nombre AS transportista,
 
-    /* ===== TODOS los ferros/cajas vinculados ===== */
-    asig.ferros_cajas,
-    asig.destinos_ferros_cajas,
-    asig.fechas_salida_ferros_cajas,
-    asig.fechas_carga_ferros_cajas,
+            /* ===== TODOS los ferros/cajas vinculados ===== */
+            asig.ferros_cajas,
+            asig.destinos_ferros_cajas,
+            asig.fechas_salida_ferros_cajas,
+            asig.fechas_carga_ferros_cajas,
+            asig.ubicaciones_ferros_cajas,
 
-    /* opcional: un string “bonito” ya formateado */
-    asig.detalle_ferros_cajas
+            /* opcional: un string “bonito” ya formateado */
+            asig.detalle_ferros_cajas
 
-FROM operaciones o
-LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
-LEFT JOIN navieras n            ON n.id_naviera = o.naviera_id
-LEFT JOIN forwarders f          ON f.id_forwarder = o.forwarder_id
-LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
-LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
-LEFT JOIN shippers s            ON s.id_shipper = o.shipper_id
-LEFT JOIN transportistas tr     ON tr.id_transportista = o.transportista_id
+        FROM operaciones o
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
+        LEFT JOIN navieras n            ON n.id_naviera = o.naviera_id
+        LEFT JOIN forwarders f          ON f.id_forwarder = o.forwarder_id
+        LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
+        LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
+        LEFT JOIN shippers s            ON s.id_shipper = o.shipper_id
+        LEFT JOIN transportistas tr     ON tr.id_transportista = o.transportista_id
 
-/* ===== contenedores + bultos (1 fila por operación) ===== */
-LEFT JOIN (
-    SELECT
-        cmo.operacion_id,
-        GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                     ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores,
-        COALESCE(SUM(cmo.bultos),0) AS bultos_total,
-        MAX(cm.tipo) AS tipo_contenedor
-    FROM contenedores_maritimos_operacion cmo
-    INNER JOIN contenedores_maritimos cm
-        ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-    GROUP BY cmo.operacion_id
-) cont ON cont.operacion_id = o.id_operacion
+        /* ===== contenedores + bultos (1 fila por operación) ===== */
+        LEFT JOIN (
+            SELECT
+                cmo.operacion_id,
+                GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                             ORDER BY cm.numero_contenedor SEPARATOR ', ') AS contenedores,
+                COALESCE(SUM(cmo.bultos),0) AS bultos_total,
+                MAX(cm.tipo) AS tipo_contenedor
+            FROM contenedores_maritimos_operacion cmo
+            INNER JOIN contenedores_maritimos cm
+                ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+            GROUP BY cmo.operacion_id
+        ) cont ON cont.operacion_id = o.id_operacion
 
-/* ===== brokers (1 fila por operación) ===== */
-LEFT JOIN (
-    SELECT
-        ob.operacion_id,
-        GROUP_CONCAT(DISTINCT b.nombre
-                     ORDER BY b.nombre SEPARATOR ', ') AS brokers
-    FROM operacion_brokers ob
-    INNER JOIN brokers b ON b.id_broker = ob.broker_id
-    GROUP BY ob.operacion_id
-) bro ON bro.operacion_id = o.id_operacion
+        /* ===== brokers (1 fila por operación) ===== */
+        LEFT JOIN (
+            SELECT
+                ob.operacion_id,
+                GROUP_CONCAT(DISTINCT b.nombre
+                             ORDER BY b.nombre SEPARATOR ', ') AS brokers
+            FROM operacion_brokers ob
+            INNER JOIN brokers b ON b.id_broker = ob.broker_id
+            GROUP BY ob.operacion_id
+        ) bro ON bro.operacion_id = o.id_operacion
 
-/* ===== TODAS las asignaciones ferro/caja (1 fila por operación) ===== */
-LEFT JOIN (
-    SELECT
-        cmo2.operacion_id,
+        /* ===== TODAS las asignaciones ferro/caja (1 fila por operación) ===== */
+        LEFT JOIN (
+            SELECT
+                cmo2.operacion_id,
 
-        /* listas paralelas (misma ORDER BY para que “correspondan” por posición) */
-        GROUP_CONCAT(cf.numero_ferro
-            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
-            SEPARATOR ', '
-        ) AS ferros_cajas,
+                /* listas paralelas (misma ORDER BY para que “correspondan” por posición) */
+                GROUP_CONCAT(cf.numero_ferro
+                    ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                    SEPARATOR ', '
+                ) AS ferros_cajas,
 
-        GROUP_CONCAT(COALESCE(ci.nombre_ciudad,'')
-            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
-            SEPARATOR ', '
-        ) AS destinos_ferros_cajas,
+                GROUP_CONCAT(COALESCE(ci.nombre_ciudad,'')
+                    ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                    SEPARATOR ', '
+                ) AS destinos_ferros_cajas,
 
-        GROUP_CONCAT(DATE_FORMAT(ofe.fecha,'%Y-%m-%d')
-            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
-            SEPARATOR ', '
-        ) AS fechas_salida_ferros_cajas,
+                GROUP_CONCAT(DATE_FORMAT(ofe.fecha,'%Y-%m-%d')
+                    ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                    SEPARATOR ', '
+                ) AS fechas_salida_ferros_cajas,
 
-        GROUP_CONCAT(COALESCE(DATE_FORMAT(ofe.fecha_carga,'%Y-%m-%d'),'')
-            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
-            SEPARATOR ', '
-        ) AS fechas_carga_ferros_cajas,
+                GROUP_CONCAT(COALESCE(DATE_FORMAT(ofe.fecha_carga,'%Y-%m-%d'),'')
+                    ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                    SEPARATOR ', '
+                ) AS fechas_carga_ferros_cajas,
 
-        /* opcional: todo en una sola columna fácil de mostrar */
-        GROUP_CONCAT(
-            CONCAT(
-                cf.numero_ferro,
-                ' → ',
-                COALESCE(ci.nombre_ciudad,'—'),
-                ' | Salida: ', COALESCE(DATE_FORMAT(ofe.fecha,'%Y-%m-%d'),'—'),
-                ' | Carga: ',  COALESCE(DATE_FORMAT(ofe.fecha_carga,'%Y-%m-%d'),'—')
-            )
-            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
-            SEPARATOR ' || '
-        ) AS detalle_ferros_cajas
+                /* ✅ NUEVO: última ubicación (trazabilidad) por FO */
+                GROUP_CONCAT(COALESCE(tfu.ubicacion_actual,'')
+                    ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                    SEPARATOR ', '
+                ) AS ubicaciones_ferros_cajas,
 
-    FROM contenedor_maritimo_ferro cmf2
-    INNER JOIN contenedores_maritimos_operacion cmo2
-        ON cmo2.id = cmf2.cont_maritimo_operacion_id
-    INNER JOIN operaciones_ferroviarias ofe
-        ON ofe.id_operacion_ferro = cmf2.operacion_ferro_id
-    INNER JOIN contenedores_fisicos cf
-        ON cf.id_fisico = ofe.contenedor_fisico_id
-    LEFT JOIN ciudades ci
-        ON ci.id_ciudad = ofe.destino_id
-    WHERE cmf2.estatus = 1
-    GROUP BY cmo2.operacion_id
-) asig ON asig.operacion_id = o.id_operacion
+                /* opcional: todo en una sola columna fácil de mostrar */
+                GROUP_CONCAT(
+                    CONCAT(
+                        cf.numero_ferro,
+                        ' → ',
+                        COALESCE(ci.nombre_ciudad,'—'),
+                        ' | Salida: ', COALESCE(DATE_FORMAT(ofe.fecha,'%Y-%m-%d'),'—'),
+                        ' | Ubicación: ', COALESCE(tfu.ubicacion_actual,'—'),
+                        ' | Carga: ',  COALESCE(DATE_FORMAT(ofe.fecha_carga,'%Y-%m-%d'),'—')
+                    )
+                    ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                    SEPARATOR ' || '
+                ) AS detalle_ferros_cajas
 
-$where
+            FROM contenedor_maritimo_ferro cmf2
+            INNER JOIN contenedores_maritimos_operacion cmo2
+                ON cmo2.id = cmf2.cont_maritimo_operacion_id
+            INNER JOIN operaciones_ferroviarias ofe
+                ON ofe.id_operacion_ferro = cmf2.operacion_ferro_id
+            INNER JOIN contenedores_fisicos cf
+                ON cf.id_fisico = ofe.contenedor_fisico_id
+            LEFT JOIN ciudades ci
+                ON ci.id_ciudad = ofe.destino_id
 
-ORDER BY o.id_operacion DESC
-LIMIT $limit OFFSET $off
-";
+            /* ✅ ÚLTIMA UBICACIÓN por FO (operacion_ferro_id) */
+            LEFT JOIN (
+                SELECT
+                    tf.operacion_ferro_id,
+                    SUBSTRING_INDEX(
+                        GROUP_CONCAT(ci2.nombre_ciudad
+                            ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                            SEPARATOR '||'
+                        ),
+                        '||', 1
+                    ) AS ubicacion_actual
+                FROM trazabilidad_ferro tf
+                INNER JOIN ciudades ci2 ON ci2.id_ciudad = tf.ubicacion_id
+                WHERE tf.operacion_ferro_id IS NOT NULL
+                GROUP BY tf.operacion_ferro_id
+            ) tfu ON tfu.operacion_ferro_id = ofe.id_operacion_ferro
 
+            WHERE cmf2.estatus = 1
+            GROUP BY cmo2.operacion_id
+        ) asig ON asig.operacion_id = o.id_operacion
 
+        $where
+        ORDER BY o.id_operacion DESC
+        LIMIT $limit OFFSET $off
+    ";
 
         $rows = $this->selectAll($sqlData, $args) ?: [];
 

@@ -108,7 +108,11 @@
     const destinosStr = (item.destinos_ferros_cajas || "").trim();
     const fechasStr = (item.fechas_salida_ferros_cajas || "").trim();
 
-    if (!ferrosStr) return { ferros: "-", destinos: "-", fechas: "-" };
+    // ✅ NUEVO
+    const ubicacionesStr = (item.ubicaciones_ferros_cajas || "").trim();
+
+    if (!ferrosStr)
+      return { ferros: "-", destinos: "-", fechas: "-", ubicaciones: "-" };
 
     const ferros = ferrosStr
       .split(",")
@@ -118,6 +122,11 @@
       ? destinosStr.split(",").map((s) => s.trim())
       : [];
     const fechas = fechasStr ? fechasStr.split(",").map((s) => s.trim()) : [];
+
+    // ✅ NUEVO
+    const ubicaciones = ubicacionesStr
+      ? ubicacionesStr.split(",").map((s) => s.trim())
+      : [];
 
     const opId = item.id_operacion || "";
 
@@ -140,6 +149,11 @@
       ferros: mkStack(ferros.map((v, i) => mkBadge(v || "—", i))),
       destinos: mkStack(ferros.map((_, i) => mkBadge(destinos[i] || "—", i))),
       fechas: mkStack(ferros.map((_, i) => mkBadge(fechas[i] || "—", i))),
+
+      // ✅ NUEVO
+      ubicaciones: mkStack(
+        ferros.map((_, i) => mkBadge(ubicaciones[i] || "Sin Ubicación", i)),
+      ),
     };
   }
 
@@ -181,7 +195,7 @@
         <td>${asig.ferros} </td>
         <td>${asig.destinos}</td>
         <td>${asig.fechas}</td>
-        <td>-</td>
+        <td>${asig.ubicaciones}</td>
         <td>
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
