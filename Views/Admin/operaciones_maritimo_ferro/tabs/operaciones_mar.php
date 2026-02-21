@@ -641,7 +641,7 @@
             <!-- Notas -->
             <div class="col-md-12">
               <label class="form-label">Notas</label>
-              <textarea id="notas_mf" name="notas_mf" class="form-control" rows="2"
+              <textarea id="notas_mf" name="notas_mf" class="form-control input-uppercase" rows="2"
                 placeholder="Observaciones generales"></textarea>
             </div>
 
