@@ -38,10 +38,13 @@
     "rutaHist_operacionFerroId",
   );
   const hidAsignacionId = document.getElementById("rutaHist_asignacionId");
-  // ✅ ESTE INPUT DEBES TENERLO EN EL HTML (te lo pongo abajo)
   const hidContenedorFisicoId = document.getElementById(
     "rutaHist_contenedorFisicoId",
   );
+
+  // ✅ NUEVOS hidden (asegúrate de tenerlos en el HTML)
+  const hidDestinoNombre = document.getElementById("rutaHist_destinoNombre");
+  const hidLlegoDestino = document.getElementById("rutaHist_llegoDestino");
 
   const badgeOp = document.getElementById("rutaHist_badgeOperacion");
   const badgeCont = document.getElementById("rutaHist_badgeContenedor");
@@ -200,27 +203,29 @@
     const asigId = safe(r.asignacion_id);
     const foId = safe(r.id_operacion_ferro);
     const opId = safe(r.id_operacion);
-    const fisicoId = safe(r.contenedor_fisico_id); // ✅ indispensable
+    const fisicoId = safe(r.id_fisico);
 
     return `
-      <div class="d-flex gap-1 justify-content-center flex-wrap">
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-success btn-traza-detalle"
-          data-bs-toggle="modal"
-          data-bs-target="#modalRutaHistorial"
-          data-asig-id="${asigId}"
-          data-fo-id="${foId}"
-          data-op-id="${opId}"
-          data-fisico-id="${fisicoId}"
-          data-op="${safe(r.operacion_maritima || r.numero_operacion)}"
-          data-cont="${safe(r.contenedor_maritimo || r.numero_contenedor)}"
-          data-ferro="${safe(r.ferro_caja || r.numero_ferro)}"
-          title="Ver historial"
-        >
-          <i data-feather="map-pin" class="me-1"></i> Historial
-        </button>
-      </div>`;
+    <div class="d-flex gap-1 justify-content-center flex-wrap">
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-success btn-traza-detalle"
+        data-bs-toggle="modal"
+        data-bs-target="#modalRutaHistorial"
+        data-asig-id="${asigId}"
+        data-fo-id="${foId}"
+        data-op-id="${opId}"
+        data-fisico-id="${fisicoId}"
+        data-op="${safe(r.operacion_maritima || r.numero_operacion)}"
+        data-cont="${safe(r.contenedor_maritimo || r.numero_contenedor)}"
+        data-ferro="${safe(r.ferro_caja || r.numero_ferro)}"
+        data-destino="${safe(r.destino)}"
+        data-llego="${safe(r.llego_destino)}"
+        title="Ver historial"
+      >
+        <i data-feather="map-pin" class="me-1"></i> Historial
+      </button>
+    </div>`;
   }
 
   function renderTabla(rows) {
@@ -329,9 +334,64 @@
     if (detUsr) detUsr.textContent = "—";
   }
 
-  function renderTimeline(rows) {
+  function renderDestinoFinal(meta) {
     if (!modalTimeline) return;
 
+    const destino =
+      safe(meta?.destino_nombre) || safe(hidDestinoNombre?.value) || "—";
+    const lastUbi =
+      safe(meta?.ubicacion_nombre_last) || safe(meta?.ubicacion_nombre) || "";
+    const llego =
+      Number(meta?.llego_destino || hidLlegoDestino?.value || 0) === 1;
+
+    // Respeta tus estilos: usamos "ruta-step" + "is-destino".
+    // Solo agregamos classes bootstrap de borde (no metemos CSS nuevo).
+    const borderClass = llego
+      ? "border border-success"
+      : "border border-danger";
+
+    const div = document.createElement("div");
+    div.className = `ruta-step is-destino ${borderClass}`;
+    div.setAttribute("data-fecha", "");
+    div.setAttribute("data-ubicacion", destino);
+    div.setAttribute(
+      "data-notas",
+      llego ? "Llegó al destino." : "Pendiente de llegar al destino.",
+    );
+    div.setAttribute("data-usuario", "—");
+
+    div.innerHTML = `
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <div class="ruta-lugar">Destino final: ${destino}</div>
+          <div class="small text-muted">${
+            llego ? "Arribo confirmado" : "Aún no registra arribo"
+          }</div>
+        </div>
+        <div class="ruta-fecha">—</div>
+      </div>
+      <div class="mt-2 d-flex flex-wrap gap-2">
+        ${
+          llego
+            ? `<span class="badge bg-success ruta-chip text-white">LLEGÓ</span>`
+            : `<span class="badge bg-danger ruta-chip text-white">PENDIENTE</span>`
+        }
+        <span class="badge bg-light text-dark ruta-chip">${
+          lastUbi ? `Última: ${lastUbi}` : "Sin ubicación registrada"
+        }</span>
+      </div>
+    `;
+
+    modalTimeline.appendChild(div);
+  }
+
+  function renderTimeline(rows, meta) {
+    if (!modalTimeline) return;
+
+    // Siempre limpiamos y repintamos todo
+    modalTimeline.innerHTML = "";
+
+    // Si no hay eventos, mostramos mensaje y AÚN ASÍ pintamos destino final abajo
     if (!rows || rows.length === 0) {
       modalTimeline.innerHTML = `
         <div class="ruta-step">
@@ -341,17 +401,13 @@
               <div class="small text-muted">No hay historial registrado.</div>
             </div>
             <div class="ruta-fecha">—</div>
-          </div>
-          <div class="mt-2 d-flex flex-wrap gap-2">
-            <span class="badge bg-secondary ruta-chip">INFO</span>
-          </div>
+          </div> 
         </div>`;
+      renderDestinoFinal(meta);
       return;
     }
 
-    modalTimeline.innerHTML = "";
-
-    rows.forEach((r, idx) => {
+    rows.forEach((r) => {
       const fecha = safe(r.fecha_evento || r.created_at);
       const ubi = safe(r.ubicacion);
       const ref = safe(r.referencia);
@@ -362,7 +418,7 @@
       div.setAttribute("data-fecha", fecha);
       div.setAttribute("data-ubicacion", ubi);
       div.setAttribute("data-notas", notas);
-      div.setAttribute("data-usuario", "—"); // si luego agregas usuario, aquí lo pones
+      div.setAttribute("data-usuario", "—");
 
       div.innerHTML = `
         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -371,14 +427,13 @@
             <div class="small text-muted">${ref ? ref : "Evento"}</div>
           </div>
           <div class="ruta-fecha">${fecha || "—"}</div>
-        </div>
-        <div class="mt-2 d-flex flex-wrap gap-2">
-          <span class="badge bg-primary ruta-chip">EVENTO</span>
-          <span class="badge bg-light text-dark ruta-chip">#${idx + 1}</span>
-        </div>
+        </div> 
       `;
       modalTimeline.appendChild(div);
     });
+
+    // ✅ Siempre agregamos el destino al final (rojo/verde según meta.llego_destino)
+    renderDestinoFinal(meta);
   }
 
   function cargarHistorialRuta() {
@@ -420,6 +475,7 @@
         if (modalTimeline)
           modalTimeline.innerHTML = `<div class="text-danger">Error al cargar historial.</div>`;
         if (modalMeta) modalMeta.textContent = "Error al cargar historial.";
+        if (modalBadgeParadas) modalBadgeParadas.textContent = "0 paradas";
         return;
       }
 
@@ -440,12 +496,28 @@
       }
 
       const rows = Array.isArray(payload.rows) ? payload.rows : [];
-      if (modalMeta)
-        modalMeta.textContent = `Mostrando ${rows.length} evento(s)`;
+      const meta = payload.meta || {};
+
+      // Guardamos (por si la UI los quiere después)
+      if (hidDestinoNombre)
+        hidDestinoNombre.value =
+          safe(meta?.destino_nombre) || hidDestinoNombre.value || "";
+      if (hidLlegoDestino)
+        hidLlegoDestino.value = String(
+          Number(meta?.llego_destino || hidLlegoDestino.value || 0),
+        );
+
+      if (modalMeta) {
+        const destinoTxt = safe(meta?.destino_nombre);
+        modalMeta.textContent = destinoTxt
+          ? `Mostrando ${rows.length} evento(s) | Destino: ${destinoTxt}`
+          : `Mostrando ${rows.length} evento(s)`;
+      }
+
       if (modalBadgeParadas)
         modalBadgeParadas.textContent = `${rows.length} paradas`;
 
-      renderTimeline(rows);
+      renderTimeline(rows, meta);
       if (window.feather) feather.replace();
     };
   }
@@ -482,6 +554,8 @@
     const btn = e.target.closest(".btn-traza-detalle");
     if (!btn) return;
 
+    console.log("DATASET BTN:", btn.dataset);
+
     // Badges
     if (badgeOp) badgeOp.textContent = btn.dataset.op || "—";
     if (badgeCont) badgeCont.textContent = btn.dataset.cont || "—";
@@ -493,6 +567,10 @@
     if (hidAsignacionId) hidAsignacionId.value = btn.dataset.asigId || "";
     if (hidContenedorFisicoId)
       hidContenedorFisicoId.value = btn.dataset.fisicoId || "";
+
+    // ✅ Guardamos destino/flag de la tabla (para mostrar rápido aunque luego se refine con meta del endpoint)
+    if (hidDestinoNombre) hidDestinoNombre.value = btn.dataset.destino || "";
+    if (hidLlegoDestino) hidLlegoDestino.value = btn.dataset.llego || "0";
 
     cargarHistorialRuta();
   });

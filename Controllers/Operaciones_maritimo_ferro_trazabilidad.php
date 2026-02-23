@@ -38,7 +38,7 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
     {
         header('Content-Type: application/json; charset=utf-8');
 
-   
+
 
         $contenedorFisicoId = isset($_GET['contenedor_fisico_id']) ? (int)$_GET['contenedor_fisico_id'] : 0;
         $operacionFerroId   = isset($_GET['operacion_ferro_id']) ? (int)$_GET['operacion_ferro_id'] : 0;
@@ -56,16 +56,26 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
         $limit = max(1, min(200, $limit));
 
         try {
-            $rows = $this->model->listarHistorial($contenedorFisicoId, $operacionFerroId, $limit);
+            $res = $this->model->listarHistorial($contenedorFisicoId, $operacionFerroId, $limit);
+
+            $rows = $res['rows'] ?? [];
+            $meta = $res['meta'] ?? [];
 
             echo json_encode([
                 'status' => 'success',
-                'rows'   => $rows ?: [],
+                'rows'   => $rows,
                 'meta'   => [
-                    'contenedor_fisico_id' => $contenedorFisicoId,
-                    'operacion_ferro_id'   => $operacionFerroId,
-                    'limit'                => $limit,
-                    'count'                => is_array($rows) ? count($rows) : 0,
+                    'contenedor_fisico_id'  => (int)$contenedorFisicoId,
+                    'operacion_ferro_id'    => (int)$operacionFerroId,
+                    'limit'                 => (int)$limit,
+                    'count'                 => is_array($rows) ? count($rows) : 0,
+
+                    // ✅ nuevos campos para UI
+                    'destino_id_efectivo'   => $meta['destino_id_efectivo'] ?? null,
+                    'ubicacion_id_last'     => $meta['ubicacion_id_last'] ?? null,
+                    'destino_nombre'        => $meta['destino_nombre'] ?? null,
+                    'ubicacion_nombre_last' => $meta['ubicacion_nombre_last'] ?? null,
+                    'llego_destino'         => (int)($meta['llego_destino'] ?? 0),
                 ],
             ]);
         } catch (Exception $e) {

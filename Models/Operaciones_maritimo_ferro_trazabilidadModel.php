@@ -146,6 +146,21 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
                 cf.id_fisico,
                 cf.numero_ferro AS ferro_caja,
 
+                -- ids para lógica
+                COALESCE(tf_last.destino_id, ofe.destino_id) AS destino_id_efectivo,
+                tf_last.ubicacion_id AS ubicacion_id_last,
+
+                -- bandera de llegada (solo si hay ubicación)
+                CASE
+                WHEN tf_last.ubicacion_id IS NOT NULL
+                AND tf_last.ubicacion_id = COALESCE(tf_last.destino_id, ofe.destino_id)
+                THEN 1 ELSE 0
+                END AS llego_destino,
+                 
+ 
+ 
+ 
+
                 cli.nombre AS cliente,
 
                 COALESCE(puerto_last.nombre, puerto_st.nombre, '—') AS origen,
@@ -230,21 +245,80 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     {
         $limit = max(1, min(200, (int)$limit));
 
-        $sql = "
+        // --- rows del historial (igual que ya lo tienes, pero agregamos ids por si quieres usarlos después)
+        $sqlRows = "
+        SELECT
+            tf.id_traza,
+            tf.fecha_evento,
+            tf.ubicacion_id,
+            tf.destino_id,
+            cu.nombre_ciudad AS ubicacion,
+            tf.referencia,
+            tf.notas,
+            tf.created_at
+        FROM trazabilidad_ferro tf
+        LEFT JOIN ciudades cu ON cu.id_ciudad = tf.ubicacion_id
+        WHERE tf.contenedor_fisico_id = ?
+          AND tf.operacion_ferro_id = ?
+        ORDER BY tf.created_at ASC
+        LIMIT {$limit}
+    ";
+        $rows = $this->selectAll($sqlRows, [$contenedorFisicoId, $operacionFerroId]) ?: [];
+
+        // --- meta: “última traza” + destino efectivo (si no hay traza, toma destino de ofe)
+        $sqlMeta = "
+        SELECT
+            ofe.id_operacion_ferro AS operacion_ferro_id,
+            ofe.contenedor_fisico_id AS contenedor_fisico_id,
+
+            -- destino efectivo: si hay tf_last.destino_id úsalo; si no, ofe.destino_id
+            COALESCE(tf_last.destino_id, ofe.destino_id) AS destino_id_efectivo,
+            tf_last.ubicacion_id AS ubicacion_id_last,
+
+            d.nombre_ciudad AS destino_nombre,
+            u.nombre_ciudad AS ubicacion_nombre_last,
+
+            CASE
+              WHEN tf_last.ubicacion_id IS NOT NULL
+               AND tf_last.ubicacion_id = COALESCE(tf_last.destino_id, ofe.destino_id)
+              THEN 1 ELSE 0
+            END AS llego_destino
+
+        FROM operaciones_ferroviarias ofe
+
+        LEFT JOIN (
             SELECT
-                tf.id_traza,
-                tf.fecha_evento,
-                cu.nombre_ciudad AS ubicacion,
-                tf.referencia,
-                tf.notas,
-                tf.created_at
+                tf.operacion_ferro_id,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT(tf.destino_id ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC),
+                    ',', 1
+                ) AS UNSIGNED) AS destino_id,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT(tf.ubicacion_id ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC),
+                    ',', 1
+                ) AS UNSIGNED) AS ubicacion_id
             FROM trazabilidad_ferro tf
-            LEFT JOIN ciudades cu ON cu.id_ciudad = tf.ubicacion_id
-            WHERE tf.contenedor_fisico_id = ?
-              AND tf.operacion_ferro_id = ?
-            ORDER BY tf.created_at DESC
-            LIMIT {$limit}
-        ";
-        return $this->selectAll($sql, [$contenedorFisicoId, $operacionFerroId]) ?: [];
+            WHERE tf.operacion_ferro_id IS NOT NULL
+            GROUP BY tf.operacion_ferro_id
+        ) tf_last ON tf_last.operacion_ferro_id = ofe.id_operacion_ferro
+
+        LEFT JOIN ciudades d ON d.id_ciudad = COALESCE(tf_last.destino_id, ofe.destino_id)
+        LEFT JOIN ciudades u ON u.id_ciudad = tf_last.ubicacion_id
+
+        WHERE ofe.id_operacion_ferro = ?
+          AND ofe.contenedor_fisico_id = ?
+        LIMIT 1
+    ";
+        $meta = $this->select($sqlMeta, [$operacionFerroId, $contenedorFisicoId]) ?: [
+            'operacion_ferro_id' => $operacionFerroId,
+            'contenedor_fisico_id' => $contenedorFisicoId,
+            'destino_id_efectivo' => null,
+            'ubicacion_id_last' => null,
+            'destino_nombre' => null,
+            'ubicacion_nombre_last' => null,
+            'llego_destino' => 0,
+        ];
+
+        return ['rows' => $rows, 'meta' => $meta];
     }
 }

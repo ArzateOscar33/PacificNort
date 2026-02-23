@@ -205,6 +205,8 @@
         <input type="hidden" id="rutaHist_operacionFerroId" value="">
         <input type="hidden" id="rutaHist_asignacionId" value="">
         <input type="hidden" id="rutaHist_contenedorFisicoId" value="">
+        <input type="hidden" id="rutaHist_destinoNombre" value="">
+        <input type="hidden" id="rutaHist_llegoDestino" value="0">
 
         <!-- Meta / acciones -->
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -232,7 +234,7 @@
                   <strong class="mb-0">Ruta (Origen → Paradas → Destino)</strong>
                 </div>
 
-                <span class="badge bg-secondary" id="rutaHist_badgeTotalParadas">0 paradas</span>
+                <span class="badge bg-primary text-white p-2" id="rutaHist_badgeTotalParadas">0 paradas</span>
               </div>
 
               <div class="card-body">
