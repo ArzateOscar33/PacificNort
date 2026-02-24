@@ -54,6 +54,9 @@
   const badgeOp = document.getElementById("rutaHist_badgeOperacion");
   const badgeCont = document.getElementById("rutaHist_badgeContenedor");
   const badgeFerro = document.getElementById("rutaHist_badgeFerro");
+  const badgeTransportista = document.getElementById(
+    "rutaHist_badgeTransportista",
+  );
 
   const detFecha = document.getElementById("rutaHist_det_fecha");
   const detUbi = document.getElementById("rutaHist_det_ubicacion");
@@ -226,6 +229,7 @@
         data-ferro="${safe(r.ferro_caja || r.numero_ferro)}"
         data-destino="${safe(r.destino)}"
         data-llego="${safe(r.llego_destino)}"
+        data-transportista="${safe(r.transportista)}"
         title="Ver historial"
       >
         <i data-feather="map-pin" class="me-1"></i> Historial
@@ -575,6 +579,7 @@
     if (badgeOp) badgeOp.textContent = btn.dataset.op || "—";
     if (badgeCont) badgeCont.textContent = btn.dataset.cont || "—";
     if (badgeFerro) badgeFerro.textContent = btn.dataset.ferro || "—";
+    badgeTransportista.textContent = btn.dataset.transportista || "—";
 
     // Hidden refs
     if (hidOperacionId) hidOperacionId.value = btn.dataset.opId || "";

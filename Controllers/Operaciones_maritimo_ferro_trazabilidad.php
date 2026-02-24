@@ -42,8 +42,6 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
     {
         header('Content-Type: application/json; charset=utf-8');
 
-
-
         $contenedorFisicoId = isset($_GET['contenedor_fisico_id']) ? (int)$_GET['contenedor_fisico_id'] : 0;
         $operacionFerroId   = isset($_GET['operacion_ferro_id']) ? (int)$_GET['operacion_ferro_id'] : 0;
         $limit              = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
@@ -53,6 +51,10 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
                 'status' => 'warning',
                 'msg'    => 'Parámetros incompletos (contenedor_fisico_id y operacion_ferro_id).',
                 'rows'   => [],
+                'meta'   => [
+                    'contenedor_fisico_id' => (int)$contenedorFisicoId,
+                    'operacion_ferro_id'   => (int)$operacionFerroId,
+                ],
             ]);
             return;
         }
@@ -74,7 +76,11 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
                     'limit'                 => (int)$limit,
                     'count'                 => is_array($rows) ? count($rows) : 0,
 
-                    // ✅ nuevos campos para UI
+                    // ✅ transportista FO
+                    'transportista_id'      => isset($meta['transportista_id']) ? (int)$meta['transportista_id'] : null,
+                    'transportista_nombre'  => $meta['transportista_nombre'] ?? '—',
+
+                    // ✅ campos de UI existentes
                     'destino_id_efectivo'   => $meta['destino_id_efectivo'] ?? null,
                     'ubicacion_id_last'     => $meta['ubicacion_id_last'] ?? null,
                     'destino_nombre'        => $meta['destino_nombre'] ?? null,

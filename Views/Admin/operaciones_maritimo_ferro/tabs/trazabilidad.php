@@ -258,6 +258,9 @@
 
               <span class="ms-3 me-2">Ferro/Caja:</span>
               <span class="badge bg-light text-dark" id="rutaHist_badgeFerro">—</span>
+
+              <span class="ms-3 me-2">Transportista:</span>
+              <span class="badge bg-light text-dark" id="rutaHist_badgeTransportista">—</span>
             </div>
           </div>
         </div>

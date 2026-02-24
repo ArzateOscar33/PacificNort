@@ -288,7 +288,7 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     {
         $limit = max(1, min(200, (int)$limit));
 
-        // --- rows del historial (igual que ya lo tienes, pero agregamos ids por si quieres usarlos después)
+        // --- rows del historial
         $sqlRows = "
         SELECT
             tf.id_traza,
@@ -308,11 +308,15 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
     ";
         $rows = $this->selectAll($sqlRows, [$contenedorFisicoId, $operacionFerroId]) ?: [];
 
-        // --- meta: “última traza” + destino efectivo (si no hay traza, toma destino de ofe)
+        // --- meta: “última traza” + destino efectivo + transportista FO
         $sqlMeta = "
         SELECT
             ofe.id_operacion_ferro AS operacion_ferro_id,
             ofe.contenedor_fisico_id AS contenedor_fisico_id,
+
+            -- ✅ transportista FO
+            ofe.transportista_id,
+            COALESCE(tr.nombre, '—') AS transportista_nombre,
 
             -- destino efectivo: si hay tf_last.destino_id úsalo; si no, ofe.destino_id
             COALESCE(tf_last.destino_id, ofe.destino_id) AS destino_id_efectivo,
@@ -329,15 +333,23 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
 
         FROM operaciones_ferroviarias ofe
 
+        -- ✅ join transportistas (FO)
+        LEFT JOIN transportistas tr
+            ON tr.id_transportista = ofe.transportista_id
+
         LEFT JOIN (
             SELECT
                 tf.operacion_ferro_id,
                 CAST(SUBSTRING_INDEX(
-                    GROUP_CONCAT(tf.destino_id ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC),
+                    GROUP_CONCAT(tf.destino_id
+                        ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                    ),
                     ',', 1
                 ) AS UNSIGNED) AS destino_id,
                 CAST(SUBSTRING_INDEX(
-                    GROUP_CONCAT(tf.ubicacion_id ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC),
+                    GROUP_CONCAT(tf.ubicacion_id
+                        ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                    ),
                     ',', 1
                 ) AS UNSIGNED) AS ubicacion_id
             FROM trazabilidad_ferro tf
@@ -352,9 +364,14 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
           AND ofe.contenedor_fisico_id = ?
         LIMIT 1
     ";
+
         $meta = $this->select($sqlMeta, [$operacionFerroId, $contenedorFisicoId]) ?: [
             'operacion_ferro_id' => $operacionFerroId,
             'contenedor_fisico_id' => $contenedorFisicoId,
+
+            'transportista_id' => null,
+            'transportista_nombre' => '—',
+
             'destino_id_efectivo' => null,
             'ubicacion_id_last' => null,
             'destino_nombre' => null,
