@@ -140,7 +140,7 @@
             </div>
 
             <div class="mt-2 h3 mb-1" id="costosOperacionTotalGeneral">$ 0.00</div>
-            <small class="opacity-75 d-block mb-2">Ganancia neta (solo operación)</small>
+            <small class="opacity-75 d-block mb-2">Ganancia neta </small>
 
             <div class="d-flex justify-content-between small">
               <span class="opacity-75">Abonos totales</span>
@@ -244,7 +244,7 @@
 
           <div class="mb-3">
             <label for="costosContenedoresMoneda" class="form-label">Modeda</label>
-            <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control"  readonly disabled>
+            <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control" readonly disabled>
               <option value="">Seleccione</option>
             </select>
           </div>
@@ -277,19 +277,19 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_catalogo.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_operacion_ferro_registrar.js"></script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
 
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
 
-// Uso
-forzarMayusculas("costosOperacionFiltroOpNombre"); 
-forzarMayusculas("costosOperacionNombre");
+  // Uso
+  forzarMayusculas("costosOperacionFiltroOpNombre");
+  forzarMayusculas("costosOperacionNombre");
 </script>

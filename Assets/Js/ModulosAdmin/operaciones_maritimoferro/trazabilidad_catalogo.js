@@ -416,7 +416,7 @@
         <div class="ruta-step">
           <div class="d-flex justify-content-between align-items-start gap-2">
             <div>
-              <div class="ruta-lugar">Sin eventos</div>
+              <div class="ruta-lugar">Sin Paradas</div>
               <div class="small text-muted">No hay historial registrado.</div>
             </div>
             <div class="ruta-fecha">—</div>
@@ -443,7 +443,7 @@
         <div class="d-flex justify-content-between align-items-start gap-2">
           <div>
             <div class="ruta-lugar">${ubi || "—"}</div>
-            <div class="small text-muted">${ref ? ref : "Evento"}</div>
+            <div class="small text-muted">${ref ? ref : ""}</div>
           </div>
           <div class="ruta-fecha">${fecha || "—"}</div>
         </div> 

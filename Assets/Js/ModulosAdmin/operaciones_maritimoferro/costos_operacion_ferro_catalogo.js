@@ -1,10 +1,6 @@
 // ============================================================================
 //  MÓDULO: Costos por Operación (SOLO MF - Operación marítima maestra)
-//  — Autocomplete operación (MF).
-//  — Rellena contenedor ligado por operación.
-//  — Lista costos/abonos de la operación seleccionada.
-//  — Carga tipos de movimiento (sin fuente).
-//  — Editar/Eliminar: usa desactivar (soft delete). Transporte (id 23) bloqueado.
+
 // ============================================================================
 
 (function () {

@@ -62,9 +62,10 @@
         <div class="tab-pane fade" id="crear_operaciones_ferro" role="tabpanel" aria-labelledby="crear_operaciones_ferro-tab">
             <?php include 'tabs/operaciones_ferro.php'; ?>
         </div>
-        <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
-            <?php include 'tabs/costos_combinados.php'; ?>
-        </div>
+        <!-- <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
+            <? //php include 'tabs/costos_combinados.php'; 
+            ?>
+        </div> -->
         <div class="tab-pane fade" id="costos_operacion" role="tabpanel" aria-labelledby="costos_operacion-tab">
             <?php include 'tabs/costos_operacion.php'; ?>
         </div>

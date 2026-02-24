@@ -223,7 +223,7 @@
         <td>${asig.destinos}</td>
         <td>${asig.fechas}</td>
         <td>${asig.ubicaciones}</td>
-        <td>${asig.transportistas_ferros_cajas}</td>
+        <td>${asig.transportistas_ferros_cajas ? asig.transportistas_ferros_cajas : "-"}</td>
         <td>
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
@@ -293,20 +293,20 @@
     const { total = 0, page = 1, per_page = perPage, total_pages = 1 } = meta;
 
     if (total === 0) {
-      metaResumen.textContent = "Mostrando 0–0 de 0";
+      metaResumen.textContent = "Mostrando 0-0 de 0";
       return;
     }
 
     const isAll = String(per_page).toLowerCase() === "todos";
     if (isAll) {
-      metaResumen.textContent = `Mostrando 1–${total} de ${total} | pág 1 de 1`;
+      metaResumen.textContent = `Mostrando 1-${total} de ${total} | pág 1 de 1`;
       return;
     }
 
     const pp = Number(per_page || 10);
     const start = (page - 1) * pp + 1;
     const end = Math.min(total, page * pp);
-    metaResumen.textContent = `Mostrando ${start}–${end} de ${total} | pág ${page} de ${total_pages}`;
+    metaResumen.textContent = `Mostrando ${start}-${end} de ${total} | pág ${page} de ${total_pages}`;
   }
 
   function renderPaginacion(meta) {
