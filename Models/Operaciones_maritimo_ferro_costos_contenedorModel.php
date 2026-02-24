@@ -30,7 +30,7 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
                 LEFT JOIN clientes c ON c.id_cliente = o.cliente_id
                 WHERE o.tipo_operacion_id = 11
                   AND o.numero_operacion LIKE ?
-                ORDER BY o.numero_operacion ASC
+                ORDER BY o.numero_operacion DESC
                 LIMIT 20";
 
         try {

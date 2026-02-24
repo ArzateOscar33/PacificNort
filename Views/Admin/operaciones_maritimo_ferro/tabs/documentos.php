@@ -45,21 +45,21 @@
                 </div>
             </div>
             <!-- … tarjeta: Documentos Faltantes … -->
-<div class="col-md-6">
-  <div class="card border-danger">
-    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-      <span><i data-feather="alert-circle" class="me-2"></i>Documentos Faltantes</span>
-      <button id="btnNotificarFaltantes" class="btn btn-warning btn-sm" style="display:none;">
-        <i data-feather="mail"></i> Notificar al cliente
-      </button>
-    </div>
-    <div class="card-body p-0">
-      <ul id="listaFaltantesDocumentos" class="list-group list-group-flush small">
-        <li class="list-group-item text-muted">Sin faltantes</li>
-      </ul>
-    </div>
-  </div>
-</div>
+            <div class="col-md-6">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <span><i data-feather="alert-circle" class="me-2"></i>Documentos Faltantes</span>
+                        <button id="btnNotificarFaltantes" class="btn btn-warning btn-sm" style="display:none;">
+                            <i data-feather="mail"></i> Notificar al cliente
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul id="listaFaltantesDocumentos" class="list-group list-group-flush small">
+                            <li class="list-group-item text-muted">Sin faltantes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
 
         </div>
@@ -124,7 +124,7 @@
                                 <div id="modalDocumentosContSugerencias" class="list-group"
                                     style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                             </div>
-                            <div class="form-text">Selecciona el contenedor físico (F) o marítimo (M) asociado.</div>
+
                         </div>
 
                         <!-- TIPO DE DOCUMENTO -->
@@ -189,19 +189,18 @@
 </div>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/documentos_ferro.js"></script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
+    function forzarMayusculas(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
 
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
+        input.addEventListener("input", function() {
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.toUpperCase();
+            this.setSelectionRange(start, end);
+        });
+    }
 
-// Uso
-forzarMayusculas("documentosFiltroOpNombre");
- 
+    // Uso
+    forzarMayusculas("documentosFiltroOpNombre");
 </script>

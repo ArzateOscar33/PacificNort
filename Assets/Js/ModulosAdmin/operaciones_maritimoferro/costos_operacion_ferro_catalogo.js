@@ -576,7 +576,6 @@
 
       opListBox.innerHTML = html;
       opListBox.style.display = "block";
-      opMeta && (opMeta.textContent = `Resultados: ${rows.length}`);
 
       opListBox.querySelectorAll("button.list-group-item").forEach((btn) => {
         btn.addEventListener("click", () => {

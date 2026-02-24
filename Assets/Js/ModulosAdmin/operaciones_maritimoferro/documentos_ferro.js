@@ -2,76 +2,110 @@
 // Gestión de Documentos (FO + LBMF) - Vista + Modal
 // Controller base: Operaciones_maritimo_ferro_documentos/
 // ============================================================
-(function(){
+(function () {
   "use strict";
-  let fuenteSel = 'MF'; // 'MF' (LBMF) | 'F' (ferroviaria)
+  let fuenteSel = "MF"; // 'MF' (LBMF) | 'F' (ferroviaria)
   const root = document.getElementById("documentosRoot");
   if (!root) return;
 
   const docBase = base_url + "Operaciones_maritimo_ferro_documentos/";
 
   // ---------- Refs (vista) ----------
-  const opIdInput      = document.getElementById("documentosFiltroOpId");
-  const opNombreInput  = document.getElementById("documentosFiltroOpNombre");
-  const opSugBox       = document.getElementById("documentosFiltroOpSugerencias");
-  const opMeta         = document.getElementById("documentosFiltroOpMeta");
+  const opIdInput = document.getElementById("documentosFiltroOpId");
+  const opNombreInput = document.getElementById("documentosFiltroOpNombre");
+  const opSugBox = document.getElementById("documentosFiltroOpSugerencias");
+  const opMeta = document.getElementById("documentosFiltroOpMeta");
 
   // OJO: en la vista está escrito "Contendor" (sin 'a').
-  const contIdInput    = document.getElementById("documentosFiltroContendorId");
-  const contNomInput   = document.getElementById("documentosFiltroContendorNombre");
-  const contSugBox     = document.getElementById("documentosFiltroContenedorSugerencias");
-  const getContTipo = () => (contNomInput?.dataset?.tipo || "");
-  const setContTipo = (t) => { if (contNomInput) contNomInput.dataset.tipo = t || ""; };
+  const contIdInput = document.getElementById("documentosFiltroContendorId");
+  const contNomInput = document.getElementById(
+    "documentosFiltroContendorNombre",
+  );
+  const contSugBox = document.getElementById(
+    "documentosFiltroContenedorSugerencias",
+  );
+  const getContTipo = () => contNomInput?.dataset?.tipo || "";
+  const setContTipo = (t) => {
+    if (contNomInput) contNomInput.dataset.tipo = t || "";
+  };
 
   // Tabla + listas
-  const tbody          = document.getElementById("tablaDocumentos");
-  const listaSubidos   = document.getElementById("listaDocumentos");
+  const tbody = document.getElementById("tablaDocumentos");
+  const listaSubidos = document.getElementById("listaDocumentos");
   const listaFaltantes = document.getElementById("listaFaltantesDocumentos");
-  const btnNotificar   = document.getElementById("btnNotificarFaltantes");
+  const btnNotificar = document.getElementById("btnNotificarFaltantes");
 
   // ---------- Helpers ----------
-  const clear = el => { if (el) el.innerHTML = ""; };
-  const show  = (el,v)=> { if (el) el.style.display = v ? "block" : "none"; };
-  const safe  = v => (v==null ? "" : String(v));
-  const TD_EMPTY = (cols)=> `<tr><td colspan="${cols}" class="text-center text-muted py-3">Sin resultados</td></tr>`;
-  const fmtFecha = val => {
+  const clear = (el) => {
+    if (el) el.innerHTML = "";
+  };
+  const show = (el, v) => {
+    if (el) el.style.display = v ? "block" : "none";
+  };
+  const safe = (v) => (v == null ? "" : String(v));
+  const TD_EMPTY = (cols) =>
+    `<tr><td colspan="${cols}" class="text-center text-muted py-3">Sin resultados</td></tr>`;
+  const fmtFecha = (val) => {
     if (!val) return "";
     const d = new Date(String(val).replace(" ", "T"));
     return isNaN(d) ? String(val) : d.toLocaleString();
   };
-  const escAttr = s => String(s ?? '').replace(/&/g,'&amp;')
-                                      .replace(/"/g,'&quot;')
-                                      .replace(/</g,'&lt;')
-                                      .replace(/>/g,'&gt;')
-                                      .replace(/'/g,'&#39;');
+  const escAttr = (s) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/'/g, "&#39;");
 
-  function getJSON(url){
-    return new Promise((resolve)=>{
+  function getJSON(url) {
+    return new Promise((resolve) => {
       const x = new XMLHttpRequest();
       x.open("GET", url, true);
-      x.onload = ()=>{ try{ resolve(JSON.parse(x.responseText||'[]')); } catch{ resolve([]); } };
-      x.onerror= ()=> resolve([]);
+      x.onload = () => {
+        try {
+          resolve(JSON.parse(x.responseText || "[]"));
+        } catch {
+          resolve([]);
+        }
+      };
+      x.onerror = () => resolve([]);
       x.send();
     });
   }
 
   // ---------- Autocomplete de Operación ----------
-  opNombreInput?.addEventListener("keyup", function(){
+  opNombreInput?.addEventListener("keyup", function () {
     const term = this.value.trim();
     clear(opSugBox);
-    if (term === "") { show(opSugBox,false); return; }
+    if (term === "") {
+      show(opSugBox, false);
+      return;
+    }
 
     const http = new XMLHttpRequest();
-    http.open("GET", docBase + "buscarOperaciones?term=" + encodeURIComponent(term), true);
+    http.open(
+      "GET",
+      docBase + "buscarOperaciones?term=" + encodeURIComponent(term),
+      true,
+    );
     http.send();
-    http.onreadystatechange = function(){
+    http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
-      if (this.status !== 200) { console.warn("buscarOperaciones:", this.status); return; }
+      if (this.status !== 200) {
+        console.warn("buscarOperaciones:", this.status);
+        return;
+      }
       let data = [];
-      try { data = JSON.parse(this.responseText)||[]; } catch {}
-      if (!Array.isArray(data) || data.length===0) { show(opSugBox,false); return; }
+      try {
+        data = JSON.parse(this.responseText) || [];
+      } catch {}
+      if (!Array.isArray(data) || data.length === 0) {
+        show(opSugBox, false);
+        return;
+      }
 
-      data.slice(0,10).forEach(o=>{
+      data.slice(0, 10).forEach((o) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "list-group-item list-group-item-action";
@@ -79,34 +113,35 @@
           <span>${escAttr(o.label)}</span>
            
         </div>`;
-        btn.onclick = ()=> seleccionarOperacion(o.id, o.label, (o.fuente || 'MF'));
+        btn.onclick = () =>
+          seleccionarOperacion(o.id, o.label, o.fuente || "MF");
         opSugBox.appendChild(btn);
       });
-      show(opSugBox,true);
+      show(opSugBox, true);
     };
   });
 
   // Reset si limpian operación a mano
-  opNombreInput?.addEventListener("input", ()=>{
-    if ((opNombreInput.value||'').trim() === ''){
-      opIdInput.value = '';
-      if (opNombreInput?.dataset) opNombreInput.dataset.fuente = '';
-      window._fuenteMF = 'MF';
-      fuenteSel = 'MF';
+  opNombreInput?.addEventListener("input", () => {
+    if ((opNombreInput.value || "").trim() === "") {
+      opIdInput.value = "";
+      if (opNombreInput?.dataset) opNombreInput.dataset.fuente = "";
+      window._fuenteMF = "MF";
+      fuenteSel = "MF";
       limpiarContenedorVista();
       renderListadoVacio();
     }
   });
 
-  async function seleccionarOperacion(id, label, fuente){
-    fuenteSel = (fuente || 'MF').toUpperCase();
-    opIdInput.value     = String(id);
+  async function seleccionarOperacion(id, label, fuente) {
+    fuenteSel = (fuente || "MF").toUpperCase();
+    opIdInput.value = String(id);
     opNombreInput.value = label;
     if (opNombreInput) opNombreInput.dataset.fuente = fuenteSel;
     window._fuenteMF = fuenteSel;
 
-    clear(opSugBox); show(opSugBox,false);
-    opMeta.textContent = `Operación ${label}`;
+    clear(opSugBox);
+    show(opSugBox, false);
 
     await autollenarContenedorPorOperacion(id);
     listarDocumentos();
@@ -114,113 +149,154 @@
   }
 
   // Cerrar sugerencias con clic fuera
-  document.addEventListener("click", (e)=>{
-    if (opSugBox && !opSugBox.contains(e.target) && !opNombreInput.contains(e.target)) show(opSugBox,false);
-    if (contSugBox && !contSugBox.contains(e.target) && !contNomInput.contains(e.target)) show(contSugBox,false);
+  document.addEventListener("click", (e) => {
+    if (
+      opSugBox &&
+      !opSugBox.contains(e.target) &&
+      !opNombreInput.contains(e.target)
+    )
+      show(opSugBox, false);
+    if (
+      contSugBox &&
+      !contSugBox.contains(e.target) &&
+      !contNomInput.contains(e.target)
+    )
+      show(contSugBox, false);
   });
 
   // ---------- Autocomplete de Contenedor ----------
-  contNomInput?.addEventListener("keyup", async function(){
-    const opId = (opIdInput.value||'').trim();
-    const term = (this.value||'').trim();
+  contNomInput?.addEventListener("keyup", async function () {
+    const opId = (opIdInput.value || "").trim();
+    const term = (this.value || "").trim();
     clear(contSugBox);
 
-    if (!opId){ show(contSugBox,false); return; }
+    if (!opId) {
+      show(contSugBox, false);
+      return;
+    }
 
     const data = await getJSON(
-      docBase + "contenedoresPorOperacion/" + encodeURIComponent(opId) +
-      "?fuente=" + encodeURIComponent(fuenteSel)
+      docBase +
+        "contenedoresPorOperacion/" +
+        encodeURIComponent(opId) +
+        "?fuente=" +
+        encodeURIComponent(fuenteSel),
     );
-    if (!Array.isArray(data) || data.length===0){ show(contSugBox,false); return; }
+    if (!Array.isArray(data) || data.length === 0) {
+      show(contSugBox, false);
+      return;
+    }
 
-    const filt = term ? data.filter(it=> (it.label||'').toLowerCase().includes(term.toLowerCase())) : data;
+    const filt = term
+      ? data.filter((it) =>
+          (it.label || "").toLowerCase().includes(term.toLowerCase()),
+        )
+      : data;
 
-    filt.slice(0,10).forEach(it=>{
-      const tipo = (it.tipo||'').toUpperCase()==='F' ? 'F' : 'M';
+    filt.slice(0, 10).forEach((it) => {
+      const tipo = (it.tipo || "").toUpperCase() === "F" ? "F" : "M";
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+      btn.className =
+        "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
       btn.innerHTML = `
-        <span>${escAttr(it.label||('CONT '+it.id))}</span>
-        <span class="badge ${tipo==='F'?'bg-secondary':'bg-info'}">${tipo}</span>`;
-      btn.onclick = ()=> seleccionarContenedor(it.id, it.label||String(it.id), tipo);
+        <span>${escAttr(it.label || "CONT " + it.id)}</span>
+        <span class="badge ${tipo === "F" ? "bg-secondary" : "bg-info"}">${tipo}</span>`;
+      btn.onclick = () =>
+        seleccionarContenedor(it.id, it.label || String(it.id), tipo);
       contSugBox.appendChild(btn);
     });
-    show(contSugBox,true);
+    show(contSugBox, true);
   });
 
-  function seleccionarContenedor(id, etiqueta, tipo){
-    contIdInput.value   = String(id);
-    contNomInput.value  = String(etiqueta);
-    setContTipo(tipo||'');
-    contNomInput.setAttribute("readonly","readonly");
-    contNomInput.placeholder = '';
-    clear(contSugBox); show(contSugBox,false);
+  function seleccionarContenedor(id, etiqueta, tipo) {
+    contIdInput.value = String(id);
+    contNomInput.value = String(etiqueta);
+    setContTipo(tipo || "");
+    contNomInput.setAttribute("readonly", "readonly");
+    contNomInput.placeholder = "";
+    clear(contSugBox);
+    show(contSugBox, false);
 
     listarDocumentos();
     cargarFaltantes();
   }
 
-  function limpiarContenedorVista(){
+  function limpiarContenedorVista() {
     if (!contIdInput || !contNomInput) return;
-    contIdInput.value = '';
-    contNomInput.value = '';
-    setContTipo('');
-    contNomInput.setAttribute("readonly","readonly");
-    contNomInput.placeholder = 'Selecciona una operación primero';
-    clear(contSugBox); show(contSugBox,false);
-    if (btnNotificar) btnNotificar.style.display = 'none';
+    contIdInput.value = "";
+    contNomInput.value = "";
+    setContTipo("");
+    contNomInput.setAttribute("readonly", "readonly");
+    contNomInput.placeholder = "Selecciona una operación primero";
+    clear(contSugBox);
+    show(contSugBox, false);
+    if (btnNotificar) btnNotificar.style.display = "none";
     renderFaltantes([]);
   }
 
-  async function autollenarContenedorPorOperacion(opId){
+  async function autollenarContenedorPorOperacion(opId) {
     limpiarContenedorVista();
     const data = await getJSON(
-      docBase + "contenedoresPorOperacion/" + encodeURIComponent(opId) +
-      "?fuente=" + encodeURIComponent(fuenteSel)
+      docBase +
+        "contenedoresPorOperacion/" +
+        encodeURIComponent(opId) +
+        "?fuente=" +
+        encodeURIComponent(fuenteSel),
     );
-    if (Array.isArray(data) && data.length>0){
+    if (Array.isArray(data) && data.length > 0) {
       const it = data[0];
-      const tipo = (it.tipo||'').toUpperCase()==='F'?'F':'M';
-      contIdInput.value  = String(it.id);
+      const tipo = (it.tipo || "").toUpperCase() === "F" ? "F" : "M";
+      contIdInput.value = String(it.id);
       contNomInput.value = it.label || String(it.id);
       setContTipo(tipo);
-      contNomInput.setAttribute('readonly','readonly');
-      contNomInput.placeholder = '';
+      contNomInput.setAttribute("readonly", "readonly");
+      contNomInput.placeholder = "";
     }
   }
 
   // ---------- Listado / Render ----------
-  function renderListadoVacio(){
+  function renderListadoVacio() {
     if (tbody) tbody.innerHTML = TD_EMPTY(9);
-    if (listaSubidos) listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
+    if (listaSubidos)
+      listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
     renderFaltantes([]);
     if (window.feather) feather.replace();
   }
 
-  function listarDocumentos(){
-    const opId    = (opIdInput.value||'').trim();
-    const contId  = (contIdInput.value||'').trim();
+  function listarDocumentos() {
+    const opId = (opIdInput.value || "").trim();
+    const contId = (contIdInput.value || "").trim();
     const contTip = getContTipo();
 
-    if (!opId){
+    if (!opId) {
       renderListadoVacio();
       return;
     }
 
-    let url = docBase + "listar?operacion_id=" + encodeURIComponent(opId) +
-              "&fuente=" + encodeURIComponent(fuenteSel);
-    if (contId && contTip){
-      url += "&contenedor_id=" + encodeURIComponent(contId) + "&tipo=" + encodeURIComponent(contTip);
+    let url =
+      docBase +
+      "listar?operacion_id=" +
+      encodeURIComponent(opId) +
+      "&fuente=" +
+      encodeURIComponent(fuenteSel);
+    if (contId && contTip) {
+      url +=
+        "&contenedor_id=" +
+        encodeURIComponent(contId) +
+        "&tipo=" +
+        encodeURIComponent(contTip);
     }
 
     const http = new XMLHttpRequest();
     http.open("GET", url, true);
     http.send();
-    http.onreadystatechange = function(){
+    http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
       let rows = [];
-      try { rows = JSON.parse(this.responseText)||[]; } catch {}
+      try {
+        rows = JSON.parse(this.responseText) || [];
+      } catch {}
 
       renderTabla(rows);
       renderSubidos(rows);
@@ -229,24 +305,29 @@
     };
   }
 
-  function renderTabla(rows){
+  function renderTabla(rows) {
     if (!tbody) return;
-    if (!Array.isArray(rows) || rows.length===0) { tbody.innerHTML = TD_EMPTY(9); return; }
+    if (!Array.isArray(rows) || rows.length === 0) {
+      tbody.innerHTML = TD_EMPTY(9);
+      return;
+    }
 
-    const html = rows.map(r=>`
+    const html = rows
+      .map(
+        (r) => `
       <tr>
         <td>${safe(r.numero_operacion)}</td>
         <td>${safe(r.contenedor)}</td>
         <td>${safe(r.cliente)}</td>
-        <td class="text-uppercase">${safe(r.tipo_nombre || r.tipo_clave || r.tipo || '')}</td>
-        <td>${safe(r.nombre_archivo || '')}</td>
-        <td>${fmtFecha(r.fecha_subida || '')}</td>
-        <td>${safe(r.subido_por || '')}</td>
+        <td class="text-uppercase">${safe(r.tipo_nombre || r.tipo_clave || r.tipo || "")}</td>
+        <td>${safe(r.nombre_archivo || "")}</td>
+        <td>${fmtFecha(r.fecha_subida || "")}</td>
+        <td>${safe(r.subido_por || "")}</td>
         <td class="text-center">
           <button class="btn btn-sm btn-outline-primary"
                   title="Ver"
-                  data-nombre="${escAttr(r.nombre_archivo || '')}"
-                  data-mime="${escAttr(r.mime_type || '')}"
+                  data-nombre="${escAttr(r.nombre_archivo || "")}"
+                  data-mime="${escAttr(r.mime_type || "")}"
                   onclick="documentosVerDocumentoMF(${r.id_documento})">
             <i data-feather="eye"></i>
           </button>
@@ -259,99 +340,128 @@
           </button>
         </td>
       </tr>
-    `).join("");
+    `,
+      )
+      .join("");
     tbody.innerHTML = html;
   }
 
-  function renderSubidos(rows){
+  function renderSubidos(rows) {
     if (!listaSubidos) return;
-    if (!Array.isArray(rows) || rows.length===0){
+    if (!Array.isArray(rows) || rows.length === 0) {
       listaSubidos.innerHTML = `<li class="list-group-item text-muted">No hay documentos</li>`;
       return;
     }
-    listaSubidos.innerHTML = rows.map(r=>{
-      const fecha = fmtFecha(r.fecha_subida||'');
-      const tipo  = r.tipo_nombre || r.tipo_clave || r.tipo || '';
-      const nombre= r.nombre_archivo || '';
-      return `<li class="list-group-item">${safe(tipo).toUpperCase()} — ${safe(nombre)} <span class="text-muted">(${fecha})</span></li>`;
-    }).join('');
+    listaSubidos.innerHTML = rows
+      .map((r) => {
+        const fecha = fmtFecha(r.fecha_subida || "");
+        const tipo = r.tipo_nombre || r.tipo_clave || r.tipo || "";
+        const nombre = r.nombre_archivo || "";
+        return `<li class="list-group-item">${safe(tipo).toUpperCase()} — ${safe(nombre)} <span class="text-muted">(${fecha})</span></li>`;
+      })
+      .join("");
   }
 
   // ---------- Faltantes ----------
-  function renderFaltantes(items){
+  function renderFaltantes(items) {
     if (!listaFaltantes) return;
-    if (!Array.isArray(items) || items.length===0){
-      listaFaltantes.innerHTML = '<li class="list-group-item text-muted">Sin faltantes</li>';
-      if (btnNotificar) btnNotificar.style.display = 'none';
+    if (!Array.isArray(items) || items.length === 0) {
+      listaFaltantes.innerHTML =
+        '<li class="list-group-item text-muted">Sin faltantes</li>';
+      if (btnNotificar) btnNotificar.style.display = "none";
       return;
     }
-    listaFaltantes.innerHTML = items.map(it=>{
-      const nom = safe(it.nombre || '');
-      const clv = safe(it.clave || '');
-      return `<li class="list-group-item"><strong>${nom}</strong> ${clv?`<span class="text-muted">(${clv})</span>`:''}</li>`;
-    }).join('');
-    if (btnNotificar) btnNotificar.style.display = '';
+    listaFaltantes.innerHTML = items
+      .map((it) => {
+        const nom = safe(it.nombre || "");
+        const clv = safe(it.clave || "");
+        return `<li class="list-group-item"><strong>${nom}</strong> ${clv ? `<span class="text-muted">(${clv})</span>` : ""}</li>`;
+      })
+      .join("");
+    if (btnNotificar) btnNotificar.style.display = "";
   }
 
-  function cargarFaltantes(){
-    const opId    = (opIdInput.value||'').trim();
-    const contId  = (contIdInput.value||'').trim();
+  function cargarFaltantes() {
+    const opId = (opIdInput.value || "").trim();
+    const contId = (contIdInput.value || "").trim();
     const contTip = getContTipo();
-    if (!opId || !contId || !contTip){ renderFaltantes([]); return; }
+    if (!opId || !contId || !contTip) {
+      renderFaltantes([]);
+      return;
+    }
 
-    const url = docBase + "faltantes?operacion_id=" + encodeURIComponent(opId) +
-                "&contenedor_id=" + encodeURIComponent(contId) +
-                "&tipo=" + encodeURIComponent(contTip) +
-                "&fuente=" + encodeURIComponent(fuenteSel);
+    const url =
+      docBase +
+      "faltantes?operacion_id=" +
+      encodeURIComponent(opId) +
+      "&contenedor_id=" +
+      encodeURIComponent(contId) +
+      "&tipo=" +
+      encodeURIComponent(contTip) +
+      "&fuente=" +
+      encodeURIComponent(fuenteSel);
 
     const http = new XMLHttpRequest();
     http.open("GET", url, true);
     http.send();
-    http.onreadystatechange = function(){
+    http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
       let data = [];
-      try { data = JSON.parse(this.responseText)||[]; } catch {}
+      try {
+        data = JSON.parse(this.responseText) || [];
+      } catch {}
       renderFaltantes(data);
       if (window.feather) feather.replace();
     };
   }
 
   // Notificar faltantes
-  btnNotificar?.addEventListener("click", function(){
-    const opId    = (opIdInput.value||'').trim();
-    const contId  = (contIdInput.value||'').trim();
+  btnNotificar?.addEventListener("click", function () {
+    const opId = (opIdInput.value || "").trim();
+    const contId = (contIdInput.value || "").trim();
     const contTip = getContTipo();
 
-    if (!opId || !contId || !contTip){
-      Swal.fire('Aviso','Selecciona operación y contenedor','info'); return;
+    if (!opId || !contId || !contTip) {
+      Swal.fire("Aviso", "Selecciona operación y contenedor", "info");
+      return;
     }
 
     Swal.fire({
-      title: 'Enviar correo al cliente',
-      text: 'Se enviará la lista de faltantes del contenedor seleccionado.',
-      icon: 'question',
+      title: "Enviar correo al cliente",
+      text: "Se enviará la lista de faltantes del contenedor seleccionado.",
+      icon: "question",
       showCancelButton: true,
-      confirmButtonText: 'Enviar',
-      cancelButtonText: 'Cancelar'
-    }).then((r)=>{
+      confirmButtonText: "Enviar",
+      cancelButtonText: "Cancelar",
+    }).then((r) => {
       if (!r.isConfirmed) return;
 
       const fd = new FormData();
-      fd.append('operacion_id', opId);
-      fd.append('contenedor_id', contId);
-      fd.append('tipo', contTip);
-      fd.append('fuente', fuenteSel); // ← obligatorio para que el controlador sepa MF/FO
+      fd.append("operacion_id", opId);
+      fd.append("contenedor_id", contId);
+      fd.append("tipo", contTip);
+      fd.append("fuente", fuenteSel); // ← obligatorio para que el controlador sepa MF/FO
 
       const http = new XMLHttpRequest();
       http.open("POST", docBase + "notificarFaltantes", true);
-      http.onreadystatechange = function(){
+      http.onreadystatechange = function () {
         if (this.readyState !== 4) return;
         let j = {};
-        try { j = JSON.parse(this.responseText)||{}; } catch {}
+        try {
+          j = JSON.parse(this.responseText) || {};
+        } catch {}
         Swal.fire(
-          j.status==='success' ? 'Enviado' : (j.status==='info'?'Aviso':'Error'),
-          j.msg || '(sin mensaje)',
-          j.status==='success' ? 'success' : (j.status==='info'?'info':'error')
+          j.status === "success"
+            ? "Enviado"
+            : j.status === "info"
+              ? "Aviso"
+              : "Error",
+          j.msg || "(sin mensaje)",
+          j.status === "success"
+            ? "success"
+            : j.status === "info"
+              ? "info"
+              : "error",
         );
       };
       http.send(fd);
@@ -362,73 +472,91 @@
   window.listarDocumentosMF = listarDocumentos;
   window.cargarFaltantesMF = cargarFaltantes;
 
-
   // ---------- Ver / Eliminar ----------
-  window.documentosVerDocumentoMF = function(id){
-    const url     = base_url + "Operaciones_maritimo_ferro_documentos/ver/" + encodeURIComponent(id);
-    const iframe  = document.getElementById('previewFrameDocumentos');
-    const aDown   = document.getElementById('previewDownloadLinkDocumentos');
-    const msg     = document.getElementById('previewUnavailableDocumentos');
+  window.documentosVerDocumentoMF = function (id) {
+    const url =
+      base_url +
+      "Operaciones_maritimo_ferro_documentos/ver/" +
+      encodeURIComponent(id);
+    const iframe = document.getElementById("previewFrameDocumentos");
+    const aDown = document.getElementById("previewDownloadLinkDocumentos");
+    const msg = document.getElementById("previewUnavailableDocumentos");
 
     if (aDown) aDown.href = url + "?dl=1";
 
     const previewable = true;
     if (previewable) {
-      if (msg) msg.style.display = 'none';
-      if (iframe){ iframe.style.display='block'; iframe.src = url; }
+      if (msg) msg.style.display = "none";
+      if (iframe) {
+        iframe.style.display = "block";
+        iframe.src = url;
+      }
     } else {
-      if (iframe){ iframe.style.display='none'; iframe.src='about:blank'; }
-      if (msg) msg.style.display = 'block';
+      if (iframe) {
+        iframe.style.display = "none";
+        iframe.src = "about:blank";
+      }
+      if (msg) msg.style.display = "block";
     }
 
-    const modalEl = document.getElementById('modalPreviewDocumentoDocumentos');
+    const modalEl = document.getElementById("modalPreviewDocumentoDocumentos");
     const m = new bootstrap.Modal(modalEl);
     m.show();
 
-    modalEl.addEventListener('hidden.bs.modal', function _cleanup(){
-      if (iframe) iframe.src = 'about:blank';
-      modalEl.removeEventListener('hidden.bs.modal', _cleanup);
-    }, {once:true});
+    modalEl.addEventListener(
+      "hidden.bs.modal",
+      function _cleanup() {
+        if (iframe) iframe.src = "about:blank";
+        modalEl.removeEventListener("hidden.bs.modal", _cleanup);
+      },
+      { once: true },
+    );
   };
 
-  window.documentosEliminarDocumentoMF = function(id){
+  window.documentosEliminarDocumentoMF = function (id) {
     Swal.fire({
-      title: '¿Eliminar documento?',
-      text: 'Esta acción no se puede deshacer.',
-      icon: 'warning',
+      title: "¿Eliminar documento?",
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((res)=>{
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then((res) => {
       if (!res.isConfirmed) return;
 
       const http = new XMLHttpRequest();
       http.open("POST", docBase + "eliminar/" + encodeURIComponent(id), true);
-      http.setRequestHeader("X-Requested-With","XMLHttpRequest");
-      http.onreadystatechange = function(){
+      http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+      http.onreadystatechange = function () {
         if (this.readyState !== 4) return;
         let r = {};
-        try { r = JSON.parse(this.responseText)||{}; } catch {}
+        try {
+          r = JSON.parse(this.responseText) || {};
+        } catch {}
         Swal.fire(
-          r.status==='success' ? 'Eliminado' : 'Aviso',
-          r.msg || '(sin mensaje)',
-          r.status==='success' ? 'success' : 'info'
+          r.status === "success" ? "Eliminado" : "Aviso",
+          r.msg || "(sin mensaje)",
+          r.status === "success" ? "success" : "info",
         );
-        if (r.status==='success') listarDocumentos();
+        if (r.status === "success") listarDocumentos();
       };
       http.send();
     });
   };
 
   // Boot: si ya hay op seteada
-  (async ()=>{
+  (async () => {
     // Si por server-side ya venía marcada una fuente, respétala
-    const fuBoot = (opNombreInput?.dataset?.fuente || window._fuenteMF || 'MF').toUpperCase();
+    const fuBoot = (
+      opNombreInput?.dataset?.fuente ||
+      window._fuenteMF ||
+      "MF"
+    ).toUpperCase();
     fuenteSel = fuBoot;
     window._fuenteMF = fuBoot;
 
-    const opIdBoot = (opIdInput?.value||'').trim();
-    if (opIdBoot){
+    const opIdBoot = (opIdInput?.value || "").trim();
+    if (opIdBoot) {
       await autollenarContenedorPorOperacion(opIdBoot);
       listarDocumentos();
       cargarFaltantes();
@@ -437,105 +565,134 @@
       renderListadoVacio();
     }
   })();
-
 })();
-
 
 // ============================================================
 // Modal: Agregar Documento (usa FO/LBMF mixto)
 // ============================================================
-(function(){
+(function () {
   "use strict";
   const docBase = base_url + "Operaciones_maritimo_ferro_documentos/";
   const modalEl = document.getElementById("modalAgregarDocumentoDocumentos");
-  const form    = document.getElementById("formAgregarDocumentoDocumentos");
+  const form = document.getElementById("formAgregarDocumentoDocumentos");
 
   // Operación (modal)
-  const mdOpId     = document.getElementById("modalDocumentosOpId");
-  const mdOpNom    = document.getElementById("modalDocumentosOpNombre");
-  const mdOpSug    = document.getElementById("modalDocumentosOpSugerencias");
-  const mdOpMeta   = document.getElementById("modalDocumentosOpMeta");
+  const mdOpId = document.getElementById("modalDocumentosOpId");
+  const mdOpNom = document.getElementById("modalDocumentosOpNombre");
+  const mdOpSug = document.getElementById("modalDocumentosOpSugerencias");
+  const mdOpMeta = document.getElementById("modalDocumentosOpMeta");
 
   // Contenedor (modal)
-  const mdContId   = document.getElementById("modalDocumentosContId");   // name="contenedor_id"
+  const mdContId = document.getElementById("modalDocumentosContId"); // name="contenedor_id"
   const mdContTipo = document.getElementById("modalDocumentosContTipo"); // name="contenedor_tipo" ('F'|'M')
-  const mdContNom  = document.getElementById("modalDocumentosContNombre");
-  const mdContSug  = document.getElementById("modalDocumentosContSugerencias");
+  const mdContNom = document.getElementById("modalDocumentosContNombre");
+  const mdContSug = document.getElementById("modalDocumentosContSugerencias");
 
   // Tipos
-  const selTipo    = document.getElementById("tipo_documentoDocumentos");
+  const selTipo = document.getElementById("tipo_documentoDocumentos");
 
   // Operación/Contenedor desde la vista (prefill)
-  const vwOpId     = document.getElementById("documentosFiltroOpId");
-  const vwOpNom    = document.getElementById("documentosFiltroOpNombre");
-  const vwContId   = document.getElementById("documentosFiltroContendorId");
-  const vwContNom  = document.getElementById("documentosFiltroContendorNombre");
+  const vwOpId = document.getElementById("documentosFiltroOpId");
+  const vwOpNom = document.getElementById("documentosFiltroOpNombre");
+  const vwContId = document.getElementById("documentosFiltroContendorId");
+  const vwContNom = document.getElementById("documentosFiltroContendorNombre");
 
-  const clear = el => { if(el) el.innerHTML = ""; };
-  const show  = (el,v)=> { if(el) el.style.display = v ? "block" : "none"; };
+  const clear = (el) => {
+    if (el) el.innerHTML = "";
+  };
+  const show = (el, v) => {
+    if (el) el.style.display = v ? "block" : "none";
+  };
 
-  function getJSON(url){
-    return new Promise((resolve)=>{
+  function getJSON(url) {
+    return new Promise((resolve) => {
       const x = new XMLHttpRequest();
       x.open("GET", url, true);
-      x.onload = ()=>{ try{ resolve(JSON.parse(x.responseText||'[]')); } catch{ resolve([]); } };
-      x.onerror= ()=> resolve([]);
+      x.onload = () => {
+        try {
+          resolve(JSON.parse(x.responseText || "[]"));
+        } catch {
+          resolve([]);
+        }
+      };
+      x.onerror = () => resolve([]);
       x.send();
     });
   }
 
   // Al abrir modal: prefill desde la vista y carga de tipos por contenedor_tipo
-  modalEl?.addEventListener("show.bs.modal", async ()=>{
-    mdOpId.value  = vwOpId?.value || '';
-    mdOpNom.value = vwOpNom?.value || '';
-    mdOpMeta.textContent = mdOpNom.value ? `Operación ${mdOpNom.value}` : '';
+  modalEl?.addEventListener("show.bs.modal", async () => {
+    mdOpId.value = vwOpId?.value || "";
+    mdOpNom.value = vwOpNom?.value || "";
+    mdOpMeta.textContent = mdOpNom.value ? `Operación ${mdOpNom.value}` : "";
 
-    const fuente = ((vwOpNom?.dataset?.fuente) || window._fuenteMF || 'MF').toUpperCase();
+    const fuente = (
+      vwOpNom?.dataset?.fuente ||
+      window._fuenteMF ||
+      "MF"
+    ).toUpperCase();
     mdOpNom.dataset.fuente = fuente; // guarda para el submit
 
-    mdContId.value   = vwContId?.value || '';
-    mdContNom.value  = vwContNom?.value || '';
-    const tipoVista = (vwContNom?.dataset?.tipo || '').toUpperCase();
-    mdContTipo.value = (tipoVista==='F' || tipoVista==='M') ? tipoVista : '';
+    mdContId.value = vwContId?.value || "";
+    mdContNom.value = vwContNom?.value || "";
+    const tipoVista = (vwContNom?.dataset?.tipo || "").toUpperCase();
+    mdContTipo.value = tipoVista === "F" || tipoVista === "M" ? tipoVista : "";
 
-    if (!mdContId.value && mdOpId.value){
+    if (!mdContId.value && mdOpId.value) {
       const data = await getJSON(
-        docBase + "contenedoresPorOperacion/" + encodeURIComponent(mdOpId.value) +
-        "?fuente=" + encodeURIComponent(fuente)
+        docBase +
+          "contenedoresPorOperacion/" +
+          encodeURIComponent(mdOpId.value) +
+          "?fuente=" +
+          encodeURIComponent(fuente),
       );
-      if (Array.isArray(data) && data.length>0){
+      if (Array.isArray(data) && data.length > 0) {
         const it = data[0];
-        mdContId.value   = String(it.id);
-        mdContNom.value  = it.label || String(it.id);
-        mdContTipo.value = (it.tipo||'').toUpperCase()==='F' ? 'F':'M';
+        mdContId.value = String(it.id);
+        mdContNom.value = it.label || String(it.id);
+        mdContTipo.value = (it.tipo || "").toUpperCase() === "F" ? "F" : "M";
       }
     }
 
     cargarTiposSegunContenedor();
   });
 
-  modalEl?.addEventListener("hidden.bs.modal", ()=>{
+  modalEl?.addEventListener("hidden.bs.modal", () => {
     form?.reset();
-    clear(mdOpSug);  show(mdOpSug,false);
-    clear(mdContSug);show(mdContSug,false);
+    clear(mdOpSug);
+    show(mdOpSug, false);
+    clear(mdContSug);
+    show(mdContSug, false);
   });
 
   // Autocomplete de operación en modal
-  mdOpNom?.addEventListener("keyup", function(){
+  mdOpNom?.addEventListener("keyup", function () {
     const term = this.value.trim();
     clear(mdOpSug);
-    if (term === "") { show(mdOpSug,false); return; }
+    if (term === "") {
+      show(mdOpSug, false);
+      return;
+    }
 
     const http = new XMLHttpRequest();
-    http.open("GET", docBase + "buscarOperaciones?term=" + encodeURIComponent(term), true);
+    http.open(
+      "GET",
+      docBase + "buscarOperaciones?term=" + encodeURIComponent(term),
+      true,
+    );
     http.send();
-    http.onreadystatechange = function(){
+    http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
       let data = [];
-      try { data = JSON.parse(this.responseText)||[]; } catch {}
-      if (!Array.isArray(data) || data.length===0){ show(mdOpSug,false); return; }
+      try {
+        data = JSON.parse(this.responseText) || [];
+      } catch {}
+      if (!Array.isArray(data) || data.length === 0) {
+        show(mdOpSug, false);
+        return;
+      }
 
-      data.slice(0,10).forEach(o=>{
+      data.slice(0, 10).forEach((o) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "list-group-item list-group-item-action";
@@ -543,130 +700,194 @@
           <span>${escAttr(o.label)}</span>
            
         </div>`;
-        btn.onclick = ()=> {
+        btn.onclick = () => {
           mdOpId.value = String(o.id);
-          mdOpNom.value= o.label;
+          mdOpNom.value = o.label;
           mdOpMeta.textContent = `Operación ${o.label}`;
-          mdOpNom.dataset.fuente = (o.fuente || 'MF').toUpperCase();
-          clear(mdOpSug); show(mdOpSug,false);
+          mdOpNom.dataset.fuente = (o.fuente || "MF").toUpperCase();
+          clear(mdOpSug);
+          show(mdOpSug, false);
           autollenarContenedorModal(mdOpId.value, mdOpNom.dataset.fuente);
         };
         mdOpSug.appendChild(btn);
       });
-      show(mdOpSug,true);
+      show(mdOpSug, true);
     };
   });
 
   // Autocomplete de contenedor (limitado por operación)
-  mdContNom?.addEventListener("keyup", async function(){
-    const opId = (mdOpId.value||'').trim();
-    const term = (this.value||'').trim();
-    const fuente = ((mdOpNom?.dataset?.fuente) || (vwOpNom?.dataset?.fuente) || window._fuenteMF || 'MF').toUpperCase();
+  mdContNom?.addEventListener("keyup", async function () {
+    const opId = (mdOpId.value || "").trim();
+    const term = (this.value || "").trim();
+    const fuente = (
+      mdOpNom?.dataset?.fuente ||
+      vwOpNom?.dataset?.fuente ||
+      window._fuenteMF ||
+      "MF"
+    ).toUpperCase();
     clear(mdContSug);
-    if (!opId){ show(mdContSug,false); return; }
+    if (!opId) {
+      show(mdContSug, false);
+      return;
+    }
 
     const data = await getJSON(
-      docBase + "contenedoresPorOperacion/" + encodeURIComponent(opId) +
-      "?fuente=" + encodeURIComponent(fuente)
+      docBase +
+        "contenedoresPorOperacion/" +
+        encodeURIComponent(opId) +
+        "?fuente=" +
+        encodeURIComponent(fuente),
     );
-    if (!Array.isArray(data) || data.length===0){ show(mdContSug,false); return; }
+    if (!Array.isArray(data) || data.length === 0) {
+      show(mdContSug, false);
+      return;
+    }
 
-    const filt = term ? data.filter(it=> (it.label||'').toLowerCase().includes(term.toLowerCase())) : data;
-    filt.slice(0,10).forEach(it=>{
-      const tipo = (it.tipo||'').toUpperCase()==='F'?'F':'M';
+    const filt = term
+      ? data.filter((it) =>
+          (it.label || "").toLowerCase().includes(term.toLowerCase()),
+        )
+      : data;
+    filt.slice(0, 10).forEach((it) => {
+      const tipo = (it.tipo || "").toUpperCase() === "F" ? "F" : "M";
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+      btn.className =
+        "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
       btn.innerHTML = `
-        <span>${escAttr(it.label||('CONT '+it.id))}</span>
-        <span class="badge ${tipo==='F'?'bg-secondary':'bg-info'}">${tipo}</span>`;
-      btn.onclick = ()=>{
-        mdContId.value   = String(it.id);
-        mdContNom.value  = it.label || String(it.id);
+        <span>${escAttr(it.label + "Cliente " || "CONT " + it.id)}</span>
+        <span class="badge ${tipo === "F" ? "bg-secondary" : "bg-info"}">${tipo}</span>`;
+      btn.onclick = () => {
+        mdContId.value = String(it.id);
+        mdContNom.value = it.label || String(it.id);
         mdContTipo.value = tipo;
-        clear(mdContSug); show(mdContSug,false);
+        clear(mdContSug);
+        show(mdContSug, false);
         cargarTiposSegunContenedor();
       };
       mdContSug.appendChild(btn);
     });
-    show(mdContSug,true);
+    show(mdContSug, true);
   });
 
   // Cerrar sugerencias con clic fuera
-  document.addEventListener("click", (e)=>{
-    if (mdOpSug && !mdOpSug.contains(e.target) && !mdOpNom.contains(e.target)) show(mdOpSug,false);
-    if (mdContSug && !mdContSug.contains(e.target) && !mdContNom.contains(e.target)) show(mdContSug,false);
+  document.addEventListener("click", (e) => {
+    if (mdOpSug && !mdOpSug.contains(e.target) && !mdOpNom.contains(e.target))
+      show(mdOpSug, false);
+    if (
+      mdContSug &&
+      !mdContSug.contains(e.target) &&
+      !mdContNom.contains(e.target)
+    )
+      show(mdContSug, false);
   });
 
-  async function autollenarContenedorModal(opId, fuente){
-    mdContId.value = '';
-    mdContNom.value= '';
-    mdContTipo.value = '';
+  async function autollenarContenedorModal(opId, fuente) {
+    mdContId.value = "";
+    mdContNom.value = "";
+    mdContTipo.value = "";
 
     const data = await getJSON(
-      docBase + "contenedoresPorOperacion/" + encodeURIComponent(opId) +
-      "?fuente=" + encodeURIComponent((fuente || mdOpNom?.dataset?.fuente || window._fuenteMF || 'MF').toUpperCase())
+      docBase +
+        "contenedoresPorOperacion/" +
+        encodeURIComponent(opId) +
+        "?fuente=" +
+        encodeURIComponent(
+          (
+            fuente ||
+            mdOpNom?.dataset?.fuente ||
+            window._fuenteMF ||
+            "MF"
+          ).toUpperCase(),
+        ),
     );
-    if (Array.isArray(data) && data.length>0){
+    if (Array.isArray(data) && data.length > 0) {
       const it = data[0];
-      mdContId.value   = String(it.id);
-      mdContNom.value  = it.label || String(it.id);
-      mdContTipo.value = (it.tipo||'').toUpperCase()==='F'?'F':'M';
+      mdContId.value = String(it.id);
+      mdContNom.value = it.label || String(it.id);
+      mdContTipo.value = (it.tipo || "").toUpperCase() === "F" ? "F" : "M";
       cargarTiposSegunContenedor();
     }
   }
 
-  function cargarTiposSegunContenedor(){
+  function cargarTiposSegunContenedor() {
     if (!selTipo) return;
     selTipo.disabled = true;
     selTipo.innerHTML = '<option value="">Cargando…</option>';
 
-    const tipo = (mdContTipo.value||'').toUpperCase();
-    const url  = docBase + "tipos" + (tipo ? ("?contenedor_tipo="+encodeURIComponent(tipo)) : "");
+    const tipo = (mdContTipo.value || "").toUpperCase();
+    const url =
+      docBase +
+      "tipos" +
+      (tipo ? "?contenedor_tipo=" + encodeURIComponent(tipo) : "");
 
     const http = new XMLHttpRequest();
     http.open("GET", url, true);
     http.send();
-    http.onreadystatechange = function(){
+    http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
       let data = [];
-      try { data = JSON.parse(this.responseText)||[]; } catch {}
-      if (!Array.isArray(data) || data.length===0){
+      try {
+        data = JSON.parse(this.responseText) || [];
+      } catch {}
+      if (!Array.isArray(data) || data.length === 0) {
         selTipo.innerHTML = '<option value="">(Sin tipos disponibles)</option>';
         selTipo.disabled = false;
         return;
       }
-      selTipo.innerHTML = '<option value="">-- Selecciona tipo --</option>'
-        + data.map(t=>`<option value="${t.id}">${escAttr(t.nombre)}</option>`).join('');
+      selTipo.innerHTML =
+        '<option value="">-- Selecciona tipo --</option>' +
+        data
+          .map((t) => `<option value="${t.id}">${escAttr(t.nombre)}</option>`)
+          .join("");
       selTipo.disabled = false;
     };
   }
 
   // Envío del formulario (POST registrar)
-  form?.addEventListener("submit", function(e){
+  form?.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    if (!mdOpId.value){ Swal.fire('Aviso','Selecciona una operación','info'); return; }
-    if (!mdContId.value || !mdContTipo.value){ Swal.fire('Aviso','Selecciona el contenedor (F/M)','info'); return; }
-    if (!selTipo?.value){ Swal.fire('Aviso','Selecciona el tipo de documento','info'); return; }
+    if (!mdOpId.value) {
+      Swal.fire("Aviso", "Selecciona una operación", "info");
+      return;
+    }
+    if (!mdContId.value || !mdContTipo.value) {
+      Swal.fire("Aviso", "Selecciona el contenedor (F/M)", "info");
+      return;
+    }
+    if (!selTipo?.value) {
+      Swal.fire("Aviso", "Selecciona el tipo de documento", "info");
+      return;
+    }
 
     const fd = new FormData(form);
-    fd.set('operacion_id',      mdOpId.value);
-    fd.set('contenedor_id',     mdContId.value);
-    fd.set('contenedor_tipo',   mdContTipo.value); // 'F' | 'M'
-    fd.set('fuente',            (mdOpNom?.dataset?.fuente || window._fuenteMF || 'MF').toUpperCase()); // ← clave
+    fd.set("operacion_id", mdOpId.value);
+    fd.set("contenedor_id", mdContId.value);
+    fd.set("contenedor_tipo", mdContTipo.value); // 'F' | 'M'
+    fd.set(
+      "fuente",
+      (mdOpNom?.dataset?.fuente || window._fuenteMF || "MF").toUpperCase(),
+    ); // ← clave
 
     const http = new XMLHttpRequest();
     http.open("POST", docBase + "registrar", true);
-    http.onreadystatechange = function(){
+    http.onreadystatechange = function () {
       if (this.readyState !== 4) return;
       let res = {};
-      try { res = JSON.parse(this.responseText)||{}; } catch {}
+      try {
+        res = JSON.parse(this.responseText) || {};
+      } catch {}
 
-      Swal.fire(res.status==='success'?'Éxito':'Aviso', res.msg||'(sin mensaje)', res.status||'info');
+      Swal.fire(
+        res.status === "success" ? "Éxito" : "Aviso",
+        res.msg || "(sin mensaje)",
+        res.status || "info",
+      );
 
-      if (res.status === 'success'){
-        const inst = bootstrap.Modal.getInstance(modalEl); inst?.hide();
+      if (res.status === "success") {
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        inst?.hide();
         form.reset();
         if (window.listarDocumentosMF) window.listarDocumentosMF();
         if (window.cargarFaltantesMF) window.cargarFaltantesMF();
@@ -676,9 +897,12 @@
     http.send(fd);
   });
 
-  function escAttr(s){ return String(s ?? '').replace(/&/g,'&amp;')
-                                              .replace(/"/g,'&quot;')
-                                              .replace(/</g,'&lt;')
-                                              .replace(/>/g,'&gt;')
-                                              .replace(/'/g,'&#39;'); }
+  function escAttr(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/'/g, "&#39;");
+  }
 })();

@@ -1,4 +1,5 @@
 <?php
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -12,7 +13,9 @@ class Operaciones_maritimo_ferro_documentos extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
         $this->opLog = new OperacionesLogModel();
     }
 
@@ -23,9 +26,11 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         try {
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
             $id = $this->opLog->crear($operacionId, $usuarioId, $accion, $descripcion);
-            if (!$id) { error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}"); }
+            if (!$id) {
+                error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}");
+            }
         } catch (\Throwable $e) {
-            error_log("operaciones_log error: ".$e->getMessage());
+            error_log("operaciones_log error: " . $e->getMessage());
         }
     }
 
@@ -33,60 +38,74 @@ class Operaciones_maritimo_ferro_documentos extends Controller
     {
         if (empty($info)) return $base;
         $kv = [];
-        foreach ($info as $k => $v) { $kv[] = "$k=$v"; }
-        return $base.' ('.implode(', ', $kv).')';
+        foreach ($info as $k => $v) {
+            $kv[] = "$k=$v";
+        }
+        return $base . ' (' . implode(', ', $kv) . ')';
     }
 
-    // === BUSCAR OPERACIONES (LBMF + FO) ===
+    /* ==========================================
+     *  BUSCAR OPERACIONES (SOLO MF)
+     * ========================================== */
     public function buscarOperaciones()
     {
         $term = isset($_GET['term']) ? trim($_GET['term']) : '';
         header('Content-Type: application/json; charset=UTF-8');
-        if ($term === '') { echo json_encode([]); die(); }
+        if ($term === '') {
+            echo json_encode([]);
+            die();
+        }
 
         $rows = $this->model->buscarOperacionesConContenedores($term);
         echo json_encode($rows, JSON_UNESCAPED_UNICODE);
         die();
     }
 
-    // === CONTENEDORES POR OPERACIÓN (usa fuente=MF|F) ===
+    /* ==========================================
+     *  CONTENEDORES POR OPERACIÓN (SOLO MF)
+     *  Regresa [{id,label,tipo:'F'|'M'}]
+     * ========================================== */
     public function contenedoresPorOperacion($operacion_id = 0)
     {
-        $opId   = (int)$operacion_id;
-        $fuente = isset($_GET['fuente']) ? strtoupper(trim($_GET['fuente'])) : 'MF';
+        $opId = (int)$operacion_id;
 
         header('Content-Type: application/json; charset=UTF-8');
-        if ($opId <= 0) { echo json_encode([]); die(); }
-
-        if ($fuente === 'F') {
-            $rows = $this->model->contenedorDeOperacionFO($opId);
-        } else {
-            $rows = $this->model->contenedoresDeOperacionMF($opId);
+        if ($opId <= 0) {
+            echo json_encode([]);
+            die();
         }
+
+        $rows = $this->model->contenedoresDeOperacionMF($opId);
 
         echo json_encode($rows, JSON_UNESCAPED_UNICODE);
         die();
     }
 
-    // === LISTAR DOCUMENTOS ===
+    /* ==========================================
+     *  LISTAR DOCUMENTOS (SOLO MF)
+     * ========================================== */
     public function listar()
     {
         $operacion_id  = (int)($_GET['operacion_id'] ?? 0);
         $contenedor_id = isset($_GET['contenedor_id']) ? (int)$_GET['contenedor_id'] : null;
-        $tipo          = isset($_GET['tipo']) ? trim($_GET['tipo']) : null; // 'F'|'M'
-        $fuente        = isset($_GET['fuente']) ? strtoupper(trim($_GET['fuente'])) : 'MF';
+        $tipo          = isset($_GET['tipo']) ? strtoupper(trim($_GET['tipo'])) : null; // 'F'|'M'
 
         header('Content-Type: application/json; charset=UTF-8');
-        if ($operacion_id <= 0) { echo json_encode(['error'=>'operacion_id es requerido']); die(); }
+        if ($operacion_id <= 0) {
+            echo json_encode(['error' => 'operacion_id es requerido']);
+            die();
+        }
 
-        $rows = ($fuente === 'F')
-            ? $this->model->listarDocumentosFerro($operacion_id, $contenedor_id, $tipo)
-            : $this->model->listarDocumentosMixto($operacion_id, $contenedor_id, $tipo);
+        // Nota: el nuevo modelo trae listarDocumentosMF
+        $rows = $this->model->listarDocumentosMF($operacion_id, $contenedor_id, $tipo);
 
         echo json_encode($rows, JSON_UNESCAPED_UNICODE);
         die();
     }
 
+    /* ==========================================
+     *  TIPOS DE DOCUMENTO (igual)
+     * ========================================== */
     public function tipos()
     {
         header('Content-Type: application/json; charset=UTF-8');
@@ -100,7 +119,7 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         if ($contenedor_tipo === 'F')       $aplica = ['contenedor_fisico', 'cualquiera'];
         elseif ($contenedor_tipo === 'M')   $aplica = ['contenedor_maritimo', 'cualquiera'];
         elseif ($contenedor_tipo === 'O')   $aplica = ['operacion', 'cualquiera'];
-        elseif ($aplica_raw)                $aplica = array_filter(array_map('trim', explode(',', strtolower($aplica_raw))));
+        elseif ($aplica_raw)               $aplica = array_filter(array_map('trim', explode(',', strtolower($aplica_raw))));
 
         try {
             $rows = $this->model->tiposDocumentoFiltrados($aplica, $solo_activos === 1, $q);
@@ -112,17 +131,13 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         die();
     }
 
+    /* ==========================================
+     *  REGISTRAR (SOLO MF)
+     * ========================================== */
     public function registrar()
     {
         header('Content-Type: application/json; charset=UTF-8');
-
-        $fuente = isset($_POST['fuente']) ? strtoupper(trim($_POST['fuente'])) : 'MF';
-
-        if ($fuente === 'F') {
-            $this->registrarFO();
-        } else {
-            $this->registrarMF();
-        }
+        $this->registrarMF(); // ya no existe FO
     }
 
     private function registrarMF()
@@ -130,29 +145,42 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         try {
             $operacion_id    = (int)($_POST['operacion_id'] ?? 0);
             $contenedor_id   = (int)($_POST['contenedor_id'] ?? 0);
-            $contenedor_tipo = trim($_POST['contenedor_tipo'] ?? ''); // 'F'|'M'
+            $contenedor_tipo = strtoupper(trim($_POST['contenedor_tipo'] ?? '')); // 'F'|'M'
             $tipo_doc_id     = (int)($_POST['tipo_documento_id'] ?? 0);
 
-            $coId  = ($contenedor_tipo === 'F' ? $contenedor_id : null);
-            $cmoId = ($contenedor_tipo === 'M' ? $contenedor_id : null);
+            $coId  = ($contenedor_tipo === 'F' ? $contenedor_id : null); // contenedores_operacion.id_contenedor
+            $cmoId = ($contenedor_tipo === 'M' ? $contenedor_id : null); // contenedores_maritimos_operacion.id
+
             if (($coId && $cmoId) || (!$coId && !$cmoId)) {
-                echo json_encode(['status'=>'warning','msg'=>'Selección de contenedor inválida']); return;
+                echo json_encode(['status' => 'warning', 'msg' => 'Selección de contenedor inválida']);
+                return;
             }
-            if ($operacion_id <= 0 || $contenedor_id <= 0 || !in_array($contenedor_tipo, ['F','M'], true) || $tipo_doc_id <= 0) {
-                echo json_encode(['status'=>'warning','msg'=>'Datos inválidos']); return;
+            if ($operacion_id <= 0 || $contenedor_id <= 0 || !in_array($contenedor_tipo, ['F', 'M'], true) || $tipo_doc_id <= 0) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Datos inválidos']);
+                return;
             }
             if (empty($_FILES['archivo']['tmp_name'])) {
-                echo json_encode(['status'=>'warning','msg'=>'Archivo requerido']); return;
+                echo json_encode(['status' => 'warning', 'msg' => 'Archivo requerido']);
+                return;
             }
             if (!$this->model->validarTipoDocumento($tipo_doc_id, $contenedor_tipo)) {
-                echo json_encode(['status'=>'warning','msg'=>'Tipo de documento no válido para el destino']); return;
+                echo json_encode(['status' => 'warning', 'msg' => 'Tipo de documento no válido para el destino']);
+                return;
             }
 
-            $numOp = $this->model->getNumeroOperacionMixto($operacion_id, 'MF');
-            if (!$numOp) { echo json_encode(['status'=>'warning','msg'=>'Operación no encontrada']); return; }
+            // Operación MF
+            $numOp = $this->model->getNumeroOperacion($operacion_id);
+            if (!$numOp) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Operación no encontrada']);
+                return;
+            }
 
+            // Etiqueta contenedor (F o M)
             $etqCont = $this->model->getEtiquetaContenedor($contenedor_tipo, $contenedor_id);
-            if (!$etqCont) { echo json_encode(['status'=>'warning','msg'=>'Contenedor no encontrado']); return; }
+            if (!$etqCont) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Contenedor no encontrado']);
+                return;
+            }
 
             // ===== PATH PORTABLE =====
             $baseDocsAbs = $this->getDocsBaseDirAbs(); // <root>/Documents/DocumentosContenedor
@@ -162,7 +190,8 @@ class Operaciones_maritimo_ferro_documentos extends Controller
 
             $absPath = $baseDocsAbs . DIRECTORY_SEPARATOR . $opFolder . DIRECTORY_SEPARATOR . $contFolder;
             if (!is_dir($absPath) && !@mkdir($absPath, 0775, true)) {
-                echo json_encode(['status'=>'error','msg'=>'No se pudo crear la carpeta de destino']); return;
+                echo json_encode(['status' => 'error', 'msg' => 'No se pudo crear la carpeta de destino']);
+                return;
             }
 
             $orig = $_FILES['archivo']['name'];
@@ -171,10 +200,17 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             $mime = mime_content_type($tmp) ?: ($_FILES['archivo']['type'] ?? null);
 
             $ext    = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
-            $permit = ['pdf','jpg','jpeg','png','doc','docx','xls','xlsx'];
-            if (!in_array($ext, $permit, true)) { echo json_encode(['status'=>'warning','msg'=>'Extensión no permitida']); return; }
+            $permit = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
+            if (!in_array($ext, $permit, true)) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Extensión no permitida']);
+                return;
+            }
+
             $maxBytes = 50 * 1024 * 1024;
-            if ($size <= 0 || $size > $maxBytes) { echo json_encode(['status'=>'warning','msg'=>'Tamaño de archivo inválido o excede el límite (50MB)']); return; }
+            if ($size <= 0 || $size > $maxBytes) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Tamaño de archivo inválido o excede el límite (50MB)']);
+                return;
+            }
 
             $uuid     = bin2hex(random_bytes(8));
             $sanOrig  = preg_replace('/[^A-Za-z0-9_.-]/', '_', $orig);
@@ -182,7 +218,8 @@ class Operaciones_maritimo_ferro_documentos extends Controller
 
             $destAbs  = $absPath . DIRECTORY_SEPARATOR . $fileName;
             if (!move_uploaded_file($tmp, $destAbs)) {
-                echo json_encode(['status'=>'error','msg'=>'No se pudo guardar el archivo']); return;
+                echo json_encode(['status' => 'error', 'msg' => 'No se pudo guardar el archivo']);
+                return;
             }
 
             $hash = @hash_file('sha256', $destAbs) ?: null;
@@ -191,7 +228,9 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             $rutaRel = 'Documents/DocumentosContenedor/' . $opFolder . '/' . $contFolder . '/' . $fileName;
 
             $userId = $_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? $_SESSION['id'] ?? $_SESSION['admin_id'] ?? null;
-            if ($userId === null) { error_log('DOCS_REGISTRAR MF sin userId.'); }
+            if ($userId === null) {
+                error_log('DOCS_REGISTRAR MF sin userId.');
+            }
 
             $ok = $this->model->insertarDocumentoMF([
                 'operacion_id' => $operacion_id,
@@ -205,7 +244,10 @@ class Operaciones_maritimo_ferro_documentos extends Controller
                 'hash'         => $hash,
                 'subido_por'   => $userId,
             ]);
-            if (!$ok) { echo json_encode(['status'=>'error','msg'=>'No se pudo registrar en BD']); return; }
+            if (!$ok) {
+                echo json_encode(['status' => 'error', 'msg' => 'No se pudo registrar en BD']);
+                return;
+            }
 
             $desc = $this->makeDesc('Documento subido', [
                 'doc_tipo_id' => $tipo_doc_id,
@@ -217,104 +259,10 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             ]);
             $this->logOp($operacion_id, 'creacion', $desc);
 
-            echo json_encode(['status'=>'success','msg'=>'Documento subido correctamente']);
+            echo json_encode(['status' => 'success', 'msg' => 'Documento subido correctamente']);
         } catch (Throwable $e) {
-            error_log("DOCS_REGISTRAR_MF: ".$e->getMessage());
-            echo json_encode(['status'=>'error','msg'=>'Error inesperado']);
-        }
-    }
-
-    private function registrarFO()
-    {
-        try {
-            $operacion_id    = (int)($_POST['operacion_id'] ?? 0);
-            $contenedor_id   = (int)($_POST['contenedor_id'] ?? 0);
-            $contenedor_tipo = trim($_POST['contenedor_tipo'] ?? '');
-            $tipo_doc_id     = (int)($_POST['tipo_documento_id'] ?? 0);
-
-            if ($operacion_id <= 0 || $contenedor_id <= 0 || $contenedor_tipo !== 'F' || $tipo_doc_id <= 0) {
-                echo json_encode(['status'=>'warning','msg'=>'Datos inválidos (FO requiere contenedor Físico)']); return;
-            }
-            if (empty($_FILES['archivo']['tmp_name'])) {
-                echo json_encode(['status'=>'warning','msg'=>'Archivo requerido']); return;
-            }
-            if (!$this->model->validarTipoDocumento($tipo_doc_id, 'F')) {
-                echo json_encode(['status'=>'warning','msg'=>'Tipo de documento no válido para contenedor físico']); return;
-            }
-
-            $numOp = $this->model->getNumeroOperacionMixto($operacion_id, 'F');
-            if (!$numOp) { echo json_encode(['status'=>'warning','msg'=>'Operación no encontrada']); return; }
-
-            $etqCont = $this->model->getEtiquetaContenedor('F', $contenedor_id);
-            if (!$etqCont) { echo json_encode(['status'=>'warning','msg'=>'Contenedor no encontrado']); return; }
-
-            // ===== PATH PORTABLE =====
-            $baseDocsAbs = $this->getDocsBaseDirAbs();
-
-            $opFolder   = $this->slugFolder(strtoupper($numOp) . '_Documentos');
-            $contFolder = $this->slugFolder(strtoupper($etqCont));
-
-            $absPath = $baseDocsAbs . DIRECTORY_SEPARATOR . $opFolder . DIRECTORY_SEPARATOR . $contFolder;
-            if (!is_dir($absPath) && !@mkdir($absPath, 0775, true)) {
-                echo json_encode(['status'=>'error','msg'=>'No se pudo crear la carpeta de destino']); return;
-            }
-
-            $orig = $_FILES['archivo']['name'];
-            $tmp  = $_FILES['archivo']['tmp_name'];
-            $size = (int)$_FILES['archivo']['size'];
-            $mime = mime_content_type($tmp) ?: ($_FILES['archivo']['type'] ?? null);
-
-            $ext    = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
-            $permit = ['pdf','jpg','jpeg','png','doc','docx','xls','xlsx'];
-            if (!in_array($ext, $permit, true)) { echo json_encode(['status'=>'warning','msg'=>'Extensión no permitida']); return; }
-            $maxBytes = 50 * 1024 * 1024;
-            if ($size <= 0 || $size > $maxBytes) { echo json_encode(['status'=>'warning','msg'=>'Tamaño de archivo inválido o excede el límite (50MB)']); return; }
-
-            $uuid     = bin2hex(random_bytes(8));
-            $sanOrig  = preg_replace('/[^A-Za-z0-9_.-]/', '_', $orig);
-            $fileName = $uuid . '_' . $sanOrig;
-
-            $destAbs  = $absPath . DIRECTORY_SEPARATOR . $fileName;
-            if (!move_uploaded_file($tmp, $destAbs)) {
-                echo json_encode(['status'=>'error','msg'=>'No se pudo guardar el archivo']); return;
-            }
-
-            $hash = @hash_file('sha256', $destAbs) ?: null;
-
-            // ===== RUTA RELATIVA PARA BD (portable) =====
-            $rutaRel = 'Documents/DocumentosContenedor/' . $opFolder . '/' . $contFolder . '/' . $fileName;
-
-            $userId = $_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? $_SESSION['id'] ?? $_SESSION['admin_id'] ?? null;
-            if ($userId === null) { error_log('DOCS_REGISTRAR FO sin userId.'); }
-
-            $ok = $this->model->insertarDocumentoFO([
-                'operacion_id' => $operacion_id,
-                'co_id'        => $contenedor_id,
-                'cmo_id'       => null,
-                'tipo_doc_id'  => $tipo_doc_id,
-                'nombre_orig'  => $orig,
-                'ruta'         => $rutaRel,
-                'mime'         => $mime,
-                'size'         => $size,
-                'hash'         => $hash,
-                'subido_por'   => $userId,
-            ]);
-            if (!$ok) { echo json_encode(['status'=>'error','msg'=>'No se pudo registrar en BD']); return; }
-
-            $desc = $this->makeDesc('Documento subido (FO)', [
-                'doc_tipo_id' => $tipo_doc_id,
-                'cont_tipo'   => 'FISICO',
-                'cont_ref'    => $etqCont,
-                'archivo'     => $orig,
-                'ruta'        => $rutaRel,
-                'size'        => $size
-            ]);
-            $this->logOp($operacion_id, 'creacion', $desc);
-
-            echo json_encode(['status'=>'success','msg'=>'Documento subido correctamente (FO)']);
-        } catch (Throwable $e) {
-            error_log("DOCS_REGISTRAR_FO: ".$e->getMessage());
-            echo json_encode(['status'=>'error','msg'=>'Error inesperado']);
+            error_log("DOCS_REGISTRAR_MF: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Error inesperado']);
         }
     }
 
@@ -332,10 +280,18 @@ class Operaciones_maritimo_ferro_documentos extends Controller
     public function ver($id = 0)
     {
         $id = (int)$id;
-        if ($id <= 0) { http_response_code(400); echo "Solicitud inválida"; return; }
+        if ($id <= 0) {
+            http_response_code(400);
+            echo "Solicitud inválida";
+            return;
+        }
 
         $doc = $this->model->getDocumentoPorId($id);
-        if (!$doc) { http_response_code(404); echo "Documento no encontrado"; return; }
+        if (!$doc) {
+            http_response_code(404);
+            echo "Documento no encontrado";
+            return;
+        }
 
         $root = $this->getProjectRootPath();
 
@@ -343,7 +299,9 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         $prefix = 'Documents/DocumentosContenedor/';
 
         if ($rel === '' || strpos($rel, $prefix) !== 0) {
-            http_response_code(404); echo "Archivo no disponible"; return;
+            http_response_code(404);
+            echo "Archivo no disponible";
+            return;
         }
 
         $abs = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
@@ -353,38 +311,46 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         $realFile = realpath($abs);
 
         if (!$realRoot || !$realFile || strpos($realFile, $realRoot) !== 0 || !is_file($realFile)) {
-            http_response_code(404); echo "Archivo no disponible"; return;
+            http_response_code(404);
+            echo "Archivo no disponible";
+            return;
         }
 
         $mime = $doc['mime_type'] ?: null;
         if (!$mime) {
             $ext = strtolower(pathinfo($realFile, PATHINFO_EXTENSION));
             $map = [
-                'pdf'=>'application/pdf','jpg'=>'image/jpeg','jpeg'=>'image/jpeg',
-                'png'=>'image/png','gif'=>'image/gif','webp'=>'image/webp',
-                'txt'=>'text/plain','csv'=>'text/csv','doc'=>'application/msword',
-                'docx'=>'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'xls'=>'application/vnd.ms-excel',
-                'xlsx'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                'pdf' => 'application/pdf',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'txt' => 'text/plain',
+                'csv' => 'text/csv',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             ];
             $mime = $map[$ext] ?? 'application/octet-stream';
         }
 
         $filename  = $doc['nombre_archivo'] ?: basename($realFile);
         $filesize  = filesize($realFile);
-        $etag      = !empty($doc['hash_sha256']) ? '"'.$doc['hash_sha256'].'"' : null;
+        $etag      = !empty($doc['hash_sha256']) ? '"' . $doc['hash_sha256'] . '"' : null;
         $lastMod   = gmdate('D, d M Y H:i:s', filemtime($realFile)) . ' GMT';
         $forceDl   = isset($_GET['dl']) && $_GET['dl'] == '1';
 
         header('X-Content-Type-Options: nosniff');
-        header('Content-Type: '.$mime);
-        header('Content-Length: '.$filesize);
-        header('Last-Modified: '.$lastMod);
-        if ($etag) header('ETag: '.$etag);
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . $filesize);
+        header('Last-Modified: ' . $lastMod);
+        if ($etag) header('ETag: ' . $etag);
         header('Cache-Control: private, max-age=86400');
 
         $disposition = $forceDl ? 'attachment' : 'inline';
-        header('Content-Disposition: '.$disposition.'; filename="'.basename($filename).'"');
+        header('Content-Disposition: ' . $disposition . '; filename="' . basename($filename) . '"');
 
         readfile($realFile);
         exit;
@@ -399,15 +365,21 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         try {
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 http_response_code(405);
-                echo json_encode(['status'=>'error','msg'=>'Método no permitido']);
+                echo json_encode(['status' => 'error', 'msg' => 'Método no permitido']);
                 return;
             }
 
             $id = (int)$id;
-            if ($id <= 0) { echo json_encode(['status'=>'warning','msg'=>'ID inválido']); return; }
+            if ($id <= 0) {
+                echo json_encode(['status' => 'warning', 'msg' => 'ID inválido']);
+                return;
+            }
 
             $doc = $this->model->getDocumentoPorId($id);
-            if (!$doc) { echo json_encode(['status'=>'warning','msg'=>'Documento no encontrado']); return; }
+            if (!$doc) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Documento no encontrado']);
+                return;
+            }
 
             $root = $this->getProjectRootPath();
 
@@ -415,7 +387,7 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             $prefix = 'Documents/DocumentosContenedor/';
 
             if ($rel === '' || strpos($rel, $prefix) !== 0) {
-                echo json_encode(['status'=>'error','msg'=>'Ruta no permitida.']);
+                echo json_encode(['status' => 'error', 'msg' => 'Ruta no permitida.']);
                 return;
             }
 
@@ -431,30 +403,30 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             }
 
             if (!$this->model->eliminarDocumento($id)) {
-                echo json_encode(['status'=>'error','msg'=>'No se pudo eliminar en BD']);
+                echo json_encode(['status' => 'error', 'msg' => 'No se pudo eliminar en BD']);
                 return;
             }
 
-            $opId     = (int)($doc['operacion_id'] ?? 0);
-            $coId     = $doc['contenedor_operacion_id'] ?? null;
-            $cmoId    = $doc['cont_maritimo_operacion_id'] ?? null;
+            $opId  = (int)($doc['operacion_id'] ?? 0);
+            $coId  = $doc['contenedor_operacion_id'] ?? null;
+            $cmoId = $doc['cont_maritimo_operacion_id'] ?? null;
 
             $contTipo = $coId ? 'FISICO' : ($cmoId ? 'MARITIMO' : 'N/A');
             $contRef  = $coId ?: ($cmoId ?: '-');
 
             $desc = $this->makeDesc('Documento eliminado', [
-                'doc_id'     => $id,
-                'doc_tipo_id'=> $doc['tipo_documento_id'] ?? '-',
-                'cont_tipo'  => $contTipo,
-                'cont_ref'   => $contRef,
-                'archivo'    => $doc['nombre_archivo'] ?? basename($rel),
+                'doc_id'      => $id,
+                'doc_tipo_id' => $doc['tipo_documento_id'] ?? '-',
+                'cont_tipo'   => $contTipo,
+                'cont_ref'    => $contRef,
+                'archivo'     => $doc['nombre_archivo'] ?? basename($rel),
             ]);
             $this->logOp($opId, 'cancelacion', $desc);
 
-            echo json_encode(['status'=>'success','msg'=>'Documento eliminado']);
+            echo json_encode(['status' => 'success', 'msg' => 'Documento eliminado']);
         } catch (Throwable $e) {
-            error_log("DOCS_ELIMINAR: ".$e->getMessage());
-            echo json_encode(['status'=>'error','msg'=>'Error inesperado']);
+            error_log("DOCS_ELIMINAR: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Error inesperado']);
         }
     }
 
@@ -464,7 +436,7 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         $pathReal   = realpath($path);
         while ($pathReal && $stopAtReal && strpos($pathReal, $stopAtReal) === 0) {
             $scan = @scandir($pathReal);
-            if ($scan === false || count(array_diff($scan, ['.','..'])) > 0) break;
+            if ($scan === false || count(array_diff($scan, ['.', '..'])) > 0) break;
             @rmdir($pathReal);
             $parent  = dirname($pathReal);
             if ($parent === $pathReal) break;
@@ -472,7 +444,9 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         }
     }
 
-    // === FALTANTES ===
+    /* ==========================================
+     *  FALTANTES (SOLO MF)
+     * ========================================== */
     public function faltantes()
     {
         header('Content-Type: application/json; charset=UTF-8');
@@ -480,23 +454,24 @@ class Operaciones_maritimo_ferro_documentos extends Controller
         $operacion_id  = (int)($_GET['operacion_id'] ?? 0);
         $contenedor_id = isset($_GET['contenedor_id']) ? (int)$_GET['contenedor_id'] : null;
         $tipo          = isset($_GET['tipo']) ? strtoupper(trim($_GET['tipo'])) : null; // 'F'|'M'
-        $fuente        = isset($_GET['fuente']) ? strtoupper(trim($_GET['fuente'])) : 'MF';
 
-        if ($operacion_id <= 0 || empty($contenedor_id) || !in_array($tipo, ['F','M'], true)) {
-            echo json_encode([]); return;
+        if ($operacion_id <= 0 || empty($contenedor_id) || !in_array($tipo, ['F', 'M'], true)) {
+            echo json_encode([]);
+            return;
         }
 
         try {
-            $rows = ($fuente === 'F')
-                ? $this->model->faltantesFerro($operacion_id, $contenedor_id, $tipo)
-                : $this->model->faltantesMixto($operacion_id, $contenedor_id, $tipo);
+            $rows = $this->model->faltantesMF($operacion_id, $contenedor_id, $tipo);
             echo json_encode($rows, JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
-            error_log("DOCS_FALTANTES: ".$e->getMessage());
+            error_log("DOCS_FALTANTES: " . $e->getMessage());
             echo json_encode([]);
         }
     }
 
+    /* ==========================================
+     *  NOTIFICAR FALTANTES (SOLO MF)
+     * ========================================== */
     public function notificarFaltantes()
     {
         header('Content-Type: application/json; charset=UTF-8');
@@ -504,30 +479,30 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             $operacion_id  = (int)($_POST['operacion_id'] ?? 0);
             $contenedor_id = (int)($_POST['contenedor_id'] ?? 0);
             $tipo          = isset($_POST['tipo']) ? strtoupper(trim($_POST['tipo'])) : '';
-            $fuente        = isset($_POST['fuente']) ? strtoupper(trim($_POST['fuente'])) : 'MF';
             $emailOverride = trim($_POST['email'] ?? '');
 
-            if ($operacion_id <= 0 || $contenedor_id <= 0 || !in_array($tipo, ['F','M'], true)) {
-                echo json_encode(['status'=>'warning','msg'=>'Parámetros inválidos']); return;
+            if ($operacion_id <= 0 || $contenedor_id <= 0 || !in_array($tipo, ['F', 'M'], true)) {
+                echo json_encode(['status' => 'warning', 'msg' => 'Parámetros inválidos']);
+                return;
             }
 
-            $faltantes = ($fuente === 'F')
-                ? $this->model->faltantesFerro($operacion_id, $contenedor_id, $tipo)
-                : $this->model->faltantesMixto($operacion_id, $contenedor_id, $tipo);
+            $faltantes = $this->model->faltantesMF($operacion_id, $contenedor_id, $tipo);
 
             if (!is_array($faltantes) || count($faltantes) === 0) {
-                echo json_encode(['status'=>'info','msg'=>'No hay documentos faltantes para notificar']); return;
+                echo json_encode(['status' => 'info', 'msg' => 'No hay documentos faltantes para notificar']);
+                return;
             }
 
-            $numOp  = $this->model->getNumeroOperacionMixto($operacion_id, $fuente) ?: ('OP '.$operacion_id);
-            $etq    = $this->model->getEtiquetaContenedor($tipo, $contenedor_id) ?: ('CONT '.$contenedor_id);
+            $numOp = $this->model->getNumeroOperacion($operacion_id) ?: ('OP ' . $operacion_id);
+            $etq   = $this->model->getEtiquetaContenedor($tipo, $contenedor_id) ?: ('CONT ' . $contenedor_id);
 
-            $cli = $this->model->getClienteInfoMixto($operacion_id, $contenedor_id, $tipo, $fuente);
+            $cli = $this->model->getClienteInfo($operacion_id, $contenedor_id, $tipo);
             $clienteNombre = $cli['cliente_nombre'] ?? 'Cliente';
             $clienteEmail  = $cli['cliente_email']  ?? '';
 
             if ($clienteEmail === '' && $emailOverride === '') {
-                echo json_encode(['status'=>'need_email','msg'=>'No se encontró correo del cliente. Solicita un correo destino.']); return;
+                echo json_encode(['status' => 'need_email', 'msg' => 'No se encontró correo del cliente. Solicita un correo destino.']);
+                return;
             }
             $destino = ($emailOverride !== '') ? $emailOverride : $clienteEmail;
 
@@ -545,15 +520,15 @@ class Operaciones_maritimo_ferro_documentos extends Controller
                 <div style="max-width:680px;margin:0 auto;font-family:\'Segoe UI\',sans-serif;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #eee;">
                   <div style="background:#1c1e74;color:#fff;padding:18px 24px;">
                     <h2 style="margin:0;font-size:18px;">Pendientes de documentación</h2>
-                    <div style="font-size:13px;opacity:.9;">Operación <strong>'.htmlspecialchars($numOp).'</strong> — Contenedor <strong>'.htmlspecialchars($etq).'</strong></div>
+                    <div style="font-size:13px;opacity:.9;">Operación <strong>' . htmlspecialchars($numOp) . '</strong> — Contenedor <strong>' . htmlspecialchars($etq) . '</strong></div>
                   </div>
                   <div style="padding:22px;color:#333;font-size:15px;line-height:1.5;">
-                    <p>Hola '.htmlspecialchars($clienteNombre).',</p>
+                    <p>Hola ' . htmlspecialchars($clienteNombre) . ',</p>
                     <p>Te compartimos el listado de <strong>documentos faltantes</strong> para continuar con el proceso:</p>
-                    <ul style="margin:10px 0 18px 18px;padding:0;">'.$itemsHtml.'</ul>
+                    <ul style="margin:10px 0 18px 18px;padding:0;">' . $itemsHtml . '</ul>
                     <p>Puedes responder a este correo adjuntando los documentos o compartir un enlace de descarga.</p>
                     <p>Gracias y saludos,</p>
-                    <p><strong>'.(defined('TITLE') ? TITLE : 'Equipo').'</strong></p>
+                    <p><strong>' . (defined('TITLE') ? TITLE : 'Equipo') . '</strong></p>
                   </div>
                   <div style="background:#f7f7f7;color:#666;padding:12px 18px;font-size:12px;text-align:center;">
                     Este mensaje fue generado por el sistema de gestión de documentos.
@@ -575,13 +550,15 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             $mail->addAddress($destino, $clienteNombre);
 
             $userMail = $_SESSION['email'] ?? $_SESSION['correo'] ?? null;
-            if ($userMail) { $mail->addCC($userMail); }
+            if ($userMail) {
+                $mail->addCC($userMail);
+            }
 
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body    = $body;
             $mail->AltBody = "Documentos faltantes (Op: {$numOp}, Cont: {$etq}):\n" .
-                             implode("\n", array_map(fn($t)=>"- ".($t['nombre'] ?? $t['clave'] ?? 'Documento'), $faltantes));
+                implode("\n", array_map(fn($t) => "- " . ($t['nombre'] ?? $t['clave'] ?? 'Documento'), $faltantes));
 
             $mail->send();
 
@@ -593,13 +570,13 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             ]);
             $this->logOp($operacion_id, 'actualizacion', $desc);
 
-            echo json_encode(['status'=>'success','msg'=>"Correo enviado a {$destino}"]);
+            echo json_encode(['status' => 'success', 'msg' => "Correo enviado a {$destino}"]);
         } catch (Exception $e) {
-            error_log('DOCS_NOTIF: '.$e->getMessage());
-            echo json_encode(['status'=>'error','msg'=>'No se pudo enviar el correo. '.$e->getMessage()]);
+            error_log('DOCS_NOTIF: ' . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No se pudo enviar el correo. ' . $e->getMessage()]);
         } catch (Throwable $e) {
-            error_log('DOCS_NOTIF_T: '.$e->getMessage());
-            echo json_encode(['status'=>'error','msg'=>'Error inesperado.']);
+            error_log('DOCS_NOTIF_T: ' . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Error inesperado.']);
         }
     }
 
