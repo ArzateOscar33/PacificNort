@@ -66,6 +66,42 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
             $args[] = $ff;
         }
 
+
+        // =========================
+        // Filtros SELECT (cliente / origen / ubicación / destino)
+        // =========================
+
+        // Cliente
+        $clienteId = (int)($filters['cliente_id'] ?? $filters['cliente'] ?? 0);
+        if ($clienteId > 0) {
+            $where .= " AND o.cliente_id = ? ";
+            $args[] = $clienteId;
+        }
+
+        // Origen (puerto): lo que muestras es COALESCE(puerto_last, puerto_st)
+        // Por ID: COALESCE(tf_last.origen_puerto_id, st.puerto_arribo_default_id)
+        $origenId = (int)($filters['origen_id'] ?? $filters['origen'] ?? 0);
+        if ($origenId > 0) {
+            $where .= " AND COALESCE(tf_last.origen_puerto_id, st.puerto_arribo_default_id) = ? ";
+            $args[] = $origenId;
+        }
+
+        // Ubicación actual (ciudad): lo que muestras es ubi_last (tf_last.ubicacion_id)
+        $ubicacionId = (int)($filters['ubicacion_id'] ?? $filters['ubicacion'] ?? 0);
+        if ($ubicacionId > 0) {
+            // Nota: si no hay traza, tf_last.ubicacion_id será NULL => no matchea (correcto)
+            $where .= " AND tf_last.ubicacion_id = ? ";
+            $args[] = $ubicacionId;
+        }
+
+        // Destino (ciudad): lo que muestras es COALESCE(dest_last, dest_ofe)
+        // Por ID: COALESCE(tf_last.destino_id, ofe.destino_id)
+        $destinoId = (int)($filters['destino_id'] ?? $filters['destino'] ?? 0);
+        if ($destinoId > 0) {
+            $where .= " AND COALESCE(tf_last.destino_id, ofe.destino_id) = ? ";
+            $args[] = $destinoId;
+        }
+
         // =========================
         // COUNT (1 fila = 1 asignación cmf.id)
         // =========================

@@ -17,6 +17,10 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
             'term'         => $_GET['term'] ?? '',
             'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
             'fecha_fin'    => $_GET['fecha_fin'] ?? '',
+            'cliente_id'   => isset($_GET['cliente_id']) ? (int)$_GET['cliente_id'] : 0,
+            'origen_id'    => isset($_GET['origen_id']) ? (int)$_GET['origen_id'] : 0,
+            'ubicacion_id' => isset($_GET['ubicacion_id']) ? (int)$_GET['ubicacion_id'] : 0,
+            'destino_id'   => isset($_GET['destino_id']) ? (int)$_GET['destino_id'] : 0,
         ];
 
         $res = $this->model->listarPaginado($filters, $page, $per);

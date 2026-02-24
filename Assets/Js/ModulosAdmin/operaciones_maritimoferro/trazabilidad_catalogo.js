@@ -33,6 +33,11 @@
     "rutaHist_badgeTotalParadas",
   );
 
+  const selectCliente = document.getElementById("rutasFiltroCliente");
+  const selectOrigen = document.getElementById("rutasFiltroOrigen");
+  const selectUbicacion = document.getElementById("rutasFiltroUbicacion");
+  const selectDestino = document.getElementById("rutasFiltroDestino");
+
   const hidOperacionId = document.getElementById("rutaHist_operacionId");
   const hidOperacionFerroId = document.getElementById(
     "rutaHist_operacionFerroId",
@@ -264,6 +269,15 @@
     const ff = (inpFechaFin?.value || "").trim();
     const pp = (perPage || "10").toString();
     const all = isAllMode(pp);
+    const clienteId = (selectCliente?.value || "").trim();
+    const origenId = (selectOrigen?.value || "").trim();
+    const ubicacionId = (selectUbicacion?.value || "").trim();
+    const destinoId = (selectDestino?.value || "").trim();
+
+    if (clienteId) params.append("cliente_id", clienteId);
+    if (origenId) params.append("origen_id", origenId);
+    if (ubicacionId) params.append("ubicacion_id", ubicacionId);
+    if (destinoId) params.append("destino_id", destinoId);
 
     if (term) params.append("term", term);
     if (fi) params.append("fecha_inicio", fi);
@@ -630,6 +644,16 @@
     listar();
     if (window.feather) feather.replace();
   });
+
+  function onFiltroChange() {
+    currentPage = 1;
+    listar();
+  }
+
+  selectCliente?.addEventListener("change", onFiltroChange);
+  selectOrigen?.addEventListener("change", onFiltroChange);
+  selectUbicacion?.addEventListener("change", onFiltroChange);
+  selectDestino?.addEventListener("change", onFiltroChange);
 
   // ========= Bridge refresh =========
   (function bindRefreshEvents() {

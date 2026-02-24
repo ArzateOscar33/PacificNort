@@ -17,20 +17,31 @@
       <div class="col-12 col-sm-6 col-lg-4">
         <div class="input-group input-group-sm">
           <span class="input-group-text"><i data-feather="search"></i></span>
-          <input type="text" id="rutasBuscar" class="form-control"
-            placeholder="Buscar (operación / ferro / cliente / destino)">
+          <input
+            type="text"
+            id="rutasBuscar"
+            class="form-control"
+            placeholder="Buscar (operación / ferro / cliente / destino)" />
         </div>
       </div>
 
       <!-- Fechas (compactas) -->
       <div class="col-6 col-sm-3 col-lg-2">
-        <input type="date" class="form-control form-control-sm" id="rutasFechaIni" title="Desde">
+        <input
+          type="date"
+          class="form-control form-control-sm"
+          id="rutasFechaIni"
+          title="Desde" />
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
-        <input type="date" class="form-control form-control-sm" id="rutasFechaFin" title="Hasta">
+        <input
+          type="date"
+          class="form-control form-control-sm"
+          id="rutasFechaFin"
+          title="Hasta" />
       </div>
 
-      <!-- Per page + Export -->
+      <!-- Per page -->
       <div class="col-12 col-lg-1 d-flex justify-content-lg-end">
         <select id="rutasPerPage" class="form-control form-control-sm">
           <option value="10" selected>10</option>
@@ -43,6 +54,7 @@
         </select>
       </div>
 
+      <!-- Export -->
       <div class="col-12 col-lg-12 d-flex flex-wrap justify-content-lg-end gap-2">
         <button class="btn btn-sm btn-outline-success" id="rutasExcel">
           <i data-feather="file-text" class="me-1"></i>Excel
@@ -50,6 +62,59 @@
         <button class="btn btn-sm btn-outline-warning" id="rutasPdf">
           <i data-feather="file" class="me-1"></i>PDF
         </button>
+      </div>
+
+      <!-- ✅ NUEVOS FILTROS (2da fila) -->
+      <div class="col-12">
+        <div class="row gx-2 gy-2">
+          <div class="col-12 col-sm-6 col-lg-3">
+            <select id="rutasFiltroCliente" class="form-control form-control-sm" title="Cliente">
+              <option value="">Cliente: Todos</option>
+              <?php if (!empty($data['clientes'])): foreach ($data['clientes'] as $c): ?>
+                  <option value="<?= (int)$c['id_cliente']; ?>">
+                    <?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+              <?php endforeach;
+              endif; ?>
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <select id="rutasFiltroOrigen" class="form-control form-control-sm" title="Origen">
+              <option value="">Origen: Todos</option>
+              <?php if (!empty($data['puertos'])): foreach ($data['puertos'] as $o): ?>
+                  <option value="<?= (int)$o['id_puerto']; ?>">
+                    <?= htmlspecialchars($o['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+              <?php endforeach;
+              endif; ?>
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <select id="rutasFiltroUbicacion" class="form-control form-control-sm" title="Ubicación actual">
+              <option value="">Ubicación actual: Todas</option>
+              <?php if (!empty($data['ciudades'])): foreach ($data['ciudades'] as $u): ?>
+                  <option value="<?= (int)$u['id_ciudad']; ?>">
+                    <?= htmlspecialchars($u['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+              <?php endforeach;
+              endif; ?>
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <select id="rutasFiltroDestino" class="form-control form-control-sm" title="Destino">
+              <option value="">Destino: Todos</option>
+              <?php if (!empty($data['ciudades'])): foreach ($data['ciudades'] as $d): ?>
+                  <option value="<?= (int)$d['id_ciudad']; ?>">
+                    <?= htmlspecialchars($d['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+              <?php endforeach;
+              endif; ?>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   </div>

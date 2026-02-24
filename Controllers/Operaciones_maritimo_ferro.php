@@ -507,6 +507,8 @@ class Operaciones_maritimo_ferro extends Controller
         $data['transportistas'] = $this->model->getTransportistas();
         $data['ciudades']       = $this->model->listarDestinos();
 
+        $data['clientes']       = $this->model->catalogoClientes();
+
         $this->views->getView('admin/Operaciones_maritimo_ferro', "ver", $data);
     }
 

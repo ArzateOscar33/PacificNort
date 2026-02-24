@@ -142,6 +142,14 @@ class Operaciones_maritimo_ferroModel extends Query
         return $this->selectAll($sql) ?: [];
     }
 
+    public function catalogoClientes(): array
+    {
+        $sql = "SELECT id_cliente, nombre
+                FROM clientes
+                WHERE estatus = 1
+                ORDER BY nombre";
+        return $this->selectAll($sql) ?: [];
+    }
     /* =========================
        ===   AUTOCOMPLETES   ===
        ========================= */
