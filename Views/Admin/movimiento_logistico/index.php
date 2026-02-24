@@ -39,18 +39,7 @@
               </select>
             </div>
 
-            <!-- Categoría -->
-            <div class="col-md-3">
-              <label for="categoriaMovimiento" class="form-label">Categoría</label>
-              <select id="categoriaMovimiento" class="form-control" name="categoriaMovimiento">
-                <option value="">Categoría</option>
-                <?php foreach (($data['tipos_operacion'] ?? []) as $op): ?>
-                  <option value="<?= $op['id_tipo_operacion'] ?>">
-                    <?= htmlspecialchars($op['nombre_operacion']) ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-            </div>
+
 
             <!-- Botón -->
             <div class="col-md-2 text-end">
@@ -69,7 +58,6 @@
               <tr>
                 <th>Nombre</th>
                 <th>Tipo de movimiento</th>
-                <th>Categoría</th>
                 <th>Moneda</th>
                 <th>Acciones</th>
               </tr>
@@ -127,17 +115,7 @@
               <option value="DLLS">Dólares</option>
             </select>
           </div>
-          <div class="mb-3">
-            <label for="tipo_operacion_id" class="form-label">Categoría (Tipo de operación)</label>
-            <select name="tipo_operacion_id" id="tipo_operacion_id" class="form-control">
-              <option value="">(Opcional) Seleccione</option>
-              <?php foreach (($data['tipos_operacion'] ?? []) as $op): ?>
-                <option value="<?= $op['id_tipo_operacion'] ?>">
-                  <?= htmlspecialchars($op['nombre_operacion']) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
+
 
           <!-- Pie del modal -->
           <div class="modal-footer px-0">

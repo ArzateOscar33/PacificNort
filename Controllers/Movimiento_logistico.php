@@ -14,7 +14,6 @@ class Movimiento_logistico extends Controller
     public function index()
     {
         $data['title'] = 'Tipo de Movimiento Logístico';
-        $data['tipos_operacion'] = $this->model->catalogoTiposOperacion();
         $this->views->getView('admin/movimiento_logistico', "index", $data);
     }
 
@@ -39,8 +38,7 @@ class Movimiento_logistico extends Controller
         $nombre = trim($_POST['nombre_movimiento'] ?? '');
         $tipo   = $_POST['tipo'] ?? '';
         $moneda = $_POST['moneda'] ?? '';
-        $tipo_operacion_id = isset($_POST['tipo_operacion_id']) && $_POST['tipo_operacion_id'] !== ''
-            ? (int)$_POST['tipo_operacion_id'] : null;
+
 
         if ($nombre === '' || $tipo === '' || $moneda === '') {
             echo json_encode(['status' => 'warning', 'msg' => 'Todos los campos son obligatorios']);
@@ -48,18 +46,22 @@ class Movimiento_logistico extends Controller
         }
 
         if ($id === '') {
-            $existe = $this->model->existeMovimiento($nombre, $tipo_operacion_id);
+            $existe = $this->model->existeMovimiento($nombre);
             if ($existe) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un tipo de movimiento con ese nombre en esa categoría']);
+                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un tipo de movimiento con ese nombre']);
                 return;
             }
-            $res = $this->model->registrar($nombre, $tipo, $moneda, $tipo_operacion_id);
-            echo json_encode(['status' => $res ? 'success' : 'error',
-                            'msg' => $res ? 'Tipo de movimiento registrado' : 'Error al registrar']);
+            $res = $this->model->registrar($nombre, $tipo, $moneda);
+            echo json_encode([
+                'status' => $res ? 'success' : 'error',
+                'msg' => $res ? 'Tipo de movimiento registrado' : 'Error al registrar'
+            ]);
         } else {
-            $res = $this->model->actualizar($id, $nombre, $tipo, $moneda, $tipo_operacion_id);
-            echo json_encode(['status' => $res ? 'success' : 'error',
-                            'msg' => $res ? 'Tipo de movimiento actualizado' : 'Error al actualizar']);
+            $res = $this->model->actualizar($id, $nombre, $tipo, $moneda);
+            echo json_encode([
+                'status' => $res ? 'success' : 'error',
+                'msg' => $res ? 'Tipo de movimiento actualizado' : 'Error al actualizar'
+            ]);
         }
     }
 
@@ -82,14 +84,13 @@ class Movimiento_logistico extends Controller
         die();
     }
 
-   
+
     public function filtrar()
     {
         $term      = isset($_GET['term']) ? trim($_GET['term']) : '';
         $tipo      = isset($_GET['tipo']) ? trim($_GET['tipo']) : '';
         $moneda    = isset($_GET['moneda']) ? trim($_GET['moneda']) : '';
-        $categoria = isset($_GET['categoria']) ? trim($_GET['categoria']) : '';
-        $data = $this->model->filtrar($term, $tipo, $moneda, $categoria);
+        $data = $this->model->filtrar($term, $tipo, $moneda);
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }

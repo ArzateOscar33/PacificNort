@@ -3,22 +3,21 @@ class Movimiento_logisticoModel extends Query
 {
     public function listar()
     {
-        $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.tipo, tm.moneda, tm.tipo_operacion_id,
-                    toper.nombre_operacion AS categoria
-                FROM tipos_movimiento tm
-                LEFT JOIN tipos_operacion toper ON toper.id_tipo_operacion = tm.tipo_operacion_id
+        $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.tipo, tm.moneda
+                FROM tipos_movimiento tm 
                 WHERE tm.estatus = 1
                 ORDER BY tm.id_tipo_movimiento DESC";
         return $this->selectAll($sql);
     }
 
-    public function registrar($nombre, $tipo, $moneda, $tipo_operacion_id)
+    public function registrar($nombre, $tipo, $moneda)
     {
         $sql = "INSERT INTO tipos_movimiento (nombre, tipo, moneda, tipo_operacion_id, estatus)
-                VALUES (?, ?, ?, ?, 1)";
-        $datos = [$nombre, $tipo, $moneda, $tipo_operacion_id ?: null];
+            VALUES (?, ?, ?, 1, 1)";
+        $datos = [$nombre, $tipo, $moneda ?: null];
         return $this->insertar($sql, $datos);
     }
+
 
 
     public function existeMovimiento($nombre)
@@ -29,19 +28,19 @@ class Movimiento_logisticoModel extends Query
 
     public function obtener($id)
     {
-        $sql = "SELECT id_tipo_movimiento, nombre, tipo, moneda, tipo_operacion_id
+        $sql = "SELECT id_tipo_movimiento, nombre, tipo, moneda
                 FROM tipos_movimiento
                 WHERE id_tipo_movimiento = ? AND estatus = 1";
         return $this->select($sql, [$id]);
     }
 
 
-    public function actualizar($id, $nombre, $tipo, $moneda, $tipo_operacion_id)
+    public function actualizar($id, $nombre, $tipo, $moneda)
     {
         $sql = "UPDATE tipos_movimiento
-                SET nombre = ?, tipo = ?, moneda = ?, tipo_operacion_id = ?
-                WHERE id_tipo_movimiento = ?";
-        $datos = [$nombre, $tipo, $moneda, $tipo_operacion_id ?: null, $id];
+            SET nombre = ?, tipo = ?, moneda = ?, tipo_operacion_id = 1
+            WHERE id_tipo_movimiento = ?";
+        $datos = [$nombre, $tipo, $moneda ?: null, $id];
         return $this->save($sql, $datos);
     }
 
@@ -53,29 +52,25 @@ class Movimiento_logisticoModel extends Query
     }
 
     public function buscar($termino)
-{
-    $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.tipo, tm.moneda, tm.tipo_operacion_id,
-                   toper.nombre_operacion AS categoria
+    {
+        $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.tipo, tm.moneda
             FROM tipos_movimiento tm
-            LEFT JOIN tipos_operacion toper ON toper.id_tipo_operacion = tm.tipo_operacion_id
             WHERE tm.estatus = 1 AND LOWER(tm.nombre) LIKE ?
             ORDER BY tm.id_tipo_movimiento DESC";
-    $param = ["%".mb_strtolower($termino, 'UTF-8')."%"];
-    return $this->selectAll($sql, $param);
-}
+        $param = ["%" . mb_strtolower($termino, 'UTF-8') . "%"];
+        return $this->selectAll($sql, $param);
+    }
 
-    public function filtrar($term, $tipo, $moneda, $categoria)
+    public function filtrar($term, $tipo, $moneda)
     {
-        $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.tipo, tm.moneda, tm.tipo_operacion_id,
-                    toper.nombre_operacion AS categoria
-                FROM tipos_movimiento tm
-                LEFT JOIN tipos_operacion toper ON toper.id_tipo_operacion = tm.tipo_operacion_id
-                WHERE tm.estatus = 1";
+        $sql = "SELECT tm.id_tipo_movimiento, tm.nombre, tm.tipo, tm.moneda
+            FROM tipos_movimiento tm
+            WHERE tm.estatus = 1";
         $params = [];
 
         if ($term !== '') {
             $sql .= " AND LOWER(tm.nombre) LIKE ?";
-            $params[] = "%".mb_strtolower($term, 'UTF-8')."%";
+            $params[] = "%" . mb_strtolower($term, 'UTF-8') . "%";
         }
         if ($tipo !== '') {
             $sql .= " AND tm.tipo = ?";
@@ -84,10 +79,6 @@ class Movimiento_logisticoModel extends Query
         if ($moneda !== '') {
             $sql .= " AND tm.moneda = ?";
             $params[] = $moneda;
-        }
-        if ($categoria !== '') {
-            $sql .= " AND tm.tipo_operacion_id = ?";
-            $params[] = (int)$categoria;
         }
 
         $sql .= " ORDER BY tm.id_tipo_movimiento DESC";
@@ -111,12 +102,11 @@ class Movimiento_logisticoModel extends Query
         return $this->selectAll($sql, [$moneda]);
     }
     public function catalogoTiposOperacion()
-{
-    $sql = "SELECT id_tipo_operacion, nombre_operacion
+    {
+        $sql = "SELECT id_tipo_operacion, nombre_operacion
             FROM tipos_operacion
             WHERE estatus = 1
             ORDER BY id_tipo_operacion ASC";
-    return $this->selectAll($sql);
-}
-
+        return $this->selectAll($sql);
+    }
 }

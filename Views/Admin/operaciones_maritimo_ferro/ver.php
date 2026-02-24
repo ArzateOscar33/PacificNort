@@ -44,11 +44,12 @@
 
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Operaciones</a>
+            <a class="nav-link" id="costos-operaciones-tab" data-bs-toggle="tab" href="#costos_operacion" role="tab" aria-controls="costos_operacion" aria-selected="false"><i data-feather="dollar-sign"></i>Costos </a>
         </li>
+        <!--
         <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Contenedor</a>
-        </li>
+        </li> -->
     </ul>
 
     <div class="tab-content mt-3">

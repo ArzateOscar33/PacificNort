@@ -1,33 +1,37 @@
 const tabla = document.getElementById("tablaTiposMovimiento");
 const form = document.getElementById("formTipoMovimiento");
-const modal = new bootstrap.Modal(document.getElementById("modalRegistrarTipoMovimiento"));
+const modal = new bootstrap.Modal(
+  document.getElementById("modalRegistrarTipoMovimiento"),
+);
 
 const inputBuscar = document.getElementById("buscarMovimiento");
 const sugerenciasMovimiento = document.getElementById("sugerenciasMovimiento");
 const selectTipo = document.getElementById("tipoMovimiento");
 const selectMoneda = document.getElementById("monedaMovimiento");
-const selectCategoria = document.getElementById("categoriaMovimiento");
 
 // Estado de filtros
 let filtroTerm = "";
-let filtroTipo = "";       // 'gasto' | 'abono' | ''
-let filtroMoneda = "";     // 'PESOS' | 'DLLS' | ''
-let filtroCategoria = "";  // id_tipo_operacion o ''
+let filtroTipo = ""; // 'gasto' | 'abono' | ''
+let filtroMoneda = ""; // 'PESOS' | 'DLLS' | ''
 
-document.getElementById("btnAgregarTipoMovimiento").addEventListener("click", () => {
-  form.reset();
-  document.getElementById("id_movimiento").value = "";
-  document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Registrar Tipo de Movimiento";
-  document.getElementById("btnSubmit").innerHTML =  '<i data-feather="check-circle" class="me-1"></i> Registrar';
-  feather.replace();
-});
+document
+  .getElementById("btnAgregarTipoMovimiento")
+  .addEventListener("click", () => {
+    form.reset();
+    document.getElementById("id_movimiento").value = "";
+    document.getElementById("modalRegistrarTipoMovimientoLabel").textContent =
+      "Registrar Tipo de Movimiento";
+    document.getElementById("btnSubmit").innerHTML =
+      '<i data-feather="check-circle" class="me-1"></i> Registrar';
+    feather.replace();
+  });
 
 // ---------- Utilidades ----------
 function renderizarTabla(data) {
   tabla.innerHTML = "";
   if (!Array.isArray(data) || data.length === 0) {
     // AHORA SON 5 COLUMNAS
-    tabla.innerHTML = `<tr><td colspan="5" class="text-center">No hay registros</td></tr>`;
+    tabla.innerHTML = `<tr><td colspan="4" class="text-center">No hay registros</td></tr>`;
     return;
   }
   data.forEach((mov) => {
@@ -35,8 +39,7 @@ function renderizarTabla(data) {
     tr.classList.add("text-center");
     tr.innerHTML = `
       <td>${mov.nombre}</td>
-      <td>${mov.tipo || "-"}</td>
-      <td>${mov.categoria || "-"}</td>
+      <td>${mov.tipo || "-"}</td> 
       <td>${mov.moneda || "-"}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="editarTipoMovimiento(${mov.id_tipo_movimiento})"><i class="fas fa-edit"></i> Editar</button>
@@ -79,9 +82,11 @@ function aplicarFiltros() {
   if (filtroTerm) params.append("term", filtroTerm);
   if (filtroTipo) params.append("tipo", filtroTipo);
   if (filtroMoneda) params.append("moneda", filtroMoneda);
-  if (filtroCategoria) params.append("categoria", filtroCategoria);
 
-  const url = base_url + "Movimiento_logistico/filtrar" + (params.toString() ? "?" + params.toString() : "");
+  const url =
+    base_url +
+    "Movimiento_logistico/filtrar" +
+    (params.toString() ? "?" + params.toString() : "");
   xhrGET(url, (data) => {
     renderizarTabla(data);
 
@@ -109,11 +114,6 @@ function aplicarFiltros() {
   });
 }
 
-selectCategoria.addEventListener("change", function(){
-  filtroCategoria = (this.value === "") ? "" : this.value;
-  aplicarFiltros();
-});
-
 // ---------- Eventos de filtros ----------
 inputBuscar.addEventListener("keyup", function () {
   const termino = this.value.trim();
@@ -127,19 +127,23 @@ inputBuscar.addEventListener("keyup", function () {
 
 selectTipo.addEventListener("change", function () {
   // En tu vista el placeholder es "Tipo de Movimiento"
-  filtroTipo = (this.value === "Tipo de Movimiento" || this.value === "") ? "" : this.value;
+  filtroTipo =
+    this.value === "Tipo de Movimiento" || this.value === "" ? "" : this.value;
   aplicarFiltros();
 });
 
 selectMoneda.addEventListener("change", function () {
   // En tu vista el placeholder es "Moneda" (no "Seleccione")
-  filtroMoneda = (this.value === "" || this.value === "Moneda") ? "" : this.value;
+  filtroMoneda = this.value === "" || this.value === "Moneda" ? "" : this.value;
   aplicarFiltros();
 });
 
 // Cerrar sugerencias si se hace clic fuera
 document.addEventListener("click", function (e) {
-  if (!inputBuscar.contains(e.target) && !sugerenciasMovimiento.contains(e.target)) {
+  if (
+    !inputBuscar.contains(e.target) &&
+    !sugerenciasMovimiento.contains(e.target)
+  ) {
     sugerenciasMovimiento.innerHTML = "";
     sugerenciasMovimiento.style.display = "none";
   }
@@ -179,9 +183,10 @@ function editarTipoMovimiento(id) {
       form.nombre_movimiento.value = data.nombre;
       form.tipo.value = data.tipo;
       form.moneda.value = data.moneda;
-      form.tipo_operacion_id.value = data.tipo_operacion_id || "";
-      document.getElementById("modalRegistrarTipoMovimientoLabel").textContent = "Actualizar Tipo de Movimiento";
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i>Actualizar';
+      document.getElementById("modalRegistrarTipoMovimientoLabel").textContent =
+        "Actualizar Tipo de Movimiento";
+      document.getElementById("btnSubmit").innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i>Actualizar';
       feather.replace();
       modal.show();
     }
