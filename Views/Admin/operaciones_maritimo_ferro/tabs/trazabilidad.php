@@ -54,15 +54,7 @@
         </select>
       </div>
 
-      <!-- Export -->
-      <div class="col-12 col-lg-12 d-flex flex-wrap justify-content-lg-end gap-2">
-        <button class="btn btn-sm btn-outline-success" id="rutasExcel">
-          <i data-feather="file-text" class="me-1"></i>Excel
-        </button>
-        <button class="btn btn-sm btn-outline-warning" id="rutasPdf">
-          <i data-feather="file" class="me-1"></i>PDF
-        </button>
-      </div>
+
 
       <!-- ✅ NUEVOS FILTROS (2da fila) -->
       <div class="col-12">
@@ -116,6 +108,16 @@
           </div>
         </div>
       </div>
+
+      <!-- Export -->
+      <div class="col-12 col-lg-12 d-flex flex-wrap justify-content-lg-end gap-2">
+        <button class="btn btn-sm btn-outline-success" id="rutasExcel">
+          <i data-feather="file-text" class="me-1"></i>Excel
+        </button>
+        <button class="btn btn-sm btn-outline-warning" id="rutasPdf">
+          <i data-feather="file" class="me-1"></i>PDF
+        </button>
+      </div>
     </div>
   </div>
 
@@ -127,6 +129,7 @@
             <th style="min-width:140px;">Operación Maritma</th>
             <th style="min-width:120px;">Contenedor Maritimo</th>
             <th style="min-width:120px;">Ferro/Caja</th>
+            <th style="min-width:120px;">Transportista</th>
             <th>Cliente</th>
             <th>Origen</th>
             <th>Ubicación actual</th>

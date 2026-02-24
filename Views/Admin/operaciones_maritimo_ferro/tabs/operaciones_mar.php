@@ -357,6 +357,7 @@
               <th class="col-ellipsis col-md">Destino</th>
               <th class="col-md">Fecha Salida</th>
               <th class="col-ellipsis col-md">Ubicación Actual</th>
+              <th class="col-ellipsis col-md">Transportista Caja/Ferro</th>
 
               <th class="col-actions">Acciones</th>
             </tr>

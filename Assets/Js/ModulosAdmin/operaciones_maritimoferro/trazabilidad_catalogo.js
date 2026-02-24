@@ -248,6 +248,7 @@
         <td class="text-center">${safe(r.operacion_maritima || r.numero_operacion)}</td>
         <td class="text-center">${safe(r.contenedor_maritimo || r.numero_contenedor)}</td>
         <td class="text-center">${safe(r.ferro_caja || r.numero_ferro)}</td>
+        <td class="text-center">${safe(r.transportista)}</td>
         <td>${safe(r.cliente)}</td>
         <td>${safe(r.origen)}</td>
         <td>${safe(r.ubicacion_actual)}</td>

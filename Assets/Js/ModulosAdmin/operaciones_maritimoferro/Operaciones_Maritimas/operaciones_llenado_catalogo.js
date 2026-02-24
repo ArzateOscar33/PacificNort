@@ -120,12 +120,21 @@
     const ferrosStr = (item.ferros_cajas || "").trim();
     const destinosStr = (item.destinos_ferros_cajas || "").trim();
     const fechasStr = (item.fechas_salida_ferros_cajas || "").trim();
+    const transportistasFerrosCajasStr = (
+      item.transportistas_ferros_cajas || ""
+    ).trim();
 
     // ✅ NUEVO
     const ubicacionesStr = (item.ubicaciones_ferros_cajas || "").trim();
 
     if (!ferrosStr)
-      return { ferros: "-", destinos: "-", fechas: "-", ubicaciones: "-" };
+      return {
+        ferros: "-",
+        destinos: "-",
+        fechas: "-",
+        ubicaciones: "-",
+        transportistas: "-",
+      };
 
     const ferros = ferrosStr
       .split(",")
@@ -166,6 +175,11 @@
       // ✅ NUEVO
       ubicaciones: mkStack(
         ferros.map((_, i) => mkBadge(ubicaciones[i] || "Sin Ubicación", i)),
+      ),
+      transportistas_ferros_cajas: mkStack(
+        ferros.map((_, i) =>
+          mkBadge(transportistasFerrosCajasStr.split(",")[i] || "—", i),
+        ),
       ),
     };
   }
@@ -209,6 +223,7 @@
         <td>${asig.destinos}</td>
         <td>${asig.fechas}</td>
         <td>${asig.ubicaciones}</td>
+        <td>${asig.transportistas_ferros_cajas}</td>
         <td>
         <div class="d-flex justify-content-center">
           <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">

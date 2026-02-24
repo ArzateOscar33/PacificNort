@@ -17,7 +17,7 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         $args  = [];
 
         // =========================
-        // Buscador (operación / ferro / cliente / destino / contenedor / ubicación)
+        // Buscador (operación / ferro / cliente / destino / contenedor / ubicación / transportista)
         // =========================
         $raw = trim((string)($filters['term'] ?? ''));
         if ($raw !== '') {
@@ -37,8 +37,9 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
                 OR LOWER(COALESCE(dest_last.nombre_ciudad, dest_ofe.nombre_ciudad, '')) LIKE ?
                 OR LOWER(COALESCE(ubi_last.nombre_ciudad, '')) LIKE ?
                 OR LOWER(COALESCE(puerto_last.nombre, puerto_st.nombre, '')) LIKE ?
+                OR LOWER(COALESCE(tr.nombre, '')) LIKE ?
             )";
-                array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
+                array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
             }
         }
 
@@ -66,9 +67,8 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
             $args[] = $ff;
         }
 
-
         // =========================
-        // Filtros SELECT (cliente / origen / ubicación / destino)
+        // Filtros SELECT (cliente / origen / ubicación / destino / transportista)
         // =========================
 
         // Cliente
@@ -78,28 +78,32 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
             $args[] = $clienteId;
         }
 
-        // Origen (puerto): lo que muestras es COALESCE(puerto_last, puerto_st)
-        // Por ID: COALESCE(tf_last.origen_puerto_id, st.puerto_arribo_default_id)
+        // Origen (puerto)
         $origenId = (int)($filters['origen_id'] ?? $filters['origen'] ?? 0);
         if ($origenId > 0) {
             $where .= " AND COALESCE(tf_last.origen_puerto_id, st.puerto_arribo_default_id) = ? ";
             $args[] = $origenId;
         }
 
-        // Ubicación actual (ciudad): lo que muestras es ubi_last (tf_last.ubicacion_id)
+        // Ubicación actual (ciudad)
         $ubicacionId = (int)($filters['ubicacion_id'] ?? $filters['ubicacion'] ?? 0);
         if ($ubicacionId > 0) {
-            // Nota: si no hay traza, tf_last.ubicacion_id será NULL => no matchea (correcto)
             $where .= " AND tf_last.ubicacion_id = ? ";
             $args[] = $ubicacionId;
         }
 
-        // Destino (ciudad): lo que muestras es COALESCE(dest_last, dest_ofe)
-        // Por ID: COALESCE(tf_last.destino_id, ofe.destino_id)
+        // Destino (ciudad)
         $destinoId = (int)($filters['destino_id'] ?? $filters['destino'] ?? 0);
         if ($destinoId > 0) {
             $where .= " AND COALESCE(tf_last.destino_id, ofe.destino_id) = ? ";
             $args[] = $destinoId;
+        }
+
+        // ✅ Transportista (de operaciones_ferroviarias)
+        $transportistaId = (int)($filters['transportista_id'] ?? $filters['transportista'] ?? 0);
+        if ($transportistaId > 0) {
+            $where .= " AND ofe.transportista_id = ? ";
+            $args[] = $transportistaId;
         }
 
         // =========================
@@ -113,6 +117,9 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
         INNER JOIN operaciones_ferroviarias ofe ON ofe.id_operacion_ferro = cmf.operacion_ferro_id
         LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = ofe.contenedor_fisico_id
+
+        LEFT JOIN transportistas tr ON tr.id_transportista = ofe.transportista_id
+
         LEFT JOIN clientes cli ON cli.id_cliente = o.cliente_id
         LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
         LEFT JOIN puertos puerto_st ON puerto_st.id_puerto = st.puerto_arribo_default_id
@@ -159,7 +166,7 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         LEFT JOIN ciudades ubi_last  ON ubi_last.id_ciudad  = tf_last.ubicacion_id
 
         $where
-        ";
+    ";
         $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
         $total = (int)$rowCount['total'];
 
@@ -169,101 +176,101 @@ class Operaciones_maritimo_ferro_trazabilidadModel extends Query
         $limitSql = $isAll ? "" : " LIMIT " . (int)$perPage . " OFFSET " . (int)$offset;
 
         $sqlData = "
-            SELECT
-                cmf.id AS asignacion_id,
+        SELECT
+            cmf.id AS asignacion_id,
 
-                o.id_operacion,
-                o.numero_operacion AS operacion_maritima,
+            o.id_operacion,
+            o.numero_operacion AS operacion_maritima,
 
-                cm.id_contenedor_maritimo,
-                cm.numero_contenedor AS contenedor_maritimo,
+            cm.id_contenedor_maritimo,
+            cm.numero_contenedor AS contenedor_maritimo,
 
-                ofe.id_operacion_ferro,
-                cf.id_fisico,
-                cf.numero_ferro AS ferro_caja,
+            ofe.id_operacion_ferro,
+            cf.id_fisico,
+            cf.numero_ferro AS ferro_caja,
 
-                -- ids para lógica
-                COALESCE(tf_last.destino_id, ofe.destino_id) AS destino_id_efectivo,
-                tf_last.ubicacion_id AS ubicacion_id_last,
+            
+            ofe.transportista_id,
+            COALESCE(tr.nombre, '—') AS transportista,
 
-                -- bandera de llegada (solo si hay ubicación)
-                CASE
+            -- ids para lógica
+            COALESCE(tf_last.destino_id, ofe.destino_id) AS destino_id_efectivo,
+            tf_last.ubicacion_id AS ubicacion_id_last,
+
+            -- bandera de llegada (solo si hay ubicación)
+            CASE
                 WHEN tf_last.ubicacion_id IS NOT NULL
                 AND tf_last.ubicacion_id = COALESCE(tf_last.destino_id, ofe.destino_id)
                 THEN 1 ELSE 0
-                END AS llego_destino,
-                 
- 
- 
- 
+            END AS llego_destino,
 
-                cli.nombre AS cliente,
+            cli.nombre AS cliente,
 
-                COALESCE(puerto_last.nombre, puerto_st.nombre, '—') AS origen,
+            COALESCE(puerto_last.nombre, puerto_st.nombre, '—') AS origen,
+            COALESCE(ubi_last.nombre_ciudad, '—') AS ubicacion_actual,
+            COALESCE(dest_last.nombre_ciudad, dest_ofe.nombre_ciudad, '—') AS destino,
 
-                COALESCE(ubi_last.nombre_ciudad, '—') AS ubicacion_actual,
+            COALESCE(tf_last.fecha_evento, ofe.fecha) AS fecha_referencia
 
-                COALESCE(dest_last.nombre_ciudad, dest_ofe.nombre_ciudad, '—') AS destino,
+        FROM contenedor_maritimo_ferro cmf
+        INNER JOIN contenedores_maritimos_operacion cmo ON cmo.id = cmf.cont_maritimo_operacion_id
+        INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
+        LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
 
-                COALESCE(tf_last.fecha_evento, ofe.fecha) AS fecha_referencia
+        INNER JOIN operaciones_ferroviarias ofe ON ofe.id_operacion_ferro = cmf.operacion_ferro_id
+        LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = ofe.contenedor_fisico_id
 
-            FROM contenedor_maritimo_ferro cmf
-            INNER JOIN contenedores_maritimos_operacion cmo ON cmo.id = cmf.cont_maritimo_operacion_id
-            INNER JOIN operaciones o ON o.id_operacion = cmo.operacion_id
-            LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        LEFT JOIN transportistas tr ON tr.id_transportista = ofe.transportista_id
 
-            INNER JOIN operaciones_ferroviarias ofe ON ofe.id_operacion_ferro = cmf.operacion_ferro_id
-            LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = ofe.contenedor_fisico_id
+        LEFT JOIN clientes cli ON cli.id_cliente = o.cliente_id
+        LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos puerto_st ON puerto_st.id_puerto = st.puerto_arribo_default_id
 
-            LEFT JOIN clientes cli ON cli.id_cliente = o.cliente_id
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos puerto_st ON puerto_st.id_puerto = st.puerto_arribo_default_id
-
-            /* última traza por operacion_ferro_id */
-            LEFT JOIN (
-                SELECT
-                    tf.operacion_ferro_id,
-                    STR_TO_DATE(
-                        SUBSTRING_INDEX(
-                            GROUP_CONCAT(DATE_FORMAT(tf.fecha_evento,'%Y-%m-%d')
-                                ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
-                            ),
-                            ',', 1
-                        ),
-                        '%Y-%m-%d'
-                    ) AS fecha_evento,
-                    CAST(SUBSTRING_INDEX(
-                        GROUP_CONCAT(tf.origen_puerto_id
+        /* última traza por operacion_ferro_id */
+        LEFT JOIN (
+            SELECT
+                tf.operacion_ferro_id,
+                STR_TO_DATE(
+                    SUBSTRING_INDEX(
+                        GROUP_CONCAT(DATE_FORMAT(tf.fecha_evento,'%Y-%m-%d')
                             ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
                         ),
                         ',', 1
-                    ) AS UNSIGNED) AS origen_puerto_id,
-                    CAST(SUBSTRING_INDEX(
-                        GROUP_CONCAT(tf.destino_id
-                            ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
-                        ),
-                        ',', 1
-                    ) AS UNSIGNED) AS destino_id,
-                    CAST(SUBSTRING_INDEX(
-                        GROUP_CONCAT(tf.ubicacion_id
-                            ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
-                        ),
-                        ',', 1
-                    ) AS UNSIGNED) AS ubicacion_id
-                FROM trazabilidad_ferro tf
-                WHERE tf.operacion_ferro_id IS NOT NULL
-                GROUP BY tf.operacion_ferro_id
-            ) tf_last ON tf_last.operacion_ferro_id = ofe.id_operacion_ferro
+                    ),
+                    '%Y-%m-%d'
+                ) AS fecha_evento,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT(tf.origen_puerto_id
+                        ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                    ),
+                    ',', 1
+                ) AS UNSIGNED) AS origen_puerto_id,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT(tf.destino_id
+                        ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                    ),
+                    ',', 1
+                ) AS UNSIGNED) AS destino_id,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT(tf.ubicacion_id
+                        ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                    ),
+                    ',', 1
+                ) AS UNSIGNED) AS ubicacion_id
+            FROM trazabilidad_ferro tf
+            WHERE tf.operacion_ferro_id IS NOT NULL
+            GROUP BY tf.operacion_ferro_id
+        ) tf_last ON tf_last.operacion_ferro_id = ofe.id_operacion_ferro
 
-            LEFT JOIN puertos puerto_last ON puerto_last.id_puerto = tf_last.origen_puerto_id
-            LEFT JOIN ciudades dest_last ON dest_last.id_ciudad = tf_last.destino_id
-            LEFT JOIN ciudades dest_ofe  ON dest_ofe.id_ciudad  = ofe.destino_id
-            LEFT JOIN ciudades ubi_last  ON ubi_last.id_ciudad  = tf_last.ubicacion_id
+        LEFT JOIN puertos puerto_last ON puerto_last.id_puerto = tf_last.origen_puerto_id
+        LEFT JOIN ciudades dest_last ON dest_last.id_ciudad = tf_last.destino_id
+        LEFT JOIN ciudades dest_ofe  ON dest_ofe.id_ciudad  = ofe.destino_id
+        LEFT JOIN ciudades ubi_last  ON ubi_last.id_ciudad  = tf_last.ubicacion_id
 
-            $where
-            ORDER BY COALESCE(tf_last.fecha_evento, ofe.fecha) DESC, cmf.id DESC
-            $limitSql
-        ";
+        $where
+        ORDER BY COALESCE(tf_last.fecha_evento, ofe.fecha) DESC, cmf.id DESC
+        $limitSql
+    ";
 
         $rows = $this->selectAll($sqlData, $args) ?: [];
 
