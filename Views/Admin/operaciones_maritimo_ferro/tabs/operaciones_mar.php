@@ -272,6 +272,7 @@
             <option value="20GP">20GP</option>
             <option value="40GP">40GP</option>
             <option value="40HC">40HC</option>
+            <option value="40HQ">40HQ</option>
             <option value="45HC">45HC</option>
           </select>
 
@@ -550,6 +551,7 @@
                         <option value="20GP">20GP</option>
                         <option value="40GP">40GP</option>
                         <option value="40HC">40HC</option>
+                        <option value="40HQ">40HQ</option>
                         <option value="45HC">45HC</option>
                       </select>
                     </div>
@@ -1063,4 +1065,20 @@
       });
     }
   })();
+</script>
+<script>
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
+
+  // Uso
+  forzarMayusculas("asigFerro_inputNumero");
 </script>

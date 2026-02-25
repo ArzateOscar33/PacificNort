@@ -151,7 +151,8 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
                 c.monto                  AS monto,
                 c.comentario             AS comentario,
                 c.fecha_creacion         AS fecha,
-                'MF'                     AS fuente
+                'MF'                     AS fuente,
+                c.pagado                 AS pagado
             FROM costos_operacion c
             LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
             LEFT JOIN operaciones o ON o.id_operacion = c.operacion_id
@@ -285,15 +286,19 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
         $opId = $this->getOperacionId($d);
         if ($opId <= 0) return 0;
 
+        $pagado = isset($d['pagado']) ? (int)$d['pagado'] : 0;
+        $pagado = ($pagado === 1) ? 1 : 0;
+
         $sql = "INSERT INTO costos_operacion
-                (operacion_id, tipo_movimiento_id, monto, comentario, estatus, fecha_creacion)
-                VALUES (?, ?, ?, ?, 1, NOW())";
+            (operacion_id, tipo_movimiento_id, monto, comentario, pagado, estatus, fecha_creacion)
+            VALUES (?, ?, ?, ?, ?, 1, NOW())";
 
         return (int)$this->insertar($sql, [
             $opId,
             (int)($d['tipo_movimiento_id'] ?? 0),
             (float)($d['monto'] ?? 0),
-            (string)($d['comentario'] ?? '')
+            (string)($d['comentario'] ?? ''),
+            $pagado
         ]);
     }
 
@@ -314,12 +319,20 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             $sets[] = "comentario = ?";
             $params[] = (string)$d['comentario'];
         }
+
+        // ✅ NUEVO
+        if (array_key_exists('pagado', $d)) {
+            $val = ((int)$d['pagado'] === 1) ? 1 : 0;
+            $sets[] = "pagado = ?";
+            $params[] = $val;
+        }
+
         if (empty($sets)) return false;
 
         $sql = "UPDATE costos_operacion
-                SET " . implode(', ', $sets) . "
-                WHERE id_costo_operacion = ?
-                LIMIT 1";
+            SET " . implode(', ', $sets) . "
+            WHERE id_costo_operacion = ?
+            LIMIT 1";
         $params[] = $id;
 
         return $this->save($sql, $params) === 1;
@@ -338,7 +351,8 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
                     c.comentario,
                     c.estatus,
                     c.fecha_creacion     AS fecha,
-                    'MF'                 AS fuente
+                    'MF'                 AS fuente,
+                    c.pagado             AS pagado
                 FROM costos_operacion c
                 LEFT JOIN operaciones o      ON o.id_operacion = c.operacion_id
                 LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id

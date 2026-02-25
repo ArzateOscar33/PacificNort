@@ -169,6 +169,7 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
      *  - row_id (0 crea / >0 actualiza)
      *  - operacion_id (obligatorio al crear)
      *  - tipo_movimiento_id, monto, comentario
+     *  - costosContenedoresPagado (0|1)
      */
     public function guardar()
     {
@@ -181,15 +182,19 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
             $monto       = (float)($_POST['monto'] ?? 0);
             $comentario  = trim((string)($_POST['comentario'] ?? ''));
 
+            // ✅ NUEVO: pagado (0|1)
+            $pagado = isset($_POST['costosContenedoresPagado']) ? (int)$_POST['costosContenedoresPagado'] : 0;
+            $pagado = ($pagado === 1) ? 1 : 0;
+
             if ($operacionId <= 0 && $rowId <= 0) {
                 echo json_encode(['status' => 'warning', 'message' => 'Falta operación']);
                 return;
             }
-            if ($tipoId      <= 0) {
+            if ($tipoId <= 0) {
                 echo json_encode(['status' => 'warning', 'message' => 'Selecciona un tipo de movimiento']);
                 return;
             }
-            if ($monto       <= 0) {
+            if ($monto <= 0) {
                 echo json_encode(['status' => 'warning', 'message' => 'Monto inválido']);
                 return;
             }
@@ -219,6 +224,7 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                     'tipo_movimiento_id' => $tipoId,
                     'monto'              => $monto,
                     'comentario'         => $comentario,
+                    'pagado'             => $pagado, // ✅ NUEVO
                 ]);
                 if (!$ok) {
                     echo json_encode(['status' => 'error', 'message' => 'No se actualizó el registro']);
@@ -233,44 +239,47 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                     'tipo'     => $tipoDinero,
                     'monto'    => $monto,
                     'moneda'   => $monedaCat,
+                    'pagado'   => $pagado,
                     'coment'   => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
                 ]);
                 $this->logOp($opId4, 'actualizacion', $desc);
 
                 echo json_encode(['status' => 'success', 'message' => 'Actualizado'], JSON_UNESCAPED_UNICODE);
                 return;
-            } else {
-                // === CREAR ===
-                if ($operacionId <= 0) {
-                    echo json_encode(['status' => 'warning', 'message' => 'Falta operación']);
-                    return;
-                }
+            }
 
-                $newId = $this->model->insertarCostoOperacionCombinado([
-                    'operacion_id'       => $operacionId,
-                    'tipo_movimiento_id' => $tipoId,
-                    'monto'              => $monto,
-                    'comentario'         => $comentario,
-                ]);
-                if ($newId <= 0) {
-                    echo json_encode(['status' => 'error', 'message' => 'No se creó el registro']);
-                    return;
-                }
-
-                $desc = $this->makeDesc('Movimiento de operación creado', [
-                    'fuente'   => 'MF',
-                    'costo_id' => $newId,
-                    'tipo_id'  => $tipoId,
-                    'tipo'     => $tipoDinero,
-                    'monto'    => $monto,
-                    'moneda'   => $monedaCat,
-                    'coment'   => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
-                ]);
-                $this->logOp($operacionId, 'creacion', $desc);
-
-                echo json_encode(['status' => 'success', 'message' => 'Creado', 'id' => $newId], JSON_UNESCAPED_UNICODE);
+            // === CREAR ===
+            if ($operacionId <= 0) {
+                echo json_encode(['status' => 'warning', 'message' => 'Falta operación']);
                 return;
             }
+
+            $newId = $this->model->insertarCostoOperacionCombinado([
+                'operacion_id'       => $operacionId,
+                'tipo_movimiento_id' => $tipoId,
+                'monto'              => $monto,
+                'comentario'         => $comentario,
+                'pagado'             => $pagado, // ✅ NUEVO
+            ]);
+            if ($newId <= 0) {
+                echo json_encode(['status' => 'error', 'message' => 'No se creó el registro']);
+                return;
+            }
+
+            $desc = $this->makeDesc('Movimiento de operación creado', [
+                'fuente'   => 'MF',
+                'costo_id' => $newId,
+                'tipo_id'  => $tipoId,
+                'tipo'     => $tipoDinero,
+                'monto'    => $monto,
+                'moneda'   => $monedaCat,
+                'pagado'   => $pagado,
+                'coment'   => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
+            ]);
+            $this->logOp($operacionId, 'creacion', $desc);
+
+            echo json_encode(['status' => 'success', 'message' => 'Creado', 'id' => $newId], JSON_UNESCAPED_UNICODE);
+            return;
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Error al guardar: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
@@ -334,7 +343,10 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                 $this->logOp($opId, 'cancelacion', $desc);
             }
 
-            echo json_encode($ok ? ['status' => 'success'] : ['status' => 'error', 'message' => 'No se desactivó'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(
+                $ok ? ['status' => 'success'] : ['status' => 'error', 'message' => 'No se desactivó'],
+                JSON_UNESCAPED_UNICODE
+            );
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
@@ -369,7 +381,10 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                 $this->logOp($opId, 'actualizacion', $desc);
             }
 
-            echo json_encode($ok ? ['status' => 'success'] : ['status' => 'error', 'message' => 'No se reactivó'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(
+                $ok ? ['status' => 'success'] : ['status' => 'error', 'message' => 'No se reactivó'],
+                JSON_UNESCAPED_UNICODE
+            );
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);

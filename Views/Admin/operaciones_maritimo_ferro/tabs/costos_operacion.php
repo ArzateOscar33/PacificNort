@@ -165,8 +165,9 @@
               <th>Concepto</th>
               <th style="width:120px;">Moneda</th>
               <th class="text-end" style="width:140px;">Monto</th>
-              <th>Comentario</th>
-              <th class="text-center" style="width:120px;">Acciones</th>
+              <th class="text-center" style="width:120px;">Estatus</th>
+              <th class="text-center" style="width:120px;">Comentario</th>
+              <th class=" text-center" style="width:120px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyCostosOperacionCombined">
@@ -243,9 +244,16 @@
           </div>
 
           <div class="mb-3">
-            <label for="costosContenedoresMoneda" class="form-label">Modeda</label>
+            <label for="costosContenedoresMoneda" class="form-label">Moneda</label>
             <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control" readonly disabled>
               <option value="">Seleccione</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="costosContenedoresPagado" class="form-label">Estatus</label>
+            <select id="costosContenedoresPagado" name="costosContenedoresPagado" class="form-control">
+              <option value="0">Pendiente</option>
+              <option value="1">Pagado</option>
             </select>
           </div>
 

@@ -1,39 +1,45 @@
- 
 /* ============================================================================
-   MÓDULO: Costos por Operación (FO/MF) - REGISTRAR/EDITAR (XHR)
+   MÓDULO: Costos por Operación (SOLO MF) - REGISTRAR/EDITAR (XHR)
    Archivo: costos_operacion_registrar.js
-   Requisitos en la vista/modal (ya existen en tu archivo de catálogo):
-     - modal:   #modalCostoOperacion
-     - inputs:  #row_id, #costosOperacionid, #costosOperacionNombre,
-                #costosContenedoresTipoCosto, #costosContenedoresMoneda,
-                #costosContenedoresMonto, #costosContenedoresComentarios,
-                #costosContenedorContenedorId, #costosContenedorContenedorNombre
-   Disparadores:
-     - form submit con id="formCostosOperacion" (si existe)
-     - o botón guardar con id="btnGuardarCostoOperacion" (si no hay form)
+
+   ✅ Actualizado a tu nueva implementación:
+   - Ya NO se manda "fuente"
+   - Ya NO se manda "operacion_ferro_id"
+   - El backend espera:
+       row_id (0 crea / >0 actualiza)
+       operacion_id
+       tipo_movimiento_id
+       monto
+       comentario
+       costosContenedoresPagado   (ojo: así lo lee tu controlador)
+   - Endpoint:
+       Operaciones_maritimo_ferro_costos_Contenedor/guardar
+   - Refresco:
+       window.listarCostosOperacion(1)
    ============================================================================ */
 (function () {
   "use strict";
 
-  // ------- DOM del modal (los mismos IDs del archivo visual) -------
-  const modalEl      = document.getElementById("modalCostoOperacion");
-  const hidRowId     = document.getElementById("row_id");
-  const opIdModal    = document.getElementById("costosOperacionid");
-  const opNomModal   = document.getElementById("costosOperacionNombre");
+  // ------- DOM del modal -------
+  const modalEl = document.getElementById("modalCostoOperacion");
+  const hidRowId = document.getElementById("row_id");
+  const opIdModal = document.getElementById("costosOperacionid");
+  const opNomModal = document.getElementById("costosOperacionNombre");
   const selTipoModal = document.getElementById("costosContenedoresTipoCosto");
-  const selMonModal  = document.getElementById("costosContenedoresMoneda");
-  const montoModal   = document.getElementById("costosContenedoresMonto");
-  const comentModal  = document.getElementById("costosContenedoresComentarios");
-  const contIdModal  = document.getElementById("costosContenedorContenedorId");
-  const contNomModal = document.getElementById("costosContenedorContenedorNombre");
+  const selMonModal = document.getElementById("costosContenedoresMoneda");
+  const montoModal = document.getElementById("costosContenedoresMonto");
+  const comentModal = document.getElementById("costosContenedoresComentarios");
+  const contIdModal = document.getElementById("costosContenedorContenedorId");
+  const contNomModal = document.getElementById(
+    "costosContenedorContenedorNombre",
+  );
+  const selPagadoModal = document.getElementById("costosContenedoresPagado");
 
-  // Opcionales en tu HTML:
-  const formModal    = document.getElementById("formCostosOperacion");       // si tu modal tiene form
-  const btnGuardar   = document.getElementById("btnGuardarCostoOperacion");  // o un botón específico
+  // Opcionales
+  const formModal = document.getElementById("formCostosOperacion");
+  const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
 
   // ------- Helpers -------
-  const getFuente = () => (String(window.fuenteSel || "F").toUpperCase() === "MF" ? "MF" : "F");
-
   function toast(icon, title, text) {
     if (window.Swal) {
       Swal.fire({ icon, title, text, confirmButtonText: "OK" });
@@ -43,57 +49,85 @@
   }
 
   function syncMonedaPorTipo() {
-    // Si tu <option> en el select de tipo trae data-moneda, sincroniza moneda
-    const opt = selTipoModal?.selectedOptions?.[0];
-    if (!opt || !selMonModal) return;
-    const m = (opt.getAttribute("data-moneda") || "").toUpperCase();
+    // Si tu <option> trae data-moneda, sincroniza moneda
+    if (!selTipoModal || !selMonModal) return;
+    const opt = selTipoModal.selectedOptions?.[0];
+    const m = opt
+      ? String(opt.getAttribute("data-moneda") || "").toUpperCase()
+      : "";
     if (m === "PESOS" || m === "DLLS") selMonModal.value = m;
   }
   selTipoModal?.addEventListener("change", syncMonedaPorTipo);
 
-  function collectingPayload() {
-    const fuente = getFuente();
-    const rowId  = parseInt(hidRowId?.value || "0", 10) || 0;
-    const opId   = parseInt(opIdModal?.value || "0", 10) || 0;
+  function buildPayload() {
+    const rowId = parseInt(hidRowId?.value || "0", 10) || 0;
+    const opId = parseInt(opIdModal?.value || "0", 10) || 0;
     const tipoId = parseInt(selTipoModal?.value || "0", 10) || 0;
-    const monto  = parseFloat(montoModal?.value || "0") || 0;
-    const coment = (comentModal?.value || "").trim();
 
-    // Validaciones mínimas
-    if (opId <= 0)        return { ok:false, msg:"Selecciona una operación." };
-    if (tipoId <= 0)      return { ok:false, msg:"Selecciona un tipo/concepto." };
-    if (!Number.isFinite(monto) || monto <= 0) return { ok:false, msg:"Ingresa un monto válido (> 0)." };
+    // Soporta "1,234.56" y "1234,56" de forma tolerante
+    let montoRaw = String(montoModal?.value || "").trim();
+    montoRaw = montoRaw.replace(/\s/g, "").replace(/,/g, ""); // simple (si usas coma decimal, cámbialo)
+    const monto = parseFloat(montoRaw) || 0;
 
-    // El backend acepta ambos nombres de FK (compat). Mandamos ambos.
-    const data = new FormData();
-    data.append("fuente", fuente);
-    if (rowId > 0) data.append("row_id", String(rowId));
-    data.append("operacion_id", String(opId));
-    data.append("operacion_ferro_id", String(opId)); // compat
-    data.append("tipo_movimiento_id", String(tipoId));
-    data.append("monto", String(monto.toFixed(2)));
-    data.append("comentario", coment);
+    const comentario = String(comentModal?.value || "").trim();
+    const pagado = parseInt(selPagadoModal?.value || "0", 10) === 1 ? 1 : 0;
 
-    return { ok:true, data };
+    // Validaciones mínimas (alineadas al controlador)
+    if (opId <= 0 && rowId <= 0) return { ok: false, msg: "Falta operación." };
+    if (tipoId <= 0) return { ok: false, msg: "Selecciona un tipo/concepto." };
+    if (!Number.isFinite(monto) || monto <= 0)
+      return { ok: false, msg: "Ingresa un monto válido (> 0)." };
+
+    const fd = new FormData();
+    fd.append("row_id", String(rowId)); // siempre
+    if (opId > 0) fd.append("operacion_id", String(opId)); // requerido al crear
+
+    fd.append("tipo_movimiento_id", String(tipoId));
+    fd.append("monto", String(monto.toFixed(2)));
+    fd.append("comentario", comentario);
+
+    // 👇 IMPORTANTE: tu controlador lee este nombre exacto
+    fd.append("costosContenedoresPagado", String(pagado));
+
+    return { ok: true, data: fd };
   }
 
   function guardarXHR() {
-    const pkg = collectingPayload();
-    if (!pkg.ok) { toast("warning", "Validación", pkg.msg); return; }
+    const pkg = buildPayload();
+    if (!pkg.ok) return toast("warning", "Validación", pkg.msg);
 
     const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/guardar`;
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
 
+    // UX: bloquear botón (si existe)
+    const btn =
+      btnGuardar ||
+      (formModal ? formModal.querySelector('button[type="submit"]') : null);
+    const oldHtml = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando…';
+    }
+
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
 
-      let resp = {};
-      try { resp = JSON.parse(xhr.responseText) || {}; } catch { resp = {}; }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
 
-      // Manejo de estado
+      let resp = {};
+      try {
+        resp = JSON.parse(xhr.responseText) || {};
+      } catch {
+        resp = {};
+      }
+
       const st = String(resp.status || "").toLowerCase();
-      const mg = resp.message || "";
+      const mg = resp.message || resp.msg || "";
 
       if (xhr.status !== 200) {
         toast("error", "Error al guardar", mg || `HTTP ${xhr.status}`);
@@ -102,12 +136,16 @@
 
       if (st === "success") {
         toast("success", "Éxito", mg || "Guardado correctamente");
-        // Cerrar modal y resetear row_id
+
+        // reset row_id para que el siguiente sea "crear"
         if (hidRowId) hidRowId.value = "";
+
+        // cerrar modal
         if (modalEl && window.bootstrap) {
           window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
         }
-        // Refrescar listado (expuesto por el catálogo)
+
+        // refrescar listado
         if (typeof window.listarCostosOperacion === "function") {
           window.listarCostosOperacion(1);
         }
@@ -135,10 +173,8 @@
     });
   }
 
-  // ------- UX: cuando se abre el modal, sincroniza moneda por tipo -------
+  // ------- UX: cuando abre modal, sincroniza moneda -------
   modalEl?.addEventListener("shown.bs.modal", () => {
     syncMonedaPorTipo();
   });
-
 })();
- 

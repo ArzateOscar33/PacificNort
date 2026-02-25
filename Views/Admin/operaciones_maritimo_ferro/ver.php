@@ -50,6 +50,10 @@
         <li class="nav-item">
             <a class="nav-link" id="costos-tab" data-bs-toggle="tab" href="#costos" role="tab" aria-controls="costos" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Contenedor</a>
         </li> -->
+
+        <li class="nav-item">
+            <a class="nav-link" id="costos-operaciones-clientes-tab" data-bs-toggle="tab" href="#costos_operacion_clientes" role="tab" aria-controls="costos_operacion_clientes" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Clientes</a>
+        </li>
     </ul>
 
     <div class="tab-content mt-3">
@@ -93,6 +97,9 @@
         </div>
         <div class="tab-pane fade" id="costos-contenedor" role="tabpanel" aria-labelledby="log-tab">
             <?php include 'tabs/costos.php'; ?>
+        </div>
+        <div class="tab-pane fade" id="costos_operacion_clientes" role="tabpanel" aria-labelledby="costos_operacion_clientes-tab">
+            <?php include 'tabs/costos_cliente.php'; ?>
         </div>
     </div>
 </div>

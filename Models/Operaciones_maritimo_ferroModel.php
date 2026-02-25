@@ -411,7 +411,7 @@ class Operaciones_maritimo_ferroModel extends Query
 
         // Medida contenedor (20GP/40GP/40HC/45HC)
         $medida = trim((string)($filters['filtroMedidaContenedor'] ?? ''));
-        $allowedMedidas = ['20GP', '40GP', '40HC', '45HC'];
+        $allowedMedidas = ['20GP', '40GP', '40HC', '45HC', '40HQ'];
         if ($medida !== '' && in_array($medida, $allowedMedidas, true)) {
             $where .= " AND EXISTS (
             SELECT 1
