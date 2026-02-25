@@ -19,21 +19,36 @@
 
 
 
-                <!-- Cliente (buscar) -->
+                <!-- Cliente (buscar) 
                 <div class="col-12 col-md-4 position-relative">
                     <label class="form-label mb-1">Cliente</label>
                     <input type="text" class="form-control" id="costosCliente_clienteTerm"
                         placeholder="Buscar cliente (Nombre)">
                     <input type="hidden" id="costosCliente_clienteId" value="">
 
-                    <!-- Sugerencias -->
+                      //Sugerencias  
                     <div class="list-group position-absolute w-100 shadow-sm d-none"
                         id="costosCliente_clienteSug"
                         style="z-index: 1050; max-height: 260px; overflow:auto;">
-                        <!-- JS inyecta sugerencias -->
+                         
                     </div>
 
+                </div> -->
+
+                <div class="col-12 col-md-4 position-relative">
+                    <label class="form-label mb-1">Cliente</label>
+                    <select id="clienteId_cc" name="clienteId_cc" class="form-control">
+                        <option value="">Seleccione...</option>
+                        <?php if (!empty($data['clientes'])): ?>
+                            <?php foreach ($data['clientes'] as $c): ?>
+                                <option value="<?= (int)$c['id_cliente']; ?>">
+                                    <?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
                 </div>
+
                 <!-- Rango fechas -->
                 <div class="col-12 col-md-2">
                     <label class="form-label mb-1">Fecha inicio</label>
@@ -53,18 +68,31 @@
                     <!-- Broker -->
                     <div class="col-12 col-md-2">
                         <label class="form-label mb-1">Broker</label>
-                        <select class="form-control" id="costosCliente_brokerId">
-                            <option value="">Todos</option>
-                            <!-- JS/PHP llena -->
+                        <label class="form-label">Broker</label>
+                        <select id="brokerId_cc" name="brokerId_cc" class="form-control">
+                            <option value="">Seleccione...</option>
+                            <?php if (!empty($data['brokers'])): ?>
+                                <?php foreach ($data['brokers'] as $b): ?>
+                                    <option value="<?= (int)$b['id_broker']; ?>">
+                                        <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
                     <!-- Transportista -->
                     <div class="col-12 col-md-2">
                         <label class="form-label mb-1">Transportista</label>
-                        <select class="form-control" id="costosCliente_transportistaId">
-                            <option value="">Todos</option>
-                            <!-- JS/PHP llena -->
+                        <select id="transportistaId_cc" name="transportistaId_cc" class="form-control">
+                            <option value="">Seleccione...</option>
+                            <?php if (!empty($data['transportistas'])): ?>
+                                <?php foreach ($data['transportistas'] as $t): ?>
+                                    <option value="<?= (int)$t['id_transportista']; ?>">
+                                        <?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
@@ -73,8 +101,8 @@
                         <label class="form-label mb-1">Estatus</label>
                         <select class="form-control" id="costosCliente_estatusPago">
                             <option value="">Todos</option>
-                            <option value="pendientes">Pendientes</option>
-                            <option value="pagados">Pagados</option>
+                            <option value="0">Pendientes</option>
+                            <option value="1">Pagados</option>
                         </select>
                     </div>
 
@@ -136,119 +164,16 @@
                     </thead>
 
                     <tbody id="costosCliente_tbody">
-                        <tr>
-                            <td rowspan="3">NT-30</td>
-                            <td rowspan="3">JJPA854856</td>
-                            <td rowspan="3">ALPI</td>
-                            <td rowspan="3">ALPI</td>
-                            <td rowspan="3"><span class="badge bg-primary text-white">En Agua</span></td>
-                            <td rowspan="3">2026-02-18</td>
-                            <td rowspan="3" class="text-center"><span class="badge bg-success text-white">Sí</span></td>
-
-                            <td>Notificacion de Arribo</td>
-                            <td class="text-end">$1,200.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">USD</td>
-                            <td class="text-center">...</td>
-                        </tr>
-
-                        <tr>
-                            <td>Sobrepeso</td>
-                            <td class="text-end">$500.00</td>
-                            <td class="text-center"><span class="badge bg-warning text-dark">Sí</span></td>
-                            <td class="text-center">USD</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td>Almacenaje</td>
-                            <td class="text-end">$2,000.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">MXN</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td rowspan="3">LBMF-85</td>
-                            <td rowspan="3">JJPC854852</td>
-                            <td rowspan="3">ALPI</td>
-                            <td rowspan="3">ALPI</td>
-                            <td rowspan="3"><span class="badge bg-primary text-white">Camino a Destino</span></td>
-                            <td rowspan="3">2026-02-18</td>
-                            <td rowspan="3" class="text-center"><span class="badge bg-success text-white">Sí</span></td>
-
-                            <td>Notificacion de Arribo</td>
-                            <td class="text-end">$1,200.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">USD</td>
-                            <td class="text-center">...</td>
-                        </tr>
-
-                        <tr>
-                            <td>Sobrepeso</td>
-                            <td class="text-end">$500.00</td>
-                            <td class="text-center"><span class="badge bg-warning text-dark">Sí</span></td>
-                            <td class="text-center">USD</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td>Almacenaje</td>
-                            <td class="text-end">$2,000.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">MXN</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td rowspan="6">NT-29</td>
-                            <td rowspan="6">JJPC854976</td>
-                            <td rowspan="6">ALPI</td>
-                            <td rowspan="6">ALPI</td>
-                            <td rowspan="6"><span class="badge bg-primary text-white">Entregado</span></td>
-                            <td rowspan="6">2026-02-18</td>
-                            <td rowspan="6" class="text-center"><span class="badge bg-success text-white">Sí</span></td>
-
-                            <td>Notificacion de Arribo</td>
-                            <td class="text-end">$1,200.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">USD</td>
-                            <td class="text-center">...</td>
-                        </tr>
-
-                        <tr>
-                            <td>Sobrepeso</td>
-                            <td class="text-end">$500.00</td>
-                            <td class="text-center"><span class="badge bg-warning text-dark">Sí</span></td>
-                            <td class="text-center">USD</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td>Almacenaje</td>
-                            <td class="text-end">$2,000.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">MXN</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td>Almacenaje</td>
-                            <td class="text-end">$2,000.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">MXN</td>
-                            <td class="text-center">...</td>
-                        </tr>
-                        <tr>
-                            <td>Almacenaje</td>
-                            <td class="text-end">$2,000.00</td>
-                            <td class="text-center"><span class="badge bg-danger text-white">No</span></td>
-                            <td class="text-center">MXN</td>
-                            <td class="text-center">...</td>
-                        </tr>
 
 
-                        <!-- Placeholder vacío 
+
+                        <!-- Placeholder vacío -->
                         <tr>
                             <td colspan="11" class="text-center text-muted py-5">
                                 <i data-feather="inbox"></i>
                                 <div class="mt-2">Sin datos. Aplica filtros y presiona “Buscar”.</div>
                             </td>
-                        </tr>-->
+                        </tr>
                     </tbody>
                 </table>
             </div>
