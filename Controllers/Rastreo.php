@@ -55,7 +55,7 @@ class Rastreo extends Controller
             // =========================
             // 1) FO (Ferro / Terrestre)
             // =========================
-            if (strpos($numeroOperacion, 'FO-') === 0) {
+            /* if (strpos($numeroOperacion, 'FO-') === 0) {
 
                 $tramos = $this->model->getTramosPorNumeroOperacionFerro($numeroOperacion);
 
@@ -84,7 +84,7 @@ class Rastreo extends Controller
                     'tramos'     => $tramos,
                 ]);
                 return;
-            }
+            }*/
 
             // =========================
             // 2) Marítimo (LBMF/LC/etc.)
@@ -114,7 +114,6 @@ class Rastreo extends Controller
                 'data'       => $rows,   // 1 fila por contenedor (o vacío si no hay contenedor ligado)
             ]);
             return;
-
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([

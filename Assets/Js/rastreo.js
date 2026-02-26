@@ -1,16 +1,20 @@
 // assets/js/rastreo.js
 
 document.addEventListener("DOMContentLoaded", function () {
-  const inputNumeroGuia       = document.getElementById("inputNumeroGuia");
-  const btnRastrearEnvio      = document.getElementById("btnRastrearEnvio");
+  const inputNumeroGuia = document.getElementById("inputNumeroGuia");
+  const btnRastrearEnvio = document.getElementById("btnRastrearEnvio");
 
   // ====== BLOQUE FO ======
-  const lblOperacionSeleccion = document.getElementById("lblOperacionSeleccionada");
-  const tbodyRutasOperacion   = document.getElementById("tbodyRutasOperacion");
-  const tablaRutas            = document.getElementById("tablaRutasOperacion");
+  const lblOperacionSeleccion = document.getElementById(
+    "lblOperacionSeleccionada",
+  );
+  const tbodyRutasOperacion = document.getElementById("tbodyRutasOperacion");
+  const tablaRutas = document.getElementById("tablaRutasOperacion");
 
   // Contenedor de la tabla FO (el div.table-responsive)
-  const contenedorTablaFO = tablaRutas ? tablaRutas.closest(".table-responsive") : null;
+  const contenedorTablaFO = tablaRutas
+    ? tablaRutas.closest(".table-responsive")
+    : null;
   // Contenedor del encabezado FO: el <div class="d-flex ...">
   const headerRutasFO = lblOperacionSeleccion
     ? lblOperacionSeleccion.closest(".d-flex")
@@ -20,10 +24,16 @@ document.addEventListener("DOMContentLoaded", function () {
   const bloqueResultadoFO = document.getElementById("bloqueResultadoFO");
 
   // ====== BLOQUE MARÍTIMO ======
-  const bloqueResultadoMaritimo = document.getElementById("bloqueResultadoMaritimo");
-  const lblOperacionMaritima    = document.getElementById("lblOperacionMaritima");
-  const tbodyOperacionMaritima  = document.getElementById("tbodyOperacionMaritima");
-  const tablaOperacionMaritima  = document.getElementById("tablaOperacionMaritima");
+  const bloqueResultadoMaritimo = document.getElementById(
+    "bloqueResultadoMaritimo",
+  );
+  const lblOperacionMaritima = document.getElementById("lblOperacionMaritima");
+  const tbodyOperacionMaritima = document.getElementById(
+    "tbodyOperacionMaritima",
+  );
+  const tablaOperacionMaritima = document.getElementById(
+    "tablaOperacionMaritima",
+  );
   const contenedorTablaMar = tablaOperacionMaritima
     ? tablaOperacionMaritima.closest(".table-responsive")
     : null;
@@ -96,12 +106,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let html = "";
     tramos.forEach(function (row, idx) {
-      const num           = idx + 1;
-      const origen        = row.origen_nombre || "";
-      const destino       = row.destino_nombre || "";
+      const num = idx + 1;
+      const origen = row.origen_nombre || "";
+      const destino = row.destino_nombre || "";
       const transportista = row.transportista_nombre || "";
-      const fechaHora     = row.fecha_hora || "";
-      const comentario    = row.comentario || "";
+      const fechaHora = row.fecha_hora || "";
+      const comentario = row.comentario || "";
 
       html += `
         <tr>
@@ -122,13 +132,18 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!lblOperacionSeleccion) return;
 
     const numeroOperacion =
-      (encabezado && encabezado.numero_operacion) ? encabezado.numero_operacion : "—";
+      encabezado && encabezado.numero_operacion
+        ? encabezado.numero_operacion
+        : "—";
     const contenedor =
-      (encabezado && encabezado.contenedor) ? encabezado.contenedor : "—";
+      encabezado && encabezado.contenedor ? encabezado.contenedor : "—";
 
     lblOperacionSeleccion.innerHTML =
-      'Operación: <span class="fw-semibold">' + numeroOperacion +
-      '</span> • Contenedor/Caja: <span class="fw-semibold">' + contenedor + '</span>';
+      'Operación: <span class="fw-semibold">' +
+      numeroOperacion +
+      '</span> • Contenedor/Caja: <span class="fw-semibold">' +
+      contenedor +
+      "</span>";
   }
 
   function mostrarBloqueFO() {
@@ -164,14 +179,16 @@ document.addEventListener("DOMContentLoaded", function () {
   function actualizarEncabezadoMaritimo(encabezado) {
     if (!lblOperacionMaritima) return;
     const numeroOperacion =
-      (encabezado && encabezado.numero_operacion) ? encabezado.numero_operacion : "—";
+      encabezado && encabezado.numero_operacion
+        ? encabezado.numero_operacion
+        : "—";
 
     lblOperacionMaritima.innerHTML =
-      'Operación: <span class="fw-semibold">' + numeroOperacion + '</span>';
+      'Operación: <span class="fw-semibold">' + numeroOperacion + "</span>";
   }
 
   function escapeHtml(value) {
-    const s = (value === null || value === undefined) ? "" : String(value);
+    const s = value === null || value === undefined ? "" : String(value);
     return s
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
@@ -190,9 +207,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let html = "";
     rows.forEach(function (r) {
-      const op    = escapeHtml(r.numero_operacion || "");
-      const cont  = escapeHtml(r.contenedor || "—");
-      const est   = escapeHtml(r.estatus_nombre || "");
+      const op = escapeHtml(r.numero_operacion || "");
+      const cont = escapeHtml(r.contenedor || "—");
+      const est = escapeHtml(r.estatus_nombre || "");
       const comen = escapeHtml(r.comentario || "");
 
       html += `
@@ -209,12 +226,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function mostrarBloqueMaritimo() {
-    if (bloqueResultadoMaritimo) bloqueResultadoMaritimo.classList.remove("d-none");
+    if (bloqueResultadoMaritimo)
+      bloqueResultadoMaritimo.classList.remove("d-none");
     if (contenedorTablaMar) contenedorTablaMar.classList.remove("d-none");
   }
 
   function ocultarBloqueMaritimo() {
-    if (bloqueResultadoMaritimo) bloqueResultadoMaritimo.classList.add("d-none");
+    if (bloqueResultadoMaritimo)
+      bloqueResultadoMaritimo.classList.add("d-none");
     if (contenedorTablaMar) contenedorTablaMar.classList.add("d-none");
   }
 
@@ -230,7 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const url  = base_url + "Rastreo/buscarOperacion";
+    const url = base_url + "Rastreo/buscarOperacion";
     const data = new FormData();
     data.append("numero_operacion", numeroOperacion);
 
@@ -240,7 +259,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     http.onreadystatechange = function () {
       if (this.readyState === 4) {
-
         if (this.status === 200) {
           let res;
           try {
@@ -252,8 +270,8 @@ document.addEventListener("DOMContentLoaded", function () {
             // Reset visual
             ocultarBloqueFO();
             ocultarBloqueMaritimo();
-            actualizarEncabezadoFO(null);
-            renderTablaSinDatosFO();
+            //actualizarEncabezadoFO(null);
+            //renderTablaSinDatosFO();
             actualizarEncabezadoMaritimo(null);
             renderTablaSinDatosMaritimo();
             return;
@@ -267,7 +285,7 @@ document.addEventListener("DOMContentLoaded", function () {
             Swal.fire(
               "Sin resultados",
               (res.msg || "No se encontraron resultados.").toUpperCase(),
-              "info"
+              "info",
             );
 
             // Según el tipo, dejamos visible el bloque correspondiente con "sin datos"
@@ -275,32 +293,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (tipo === "maritimo") {
               mostrarBloqueMaritimo();
-              actualizarEncabezadoMaritimo({ numero_operacion: res.numero_operacion || numeroOperacion });
+              actualizarEncabezadoMaritimo({
+                numero_operacion: res.numero_operacion || numeroOperacion,
+              });
               renderTablaSinDatosMaritimo();
             } else {
               // default FO
-              mostrarBloqueFO();
-              actualizarEncabezadoFO({
-                numero_operacion: res.numero_operacion || numeroOperacion,
-                contenedor: "—"
-              });
-              renderTablaSinDatosFO();
+              //mostrarBloqueFO();
+              //actualizarEncabezadoFO({
+              //  numero_operacion: res.numero_operacion || numeroOperacion,
+              // contenedor: "—",
+              // });
+              //renderTablaSinDatosFO();
             }
-
           } else {
             const tipo = (res.tipo || "").toLowerCase();
 
             if (tipo === "maritimo") {
               // Éxito Marítimo
               mostrarBloqueMaritimo();
-              actualizarEncabezadoMaritimo(res.encabezado || { numero_operacion: numeroOperacion });
+              actualizarEncabezadoMaritimo(
+                res.encabezado || { numero_operacion: numeroOperacion },
+              );
               renderTablaMaritimo(res.data || []);
-
             } else {
               // Éxito FO
-              mostrarBloqueFO();
-              actualizarEncabezadoFO(res.encabezado || null);
-              renderTablaTramos(res.tramos || []);
+              //mostrarBloqueFO();
+              //actualizarEncabezadoFO(res.encabezado || null);
+              //renderTablaTramos(res.tramos || []);
             }
 
             // Bloquear inputs tras éxito
@@ -310,22 +330,25 @@ document.addEventListener("DOMContentLoaded", function () {
             Swal.fire(
               "Listo",
               (res.msg || "Consulta realizada correctamente.").toUpperCase(),
-              "success"
+              "success",
             );
           }
 
           // Mostrar botón limpiar después de una búsqueda
           btnLimpiar.classList.remove("d-none");
-
         } else {
           console.error("Error HTTP:", this.status, this.responseText);
-          Swal.fire("Error", "Ocurrió un error al consultar la operación.", "error");
+          Swal.fire(
+            "Error",
+            "Ocurrió un error al consultar la operación.",
+            "error",
+          );
 
           // Reset visual
-          ocultarBloqueFO();
+          // ocultarBloqueFO();
           ocultarBloqueMaritimo();
-          actualizarEncabezadoFO(null);
-          renderTablaSinDatosFO();
+          //actualizarEncabezadoFO(null);
+          //renderTablaSinDatosFO();
           actualizarEncabezadoMaritimo(null);
           renderTablaSinDatosMaritimo();
         }

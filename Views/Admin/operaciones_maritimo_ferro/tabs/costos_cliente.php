@@ -38,7 +38,7 @@
                 <div class="col-12 col-md-4 position-relative">
                     <label class="form-label mb-1">Cliente</label>
                     <select id="clienteId_cc" name="clienteId_cc" class="form-control">
-                        <option value="">Seleccione...</option>
+                        <option value="" selected>Todos</option>
                         <?php if (!empty($data['clientes'])): ?>
                             <?php foreach ($data['clientes'] as $c): ?>
                                 <option value="<?= (int)$c['id_cliente']; ?>">

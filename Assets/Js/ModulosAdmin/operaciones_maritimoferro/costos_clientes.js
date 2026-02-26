@@ -15,7 +15,7 @@
     base + "Operaciones_maritimo_ferro_costos_clientes/listarPaginado";
 
   // ---- Refs filtros ----
-  // ✅ NUEVO: cliente es SELECT
+  // ✅ cliente es SELECT ("" => Todos)
   const clienteSel = document.getElementById("clienteId_cc");
 
   const fechaInicio = document.getElementById("costosCliente_fechaInicio");
@@ -65,13 +65,15 @@
     qs.set("page", String(page));
     qs.set("per_page", perPageSel?.value || "25");
 
-    // ✅ según tu controlador actualizado: mandamos clienteId_cc
-    qs.set("clienteId_cc", clienteSel?.value || "");
+    // ✅ "" => Todos (el controlador/modelo ya lo soportan)
+    qs.set(
+      "clienteId_cc",
+      clienteSel && clienteSel.value !== null ? clienteSel.value : "",
+    );
 
     if (fechaInicio?.value) qs.set("fecha_inicio", fechaInicio.value);
     if (fechaFin?.value) qs.set("fecha_fin", fechaFin.value);
 
-    // ✅ mandar ids como vienen en la vista (el controlador hace fallback igual)
     if (brokerSel?.value) qs.set("brokerId_cc", brokerSel.value);
     if (transportistaSel?.value)
       qs.set("transportistaId_cc", transportistaSel.value);
@@ -91,7 +93,6 @@
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       let json = null;
-      console.log("Response:", this.responseText); // Debug: ver respuesta cruda
       try {
         json = JSON.parse(xhr.responseText);
       } catch (e) {}
@@ -132,7 +133,6 @@
   }
 
   function badgePagado(p) {
-    // En tu BD la columna es "Pagado" (P mayúscula)
     const ok = Number(p) === 1;
     return ok
       ? `<span class="badge bg-success text-white">Sí</span>`
@@ -141,12 +141,17 @@
 
   function renderTable(rows) {
     if (!Array.isArray(rows) || rows.length === 0) {
-      renderEmpty("Sin datos. Selecciona un cliente y ajusta filtros.");
+      // ✅ ya no pedimos “selecciona cliente”
+      renderEmpty("Sin resultados con los filtros actuales.");
       return;
     }
 
     const groups = groupByOperacion(rows);
     let html = "";
+
+    const isTodos = !clienteSel || clienteSel.value === ""; // "" => Todos
+    // Si estás en Todos, conviene mostrar cliente en la columna de operación (si tu backend ya lo manda).
+    // OJO: esto NO cambia el <thead>; solo lo agrega junto al número para no desalinear tu tabla.
 
     groups.forEach((g) => {
       const items = g.items;
@@ -161,23 +166,27 @@
       const conts = first.contenedores || "—";
       const trans = first.transportista || "—";
 
+      const opLabel = (() => {
+        const op = first.numero_operacion || "—";
+        const cli = (first.cliente || "").trim();
+        if (isTodos && cli) {
+          return `<div class="d-flex flex-column">
+                    <span class="fw-semibold">${op}</span>
+                    <small class="text-muted">${cli}</small>
+                  </div>`;
+        }
+        return op;
+      })();
+
       items.forEach((r, idx) => {
         const concepto = r.concepto || "—";
         const moneda = r.moneda || "—";
         const monto = money(r.monto);
 
-        const acciones = `
-          <div class="d-flex gap-1 justify-content-center">
-            <button class="btn btn-sm btn-outline-primary" data-cc-edit="${r.id_costo_operacion}">
-              <i data-feather="edit-2"></i>
-            </button>
-          </div>
-        `;
-
         if (idx === 0) {
           html += `
             <tr>
-              <td rowspan="${rowspan}">${first.numero_operacion || "—"}</td>
+              <td rowspan="${rowspan}">${opLabel}</td>
               <td rowspan="${rowspan}">${conts}</td>
               <td rowspan="${rowspan}">${trans}</td>
               <td rowspan="${rowspan}">${brokers}</td>
@@ -189,7 +198,6 @@
               <td class="text-end">$${monto}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
               <td class="text-center">${moneda}</td>
-               
             </tr>
           `;
         } else {
@@ -199,7 +207,6 @@
               <td class="text-end">$${monto}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
               <td class="text-center">${moneda}</td>
-            
             </tr>
           `;
         }
@@ -239,7 +246,6 @@
     const p = Number(page || 1);
     const tp = Number(totalPages || 1);
 
-    // ✅ total es TOTAL OPS (no renglones)
     const pp = Number(perPageSel?.value || 25);
     const showing = pp >= 10000000 ? totalOps : Math.min(totalOps, p * pp);
 
@@ -281,21 +287,7 @@
     if (state.loading) return;
     state.loading = true;
 
-    // ✅ cliente obligatorio (select)
-    if (!clienteSel || !clienteSel.value) {
-      renderEmpty("Selecciona un cliente para consultar.");
-      renderMeta({
-        total_ops: 0,
-        total_conceptos: 0,
-        pendientes: {},
-        pagados: {},
-      });
-      pagUl.innerHTML = "";
-      pagInfo.textContent = "Mostrando 0 de 0";
-      state.loading = false;
-      return;
-    }
-
+    // ✅ YA NO validamos cliente obligatorio
     const url = api + "?" + buildQuery(page);
 
     xhrGet(url, (json) => {
@@ -303,6 +295,14 @@
 
       if (!json || json.status !== "success") {
         renderEmpty(json?.msg || "No se pudo listar.");
+        renderMeta({
+          total_ops: 0,
+          total_conceptos: 0,
+          pendientes: {},
+          pagados: {},
+        });
+        pagUl.innerHTML = "";
+        pagInfo.textContent = "Mostrando 0 de 0";
         return;
       }
 
@@ -324,9 +324,7 @@
     el.addEventListener("change", () => listar(1));
   }
 
-  // ✅ importante: cambio de cliente lista
   hookChange(clienteSel);
-
   hookChange(fechaInicio);
   hookChange(fechaFin);
   hookChange(brokerSel);
@@ -344,14 +342,14 @@
 
   if (btnLimpiar) {
     btnLimpiar.addEventListener("click", () => {
-      if (clienteSel) clienteSel.value = "";
-      fechaInicio.value = "";
-      fechaFin.value = "";
-      brokerSel.value = "";
-      transportistaSel.value = "";
-      estatusPagoSel.value = "";
-      termInput.value = "";
-      perPageSel.value = "25";
+      if (clienteSel) clienteSel.value = ""; // "" => Todos
+      if (fechaInicio) fechaInicio.value = "";
+      if (fechaFin) fechaFin.value = "";
+      if (brokerSel) brokerSel.value = "";
+      if (transportistaSel) transportistaSel.value = "";
+      if (estatusPagoSel) estatusPagoSel.value = "";
+      if (termInput) termInput.value = "";
+      if (perPageSel) perPageSel.value = "25";
       listar(1);
     });
   }
@@ -366,5 +364,6 @@
     });
   }
 
-  // ya no usamos evento de autocomplete
+  // ✅ Carga inicial: por defecto "Todos"
+  listar(1);
 })();

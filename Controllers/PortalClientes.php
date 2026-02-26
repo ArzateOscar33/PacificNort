@@ -355,14 +355,12 @@ class PortalClientes extends Controller
         header('Content-Type: application/json; charset=utf-8');
 
         try {
-            // ✅ sesión
             $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
             if ($clienteId <= 0) {
                 echo json_encode(['ok' => false, 'msg' => 'Sesión sin cliente válido.']);
                 return;
             }
 
-            // ✅ input (POST preferente, fallback GET)
             $in = $_POST ?: $_GET;
 
             $opId = (int)($in['id_operacion'] ?? ($in['operacion_id'] ?? ($in['id'] ?? 0)));
@@ -371,31 +369,36 @@ class PortalClientes extends Controller
                 return;
             }
 
-            // ✅ tipo operación (MAR | LBMF | FO)
-            $tipoOp = strtoupper(trim((string)($in['tipo_operacion'] ?? ($in['tipo'] ?? 'MAR'))));
-            if (!in_array($tipoOp, ['MAR', 'LBMF', 'FO'], true)) {
-                // fallback seguro
-                $tipoOp = 'MAR';
-            }
-
-            // ✅ contenedor opcional (si luego lo ocupas)
+            // contenedor opcional
             $contenedorId = isset($in['contenedor_id']) ? (int)$in['contenedor_id'] : null;
             if ($contenedorId !== null && $contenedorId <= 0) $contenedorId = null;
 
-            // 🔒 El MODEL decide el SQL correcto según tipoOp (FO vs MAR/LBMF)
-            $rows = $this->model->listarDocumentosOperacionPortal(
-                $clienteId,
-                $opId,
-                $tipoOp,
-                $contenedorId
-            );
+            // ✅ Resolver tipo real desde BD (MAR | LBMF | FO) y validar acceso del cliente
+            $tipoReal = $this->resolverTipoOperacionReal($clienteId, $opId);
+            if ($tipoReal === '') {
+                echo json_encode(['ok' => false, 'msg' => 'Operación no encontrada o sin acceso.']);
+                return;
+            }
+
+            // ✅ Caso importante: si la operación es MAR/LBMF (maestra), puedes querer:
+            // - Documentos directos de esa operación (documentos_operacion.operacion_id = opId)
+            // - + Documentos de FO vinculadas a esa operación (si aplica en tu nuevo flujo)
+            //
+            // Si tu Model ya tiene un método "listarDocumentosOperacionPortalMaster", úsalo.
+            if (in_array($tipoReal, ['MAR', 'LBMF'], true) && method_exists($this->model, 'listarDocumentosOperacionPortalMaster')) {
+                $rows = $this->model->listarDocumentosOperacionPortalMaster($clienteId, $opId, $contenedorId);
+            } else {
+                // fallback a tu método existente (no rompe nada)
+                $rows = $this->model->listarDocumentosOperacionPortal($clienteId, $opId, $tipoReal, $contenedorId);
+            }
+
+            $rows = is_array($rows) ? $rows : [];
 
             echo json_encode([
                 'ok'    => true,
-                'rows'  => is_array($rows) ? $rows : [],
-                'total' => is_array($rows) ? count($rows) : 0,
-                // útil para debug UI (opcional)
-                // 'tipo_operacion' => $tipoOp
+                'tipo_operacion' => $tipoReal,
+                'rows'  => $rows,
+                'total' => count($rows),
             ]);
         } catch (Throwable $e) {
             error_log("PortalClientes::listarDocsOperacion ERROR: " . $e->getMessage());
@@ -425,7 +428,7 @@ class PortalClientes extends Controller
         $tipo = strtoupper(trim((string)($_GET['tipo'] ?? $_POST['tipo'] ?? '')));
         $operacionId = (int)($_GET['operacion_id'] ?? $_POST['operacion_id'] ?? 0);
 
-        if (!in_array($tipo, ['MAR', 'LBMF', 'FO'], true) || $operacionId <= 0) {
+        if (!in_array($tipo, ['MAR', 'LBMF'], true) || $operacionId <= 0) {
             echo json_encode(['ok' => false, 'msg' => 'Parámetros inválidos.']);
             exit;
         }

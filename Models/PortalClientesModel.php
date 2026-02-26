@@ -570,216 +570,7 @@ class PortalClientesModel extends Query
     }
 
 
-    //DOCUMENTOS OP MARITIMAS
-    public function listarDocumentosOperacionPortal(
-        int $clienteId,
-        int $operacionId,
-        string $tipoOperacion,
-        ?int $contenedorId = null
-    ): array {
-        if ($clienteId <= 0 || $operacionId <= 0) return [];
 
-        $tipo = strtoupper(trim($tipoOperacion));
-
-        if ($tipo === 'FO') {
-            // FO: d.operacion_id apunta a operaciones_ferroviarias.id_operacion_ferro
-            $params = [$operacionId, $clienteId];
-
-            $filtro = '';
-            if (!empty($contenedorId)) {
-                $filtro = ' AND d.contenedor_operacion_id = ? ';
-                $params[] = $contenedorId;
-            }
-
-            $sql = "
-            SELECT
-                d.id_documento,
-                ofe.numero_operacion,
-                cf.numero_ferro AS contenedor,
-                t.nombre AS tipo_nombre,
-                t.clave  AS tipo_clave,
-                d.nombre_archivo,
-                d.mime_type,
-                d.ruta_archivo,
-                d.fecha_subida,
-                COALESCE(CONCAT(u.nombre,' ',u.apellido), u.nombre, u.apellido, CAST(d.subido_por AS CHAR)) AS subido_por
-            FROM documentos_operacion d
-            JOIN tipos_documento t ON t.id_tipo_documento = d.tipo_documento_id
-            JOIN operaciones_ferroviarias ofe ON ofe.id_operacion_ferro = d.operacion_id
-            LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = d.contenedor_operacion_id
-            LEFT JOIN usuarios u ON u.id_usuario = d.subido_por
-            WHERE d.operacion_id = ?
-              AND ofe.cliente_id = ?
-              $filtro
-            ORDER BY d.fecha_subida DESC, d.id_documento DESC
-            LIMIT 500
-        ";
-
-            return $this->selectAll($sql, $params) ?: [];
-        }
-
-        // MAR / LBMF: d.operacion_id apunta a operaciones.id_operacion
-        $params = [$operacionId, $clienteId, $clienteId];
-
-        $filtro = '';
-        if (!empty($contenedorId)) {
-            // aquí decides: si quieres filtrar por contenedor marítimo dentro de la operación
-            $filtro = ' AND d.cont_maritimo_operacion_id = ? ';
-            $params[] = $contenedorId;
-        }
-
-        $sql = "
-        SELECT
-            d.id_documento,
-            o.numero_operacion,
-            cm.numero_contenedor AS contenedor_maritimo,
-            t.nombre AS tipo_nombre,
-            t.clave  AS tipo_clave,
-            d.nombre_archivo,
-            d.mime_type,
-            d.ruta_archivo,
-            d.fecha_subida,
-            COALESCE(CONCAT(u.nombre,' ',u.apellido), u.nombre, u.apellido, CAST(d.subido_por AS CHAR)) AS subido_por
-        FROM documentos_operacion d
-        JOIN tipos_documento t ON t.id_tipo_documento = d.tipo_documento_id
-        JOIN operaciones o     ON o.id_operacion      = d.operacion_id
-        LEFT JOIN contenedores_operacion co ON co.id_contenedor = d.contenedor_operacion_id
-        LEFT JOIN contenedores_maritimos_operacion cmo ON cmo.id = d.cont_maritimo_operacion_id
-        LEFT JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        LEFT JOIN usuarios u ON u.id_usuario = d.subido_por
-        WHERE d.operacion_id = ?
-          AND (o.cliente_id = ? OR co.cliente_id = ?)
-          $filtro
-        ORDER BY d.fecha_subida DESC, d.id_documento DESC
-        LIMIT 500
-    ";
-
-        return $this->selectAll($sql, $params) ?: [];
-    }
-
-    public function listarTiposDocumentoPorSubtipo(int $subtipoId): array
-    {
-        if ($subtipoId <= 0) return [];
-
-        // 1) Obtener tipo_operacion_id desde el subtipo
-        $sqlTipo = "SELECT tipo_operacion_id
-                FROM subtipos_operacion
-                WHERE id_subtipo = ? AND estatus = 1
-                LIMIT 1";
-        $row = $this->select($sqlTipo, [$subtipoId]) ?: [];
-        $tipoOperacionId = (int)($row['tipo_operacion_id'] ?? 0);
-
-        // 2) Definir aplica_sobre permitido según tipo_operacion
-        $aplica = ['cualquiera', 'operacion']; // base mínima
-
-        if ($tipoOperacionId === 1) {
-            $aplica = ['cualquiera', 'operacion', 'contenedor_maritimo'];
-        } elseif ($tipoOperacionId === 2) {
-            $aplica = ['cualquiera', 'operacion', 'contenedor_fisico'];
-        } elseif ($tipoOperacionId === 11) {
-            $aplica = ['cualquiera', 'operacion', 'contenedor_maritimo', 'contenedor_fisico'];
-        }
-
-        // 3) Query catálogo
-        $placeholders = implode(',', array_fill(0, count($aplica), '?'));
-
-        $sql = "SELECT
-                id_tipo_documento,
-                clave,
-                nombre,
-                descripcion,
-                aplica_sobre,
-                obligatorio_por_defecto
-            FROM tipos_documento
-            WHERE activo = 1
-              AND aplica_sobre IN ($placeholders)
-            ORDER BY obligatorio_por_defecto DESC, nombre ASC";
-
-        return $this->selectAll($sql, $aplica) ?: [];
-    }
-
-    private function getSubtipoOperacionIdPorOperacion(string $tipo, int $operacionId): int
-    {
-        if ($operacionId <= 0) return 0;
-
-        $tipo = strtoupper(trim($tipo));
-
-        // MAR / LBMF viven en `operaciones`
-        if ($tipo === 'MAR' || $tipo === 'LBMF') {
-            $sql = "SELECT subtipo_operacion_id
-                FROM operaciones
-                WHERE id_operacion = ?
-                LIMIT 1";
-            $row = $this->select($sql, [$operacionId]) ?: [];
-            return (int)($row['subtipo_operacion_id'] ?? 0);
-        }
-
-        // FO (operaciones_ferroviarias)
-        if ($tipo === 'FO') {
-            $sql = "SELECT subtipo_operacion_id
-                FROM operaciones_ferroviarias
-                WHERE id_operacion_ferro = ?
-                LIMIT 1";
-            $row = $this->select($sql, [$operacionId]) ?: [];
-            return (int)($row['subtipo_operacion_id'] ?? 0);
-        }
-
-        return 0;
-    }
-
-    public function listarTiposDocumentoParaOperacion(string $tipo, int $operacionId): array
-    {
-        $subtipoId = $this->getSubtipoOperacionIdPorOperacion($tipo, $operacionId);
-        if ($subtipoId <= 0) return [];
-        return $this->listarTiposDocumentoPorSubtipo($subtipoId);
-    }
-
-    // En tu PortalClientesModel  
-    public function getTipoDocumentoById(int $id): array
-    {
-        if ($id <= 0) return [];
-
-        $sql = "SELECT id_tipo_documento, clave, nombre, aplica_sobre, activo
-            FROM tipos_documento
-            WHERE id_tipo_documento = ? AND activo = 1
-            LIMIT 1";
-
-        return $this->select($sql, [$id]) ?: [];
-    }
-
-    public function insertarDocumentoOperacion(array $d): int
-    {
-        // Validaciones mínimas (NOT NULL en tu BD)
-        $operacionId     = (int)($d['operacion_id'] ?? 0);
-        $tipoDocId       = (int)($d['tipo_documento_id'] ?? 0);
-        $nombreArchivo   = trim((string)($d['nombre_archivo'] ?? ''));
-        $rutaArchivo     = trim((string)($d['ruta_archivo'] ?? ''));
-
-        if ($operacionId <= 0 || $tipoDocId <= 0 || $nombreArchivo === '' || $rutaArchivo === '') {
-            return 0;
-        }
-
-        $sql = "INSERT INTO documentos_operacion
-            (operacion_id, tipo_documento_id, contenedor_operacion_id, cont_maritimo_operacion_id,
-             nombre_archivo, mime_type, tamano_bytes, hash_sha256, ruta_archivo, subido_por)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        $params = [
-            $operacionId,
-            $tipoDocId,
-            isset($d['contenedor_operacion_id']) ? (int)$d['contenedor_operacion_id'] : null,
-            isset($d['cont_maritimo_operacion_id']) ? (int)$d['cont_maritimo_operacion_id'] : null,
-            $nombreArchivo,
-            $d['mime_type'] ?? null,
-            isset($d['tamano_bytes']) ? (int)$d['tamano_bytes'] : null,
-            $d['hash_sha256'] ?? null,
-            $rutaArchivo,
-            isset($d['subido_por']) ? (int)$d['subido_por'] : null,
-        ];
-
-        // Usamos insertar() para devolver lastInsertId()
-        return (int)$this->insertar($sql, $params);
-    }
 
     public function operacionPerteneceACliente(string $tipo, int $operacionId, int $clienteId): bool
     {
@@ -1095,4 +886,179 @@ class PortalClientesModel extends Query
         $row = $this->select($sql, [$estatusId, $clienteId, $clienteId]);
         return $row ? (int)$row['n'] : 0;
     }
+
+
+    //DOCUMENTOS OP MARITIMAS
+    public function listarDocumentosOperacionPortal(
+        int $clienteId,
+        int $operacionId,
+        string $tipoOperacion,
+        ?int $contenedorId = null
+    ): array {
+        if ($clienteId <= 0 || $operacionId <= 0) return [];
+
+        // Portal: SOLO MAR / LBMF
+        $tipo = strtoupper(trim($tipoOperacion));
+        if (!in_array($tipo, ['MAR', 'LBMF'], true)) {
+            return [];
+        }
+
+        // Filtro opcional por contenedor marítimo (cmo.id)
+        $params = [$operacionId, $clienteId];
+        $filtro = '';
+
+        if (!empty($contenedorId)) {
+            $filtro = ' AND d.cont_maritimo_operacion_id = ? ';
+            $params[] = (int)$contenedorId;
+        }
+
+        $sql = "
+        SELECT
+            d.id_documento,
+            o.numero_operacion,
+            COALESCE(cm.numero_contenedor,'') AS contenedor,
+            t.nombre AS tipo_nombre,
+            t.clave  AS tipo_clave,
+            d.nombre_archivo,
+            d.mime_type,
+            d.ruta_archivo,
+            d.fecha_subida,
+            COALESCE(CONCAT(u.nombre,' ',u.apellido), u.nombre, u.apellido, CAST(d.subido_por AS CHAR)) AS subido_por
+        FROM documentos_operacion d
+        INNER JOIN tipos_documento t
+            ON t.id_tipo_documento = d.tipo_documento_id
+        INNER JOIN operaciones o
+            ON o.id_operacion = d.operacion_id
+        LEFT JOIN contenedores_maritimos_operacion cmo
+            ON cmo.id = d.cont_maritimo_operacion_id
+        LEFT JOIN contenedores_maritimos cm
+            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        LEFT JOIN usuarios u
+            ON u.id_usuario = d.subido_por
+        WHERE d.operacion_id = ?
+          AND o.cliente_id = ?
+          $filtro
+        ORDER BY d.fecha_subida DESC, d.id_documento DESC
+        LIMIT 500
+    ";
+
+        return $this->selectAll($sql, $params) ?: [];
+    }
+
+    public function listarTiposDocumentoPorSubtipo(int $subtipoId): array
+    {
+        if ($subtipoId <= 0) return [];
+
+        // 1) Obtener tipo_operacion_id desde el subtipo
+        $sqlTipo = "SELECT tipo_operacion_id
+                FROM subtipos_operacion
+                WHERE id_subtipo = ? AND estatus = 1
+                LIMIT 1";
+        $row = $this->select($sqlTipo, [$subtipoId]) ?: [];
+        $tipoOperacionId = (int)($row['tipo_operacion_id'] ?? 0);
+
+        // Portal clientes: SOLO MAR(1) y LBMF(11)
+        if (!in_array($tipoOperacionId, [1, 11], true)) return [];
+
+        // 2) En portal marítimo solo permitimos estos aplica_sobre
+        // (si LBMF también usa docs de contenedor_fisico, NO lo incluimos porque pediste solo marítimo)
+        $aplica = ['cualquiera', 'operacion', 'contenedor_maritimo'];
+
+        // 3) Query catálogo
+        $placeholders = implode(',', array_fill(0, count($aplica), '?'));
+
+        $sql = "SELECT
+                id_tipo_documento,
+                clave,
+                nombre,
+                descripcion,
+                aplica_sobre,
+                obligatorio_por_defecto
+            FROM tipos_documento
+            WHERE activo = 1
+              AND aplica_sobre IN ($placeholders)
+            ORDER BY obligatorio_por_defecto DESC, nombre ASC";
+
+        return $this->selectAll($sql, $aplica) ?: [];
+    }
+
+    private function getSubtipoOperacionIdPorOperacion(string $tipo, int $operacionId): int
+    {
+        if ($operacionId <= 0) return 0;
+
+        $tipo = strtoupper(trim($tipo));
+        if (!in_array($tipo, ['MAR', 'LBMF'], true)) return 0;
+
+        $sql = "SELECT subtipo_operacion_id
+            FROM operaciones
+            WHERE id_operacion = ?
+            LIMIT 1";
+        $row = $this->select($sql, [$operacionId]) ?: [];
+        return (int)($row['subtipo_operacion_id'] ?? 0);
+    }
+
+    public function listarTiposDocumentoParaOperacion(string $tipo, int $operacionId): array
+    {
+        $tipo = strtoupper(trim($tipo));
+        if (!in_array($tipo, ['MAR', 'LBMF'], true)) return [];
+
+        $subtipoId = $this->getSubtipoOperacionIdPorOperacion($tipo, $operacionId);
+        if ($subtipoId <= 0) return [];
+
+        return $this->listarTiposDocumentoPorSubtipo($subtipoId);
+    }
+
+    // En tu PortalClientesModel  
+    public function getTipoDocumentoById(int $id): array
+    {
+        if ($id <= 0) return [];
+
+        $sql = "SELECT id_tipo_documento, clave, nombre, aplica_sobre, activo
+            FROM tipos_documento
+            WHERE id_tipo_documento = ? AND activo = 1
+            LIMIT 1";
+
+        return $this->select($sql, [$id]) ?: [];
+    }
+
+    public function insertarDocumentoOperacion(array $d): int
+    {
+        $operacionId   = (int)($d['operacion_id'] ?? 0);
+        $tipoDocId     = (int)($d['tipo_documento_id'] ?? 0);
+        $nombreArchivo = trim((string)($d['nombre_archivo'] ?? ''));
+        $rutaArchivo   = trim((string)($d['ruta_archivo'] ?? ''));
+
+        $coId  = isset($d['contenedor_operacion_id']) ? (int)$d['contenedor_operacion_id'] : 0;
+        $cmoId = isset($d['cont_maritimo_operacion_id']) ? (int)$d['cont_maritimo_operacion_id'] : 0;
+
+        if ($operacionId <= 0 || $tipoDocId <= 0 || $nombreArchivo === '' || $rutaArchivo === '') {
+            return 0;
+        }
+
+        // ✅ Para no permitir docs "huérfanos" sin contenedor asociado
+        if ($coId <= 0 && $cmoId <= 0) {
+            return 0;
+        }
+
+        $sql = "INSERT INTO documentos_operacion
+            (operacion_id, tipo_documento_id, contenedor_operacion_id, cont_maritimo_operacion_id,
+             nombre_archivo, mime_type, tamano_bytes, hash_sha256, ruta_archivo, subido_por)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $params = [
+            $operacionId,
+            $tipoDocId,
+            ($coId > 0 ? $coId : null),
+            ($cmoId > 0 ? $cmoId : null),
+            $nombreArchivo,
+            $d['mime_type'] ?? null,
+            isset($d['tamano_bytes']) ? (int)$d['tamano_bytes'] : null,
+            $d['hash_sha256'] ?? null,
+            $rutaArchivo,
+            isset($d['subido_por']) ? (int)$d['subido_por'] : null,
+        ];
+
+        return (int)$this->insertar($sql, $params);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////////////
 }

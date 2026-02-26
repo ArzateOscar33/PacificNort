@@ -25,31 +25,36 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
             $page    = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 25;
 
+            $page = max(1, $page);
+            $perPage = (int)$perPage;
+            if ($perPage <= 0) $perPage = 25;
+
             // =========================
             // Normalización de params según tu VISTA (selects)
             // =========================
+            // Cliente: 0 / '' => "Todos"
             $clienteId = 0;
 
             // Preferimos cliente_id (si algún JS lo manda así)
-            if (isset($_GET['cliente_id'])) {
+            if (isset($_GET['cliente_id']) && $_GET['cliente_id'] !== '') {
                 $clienteId = (int)$_GET['cliente_id'];
             }
             // Fallback: tu select en vista usa clienteId_cc
-            if ($clienteId <= 0 && isset($_GET['clienteId_cc'])) {
+            if ($clienteId <= 0 && isset($_GET['clienteId_cc']) && $_GET['clienteId_cc'] !== '') {
                 $clienteId = (int)$_GET['clienteId_cc'];
             }
 
             $brokerId = 0;
-            if (isset($_GET['broker_id'])) {
+            if (isset($_GET['broker_id']) && $_GET['broker_id'] !== '') {
                 $brokerId = (int)$_GET['broker_id'];
-            } elseif (isset($_GET['brokerId_cc'])) {
+            } elseif (isset($_GET['brokerId_cc']) && $_GET['brokerId_cc'] !== '') {
                 $brokerId = (int)$_GET['brokerId_cc'];
             }
 
             $transportistaId = 0;
-            if (isset($_GET['transportista_id'])) {
+            if (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
                 $transportistaId = (int)$_GET['transportista_id'];
-            } elseif (isset($_GET['transportistaId_cc'])) {
+            } elseif (isset($_GET['transportistaId_cc']) && $_GET['transportistaId_cc'] !== '') {
                 $transportistaId = (int)$_GET['transportistaId_cc'];
             }
 
@@ -61,6 +66,7 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
             $term = $_GET['term'] ?? ($_GET['costosCliente_term'] ?? '');
 
             $filters = [
+                // 0 => Todos (el modelo decide si filtra)
                 'cliente_id'       => $clienteId,
                 'fecha_inicio'     => $fechaInicio,
                 'fecha_fin'        => $fechaFin,
@@ -70,24 +76,8 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
                 'term'             => $term,
             ];
 
-            if ($filters['cliente_id'] <= 0) {
-                echo json_encode([
-                    'status' => 'warning',
-                    'msg' => 'Selecciona un cliente para consultar.',
-                    'rows' => [],
-                    'meta' => [
-                        'total_ops' => 0,
-                        'total_conceptos' => 0,
-                        'pendientes' => [],
-                        'pagados' => [],
-                    ],
-                    'page' => $page,
-                    'per_page' => $perPage,
-                    'total' => 0,
-                    'total_pages' => 1,
-                ]);
-                return;
-            }
+            // ✅ YA NO VALIDAMOS cliente obligatorio
+            // if ($filters['cliente_id'] <= 0) { ... return; }
 
             $res = $this->model->listarPaginado($filters, $page, $perPage);
 
@@ -110,6 +100,16 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
                 'status' => 'error',
                 'msg' => 'Error al listar: ' . $e->getMessage(),
                 'rows' => [],
+                'meta' => [
+                    'total_ops' => 0,
+                    'total_conceptos' => 0,
+                    'pendientes' => [],
+                    'pagados' => [],
+                ],
+                'page' => 1,
+                'per_page' => 25,
+                'total' => 0,
+                'total_pages' => 1,
             ]);
         }
     }
