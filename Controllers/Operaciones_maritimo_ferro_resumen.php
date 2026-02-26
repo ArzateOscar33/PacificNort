@@ -104,7 +104,7 @@ class Operaciones_maritimo_ferro_resumen extends Controller
         }
 
         $operacionId  = isset($_GET['operacion_id'])  ? (int)$_GET['operacion_id']  : 0;
-        $tipoRaw      = isset($_GET['tipo'])          ? trim($_GET['tipo'])         : '';
+        $tipoRaw      = isset($_GET['tipo'])          ? trim((string)$_GET['tipo']) : '';
         $contenedorId = isset($_GET['id_contenedor']) ? (int)$_GET['id_contenedor'] : 0;
 
         if ($operacionId <= 0 || $contenedorId <= 0 || $tipoRaw === '') {
@@ -118,7 +118,6 @@ class Operaciones_maritimo_ferro_resumen extends Controller
 
         $tipo = mb_strtoupper($tipoRaw, 'UTF-8');
         if ($tipo === 'M' || $tipo === 'MARITIMO' || $tipo === 'MARÍTIMO') $tipo = 'MARITIMO';
-
 
         if ($tipo !== 'MARITIMO') {
             echo json_encode([
@@ -149,6 +148,13 @@ class Operaciones_maritimo_ferro_resumen extends Controller
                 $row = (array)$row;
             }
 
+            // ✅ Nuevo: string ya listo para badges: "FXCEU10-Ferromex, 767-Lozagui"
+            $asigStr = (string)($row['ferros_cajas_vinculadas'] ?? $row['detalle_ferros_cajas'] ?? '');
+
+            // ✅ Útil si quieres render “avanzado” después (listas paralelas)
+            $asigFerros = (string)($row['ferros_cajas_lista'] ?? $row['ferros_cajas'] ?? '');
+            $asigTrs    = (string)($row['transportistas_ferros_cajas_lista'] ?? $row['transportistas_ferros_cajas'] ?? '');
+
             $data = [
                 'numero_contenedor' => (string)($row['numero_contenedor'] ?? ''),
                 'puerto'            => (string)($row['puerto'] ?? ''),
@@ -157,10 +163,17 @@ class Operaciones_maritimo_ferro_resumen extends Controller
                 'bl'                => (string)($row['numero_bl'] ?? ''),
                 'comentarios'       => (string)($row['comentarios_operacion'] ?? ($row['observaciones_contenedor'] ?? '')),
                 'isf'               => isset($row['isf']) ? (int)$row['isf'] : null,
-                'cita_puerto'       => isset($row['cita_puerto']) ? (int)$row['cita_puerto'] : null,
+
+                // si en DB es datetime/string, mejor mándalo como string
+                'cita_puerto'       => (string)($row['cita_puerto'] ?? ''),
+
                 'broker'            => (string)($row['broker'] ?? ''),
                 'transportista'     => (string)($row['transportista'] ?? ''),
-                'cita_puerto'       => (string)($row['cita_puerto'] ?? ''),
+
+                /* ✅ NUEVO: asignaciones */
+                'ferros_cajas_badges' => $asigStr,          // "FXCEU10-Ferromex, 767-Lozagui"
+                'ferros_cajas'        => $asigFerros,       // "FXCEU10, 767"
+                'transportistas_fo'   => $asigTrs,          // "Ferromex, Lozagui"
             ];
 
             echo json_encode([

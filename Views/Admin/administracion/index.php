@@ -107,7 +107,7 @@
         </div>
         <i data-feather="package" class="kpi-icon"></i>
       </div>
-      <div class="small subtle mt-2" id="kpiContenedoresBodegaDetalle">BODEGA TJ + BODEGA SD</div>
+      <div class="small subtle mt-2" id="kpiContenedoresBodegaDetalle">BODEGA MX + BODEGA USA</div>
     </div>
 
     <!-- Operaciones sin ISF (EXCEPTO subtipo Lázaro) -->

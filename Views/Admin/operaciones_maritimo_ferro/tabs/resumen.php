@@ -20,7 +20,7 @@
                      <div class="mb-2">
                          <label for="selectContenedorResumen" class="form-label">Contenedor Maritimo:</label>
                          <div class="d-flex gap-2">
-                             <select class="form-control" id="selectContenedorResumen">
+                             <select class="form-control" id="selectContenedorResumen" disabled readonly>
                                  <option value="">-- Selecciona una Operación --</option>
                              </select>
                              <button class="btn btn-outline-secondary" id="btnRefrescarResumen" title="Refrescar">
@@ -52,7 +52,7 @@
                              </div>
                              <div class="mb-2">
                                  <div class="small text-muted">ISF</div>
-                                 <div id="isfContenedor"><span id="isf" class="badge bg-success text-white">-</span> </div>
+                                 <div id="isfContenedor">—</div>
                              </div>
                              <div class="mb-2">
                                  <div class="small text-muted">Cita Puerto</div>
@@ -67,10 +67,9 @@
                                  <div class="small text-muted">Tansportista</div>
                                  <div id="transportistaContenedor">—</div>
                              </div>
-                             <div class="mb-2">
-                                 <div class="small text-muted">Ferros/Cajas Vinculados</div>
-                                 <div id="listaFisicosOperacion" class="mt-2"></div>
-                                 <div id="ferrosVinculados"><span id="ferrosVinculados" class="badge bg-success text-white">-</span> - <span id="TrasportistaVinculadoFerro" class="badge bg-success text-white">-</span></div>
+                             <div class="mt-2">
+                                 <div class="small text-muted mb-1">Ferros / Cajas vinculadas</div>
+                                 <div id="ferrosCajasVinculadasBadges" class="d-flex flex-column gap-1"> -</div>
                              </div>
 
 

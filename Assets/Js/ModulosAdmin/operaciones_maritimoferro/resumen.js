@@ -34,6 +34,9 @@
   const elEtd = document.getElementById("etdContenedor");
   const elBl = document.getElementById("blContenedor");
   const elComentarios = document.getElementById("comentarioContenedor");
+  const elFerrosCajasBadges = document.getElementById(
+    "ferrosCajasVinculadasBadges",
+  );
 
   const elDocsPend = document.getElementById("docsPendientesResumen");
   const badgeTotalCostos = document.getElementById("badgeTotalCostos");
@@ -123,6 +126,12 @@
     safeSetText(elEtd, "—");
     safeSetText(elBl, "—");
     safeSetText(elComentarios, "—");
+    if (elFerrosCajasBadges)
+      elFerrosCajasBadges.innerHTML = `<span class="text-muted">—</span>`;
+    safeSetText(document.getElementById("isfContenedor"), "—");
+    safeSetText(document.getElementById("brokerContenedor"), "—");
+    safeSetText(document.getElementById("transportistaContenedor"), "—");
+    safeSetText(document.getElementById("citaPuertoContenedor"), "—");
   }
 
   function setDetalleLoadingResumen() {
@@ -162,33 +171,30 @@
     );
   }
 
-  function renderFaltantesResumen(items) {
-    if (!dfListaResumen) return;
+  function renderBadgesFromCommaString(el, csv, emptyText = "—") {
+    if (!el) return;
 
-    dfListaResumen.innerHTML = "";
-    const count = Array.isArray(items) ? items.length : 0;
-
-    if (count === 0) {
-      toggleDFResumen(false, false, true);
-      setDFHeaderResumen(
-        dfContenedorInfoResumen?.textContent || "Seleccione un contenedor…",
-        0,
-      );
+    const s = String(csv || "").trim();
+    if (!s) {
+      el.innerHTML = `<span class="text-muted">${emptyText}</span>`;
       return;
     }
 
-    items.forEach((row) => {
-      const li = document.createElement("li");
-      li.className =
-        "list-group-item d-flex justify-content-between align-items-center";
-      const nombre = escapeHtmlResumen(row.nombre);
-      const clave = escapeHtmlResumen(row.clave ?? "");
-      li.innerHTML = `<span>${nombre}</span><span class="badge bg-light text-dark">${clave}</span>`;
-      dfListaResumen.appendChild(li);
-    });
+    const items = s
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (!items.length) {
+      el.innerHTML = `<span class="text-muted">${emptyText}</span>`;
+      return;
+    }
 
-    toggleDFResumen(false, true, false);
-    setDFHeaderResumen(dfContenedorInfoResumen?.textContent || "—", count);
+    el.innerHTML = items
+      .map(
+        (txt) =>
+          `<span class="badge bg-primary text-white d-block text-start mb-1">${escapeHtmlResumen(txt)}</span>`,
+      )
+      .join("");
   }
 
   // -------------------------
@@ -711,7 +717,8 @@
 
       selectContenedorResumen.appendChild(option);
     });
-
+    selectContenedorResumen.disabled = false;
+    selectContenedorResumen.removeAttribute("readonly");
     // auto seleccionar el primero
     if (selectContenedorResumen.options.length > 0) {
       selectContenedorResumen.selectedIndex = 0;
@@ -728,7 +735,10 @@
     safeSetText(elEtd, data.etd || "—");
     safeSetText(elBl, data.bl || "—");
     safeSetText(elComentarios, data.comentarios || "—");
-    safeSetText(document.getElementById("isf"), data.isf == 1 ? "Sí" : "No");
+    safeSetText(
+      document.getElementById("isfContenedor"),
+      data.isf == 1 ? "Sí" : "No",
+    );
     console.log("Detalle contenedor:", data);
     safeSetText(
       document.getElementById("brokerContenedor"),
@@ -741,6 +751,12 @@
     safeSetText(
       document.getElementById("citaPuertoContenedor"),
       data.cita_puerto || "Sin Cita",
+    );
+    // ✅ Ferros/Cajas vinculadas (badge string del endpoint)
+    renderBadgesFromCommaString(
+      elFerrosCajasBadges,
+      data.ferros_cajas_badges,
+      "Sin asignaciones",
     );
   }
 
@@ -854,5 +870,45 @@
       }
     };
     xhr.send();
+  }
+  function renderFaltantesResumen(rows) {
+    const arr = Array.isArray(rows) ? rows : [];
+
+    // count
+    const count = arr.length;
+    setDFHeaderResumen(dfContenedorInfoResumen?.textContent || "—", count);
+
+    // limpiar lista
+    if (dfListaResumen) dfListaResumen.innerHTML = "";
+
+    if (count === 0) {
+      toggleDFResumen(false, false, true); // empty
+      return;
+    }
+
+    // pintar lista
+    toggleDFResumen(false, true, false);
+
+    const frag = document.createDocumentFragment();
+    arr.forEach((r) => {
+      const li = document.createElement("li");
+      li.className =
+        "list-group-item d-flex justify-content-between align-items-center";
+
+      const nombre = (r.nombre || r.clave || "Documento").toString();
+      const clave = (r.clave || "").toString();
+
+      li.innerHTML = `
+      <div class="me-2">
+        <div class="fw-semibold">${escapeHtmlResumen(nombre)}</div>
+        ${clave ? `<div class="small text-muted">${escapeHtmlResumen(clave)}</div>` : ""}
+      </div>
+      <span class="badge bg-warning text-dark">Pendiente</span>
+    `;
+
+      frag.appendChild(li);
+    });
+
+    if (dfListaResumen) dfListaResumen.appendChild(frag);
   }
 })();

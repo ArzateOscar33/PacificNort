@@ -70,42 +70,92 @@ class Operaciones_maritimo_ferro_resumenModel extends Query
   public function getDetalleContenedorMaritimo(int $operacionId, int $contenedorMaritimoId): array
   {
     $sql = "
+        SELECT
+            o.id_operacion,
+            o.numero_operacion,
+            o.etd,
+            o.eta,
+            o.numero_bl,
+            o.notas                              AS comentarios_operacion,
+            o.isf,
+            o.cita_puerto,
+            b.nombre                              AS broker,
+            tr.nombre                             AS transportista,
+            so.id_subtipo,
+            p.nombre                             AS puerto,
+            cmo.id                               AS cont_maritimo_operacion_id,
+            cm.id_contenedor_maritimo,
+            cm.numero_contenedor,
+            cm.tipo                              AS tipo_contenedor,
+            cm.observaciones                     AS observaciones_contenedor,
+
+            /* ✅ NUEVO: ferros/cajas vinculadas (ya formateadas para badges) */
+            asig.detalle_ferros_cajas            AS ferros_cajas_vinculadas,
+            asig.ferros_cajas                    AS ferros_cajas_lista,
+            asig.transportistas_ferros_cajas     AS transportistas_ferros_cajas_lista
+
+        FROM contenedores_maritimos_operacion cmo
+        JOIN operaciones o
+          ON o.id_operacion = cmo.operacion_id
+        JOIN contenedores_maritimos cm
+          ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        LEFT JOIN subtipos_operacion so
+          ON so.id_subtipo = o.subtipo_operacion_id
+        LEFT JOIN puertos p
+          ON p.id_puerto = so.puerto_arribo_default_id
+        LEFT JOIN brokers b
+          ON b.id_broker = o.broker_id
+        LEFT JOIN transportistas tr
+          ON tr.id_transportista = o.transportista_id
+
+        /* ===== ✅ NUEVO: TODAS las asignaciones ferro/caja para ESTE contenedor marítimo (1 fila) ===== */
+        LEFT JOIN (
             SELECT
-              o.id_operacion,
-              o.numero_operacion,
-              o.etd,
-              o.eta,
-              o.numero_bl,
-              o.notas                              AS comentarios_operacion,
-              o.isf,
-              o.cita_puerto,
-              b.nombre                              AS broker,
-              tr.nombre                             AS transportista,
-              so.id_subtipo,
-              p.nombre                             AS puerto,
-              cmo.id                               AS cont_maritimo_operacion_id,
-              cm.id_contenedor_maritimo,
-              cm.numero_contenedor,
-              cm.tipo                              AS tipo_contenedor,
-              cm.observaciones                     AS observaciones_contenedor
-            FROM contenedores_maritimos_operacion cmo
-            JOIN operaciones o
-              ON o.id_operacion = cmo.operacion_id
-            JOIN contenedores_maritimos cm
-              ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-            LEFT JOIN subtipos_operacion so
-              ON so.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p
-              ON p.id_puerto = so.puerto_arribo_default_id
-            LEFT JOIN brokers b
-              ON b.id_broker = o.broker_id
-            LEFT JOIN transportistas tr
-              ON tr.id_transportista = o.transportista_id
-            WHERE cmo.operacion_id = ?
-              AND o.tipo_operacion_id = 11
-              AND cmo.contenedor_maritimo_id = ?
-            LIMIT 1;
-        ";
+                cmf.cont_maritimo_operacion_id,
+
+                /* lista “bonita” para pintar badges: FXCEU10-Ferromex, 767-Lozagui */
+                GROUP_CONCAT(
+                    DISTINCT CONCAT(
+                        COALESCE(cf.numero_ferro, ''),
+                        CASE
+                            WHEN trf.nombre IS NULL OR trf.nombre = '' THEN ''
+                            ELSE CONCAT('-', trf.nombre)
+                        END
+                    )
+                    ORDER BY ofe.fecha DESC, cmf.fecha_asignacion DESC, cmf.id DESC
+                    SEPARATOR ', '
+                ) AS detalle_ferros_cajas,
+
+                /* opcional: listas paralelas por si quieres render avanzado */
+                GROUP_CONCAT(
+                    DISTINCT COALESCE(cf.numero_ferro,'')
+                    ORDER BY ofe.fecha DESC, cmf.fecha_asignacion DESC, cmf.id DESC
+                    SEPARATOR ', '
+                ) AS ferros_cajas,
+
+                GROUP_CONCAT(
+                    DISTINCT COALESCE(trf.nombre,'')
+                    ORDER BY ofe.fecha DESC, cmf.fecha_asignacion DESC, cmf.id DESC
+                    SEPARATOR ', '
+                ) AS transportistas_ferros_cajas
+
+            FROM contenedor_maritimo_ferro cmf
+            LEFT JOIN operaciones_ferroviarias ofe
+              ON ofe.id_operacion_ferro = cmf.operacion_ferro_id
+            LEFT JOIN contenedores_fisicos cf
+              ON cf.id_fisico = COALESCE(cmf.contenedor_fisico_id, ofe.contenedor_fisico_id)
+            LEFT JOIN transportistas trf
+              ON trf.id_transportista = ofe.transportista_id
+            WHERE cmf.estatus = 1
+            GROUP BY cmf.cont_maritimo_operacion_id
+        ) asig
+          ON asig.cont_maritimo_operacion_id = cmo.id
+
+        WHERE cmo.operacion_id = ?
+          AND o.tipo_operacion_id = 11
+          AND cmo.contenedor_maritimo_id = ?
+        LIMIT 1;
+    ";
 
     return $this->selectAll($sql, [$operacionId, $contenedorMaritimoId]) ?: [];
   }
