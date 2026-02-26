@@ -9,7 +9,111 @@
   <!-- Bootstrap 5.3.x -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
+  <style>
+    .badge-asignacion {
+      padding: .45rem .6rem;
+      font-size: .75rem;
+      border-radius: .35rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
 
+    .badge-asignacion.is-linked {
+      outline: 2px solid rgba(255, 255, 255, .95);
+      box-shadow: 0 0 0 2px rgba(13, 110, 253, .55);
+      transform: scaleY(1.2) scaleX(1.2) translateY(-1px);
+      transition: 0.2s ease-in;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      padding-bottom: .5rem;
+    }
+
+    /* Tabla amplia pero controlada */
+    #tblOpsMar {
+      table-layout: auto;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1100px;
+      /* 👈 ajusta: 1300-1700 */
+    }
+
+    /* Espaciado general */
+    #tblOpsMar th,
+    #tblOpsMar td {
+      padding: .9rem 1rem;
+      vertical-align: middle;
+    }
+
+    /* Header estilo */
+    #tblOpsMar thead th {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      font-weight: 600;
+      color: #6c757d;
+      background: #f8f9fa;
+      white-space: nowrap;
+      /* 👈 header sí puede ser nowrap */
+    }
+
+    /* ✅ SOLO estas columnas en nowrap (cortas) */
+    #tblOpsMar td:nth-child(1),
+    /* Operación */
+    #tblOpsMar td:nth-child(2),
+    /* Contenedor */
+    #tblOpsMar td:nth-child(3),
+    /* BL */
+    #tblOpsMar td:nth-child(4),
+    /* ETD */
+    #tblOpsMar td:nth-child(5),
+    /* ETA */
+    #tblOpsMar td:nth-child(6),
+    /* Estatus */
+    #tblOpsMar td:nth-child(7),
+    /* Peso */
+    #tblOpsMar td:nth-child(8),
+    /* Medida */
+    #tblOpsMar td:nth-child(12),
+    /* Cita Puerto */
+    #tblOpsMar td:nth-child(18)
+
+    /* Acciones */
+      {
+      white-space: nowrap;
+    }
+
+    /* ✅ Columnas largas: permitir wrap (para que NO se infle la tabla) */
+    #tblOpsMar td:nth-child(9),
+    /* Mercancía */
+    #tblOpsMar td:nth-child(10),
+    /* Transportista */
+    #tblOpsMar td:nth-child(11)
+
+    /* Broker */
+      {
+      white-space: normal;
+      max-width: 220px;
+      /* 👈 controla el ancho */
+    }
+
+    /* Hover suave */
+    #tblOpsMar tbody tr:hover {
+      background-color: #f7faff;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      max-width: 100%;
+      padding-bottom: .5rem;
+    }
+
+    td,
+    th {
+      text-transform: uppercase;
+    }
+  </style>
 
 </head>
 
@@ -253,6 +357,11 @@
                 <option value="15">15 / pág</option>
                 <option value="30">30 / pág</option>
                 <option value="50">50 / pág</option>
+
+                <option value="100">100 / pág</option>
+                <option value="200">200 / pág</option>
+                <option value="1000">1000 / pág</option>
+                <option value="10000000">Todos</option>
               </select>
 
               <div class="btn-group" role="group" aria-label="Exportaciones">
@@ -268,7 +377,7 @@
         </div>
 
         <div class="card-body px-4 pb-4">
-          <div class="table-responsive">
+          <table class="table table-spacious align-middle mb-0" id="tblOpsMar">
             <table class="table align-middle mb-0" id="tblOpsMar">
               <thead>
                 <tr>
@@ -278,6 +387,19 @@
                   <th>ETD</th>
                   <th>ETA</th>
                   <th>Estatus</th>
+                  <th>Peso</th>
+                  <th>Medida</th>
+                  <th>Mercancia</th>
+                  <th>Transportista</th>
+                  <th>Broker</th>
+                  <th>Cita Puerto</th>
+                  <th>Caja/Ferro</th>
+                  <th>Destino</th>
+                  <th>Fecha salida</th>
+                  <th>Ubicacion Actual</th>
+                  <th> Transportista Caja/Ferro</th>
+
+
                   <th class="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -287,149 +409,154 @@
                 <!-- Render JS -->
               </tbody>
             </table>
-          </div>
+        </div>
 
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="marPagingWrap">
-            <div class="small pn-muted" id="marPagingLbl">Mostrando 0–0 de 0</div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="marPagingWrap">
+          <div class="small pn-muted" id="marPagingLbl">Mostrando 0–0 de 0</div>
 
-            <nav aria-label="Paginación Marítimas/LBMF" id="marPagingNav">
-              <ul class="pagination pagination-sm mb-0" id="marPaging">
-                <!-- Render JS -->
-              </ul>
-            </nav>
-          </div>
+          <nav aria-label="Paginación Marítimas/LBMF" id="marPagingNav">
+            <ul class="pagination pagination-sm mb-0" id="marPaging">
+              <!-- Render JS -->
+            </ul>
+          </nav>
         </div>
       </div>
+    </div>
 
 
-      <!-- Filtros FO -->
-      <div class="card shadow-sm border-0 rounded-4 mb-3" id="cardFiltrosFO">
-        <div class="card-body">
-          <div class="row g-3 align-items-end" id="rowFiltrosFO">
+    <!-- Filtros FO -->
+    <div class="card shadow-sm border-0 rounded-4 mb-3 d-none" id="cardFiltrosFO">
+      <div class="card-body">
+        <div class="row g-3 align-items-end" id="rowFiltrosFO">
 
-            <!-- Buscar -->
-            <div class="col-12 col-md-4">
-              <label class="form-label" for="foSearch">Buscar</label>
-              <div class="input-group">
-                <span class="input-group-text"><i data-feather="search"></i></span>
-                <input class="form-control" id="foSearch"
-                  placeholder="Operación FO, Ferro/Caja, Origen, Destino..." />
-              </div>
+          <!-- Buscar -->
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="foSearch">Buscar</label>
+            <div class="input-group">
+              <span class="input-group-text"><i data-feather="search"></i></span>
+              <input class="form-control" id="foSearch"
+                placeholder="Operación FO, Ferro/Caja, Origen, Destino..." />
             </div>
+          </div>
 
-            <!-- Estatus -->
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="foEstatus">Estatus</label>
-              <select class="form-select" id="foEstatus" name="fo_estatus">
-                <option value="0">Todos</option>
+          <!-- Estatus -->
+          <div class="col-12 col-md-2">
+            <label class="form-label" for="foEstatus">Estatus</label>
+            <select class="form-select" id="foEstatus" name="fo_estatus">
+              <option value="0">Todos</option>
 
-                <?php if (!empty($data['estatus_op'])): ?>
-                  <?php foreach ($data['estatus_op'] as $estatus): ?>
-                    <option value="<?php echo (int)$estatus['id_estatus']; ?>">
-                      <?php echo htmlspecialchars($estatus['nombre']); ?>
-                    </option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
+              <?php if (!empty($data['estatus_op'])): ?>
+                <?php foreach ($data['estatus_op'] as $estatus): ?>
+                  <option value="<?php echo (int)$estatus['id_estatus']; ?>">
+                    <?php echo htmlspecialchars($estatus['nombre']); ?>
+                  </option>
+                <?php endforeach; ?>
+              <?php endif; ?>
 
-              </select>
-            </div>
+            </select>
+          </div>
 
-            <!-- Rango fecha (FO) -->
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="foFechaIni">Rango (Fecha)</label>
-              <input type="date" class="form-control" id="foFechaIni" />
-            </div>
+          <!-- Rango fecha (FO) -->
+          <div class="col-12 col-md-2">
+            <label class="form-label" for="foFechaIni">Rango (Fecha)</label>
+            <input type="date" class="form-control" id="foFechaIni" />
+          </div>
 
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="foFechaFin">&nbsp;</label>
-              <input type="date" class="form-control" id="foFechaFin" />
-            </div>
+          <div class="col-12 col-md-2">
+            <label class="form-label" for="foFechaFin">&nbsp;</label>
+            <input type="date" class="form-control" id="foFechaFin" />
+          </div>
 
-            <!-- Botones -->
-            <div class="col-12 col-md-1 d-grid">
-              <button class="btn btn-dark" type="button" id="btnFOFiltrar">
-                <i data-feather="filter" class="me-1"></i> Filtrar
+          <!-- Botones -->
+          <div class="col-12 col-md-1 d-grid">
+            <button class="btn btn-dark" type="button" id="btnFOFiltrar">
+              <i data-feather="filter" class="me-1"></i> Filtrar
+            </button>
+          </div>
+
+          <div class="col-12 col-md-1 d-grid">
+            <button class="btn btn-outline-secondary" type="button" id="btnFOLimpiar">
+              <i data-feather="x-circle" class="me-1"></i> Limpiar
+            </button>
+          </div>
+
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Chips / filtros activos FO -->
+        <div class="d-flex flex-wrap align-items-center gap-2" id="foFiltrosActivosBar">
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tabla FO -->
+    <div class="card shadow-sm border-0 rounded-4 mt-3 d-none" id="cardTablaFO">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div>
+            <div class="fw-semibold" id="lblListadoFO">Operaciones FO (Ferroviarias)</div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" id="foPageSize" style="width:auto;">
+              <option value="15">15 / pág</option>
+              <option value="30">30 / pág</option>
+              <option value="50">50 / pág</option>
+
+              <option value="100">100 / pág</option>
+              <option value="200">200 / pág</option>
+              <option value="1000">1000 / pág</option>
+              <option value="10000000">Todos</option>
+            </select>
+            <div class="btn-group" role="group" aria-label="Exportaciones">
+              <button class="btn btn-sm btn-outline-success" id="btnExcelOpFO">
+                <i data-feather="file-text" class="me-1"></i> Excel
+              </button>
+              <button class="btn btn-sm btn-outline-warning" id="btnPdfOpFO">
+                <i data-feather="file" class="me-1"></i> PDF
               </button>
             </div>
 
-            <div class="col-12 col-md-1 d-grid">
-              <button class="btn btn-outline-secondary" type="button" id="btnFOLimpiar">
-                <i data-feather="x-circle" class="me-1"></i> Limpiar
-              </button>
-            </div>
-
           </div>
-
-          <hr class="my-3">
-
-          <!-- Chips / filtros activos FO -->
-          <div class="d-flex flex-wrap align-items-center gap-2" id="foFiltrosActivosBar">
-
-          </div>
-
         </div>
       </div>
 
-      <!-- Tabla FO -->
-      <div class="card shadow-sm border-0 rounded-4 mt-3" id="cardTablaFO">
-        <div class="card-header bg-white border-0 pt-4 px-4">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div>
-              <div class="fw-semibold" id="lblListadoFO">Operaciones FO (Ferroviarias)</div>
-            </div>
+      <div class="card-body px-4 pb-4">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0" id="tblOpsFO">
+            <thead>
+              <tr>
+                <th>Operación</th>
+                <th>Ferro/Caja</th>
+                <th>Destino</th>
+                <th>Contenedores Maritimos</th>
+                <th>Fecha</th>
+                <th>Estatus</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
 
-            <div class="d-flex align-items-center gap-2">
-              <select class="form-select form-select-sm" id="foPageSize" style="width:auto;">
-                <option value="15">15 / pág</option>
-                <option value="30">30 / pág</option>
-                <option value="50">50 / pág</option>
-              </select>
-              <div class="btn-group" role="group" aria-label="Exportaciones">
-                <button class="btn btn-sm btn-outline-success" id="btnExcelOpFO">
-                  <i data-feather="file-text" class="me-1"></i> Excel
-                </button>
-                <button class="btn btn-sm btn-outline-warning" id="btnPdfOpFO">
-                  <i data-feather="file" class="me-1"></i> PDF
-                </button>
-              </div>
-
-            </div>
-          </div>
+            <tbody id="tbOpsFO">
+              <!-- Render JS -->
+            </tbody>
+          </table>
         </div>
 
-        <div class="card-body px-4 pb-4">
-          <div class="table-responsive">
-            <table class="table align-middle mb-0" id="tblOpsFO">
-              <thead>
-                <tr>
-                  <th>Operación</th>
-                  <th>Ferro/Caja</th>
-                  <th>Destino</th>
-                  <th>Contenedores Maritimos</th>
-                  <th>Fecha</th>
-                  <th>Estatus</th>
-                  <th class="text-end">Acciones</th>
-                </tr>
-              </thead>
-
-              <tbody id="tbOpsFO">
-                <!-- Render JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Paginación FO -->
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="foPagingWrap">
-            <div class="small pn-muted" id="foPagingLbl">Mostrando 0–0 de 0</div>
-            <nav aria-label="Paginación FO" id="foPagingNav">
-              <ul class="pagination pagination-sm mb-0" id="foPaging">
-                <!-- Render JS -->
-              </ul>
-            </nav>
-          </div>
-
+        <!-- Paginación FO -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="foPagingWrap">
+          <div class="small pn-muted" id="foPagingLbl">Mostrando 0–0 de 0</div>
+          <nav aria-label="Paginación FO" id="foPagingNav">
+            <ul class="pagination pagination-sm mb-0" id="foPaging">
+              <!-- Render JS -->
+            </ul>
+          </nav>
         </div>
+
       </div>
+    </div>
 
     </div>
   </main>
@@ -599,8 +726,8 @@
 
                   <hr class="my-3">
 
-                  <div class="fw-semibold mb-2">Eventos (solo lectura)</div>
-                  <div class="table-responsive">
+                  <div class="fw-semibold mb-2 d-none">Eventos (solo lectura)</div>
+                  <div class="table-responsive d-none">
                     <table class="table table-sm align-middle">
                       <thead>
                         <tr>
@@ -648,7 +775,7 @@
         <div class="modal-body">
           <div class="row g-3">
 
-            <!-- Resumen -->
+
             <div class="col-12 col-lg-4">
               <div class="card rounded-4 border-0 shadow-sm h-100">
                 <div class="card-body">
@@ -689,7 +816,7 @@
               </div>
             </div>
 
-            <!-- Información -->
+
             <div class="col-12 col-lg-8">
               <div class="card rounded-4 border-0 shadow-sm">
                 <div class="card-body">
@@ -781,12 +908,12 @@
                     </table>
                   </div>
 
-                </div><!-- /card-body -->
-              </div><!-- /card -->
+                </div>
+              </div>
             </div>
 
-          </div><!-- /row -->
-        </div><!-- /modal-body -->
+          </div>
+        </div>
 
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
@@ -804,8 +931,6 @@
 <!-- JS del portal -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/Kpis.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesFerro.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/DocumentosTerrestres.js"></script>
 
 <script>
   feather.replace();

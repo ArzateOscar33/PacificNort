@@ -198,68 +198,200 @@
     return parts.join("&");
   }
 
+  function splitList(str) {
+    // Tus GROUP_CONCAT usan ", " normalmente; dejo fallback por "," por si acaso.
+    if (!str) return [];
+    const s = String(str).trim();
+    if (!s) return [];
+    return s.includes(", ") ? s.split(", ") : s.split(",").map((x) => x.trim());
+  }
+
+  function safe(v) {
+    return esc(v ?? "");
+  }
+
+  // Badge full-width como en tu ejemplo
+  function mkBadge(txt, opId, i) {
+    const t = txt || "—";
+    return `
+    <span
+      class="badge badge-asignacion bg-primary text-white w-100 text-start text-truncate mt-1"
+      data-op="${esc(opId)}"
+      data-asig="${esc(i)}"
+      title="${esc(t)}"
+    >${esc(t)}</span>
+  `;
+  }
+
+  function mkStack(htmlBadges) {
+    return `
+    <div class="d-flex flex-column align-items-stretch">
+      ${htmlBadges.join("")}
+    </div>
+  `;
+  }
+  function initAsignacionHover() {
+    if (!tb) return;
+
+    tb.addEventListener("mouseover", function (e) {
+      const badge = e.target.closest(".badge-asignacion");
+      if (!badge) return;
+
+      const opId = badge.dataset.op;
+      const idx = badge.dataset.asig;
+
+      highlightAsignacion(opId, idx, true);
+    });
+
+    tb.addEventListener("mouseout", function (e) {
+      const badge = e.target.closest(".badge-asignacion");
+      if (!badge) return;
+
+      const opId = badge.dataset.op;
+      const idx = badge.dataset.asig;
+
+      highlightAsignacion(opId, idx, false);
+    });
+  }
+
+  function highlightAsignacion(opId, idx, state) {
+    const selector = `.badge-asignacion[data-op="${opId}"][data-asig="${idx}"]`;
+    const badges = tb.querySelectorAll(selector);
+
+    badges.forEach((b) => {
+      if (state) {
+        b.classList.add("is-linked");
+      } else {
+        b.classList.remove("is-linked");
+      }
+    });
+  }
+  /**
+   * Construye stacks paralelos para FO.
+   * Usa como "base" la cantidad de ferros/cajas para que todo quede alineado por índice.
+   */
+  function buildAsignacionesBadges(r) {
+    const opId = r.id_operacion ?? 0;
+
+    const ferros = splitList(r.ferros_cajas);
+    const destinos = splitList(r.destinos_ferros_cajas);
+    const fechas = splitList(r.fechas_salida_ferros_cajas);
+    const ubicaciones = splitList(r.ubicaciones_ferros_cajas);
+    const trFO = splitList(r.transportistas_ferros_cajas);
+
+    if (ferros.length === 0) {
+      const empty = mkStack([mkBadge("—", opId, 0)]);
+      return {
+        ferros: empty,
+        destinos: empty,
+        fechas: empty,
+        ubicaciones: mkStack([mkBadge("Sin ubicación", opId, 0)]),
+        transportistas: empty,
+      };
+    }
+
+    return {
+      ferros: mkStack(ferros.map((v, i) => mkBadge(v || "—", opId, i))),
+      destinos: mkStack(
+        ferros.map((_, i) => mkBadge(destinos[i] || "—", opId, i)),
+      ),
+      fechas: mkStack(ferros.map((_, i) => mkBadge(fechas[i] || "—", opId, i))),
+      ubicaciones: mkStack(
+        ferros.map((_, i) =>
+          mkBadge(ubicaciones[i] || "Sin ubicación", opId, i),
+        ),
+      ),
+      transportistas: mkStack(
+        ferros.map((_, i) => mkBadge(trFO[i] || "—", opId, i)),
+      ),
+    };
+  }
+
   // ===== Render tabla =====
   function renderTable(rows) {
     if (!tb) return;
 
     if (!rows || rows.length === 0) {
       tb.innerHTML = `
-        <tr>
-          <td colspan="7" class="text-center py-4 pn-muted">
-            No hay operaciones para mostrar con los filtros actuales.
-          </td>
-        </tr>
-      `;
+      <tr>
+        <td colspan="18" class="text-center py-4 pn-muted">
+          No hay operaciones para mostrar con los filtros actuales.
+        </td>
+      </tr>
+    `;
       return;
     }
 
     let html = "";
+
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
 
       const opId = r.id_operacion ?? 0;
       const opNum = r.numero_operacion ?? "";
       const bl = r.numero_bl ?? "";
-      const conts = r.contenedores ?? ""; // viene del GROUP_CONCAT
+      const conts = r.contenedores ?? "";
       const etd = fmtDate(r.etd);
       const eta = fmtDate(r.eta);
 
+      const estatusHtml = badgeEstatus(r);
+
+      const peso = r.peso_total ?? "";
+      const medida = r.medida ?? "";
+      const mercancia = r.mercancia ?? "";
+      const transportista = r.transportista ?? "";
+      const brokers = r.brokers ?? "";
+      const cita = r.cita_puerto ?? "";
+
+      // ✅ stacks de FO como en tu screenshot
+      const asig = buildAsignacionesBadges(r);
+
       html += `
-        <tr>
-          <td class="fw-semibold">${esc(opNum)}</td>
-          <td>${esc(conts || "—")}</td>
-          <td>${esc(bl || "—")}</td>
-          <td>${esc(etd || "—")}</td>
-          <td>${esc(eta || "—")}</td>
-          <td >${badgeEstatus(r)}</td>
-          <td class="text-end">
-            <div class="btn-group btn-group-sm" role="group">
-                
-                <button class="btn btn-outline-dark"
-                        type="button"
-                        data-action="detalle-mar"
-                        data-id="${esc(opId)}">
-                <i data-feather="eye" class="me-1"></i> Ver
-                </button>
+      <tr>
+        <td class="fw-semibold">${esc(opNum)}</td>
+        <td>${esc(conts || "—")}</td>
+        <td>${esc(bl || "—")}</td>
+        <td>${esc(etd || "—")}</td>
+        <td>${esc(eta || "—")}</td>
+        <td>${estatusHtml}</td>
+        <td>${esc(peso || "—")}</td>
+        <td>${esc(medida || "—")}</td>
+        <td>${esc(mercancia || "—")}</td>
+        <td>${esc(transportista || "—")}</td>
+        <td>${esc(brokers || "—")}</td>
+        <td>${esc(cita || "—")}</td>
 
-                <button class="btn btn-outline-primary"
-                        type="button"
-                        data-action="docs"
-                        data-id="${esc(opId)}"
-                        data-num="${esc(opNum)}">
-                <i data-feather="file-text" class="me-1"></i> Docs
-                </button>
-            </div>
-            </td>
+        <td>${asig.ferros}</td>
+        <td>${asig.destinos}</td>
+        <td>${asig.fechas}</td>
+        <td>${asig.ubicaciones}</td>
+        <td>${asig.transportistas}</td>
 
-        </tr>
-      `;
+        <td class="text-end">
+          <div class="btn-group btn-group-sm" role="group">
+            <button class="btn btn-outline-dark"
+                    type="button"
+                    data-action="detalle-mar"
+                    data-id="${esc(opId)}">
+              <i data-feather="eye" class="me-1"></i> Ver
+            </button>
+
+            <button class="btn btn-outline-primary"
+                    type="button"
+                    data-action="docs"
+                    data-id="${esc(opId)}"
+                    data-num="${esc(opNum)}">
+              <i data-feather="file-text" class="me-1"></i> Docs
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
     }
 
     tb.innerHTML = html;
-
-    // Reemplaza íconos después de pintar
     if (window.feather) window.feather.replace();
+    initAsignacionHover();
   }
 
   // ===== Paginación =====

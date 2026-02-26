@@ -91,7 +91,7 @@
 
                  <div class="row g-3 col-md-8">
                      <!-- Docs pendientes -->
-                     <div class="col-md-4">
+                     <div class="col-md-6">
                          <div
                              class="bg-warning text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="file-text" class="mb-1"></i>
@@ -101,7 +101,7 @@
                      </div>
 
                      <!-- Costos -->
-                     <div class="col-md-4">
+                     <div class="col-md-6">
                          <div
                              class="bg-danger text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="dollar-sign" class="mb-1"></i>
@@ -113,7 +113,7 @@
 
 
                      <!-- Eventos completados -->
-                     <div class="col-md-4">
+                     <div class="col-md-1 d-none">
                          <div
                              class="bg-info text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="check-circle" class="mb-1"></i>
@@ -129,7 +129,7 @@
              <!-- Avance + Costos -->
              <div class="row mt-4 g-3">
                  <!-- Avance -->
-                 <div class="col-md-6">
+                 <div class="col-md-1 d-none">
                      <div class="col-md-12">
                          <h6 class="fw-bold mb-2"><i data-feather="clock" class="me-1"></i> Línea de tiempo</h6>
                          <canvas id="timelineChart" class="w-100 h-100"></canvas>
@@ -138,7 +138,7 @@
                  </div>
 
                  <!-- Costos -->
-                 <div class="col-md-6">
+                 <div class="col-md-12">
                      <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
                      <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
                          <div class="d-flex flex-wrap align-items-end mb-2">
@@ -174,7 +174,7 @@
              <div class="row mt-4 g-3">
                  <!-- Checklist de Documentos -->
                  <!-- ===== Documentos faltantes por contenedor ===== -->
-                 <div class="col-md-6">
+                 <div class="col-md-12">
                      <div class="card h-100">
                          <div class="card-header d-flex justify-content-between align-items-center">
                              <div>
@@ -208,7 +208,7 @@
                  <input type="hidden" id="dfContenedorTipo" value=""> <!-- 'F' o 'M' -->
 
                  <!-- Trazabilidad (tabla) -->
-                 <div class="col-md-6">
+                 <div class="col-md-6 d-none">
                      <div class="border rounded p-3">
                          <h6 class="mb-2"><i data-feather="clock" class="me-1"></i> Trazabilidad</h6>
                          <div class="table-responsive">

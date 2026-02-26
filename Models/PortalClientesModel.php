@@ -52,26 +52,22 @@ class PortalClientesModel extends Query
         $clienteId = (int)($filtros['cliente_id'] ?? 0);
         if ($clienteId <= 0) return ['rows' => [], 'total' => 0];
 
-        $search    = trim((string)($filtros['search'] ?? ''));
-        $tipoClave = trim((string)($filtros['tipo'] ?? ''));       // "MAR" | "LBMF" | ""
-        $estatus   = (int)($filtros['estatus'] ?? 0);              // 0 = todos
-        $etaIni    = trim((string)($filtros['eta_ini'] ?? ''));    // YYYY-MM-DD
-        $etaFin    = trim((string)($filtros['eta_fin'] ?? ''));    // YYYY-MM-DD
+        $search  = trim((string)($filtros['search'] ?? ''));
+        $estatus = (int)($filtros['estatus'] ?? 0);           // 0 = todos
+        $etaIni  = trim((string)($filtros['eta_ini'] ?? '')); // YYYY-MM-DD
+        $etaFin  = trim((string)($filtros['eta_fin'] ?? '')); // YYYY-MM-DD
 
         $page     = max(1, (int)($filtros['page'] ?? 1));
         $pageSize = (int)($filtros['page_size'] ?? 15);
-        if (!in_array($pageSize, [15, 30, 50], true)) $pageSize = 15;
+        if (!in_array($pageSize, [15, 30, 50, 100, 200, 1000, 10000000], true)) $pageSize = 15;
 
         $offset = ($page - 1) * $pageSize;
 
-        $where  = " WHERE o.cliente_id = ? ";
+        // =========================
+        // WHERE base (portal clientes, 1 sola tabla, operación maestra MF)
+        // =========================
+        $where  = " WHERE o.cliente_id = ? AND st.tipo_operacion_id IN (11) ";
         $params = [$clienteId];
-
-        // Tipo
-        if ($tipoClave !== '') {
-            $where .= " AND st.clave = ? ";
-            $params[] = $tipoClave;
-        }
 
         // Estatus
         if ($estatus > 0) {
@@ -89,75 +85,194 @@ class PortalClientesModel extends Query
             $params[] = $etaFin;
         }
 
-        // Search
+        // Search (operación, BL, contenedor)
         if ($search !== '') {
             $where .= " AND (
-            o.numero_operacion LIKE ?
-            OR o.numero_bl LIKE ?
-            OR cm.numero_contenedor LIKE ?
-        ) ";
-            $q = '%' . $search . '%';
-            $params[] = $q;
-            $params[] = $q;
-            $params[] = $q;
+                    LOWER(o.numero_operacion) LIKE ?
+                    OR LOWER(o.numero_bl)     LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM contenedores_maritimos_operacion cmoS
+                        INNER JOIN contenedores_maritimos cmS
+                            ON cmS.id_contenedor_maritimo = cmoS.contenedor_maritimo_id
+                        WHERE cmoS.operacion_id = o.id_operacion
+                        AND LOWER(cmS.numero_contenedor) LIKE ?
+                    )
+                ) ";
+            $q = '%' . mb_strtolower($search, 'UTF-8') . '%';
+            array_push($params, $q, $q, $q);
         }
 
-        // Total
+        // =========================
+        // TOTAL (sin fan-out)
+        // =========================
         $sqlTotal = "
-        SELECT COUNT(DISTINCT o.id_operacion) AS total
-        FROM operaciones o
-        LEFT JOIN subtipos_operacion st
-               ON st.id_subtipo = o.subtipo_operacion_id
-        LEFT JOIN estatus e
-               ON e.id_estatus = o.estatus_id
-        LEFT JOIN contenedores_maritimos_operacion cmo
-               ON cmo.operacion_id = o.id_operacion
-        LEFT JOIN contenedores_maritimos cm
-               ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        $where
-    ";
-
+                SELECT COUNT(DISTINCT o.id_operacion) AS total
+                FROM operaciones o
+                LEFT JOIN subtipos_operacion st
+                    ON st.id_subtipo = o.subtipo_operacion_id
+                $where
+            ";
         $rowTotal = $this->select($sqlTotal, $params);
         $total = $rowTotal ? (int)$rowTotal['total'] : 0;
 
-        // Rows (✅ agregado docs_cont_id/docs_cont_tipo)
+        // =========================
+        // DATA (1 fila por operación)
+        // =========================
         $sql = "
-        SELECT
-            o.id_operacion,
-            o.numero_operacion,
-            o.numero_bl,
-            o.etd,
-            o.eta,
-            o.estatus_id,
-            e.nombre AS estatus,
-            st.clave  AS tipo_clave,
-            st.nombre AS tipo_nombre,
+                SELECT
+                    o.id_operacion,
+                    o.numero_operacion,
+                    o.numero_bl,
+                    o.etd,
+                    o.eta,
+                    o.descripcion_mercancia AS mercancia,
+                    o.cita_puerto,
+                    o.peso_total,
 
-            /* ✅ Contenedor 'default' para abrir modal docs (MAR/LBMF) */
-            MIN(cmo.id) AS docs_cont_id,
-            'M' AS docs_cont_tipo,
+                    e.nombre AS estatus,
+                    tr.nombre AS transportista,
 
-            GROUP_CONCAT(
-                DISTINCT cm.numero_contenedor
-                ORDER BY cm.numero_contenedor SEPARATOR ', '
-            ) AS contenedores
-        FROM operaciones o
-        LEFT JOIN subtipos_operacion st
-            ON st.id_subtipo = o.subtipo_operacion_id
-        LEFT JOIN estatus e
-            ON e.id_estatus = o.estatus_id
-        LEFT JOIN contenedores_maritimos_operacion cmo
-            ON cmo.operacion_id = o.id_operacion
-        LEFT JOIN contenedores_maritimos cm
-            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        $where
-        GROUP BY o.id_operacion
-        ORDER BY o.id_operacion DESC
-        LIMIT $pageSize OFFSET $offset
-    ";
+                    /* ===== agregados contenedores ===== */
+                    cont.contenedores,
+                    cont.tipo_contenedor AS medida,
+
+                    /* (opcional) para abrir modal docs con contenedor default */
+                    cont.docs_cont_id,
+                    'M' AS docs_cont_tipo,
+
+                    /* ===== brokers ===== */
+                    bro.brokers,
+
+                    /* ===== FO/ferros/cajas vinculados ===== */
+                    asig.ferros_cajas,
+                    asig.destinos_ferros_cajas,
+                    asig.fechas_salida_ferros_cajas,
+                    asig.ubicaciones_ferros_cajas,
+                    asig.transportistas_ferros_cajas,
+
+                    /* opcional: string “bonito” listo para UI */
+                    asig.detalle_ferros_cajas
+
+                FROM operaciones o
+                LEFT JOIN subtipos_operacion st
+                    ON st.id_subtipo = o.subtipo_operacion_id
+                LEFT JOIN estatus e
+                    ON e.id_estatus = o.estatus_id
+                LEFT JOIN transportistas tr
+                    ON tr.id_transportista = o.transportista_id
+
+                /* ===== contenedores (1 fila por operación) ===== */
+                LEFT JOIN (
+                    SELECT
+                        cmo.operacion_id,
+                        MIN(cmo.id) AS docs_cont_id,
+                        GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                            ORDER BY cm.numero_contenedor SEPARATOR ', '
+                        ) AS contenedores,
+                        MAX(cm.tipo) AS tipo_contenedor
+                    FROM contenedores_maritimos_operacion cmo
+                    INNER JOIN contenedores_maritimos cm
+                        ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+                    GROUP BY cmo.operacion_id
+                ) cont ON cont.operacion_id = o.id_operacion
+
+                /* ===== brokers (1 fila por operación) ===== */
+                LEFT JOIN (
+                    SELECT
+                        ob.operacion_id,
+                        GROUP_CONCAT(DISTINCT b.nombre
+                            ORDER BY b.nombre SEPARATOR ', '
+                        ) AS brokers
+                    FROM operacion_brokers ob
+                    INNER JOIN brokers b
+                        ON b.id_broker = ob.broker_id
+                    GROUP BY ob.operacion_id
+                ) bro ON bro.operacion_id = o.id_operacion
+
+                /* ===== TODAS las asignaciones ferro/caja (1 fila por operación) ===== */
+                LEFT JOIN (
+                    SELECT
+                        cmo2.operacion_id,
+
+                        GROUP_CONCAT(cf.numero_ferro
+                            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                            SEPARATOR ', '
+                        ) AS ferros_cajas,
+
+                        GROUP_CONCAT(COALESCE(ci.nombre_ciudad,'')
+                            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                            SEPARATOR ', '
+                        ) AS destinos_ferros_cajas,
+
+                        GROUP_CONCAT(DATE_FORMAT(ofe.fecha,'%Y-%m-%d')
+                            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                            SEPARATOR ', '
+                        ) AS fechas_salida_ferros_cajas,
+
+                        GROUP_CONCAT(COALESCE(tfu.ubicacion_actual,'')
+                            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                            SEPARATOR ', '
+                        ) AS ubicaciones_ferros_cajas,
+
+                        GROUP_CONCAT(COALESCE(trf.nombre,'')
+                            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                            SEPARATOR ', '
+                        ) AS transportistas_ferros_cajas,
+
+                        GROUP_CONCAT(
+                            CONCAT(
+                                cf.numero_ferro,
+                                ' → ',
+                                COALESCE(ci.nombre_ciudad,'—'),
+                                ' | Salida: ', COALESCE(DATE_FORMAT(ofe.fecha,'%Y-%m-%d'),'—'),
+                                ' | Transportista: ', COALESCE(trf.nombre,'—'),
+                                ' | Ubicación: ', COALESCE(tfu.ubicacion_actual,'—')
+                            )
+                            ORDER BY ofe.fecha DESC, cmf2.fecha_asignacion DESC, cmf2.id DESC
+                            SEPARATOR ' || '
+                        ) AS detalle_ferros_cajas
+
+                    FROM contenedor_maritimo_ferro cmf2
+                    INNER JOIN contenedores_maritimos_operacion cmo2
+                        ON cmo2.id = cmf2.cont_maritimo_operacion_id
+                    INNER JOIN operaciones_ferroviarias ofe
+                        ON ofe.id_operacion_ferro = cmf2.operacion_ferro_id
+                    INNER JOIN contenedores_fisicos cf
+                        ON cf.id_fisico = ofe.contenedor_fisico_id
+                    LEFT JOIN ciudades ci
+                        ON ci.id_ciudad = ofe.destino_id
+
+                    LEFT JOIN transportistas trf
+                        ON trf.id_transportista = ofe.transportista_id
+
+                    /* última ubicación por FO */
+                    LEFT JOIN (
+                        SELECT
+                            tf.operacion_ferro_id,
+                            SUBSTRING_INDEX(
+                                GROUP_CONCAT(ci2.nombre_ciudad
+                                    ORDER BY tf.fecha_evento DESC, tf.created_at DESC, tf.id_traza DESC
+                                    SEPARATOR '||'
+                                ),
+                                '||', 1
+                            ) AS ubicacion_actual
+                        FROM trazabilidad_ferro tf
+                        INNER JOIN ciudades ci2 ON ci2.id_ciudad = tf.ubicacion_id
+                        WHERE tf.operacion_ferro_id IS NOT NULL
+                        GROUP BY tf.operacion_ferro_id
+                    ) tfu ON tfu.operacion_ferro_id = ofe.id_operacion_ferro
+
+                    WHERE cmf2.estatus = 1
+                    GROUP BY cmo2.operacion_id
+                ) asig ON asig.operacion_id = o.id_operacion
+
+                $where
+                ORDER BY o.id_operacion DESC
+                LIMIT $pageSize OFFSET $offset
+            ";
 
         $rows = $this->selectAll($sql, $params) ?: [];
-
         return ['rows' => $rows, 'total' => $total];
     }
 
