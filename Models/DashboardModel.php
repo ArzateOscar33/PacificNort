@@ -11,7 +11,7 @@ class DashboardModel extends Query
     {
         $sql = "SELECT COUNT(*) AS n
                 FROM operaciones
-                WHERE estatus_id IN (1,5,9)"; // Pendiente, En Revisión, Abierta
+                WHERE estatus_id IN (9)"; // EN AGUA
         $row = $this->select($sql);
         return $row ? (int)$row['n'] : 0;
     }
@@ -177,8 +177,14 @@ WHERE o.estatus_id IN (1,5,9);
   ";
 
         return $this->selectAll($sql, [
-            $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses,
-            $monedaDestino, $tcUsdMxn, $tcUsdMxn, $meses
+            $monedaDestino,
+            $tcUsdMxn,
+            $tcUsdMxn,
+            $meses,
+            $monedaDestino,
+            $tcUsdMxn,
+            $tcUsdMxn,
+            $meses
         ]);
     }
 
@@ -270,27 +276,27 @@ WHERE o.estatus_id IN (1,5,9);
     }
 
 
-        /**
+    /**
      * Obtiene los IDs de estatus por nombre (comparación case-insensitive).
-     * Ej: ["BODEGA TJ","BODEGA SD"]
+     * Ej: ["BODEGA MX","BODEGA USA"]
      */
-public function getEstatusIdsByNombre(array $nombres): array
-{
-    $nombres = array_values(array_filter(array_map('trim', $nombres)));
-    if (empty($nombres)) return [];
+    public function getEstatusIdsByNombre(array $nombres): array
+    {
+        $nombres = array_values(array_filter(array_map('trim', $nombres)));
+        if (empty($nombres)) return [];
 
-    $placeholders = implode(',', array_fill(0, count($nombres), '?'));
+        $placeholders = implode(',', array_fill(0, count($nombres), '?'));
 
-    $sql = "SELECT id_estatus
+        $sql = "SELECT id_estatus
             FROM estatus
             WHERE UPPER(TRIM(nombre)) IN ($placeholders)";
 
-    $params = array_map(fn($x) => mb_strtoupper(trim($x), 'UTF-8'), $nombres);
-    $rows = $this->selectAll($sql, $params);
+        $params = array_map(fn($x) => mb_strtoupper(trim($x), 'UTF-8'), $nombres);
+        $rows = $this->selectAll($sql, $params);
 
-    if (!is_array($rows)) return [];
-    return array_map('intval', array_column($rows, 'id_estatus'));
-}
+        if (!is_array($rows)) return [];
+        return array_map('intval', array_column($rows, 'id_estatus'));
+    }
 
 
     /**
@@ -315,7 +321,7 @@ public function getEstatusIdsByNombre(array $nombres): array
      */
     private function buildIn(array $values): array
     {
-        $values = array_values(array_filter($values, fn($v)=>$v!==null && $v!==''));
+        $values = array_values(array_filter($values, fn($v) => $v !== null && $v !== ''));
         if (empty($values)) return ['(NULL)', []];
         $ph = '(' . implode(',', array_fill(0, count($values), '?')) . ')';
         return [$ph, $values];
@@ -343,18 +349,18 @@ public function getEstatusIdsByNombre(array $nombres): array
         return $row ? (int)$row['n'] : 0;
     }
 
-        /**
+    /**
      * KPI: Operaciones activas SIN cita en puerto (cita_puerto NULL),
      * excluyendo subtipo Lázaro.
      */
-public function kpiOperacionesSinCitaPuerto(): int
-{
-    $lazaroIds = $this->getSubtipoLazaroIds();
-    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+    public function kpiOperacionesSinCitaPuerto(): int
+    {
+        $lazaroIds = $this->getSubtipoLazaroIds();
+        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
 
-    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
+        $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
 
-    $sql = "
+        $sql = "
         SELECT COUNT(*) AS n
         FROM operaciones o
         WHERE o.estatus_id = 11
@@ -362,17 +368,17 @@ public function kpiOperacionesSinCitaPuerto(): int
           AND $whereNoLazaro
     ";
 
-    $row = $this->select($sql, $paramsL);
-    return $row ? (int)$row['n'] : 0;
-}
+        $row = $this->select($sql, $paramsL);
+        return $row ? (int)$row['n'] : 0;
+    }
 
 
 
-public function kpiCitaPuertoProxima(int $dias = 5): int
-{
-    $dias = max(0, (int)$dias);
+    public function kpiCitaPuertoProxima(int $dias = 5): int
+    {
+        $dias = max(0, (int)$dias);
 
-    $sql = "
+        $sql = "
         SELECT COUNT(*) AS n
         FROM operaciones o
         WHERE o.estatus_id IN (1,5,9)
@@ -380,12 +386,12 @@ public function kpiCitaPuertoProxima(int $dias = 5): int
           AND DATE(o.cita_puerto) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
     ";
 
-    $row = $this->select($sql, [$dias]);
-    return $row ? (int)$row['n'] : 0;
-}
+        $row = $this->select($sql, [$dias]);
+        return $row ? (int)$row['n'] : 0;
+    }
 
 
-        /**
+    /**
      * Alertas: ETA próximas a vencer (0..window días).
      */
     public function alertasEtaProximas(int $window = 7, int $limit = 15): array
@@ -440,52 +446,52 @@ public function kpiCitaPuertoProxima(int $dias = 5): int
         $rows = $this->selectAll($sql, [$past]);
         return is_array($rows) ? $rows : [];
     }
-// ✅ NUEVO: KPI FO en tránsito (estatus = EN CAMINO)
-// Cuenta operaciones_ferroviarias cuyo estatus sea "EN CAMINO"
-public function kpiOperacionesFOEnCamino(): int
-{
-    // 1) Intento exacto (tolerante a TRIM por el cambio de arriba)
-    $ids = $this->getEstatusIdsByNombre([
-        'CAMINO A DESTINO',
-        'EN CAMINO',
-        'EN TRANSITO',
-        'EN TRÁNSITO'
-    ]);
+    // ✅ NUEVO: KPI FO en tránsito (estatus = EN CAMINO)
+    // Cuenta operaciones_ferroviarias cuyo estatus sea "EN CAMINO"
+    public function kpiOperacionesFOEnCamino(): int
+    {
+        // 1) Intento exacto (tolerante a TRIM por el cambio de arriba)
+        $ids = $this->getEstatusIdsByNombre([
+            'CAMINO A DESTINO',
+            'EN CAMINO',
+            'EN TRANSITO',
+            'EN TRÁNSITO'
+        ]);
 
-    // 2) Fallback por LIKE si no encontró nada (por variantes raras)
-    if (empty($ids)) {
-        $sqlIds = "
+        // 2) Fallback por LIKE si no encontró nada (por variantes raras)
+        if (empty($ids)) {
+            $sqlIds = "
             SELECT id_estatus
             FROM estatus
             WHERE UPPER(TRIM(nombre)) LIKE '%CAMINO%'
                OR UPPER(TRIM(nombre)) LIKE '%TRANSIT%'
                OR UPPER(TRIM(nombre)) LIKE '%TRÁNSIT%'
         ";
-        $rows = $this->selectAll($sqlIds);
-        $ids = is_array($rows) ? array_map('intval', array_column($rows, 'id_estatus')) : [];
-    }
+            $rows = $this->selectAll($sqlIds);
+            $ids = is_array($rows) ? array_map('intval', array_column($rows, 'id_estatus')) : [];
+        }
 
-    if (empty($ids)) return 0;
+        if (empty($ids)) return 0;
 
-    [$in, $params] = $this->buildIn($ids);
+        [$in, $params] = $this->buildIn($ids);
 
-    $sql = "
+        $sql = "
         SELECT COUNT(*) AS n
-        FROM operaciones_ferroviarias
+        FROM operaciones
         WHERE estatus_id IN $in
     ";
 
-    $row = $this->select($sql, $params);
-    return $row ? (int)$row['n'] : 0;
-}
+        $row = $this->select($sql, $params);
+        return $row ? (int)$row['n'] : 0;
+    }
 
 
 
- 
-public function kpiContenedoresBodegaPendientes(): array
-{
-    // Subquery idéntica a PisoModel, pero solo columnas necesarias para badges
-    $sub = "
+
+    public function kpiContenedoresBodegaPendientes(): array
+    {
+        // Subquery idéntica a PisoModel, pero solo columnas necesarias para badges
+        $sub = "
         SELECT
             COALESCE(es.nombre,'') AS bodega,
             GREATEST(
@@ -499,7 +505,7 @@ public function kpiContenedoresBodegaPendientes(): array
             ON es.id_estatus = o.estatus_id
         LEFT JOIN contenedor_maritimo_ferro cmf
             ON cmf.cont_maritimo_operacion_id = cmo.id
-        WHERE es.nombre IN ('BODEGA TJ','BODEGA SD')
+        WHERE es.nombre IN ('BODEGA MX','BODEGA USA')
         GROUP BY
             cmo.id, es.nombre, cmo.bultos
         HAVING GREATEST(
@@ -508,42 +514,42 @@ public function kpiContenedoresBodegaPendientes(): array
         ) > 0
     ";
 
-    $row = $this->select("
+        $row = $this->select("
         SELECT
             COUNT(*) AS total,
-            SUM(CASE WHEN bodega = 'BODEGA TJ' THEN 1 ELSE 0 END) AS tj,
-            SUM(CASE WHEN bodega = 'BODEGA SD' THEN 1 ELSE 0 END) AS sd
+            SUM(CASE WHEN bodega = 'BODEGA MX' THEN 1 ELSE 0 END) AS mx,
+            SUM(CASE WHEN bodega = 'BODEGA USA' THEN 1 ELSE 0 END) AS usa
         FROM ({$sub}) x
     ");
 
-    return [
-        'tj'    => (int)($row['tj'] ?? 0),
-        'sd'    => (int)($row['sd'] ?? 0),
-        'total' => (int)($row['total'] ?? 0),
-    ];
-}
+        return [
+            'tj'    => (int)($row['tj'] ?? 0),
+            'sd'    => (int)($row['sd'] ?? 0),
+            'total' => (int)($row['total'] ?? 0),
+        ];
+    }
 
-/**
- * Alertas Alta Prioridad (reglas nuevas):
- * - Sin ISF (isf NULL o 0) excluyendo Lázaro => ALTA
- * - Sin Cita en Puerto (cita_puerto NULL) SOLO si estatus_id = 11 (PUERTO), excluyendo Lázaro => ALTA
- *
- * Devuelve filas consolidadas:
- *   NT-01 Sin ISF y Sin Cita en puerto (solo si está en puerto)
- *   NT-02 Sin ISF
- *   NT-03 Sin Cita en puerto (solo si está en puerto)
- */
-public function alertasAltaPrioridadISFyCita(int $limit = 15): array
-{
-    $limit = max(1, (int)$limit);
+    /**
+     * Alertas Alta Prioridad (reglas nuevas):
+     * - Sin ISF (isf NULL o 0) excluyendo Lázaro => ALTA
+     * - Sin Cita en Puerto (cita_puerto NULL) SOLO si estatus_id = 11 (PUERTO), excluyendo Lázaro => ALTA
+     *
+     * Devuelve filas consolidadas:
+     *   NT-01 Sin ISF y Sin Cita en puerto (solo si está en puerto)
+     *   NT-02 Sin ISF
+     *   NT-03 Sin Cita en puerto (solo si está en puerto)
+     */
+    public function alertasAltaPrioridadISFyCita(int $limit = 15): array
+    {
+        $limit = max(1, (int)$limit);
 
-    $lazaroIds = $this->getSubtipoLazaroIds();
-    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+        $lazaroIds = $this->getSubtipoLazaroIds();
+        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
 
-    // Condición para excluir Lázaro (si no encuentra IDs, no excluye nada)
-    $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
+        // Condición para excluir Lázaro (si no encuentra IDs, no excluye nada)
+        $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
 
-    $sql = "
+        $sql = "
         SELECT
             o.id_operacion,
             o.numero_operacion,
@@ -589,23 +595,23 @@ public function alertasAltaPrioridadISFyCita(int $limit = 15): array
         LIMIT {$limit}
     ";
 
-    $rows = $this->selectAll($sql, $paramsL);
-    return is_array($rows) ? $rows : [];
-}
+        $rows = $this->selectAll($sql, $paramsL);
+        return is_array($rows) ? $rows : [];
+    }
 
  
 // DashboardModel.php
 
-/**
- * Alertas: Operaciones próximas a ARRIBAR (ETA dentro de N días)
- * Devuelve: id_operacion, numero_operacion, cliente, eta_fecha, dias_restantes, mensaje, prioridad
- */
-public function alertasArriboProximoETA(int $window = 7, int $limit = 15): array
-{
-    $window = max(0, (int)$window);
-    $limit  = max(1, (int)$limit);
+    /**
+     * Alertas: Operaciones próximas a ARRIBAR (ETA dentro de N días)
+     * Devuelve: id_operacion, numero_operacion, cliente, eta_fecha, dias_restantes, mensaje, prioridad
+     */
+    public function alertasArriboProximoETA(int $window = 7, int $limit = 15): array
+    {
+        $window = max(0, (int)$window);
+        $limit  = max(1, (int)$limit);
 
-    $sql = "
+        $sql = "
         SELECT
           o.id_operacion,
           o.numero_operacion,
@@ -632,26 +638,26 @@ public function alertasArriboProximoETA(int $window = 7, int $limit = 15): array
         LIMIT {$limit}
     ";
 
-    $rows = $this->selectAll($sql, [$window]);
-    return is_array($rows) ? $rows : [];
-}
+        $rows = $this->selectAll($sql, [$window]);
+        return is_array($rows) ? $rows : [];
+    }
 
  // DashboardModel.php
 
-/**
- * Alertas: Lázaro Cárdenas SIN cita en puerto y estatus = PUERTO (11)
- * NOTA: LC no usa ISF, así que NO se evalúa isf aquí.
- */
-public function alertasLazaroSinCitaPuerto(int $limit = 15): array
-{
-    $limit = max(1, (int)$limit);
+    /**
+     * Alertas: Lázaro Cárdenas SIN cita en puerto y estatus = PUERTO (11)
+     * NOTA: LC no usa ISF, así que NO se evalúa isf aquí.
+     */
+    public function alertasLazaroSinCitaPuerto(int $limit = 15): array
+    {
+        $limit = max(1, (int)$limit);
 
-    $lazaroIds = $this->getSubtipoLazaroIds(); // :contentReference[oaicite:5]{index=5}
-    if (empty($lazaroIds)) return [];
+        $lazaroIds = $this->getSubtipoLazaroIds(); // :contentReference[oaicite:5]{index=5}
+        if (empty($lazaroIds)) return [];
 
-    [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
 
-    $sql = "
+        $sql = "
         SELECT
             o.id_operacion,
             o.numero_operacion,
@@ -668,11 +674,7 @@ public function alertasLazaroSinCitaPuerto(int $limit = 15): array
         LIMIT {$limit}
     ";
 
-    $rows = $this->selectAll($sql, $paramsL);
-    return is_array($rows) ? $rows : [];
-}
-
-
- 
-
+        $rows = $this->selectAll($sql, $paramsL);
+        return is_array($rows) ? $rows : [];
+    }
 }

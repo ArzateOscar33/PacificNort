@@ -5,11 +5,11 @@
 
     <ul class="nav nav-tabs" id="operacionTabs" role="tablist">
         <li class="nav-item">
-            <a class="nav-link active" id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true"><i data-feather="zap"></i>Resumen</a>
+            <a class="nav-link " id="resumen-tab" data-bs-toggle="tab" href="#resumen" role="tab" aria-controls="resumen" aria-selected="true"><i data-feather="zap"></i>Resumen</a>
         </li>
         <!--  MARITIMA -->
         <li class="nav-item">
-            <a class="nav-link" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operaciones</a>
+            <a class="nav-link active" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operaciones</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos Maritimos</a>
@@ -57,10 +57,10 @@
     </ul>
 
     <div class="tab-content mt-3">
-        <div class="tab-pane fade show active" id="resumen" role="tabpanel" aria-labelledby="resumen-tab">
+        <div class="tab-pane fade " id="resumen" role="tabpanel" aria-labelledby="resumen-tab">
             <?php include 'tabs/resumen.php'; ?>
         </div>
-        <div class="tab-pane fade" id="crear_operacions" role="tabpanel" aria-labelledby="crear_operacions-tab">
+        <div class="tab-pane fade show active" id="crear_operacions" role="tabpanel" aria-labelledby="crear_operacions-tab">
             <?php include 'tabs/operaciones_mar.php'; ?>
         </div>
         <div class="tab-pane fade" id="crear_operaciones_ferro" role="tabpanel" aria-labelledby="crear_operaciones_ferro-tab">

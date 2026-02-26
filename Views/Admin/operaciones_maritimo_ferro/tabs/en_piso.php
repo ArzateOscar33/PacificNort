@@ -7,20 +7,20 @@
          </h4>
 
          <!-- Solo informativo: sin botón de alta -->
-         
-  <div class="d-flex gap-2 align-items-center">
- 
 
-    <span class="badge bg-light text-dark border" id="mercanciaPisoBadgeTotal">
-      Total: <span class="fw-semibold" id="mercanciaPisoTotal">0</span>
-    </span>
-    <span class="badge bg-info text-white" id="mercanciaPisoBadgeTJ">
-      BODEGA TJ: <span class="fw-semibold" id="mercanciaPisoTotalTJ">0</span>
-    </span>
-    <span class="badge bg-primary text-white" id="mercanciaPisoBadgeSD">
-      BODEGA SD: <span class="fw-semibold" id="mercanciaPisoTotalSD">0</span>
-    </span>
-  </div>
+         <div class="d-flex gap-2 align-items-center">
+
+
+             <span class="badge bg-light text-dark border" id="mercanciaPisoBadgeTotal">
+                 Total: <span class="fw-semibold" id="mercanciaPisoTotal">0</span>
+             </span>
+             <span class="badge bg-info text-white" id="mercanciaPisoBadgeTJ">
+                 BODEGA MX: <span class="fw-semibold" id="mercanciaPisoTotalTJ">0</span>
+             </span>
+             <span class="badge bg-primary text-white" id="mercanciaPisoBadgeSD">
+                 BODEGA USA: <span class="fw-semibold" id="mercanciaPisoTotalSD">0</span>
+             </span>
+         </div>
      </div>
 
      <!-- Filtros -->
@@ -37,10 +37,10 @@
              <label for="mercanciaPisoFiltroBodega" class="form-label">Bodega</label>
              <select id="mercanciaPisoFiltroBodega" class="form-control">
                  <option value="" selected>Todas</option>
-                 <option value="BODEGA TJ">BODEGA TJ</option>
-                 <option value="BODEGA SD">BODEGA SD</option>
+                 <option value="BODEGA MX">BODEGA MX</option>
+                 <option value="BODEGA USA">BODEGA USA</option>
              </select>
-              
+
          </div>
 
          <div class="col-12 col-md-5">
@@ -63,9 +63,9 @@
                      <button class="btn btn-sm btn-outline-warning" id="mercanciaPisoBtnPdf" type="button">
                          <i data-feather="file" class="me-1"></i> PDF
                      </button>
-                       <button class="btn btn-sm btn-outline-primary" id="mercanciaPisoBtnActualizar" type="button">
-                        <i data-feather="refresh-cw" class="me-1"></i> Actualizar
-                    </button>
+                     <button class="btn btn-sm btn-outline-primary" id="mercanciaPisoBtnActualizar" type="button">
+                         <i data-feather="refresh-cw" class="me-1"></i> Actualizar
+                     </button>
                  </div>
 
                  <div class="d-flex align-items-center ms-md-2">
@@ -93,7 +93,7 @@
                      <th>Cliente</th>
                      <th>Contenedor Marítimo</th>
                      <th>Bultos</th>
-                     <th>Restantes</th> 
+                     <th>Restantes</th>
                  </tr>
              </thead>
              <tbody id="mercanciaPisoTbody">
@@ -175,7 +175,7 @@
          </div>
      </div>
 
- 
+
 
  </div>
 
@@ -184,5 +184,3 @@
      const BASE_URL = "<?= BASE_URL ?>";
  </script>
  <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/en_piso.js"></script>
-
- 

@@ -189,7 +189,7 @@
               <td class="text-end">$${monto}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
               <td class="text-center">${moneda}</td>
-              <td class="text-center">${acciones}</td>
+               
             </tr>
           `;
         } else {
@@ -199,7 +199,7 @@
               <td class="text-end">$${monto}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
               <td class="text-center">${moneda}</td>
-              <td class="text-center">${acciones}</td>
+            
             </tr>
           `;
         }

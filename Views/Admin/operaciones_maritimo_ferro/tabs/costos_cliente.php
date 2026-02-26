@@ -159,7 +159,6 @@
                             <th style="min-width:120px;" class="text-end">Monto</th>
                             <th style="min-width:110px;" class="text-center">Pagado</th>
                             <th style="min-width:120px;" class="text-end">Moneda</th>
-                            <th style="min-width:160px;" class="text-center">Acciones</th>
                         </tr>
                     </thead>
 
