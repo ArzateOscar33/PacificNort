@@ -77,6 +77,10 @@ class Operaciones_maritimo_ferro_resumenModel extends Query
               o.eta,
               o.numero_bl,
               o.notas                              AS comentarios_operacion,
+              o.isf,
+              o.cita_puerto,
+              b.nombre                              AS broker,
+              tr.nombre                             AS transportista,
               so.id_subtipo,
               p.nombre                             AS puerto,
               cmo.id                               AS cont_maritimo_operacion_id,
@@ -93,6 +97,10 @@ class Operaciones_maritimo_ferro_resumenModel extends Query
               ON so.id_subtipo = o.subtipo_operacion_id
             LEFT JOIN puertos p
               ON p.id_puerto = so.puerto_arribo_default_id
+            LEFT JOIN brokers b
+              ON b.id_broker = o.broker_id
+            LEFT JOIN transportistas tr
+              ON tr.id_transportista = o.transportista_id
             WHERE cmo.operacion_id = ?
               AND o.tipo_operacion_id = 11
               AND cmo.contenedor_maritimo_id = ?

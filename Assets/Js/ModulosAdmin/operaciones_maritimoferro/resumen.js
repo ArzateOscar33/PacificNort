@@ -728,6 +728,20 @@
     safeSetText(elEtd, data.etd || "—");
     safeSetText(elBl, data.bl || "—");
     safeSetText(elComentarios, data.comentarios || "—");
+    safeSetText(document.getElementById("isf"), data.isf == 1 ? "Sí" : "No");
+    console.log("Detalle contenedor:", data);
+    safeSetText(
+      document.getElementById("brokerContenedor"),
+      data.broker || "Sin Broker Registrado",
+    );
+    safeSetText(
+      document.getElementById("transportistaContenedor"),
+      data.transportista || "Sin Transportista Registrado",
+    );
+    safeSetText(
+      document.getElementById("citaPuertoContenedor"),
+      data.cita_puerto || "Sin Cita",
+    );
   }
 
   function consultarDetallesContenedorResumen() {

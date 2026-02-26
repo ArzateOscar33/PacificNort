@@ -39,12 +39,12 @@
                                  <div id="puertoResumen">—</div>
                              </div>
                              <div class="mb-2">
-                                 <div class="small text-muted">ETA</div>
-                                 <div id="etaContenedor">—</div>
-                             </div>
-                             <div class="mb-2">
                                  <div class="small text-muted">ETD</div>
                                  <div id="etdContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">ETA</div>
+                                 <div id="etaContenedor">—</div>
                              </div>
                              <div class="mb-2">
                                  <div class="small text-muted">No. BL</div>
@@ -54,6 +54,11 @@
                                  <div class="small text-muted">ISF</div>
                                  <div id="isfContenedor"><span id="isf" class="badge bg-success text-white">-</span> </div>
                              </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">Cita Puerto</div>
+                                 <div id="citaPuertoContenedor"> </div>
+                             </div>
+
                              <div class="mb-2">
                                  <div class="small text-muted">Broker</div>
                                  <div id="brokerContenedor">—</div>

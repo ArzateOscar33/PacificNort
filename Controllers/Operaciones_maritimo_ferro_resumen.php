@@ -119,7 +119,7 @@ class Operaciones_maritimo_ferro_resumen extends Controller
         $tipo = mb_strtoupper($tipoRaw, 'UTF-8');
         if ($tipo === 'M' || $tipo === 'MARITIMO' || $tipo === 'MARÍTIMO') $tipo = 'MARITIMO';
 
-        // 🚫 Ya no soportamos FERRO/FISICO/FO
+
         if ($tipo !== 'MARITIMO') {
             echo json_encode([
                 'status'  => 'warning',
@@ -156,6 +156,11 @@ class Operaciones_maritimo_ferro_resumen extends Controller
                 'etd'               => (string)($row['etd'] ?? ''),
                 'bl'                => (string)($row['numero_bl'] ?? ''),
                 'comentarios'       => (string)($row['comentarios_operacion'] ?? ($row['observaciones_contenedor'] ?? '')),
+                'isf'               => isset($row['isf']) ? (int)$row['isf'] : null,
+                'cita_puerto'       => isset($row['cita_puerto']) ? (int)$row['cita_puerto'] : null,
+                'broker'            => (string)($row['broker'] ?? ''),
+                'transportista'     => (string)($row['transportista'] ?? ''),
+                'cita_puerto'       => (string)($row['cita_puerto'] ?? ''),
             ];
 
             echo json_encode([
