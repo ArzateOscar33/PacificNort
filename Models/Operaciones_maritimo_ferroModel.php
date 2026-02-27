@@ -1081,4 +1081,12 @@ class Operaciones_maritimo_ferroModel extends Query
                 ORDER BY nombre_ciudad";
         return $this->selectAll($sql) ?: [];
     }
+    public function listarCategoriasCostos(): array
+    {
+        $sql = "SELECT id_categoria, nombre
+                FROM tipos_movimiento_categorias
+                WHERE estatus = 1
+                ORDER BY nombre";
+        return $this->selectAll($sql) ?: [];
+    }
 }

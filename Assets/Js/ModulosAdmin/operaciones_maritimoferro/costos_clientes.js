@@ -23,6 +23,11 @@
 
   const brokerSel = document.getElementById("brokerId_cc");
   const transportistaSel = document.getElementById("transportistaId_cc");
+
+  // ✅ NUEVO: categoría (si existe en la vista)
+  // Usa el id que pongas en la vista, aquí asumimos "categoriaId_cc"
+  const categoriaSel = document.getElementById("categoriaId_cc");
+
   const estatusPagoSel = document.getElementById("costosCliente_estatusPago");
   const termInput = document.getElementById("costosCliente_term");
   const perPageSel = document.getElementById("costosCliente_perPage");
@@ -47,6 +52,14 @@
   let state = { page: 1, loading: false };
 
   // ---------------- helpers ----------------
+  const esc = (s) =>
+    String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
   const money = (n) => {
     const x = Number(n || 0);
     return x.toLocaleString("es-MX", {
@@ -78,6 +91,10 @@
     if (transportistaSel?.value)
       qs.set("transportistaId_cc", transportistaSel.value);
 
+    // ✅ NUEVO: categoría
+    // Mándalo como categoriaId_cc (tu controlador ya lo soporta)
+    if (categoriaSel?.value) qs.set("categoriaId_cc", categoriaSel.value);
+
     if (estatusPagoSel?.value !== "")
       qs.set("costosCliente_estatusPago", estatusPagoSel.value);
 
@@ -106,7 +123,7 @@
       <tr>
         <td colspan="12" class="text-center text-muted py-5">
           <i data-feather="inbox"></i>
-          <div class="mt-2">${msg || "Sin datos."}</div>
+          <div class="mt-2">${esc(msg || "Sin datos.")}</div>
         </td>
       </tr>`;
     if (window.feather) feather.replace();
@@ -141,7 +158,6 @@
 
   function renderTable(rows) {
     if (!Array.isArray(rows) || rows.length === 0) {
-      // ✅ ya no pedimos “selecciona cliente”
       renderEmpty("Sin resultados con los filtros actuales.");
       return;
     }
@@ -150,8 +166,6 @@
     let html = "";
 
     const isTodos = !clienteSel || clienteSel.value === ""; // "" => Todos
-    // Si estás en Todos, conviene mostrar cliente en la columna de operación (si tu backend ya lo manda).
-    // OJO: esto NO cambia el <thead>; solo lo agrega junto al número para no desalinear tu tabla.
 
     groups.forEach((g) => {
       const items = g.items;
@@ -159,28 +173,29 @@
       const rowspan = items.length;
 
       const estatus = first.estatus
-        ? `<span class="badge bg-primary text-white">${first.estatus}</span>`
+        ? `<span class="badge bg-primary text-white">${esc(first.estatus)}</span>`
         : "—";
 
-      const brokers = first.brokers || "—";
-      const conts = first.contenedores || "—";
-      const trans = first.transportista || "—";
+      const brokers = first.brokers ? esc(first.brokers) : "—";
+      const conts = first.contenedores ? esc(first.contenedores) : "—";
+      const trans = first.transportista ? esc(first.transportista) : "—";
 
       const opLabel = (() => {
-        const op = first.numero_operacion || "—";
+        const op = first.numero_operacion ? esc(first.numero_operacion) : "—";
         const cli = (first.cliente || "").trim();
         if (isTodos && cli) {
           return `<div class="d-flex flex-column">
                     <span class="fw-semibold">${op}</span>
-                    <small class="text-muted">${cli}</small>
+                    <small class="text-muted">${esc(cli)}</small>
                   </div>`;
         }
         return op;
       })();
 
       items.forEach((r, idx) => {
-        const concepto = r.concepto || "—";
-        const moneda = r.moneda || "—";
+        const categoria = (r.categoria || "").trim() ? esc(r.categoria) : "—";
+        const concepto = r.concepto ? esc(r.concepto) : "—";
+        const moneda = r.moneda ? esc(r.moneda) : "—";
         const monto = money(r.monto);
 
         if (idx === 0) {
@@ -194,6 +209,7 @@
               <td rowspan="${rowspan}">${fmtDate(first.cita_puerto)}</td>
               <td rowspan="${rowspan}" class="text-center">${badgeIsf(first.isf)}</td>
 
+              <td>${categoria}</td>
               <td>${concepto}</td>
               <td class="text-end">$${monto}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
@@ -203,6 +219,7 @@
         } else {
           html += `
             <tr>
+              <td>${categoria}</td>
               <td>${concepto}</td>
               <td class="text-end">$${monto}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
@@ -287,7 +304,6 @@
     if (state.loading) return;
     state.loading = true;
 
-    // ✅ YA NO validamos cliente obligatorio
     const url = api + "?" + buildQuery(page);
 
     xhrGet(url, (json) => {
@@ -329,6 +345,7 @@
   hookChange(fechaFin);
   hookChange(brokerSel);
   hookChange(transportistaSel);
+  hookChange(categoriaSel); // ✅ NUEVO
   hookChange(estatusPagoSel);
   hookChange(perPageSel);
 
@@ -342,11 +359,12 @@
 
   if (btnLimpiar) {
     btnLimpiar.addEventListener("click", () => {
-      if (clienteSel) clienteSel.value = ""; // "" => Todos
+      if (clienteSel) clienteSel.value = "";
       if (fechaInicio) fechaInicio.value = "";
       if (fechaFin) fechaFin.value = "";
       if (brokerSel) brokerSel.value = "";
       if (transportistaSel) transportistaSel.value = "";
+      if (categoriaSel) categoriaSel.value = ""; // ✅ NUEVO
       if (estatusPagoSel) estatusPagoSel.value = "";
       if (termInput) termInput.value = "";
       if (perPageSel) perPageSel.value = "25";

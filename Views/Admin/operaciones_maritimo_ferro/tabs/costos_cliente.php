@@ -93,6 +93,22 @@
                         </select>
                     </div>
 
+                    <!-- Transportista -->
+                    <div class="col-12 col-md-2">
+                        <label class="form-label mb-1">Categoria</label>
+                        <select id="categoriaId_cc" name="categoriaId_cc" class="form-control">
+                            <option value="">Seleccione...</option>
+                            <?php if (!empty($data['categoriasCostos'])): ?>
+                                <?php foreach ($data['categoriasCostos'] as $c): ?>
+                                    <option value="<?= (int)$c['id_categoria']; ?>">
+                                        <?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+
+
                     <!-- Estatus pago -->
                     <div class="col-12 col-md-2">
                         <label class="form-label mb-1">Estatus</label>
@@ -104,7 +120,7 @@
                     </div>
 
                     <!-- Buscar texto (op / contenedor / concepto) -->
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-2">
                         <label class="form-label mb-1">Buscar</label>
                         <div class="input-group">
                             <span class="input-group-text"><i data-feather="filter"></i></span>
@@ -154,6 +170,7 @@
                             <th style="min-width:140px;">Cita Puerto</th>
                             <th style="min-width:90px;" class="text-center">ISF</th>
 
+                            <th style="min-width:220px;">Categoria</th>
                             <th style="min-width:220px;">Concepto</th>
                             <th style="min-width:120px;" class="text-end">Monto</th>
                             <th style="min-width:110px;" class="text-center">Pagado</th>

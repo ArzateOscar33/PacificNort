@@ -489,6 +489,7 @@ class Operaciones_maritimo_ferro extends Controller
         exit;
     }
 
+
     /* =============================
        ========== VISTAS (tabs) =====
        ============================= */
@@ -506,6 +507,7 @@ class Operaciones_maritimo_ferro extends Controller
         $data['brokers']        = $this->model->getBrokers();
         $data['transportistas'] = $this->model->getTransportistas();
         $data['ciudades']       = $this->model->listarDestinos();
+        $data['categoriasCostos']     = $this->model->listarCategoriasCostos();
 
         $data['clientes']       = $this->model->catalogoClientes();
 
