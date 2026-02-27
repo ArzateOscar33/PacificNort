@@ -15,7 +15,6 @@
     base + "Operaciones_maritimo_ferro_costos_clientes/listarPaginado";
 
   // ---- Refs filtros ----
-  // ✅ cliente es SELECT ("" => Todos)
   const clienteSel = document.getElementById("clienteId_cc");
 
   const fechaInicio = document.getElementById("costosCliente_fechaInicio");
@@ -24,8 +23,7 @@
   const brokerSel = document.getElementById("brokerId_cc");
   const transportistaSel = document.getElementById("transportistaId_cc");
 
-  // ✅ NUEVO: categoría (si existe en la vista)
-  // Usa el id que pongas en la vista, aquí asumimos "categoriaId_cc"
+  // Categoría (select)
   const categoriaSel = document.getElementById("categoriaId_cc");
 
   const estatusPagoSel = document.getElementById("costosCliente_estatusPago");
@@ -33,6 +31,10 @@
   const perPageSel = document.getElementById("costosCliente_perPage");
 
   const btnLimpiar = document.getElementById("costosCliente_btnLimpiar");
+
+  // ✅ Moneda vista + tipo de cambio
+  const monedaVistaSel = document.getElementById("costosClienteMonedaVista");
+  const tipoCambioInp = document.getElementById("costosClienteTipoCambio");
 
   // ---- Tabla ----
   const tbody = document.getElementById("costosCliente_tbody");
@@ -50,6 +52,10 @@
   const pagUl = document.getElementById("costosCliente_paginacion");
 
   let state = { page: 1, loading: false };
+
+  // ✅ Ajusta esto al # real de columnas en tu <thead>
+  // Quitaste "Moneda", normalmente quedan 11.
+  const COLS = 11;
 
   // ---------------- helpers ----------------
   const esc = (s) =>
@@ -78,7 +84,7 @@
     qs.set("page", String(page));
     qs.set("per_page", perPageSel?.value || "25");
 
-    // ✅ "" => Todos (el controlador/modelo ya lo soportan)
+    // "" => Todos
     qs.set(
       "clienteId_cc",
       clienteSel && clienteSel.value !== null ? clienteSel.value : "",
@@ -91,8 +97,7 @@
     if (transportistaSel?.value)
       qs.set("transportistaId_cc", transportistaSel.value);
 
-    // ✅ NUEVO: categoría
-    // Mándalo como categoriaId_cc (tu controlador ya lo soporta)
+    // Categoría
     if (categoriaSel?.value) qs.set("categoriaId_cc", categoriaSel.value);
 
     if (estatusPagoSel?.value !== "")
@@ -102,6 +107,38 @@
     if (t) qs.set("costosCliente_term", t);
 
     return qs.toString();
+  }
+
+  // -------- conversión de moneda --------
+  function normMoneda(m) {
+    const x = String(m || "")
+      .trim()
+      .toUpperCase();
+    if (x === "DLLS" || x === "USD" || x === "DLS") return "USD";
+    if (x === "MXN" || x === "PESOS" || x === "MX") return "MXN";
+    // fallback
+    return "MXN";
+  }
+
+  function getTipoCambio() {
+    const tc = Number(tipoCambioInp?.value || 0);
+    return tc > 0 ? tc : 1;
+  }
+
+  function getMonedaVista() {
+    return normMoneda(monedaVistaSel?.value || "MXN");
+  }
+
+  // Convierte monto monedaOrigen -> monedaDestino (vista)
+  function convertAmount(amt, monedaOrigen, monedaDestino, tc) {
+    const src = normMoneda(monedaOrigen);
+    const dst = normMoneda(monedaDestino);
+    const n = Number(amt || 0);
+
+    if (src === dst) return n;
+    if (src === "USD" && dst === "MXN") return n * tc;
+    if (src === "MXN" && dst === "USD") return n / tc;
+    return n;
   }
 
   function xhrGet(url, cb) {
@@ -121,7 +158,7 @@
   function renderEmpty(msg) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="12" class="text-center text-muted py-5">
+        <td colspan="${COLS}" class="text-center text-muted py-5">
           <i data-feather="inbox"></i>
           <div class="mt-2">${esc(msg || "Sin datos.")}</div>
         </td>
@@ -165,7 +202,9 @@
     const groups = groupByOperacion(rows);
     let html = "";
 
-    const isTodos = !clienteSel || clienteSel.value === ""; // "" => Todos
+    const isTodos = !clienteSel || clienteSel.value === "";
+    const monedaVista = getMonedaVista();
+    const tc = getTipoCambio();
 
     groups.forEach((g) => {
       const items = g.items;
@@ -195,8 +234,10 @@
       items.forEach((r, idx) => {
         const categoria = (r.categoria || "").trim() ? esc(r.categoria) : "—";
         const concepto = r.concepto ? esc(r.concepto) : "—";
-        const moneda = r.moneda ? esc(r.moneda) : "—";
-        const monto = money(r.monto);
+
+        // ✅ monto convertido por renglón
+        const montoConv = convertAmount(r.monto, r.moneda, monedaVista, tc);
+        const montoTxt = money(montoConv);
 
         if (idx === 0) {
           html += `
@@ -211,9 +252,8 @@
 
               <td>${categoria}</td>
               <td>${concepto}</td>
-              <td class="text-end">$${monto}</td>
+              <td class="text-end">$${montoTxt}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
-              <td class="text-center">${moneda}</td>
             </tr>
           `;
         } else {
@@ -221,9 +261,8 @@
             <tr>
               <td>${categoria}</td>
               <td>${concepto}</td>
-              <td class="text-end">$${monto}</td>
+              <td class="text-end">$${montoTxt}</td>
               <td class="text-center">${badgePagado(r.Pagado)}</td>
-              <td class="text-center">${moneda}</td>
             </tr>
           `;
         }
@@ -241,22 +280,24 @@
     const pend = meta?.pendientes || {};
     const pag = meta?.pagados || {};
 
-    const pendTxt = Object.keys(pend).length
-      ? Object.entries(pend)
-          .map(([m, v]) => `${m}: $${money(v)}`)
-          .join(" | ")
-      : "$0";
+    const monedaVista = getMonedaVista();
+    const tc = getTipoCambio();
 
-    const pagTxt = Object.keys(pag).length
-      ? Object.entries(pag)
-          .map(([m, v]) => `${m}: $${money(v)}`)
-          .join(" | ")
-      : "$0";
+    const sumConvert = (obj) => {
+      let total = 0;
+      Object.entries(obj).forEach(([mon, val]) => {
+        total += convertAmount(val, mon, monedaVista, tc);
+      });
+      return total;
+    };
+
+    const totalPend = sumConvert(pend);
+    const totalPag = sumConvert(pag);
 
     metaOps.textContent = `Ops: ${ops}`;
     metaConceptos.textContent = `Conceptos: ${conceptos}`;
-    metaPend.textContent = `Pendientes: ${pendTxt}`;
-    metaPag.textContent = `Pagados: ${pagTxt}`;
+    metaPend.textContent = `Pendientes: ${monedaVista} $${money(totalPend)}`;
+    metaPag.textContent = `Pagados: ${monedaVista} $${money(totalPag)}`;
   }
 
   function renderPagination(page, totalPages, totalOps) {
@@ -345,15 +386,25 @@
   hookChange(fechaFin);
   hookChange(brokerSel);
   hookChange(transportistaSel);
-  hookChange(categoriaSel); // ✅ NUEVO
+  hookChange(categoriaSel);
   hookChange(estatusPagoSel);
   hookChange(perPageSel);
+
+  // ✅ Al cambiar moneda/tipo cambio, recalculamos
+  hookChange(monedaVistaSel);
 
   let tmr = null;
   if (termInput) {
     termInput.addEventListener("input", () => {
       clearTimeout(tmr);
       tmr = setTimeout(() => listar(1), 350);
+    });
+  }
+
+  if (tipoCambioInp) {
+    tipoCambioInp.addEventListener("input", () => {
+      clearTimeout(tmr);
+      tmr = setTimeout(() => listar(state.page || 1), 250);
     });
   }
 
@@ -364,10 +415,15 @@
       if (fechaFin) fechaFin.value = "";
       if (brokerSel) brokerSel.value = "";
       if (transportistaSel) transportistaSel.value = "";
-      if (categoriaSel) categoriaSel.value = ""; // ✅ NUEVO
+      if (categoriaSel) categoriaSel.value = "";
       if (estatusPagoSel) estatusPagoSel.value = "";
       if (termInput) termInput.value = "";
       if (perPageSel) perPageSel.value = "25";
+
+      // ✅ reset moneda vista/tc (si existen)
+      if (monedaVistaSel) monedaVistaSel.value = "MXN";
+      if (tipoCambioInp) tipoCambioInp.value = "17.00";
+
       listar(1);
     });
   }
@@ -382,6 +438,6 @@
     });
   }
 
-  // ✅ Carga inicial: por defecto "Todos"
+  // Carga inicial
   listar(1);
 })();

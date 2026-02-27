@@ -1,6 +1,6 @@
 // ============================================================================
 //  MÓDULO: Costos por Operación (SOLO MF - Operación marítima maestra)
-//  Catálogo / Vista
+//  Catálogo / Vista  ✅ (SIN guardar: eso se queda en costos_operacion_ferro_registrar.js)
 // ============================================================================
 
 (function () {
@@ -62,7 +62,8 @@
   const selPagadoModal = document.getElementById("costosContenedoresPagado");
 
   const btnNuevo = document.getElementById("costosOperacionBtnNuevo");
-  const btnGuardar = document.getElementById("costosOperacionBtnGuardar"); // recomendado en tu modal (si existe)
+  // ✅ En tu vista ahora el botón es btnGuardarCostoOperacion y lo maneja registrar.js
+  // const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
 
   // ---------------------- Estado ----------------------
   let currentPage = 1;
@@ -123,11 +124,8 @@
   }
 
   function toast(kind, title, text) {
-    if (window.Swal) {
-      Swal.fire({ icon: kind, title, text });
-    } else {
-      alert((title ? title + ": " : "") + (text || ""));
-    }
+    if (window.Swal) Swal.fire({ icon: kind, title, text });
+    else alert((title ? title + ": " : "") + (text || ""));
   }
 
   // ---------------------- Modal lock/unlock ----------------------
@@ -145,6 +143,46 @@
     if (selTipoModal) selTipoModal.disabled = false;
   }
 
+  // ---------------------- Conversión (vista) ----------------------
+  function normVistaMoneda(vista) {
+    const v = String(vista || "").toUpperCase();
+    // vista: MXN | USD
+    return v === "USD" ? "USD" : "MXN";
+  }
+
+  function normRowMoneda(rowMon) {
+    const m = String(rowMon || "").toUpperCase();
+    // row: PESOS | DLLS
+    if (m === "DLLS" || m === "USD") return "USD";
+    return "MXN"; // PESOS
+  }
+
+  function getTipoCambio() {
+    let tc = parseFloat(inpTipoCambio?.value || "0");
+    if (!Number.isFinite(tc) || tc <= 0) tc = 1;
+    return tc;
+  }
+
+  function getVistaSymbol() {
+    const vista = normVistaMoneda(selMonedaVista?.value || "MXN");
+    return vista === "USD" ? "US$" : "$";
+  }
+
+  function convertAmount(amt, rowMoneda) {
+    const src = normRowMoneda(rowMoneda); // MXN | USD
+    const dst = normVistaMoneda(selMonedaVista?.value || "MXN"); // MXN | USD
+    const tc = getTipoCambio();
+
+    const n = Number(amt || 0) || 0;
+    if (src === dst) return n;
+
+    // USD -> MXN
+    if (src === "USD" && dst === "MXN") return n * tc;
+    // MXN -> USD
+    if (src === "MXN" && dst === "USD") return n / tc;
+
+    return n;
+  }
   // ---------------------- Endpoints ----------------------
   const END = {
     tiposMovimiento: () =>
@@ -157,8 +195,8 @@
       `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/contenedorLigado?operacion_id=${encodeURIComponent(opId)}`,
     desactivar: () =>
       `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/desactivarCostoOperacion`,
-    guardar: () =>
-      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/guardar`,
+    // ✅ NO guardar aquí (lo hace registrar.js)
+    // guardar: () => `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/guardar`,
   };
 
   function loadTiposMovimiento(selectEl, selectedId = null, done = null) {
@@ -219,7 +257,6 @@
     xhr.open("GET", END.contenedorLigado(opId), true);
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
-
       if (xhr.status !== 200) return cb(null);
 
       let resp = {};
@@ -253,27 +290,6 @@
     xhr.send(fd);
   }
 
-  function guardarCostoXHR(payload, onDone) {
-    const fd = new FormData();
-    Object.keys(payload || {}).forEach((k) =>
-      fd.append(k, String(payload[k] ?? "")),
-    );
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", END.guardar(), true);
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
-      let resp = {};
-      try {
-        resp = JSON.parse(xhr.responseText) || {};
-      } catch {
-        resp = {};
-      }
-      if (typeof onDone === "function") onDone(xhr.status, resp);
-    };
-    xhr.send(fd);
-  }
-
   // ---------------------- Render tabla ----------------------
   function renderTabla(rows) {
     if (!tbody) return;
@@ -290,10 +306,14 @@
       const nat = String(r.naturaleza || "").toUpperCase(); // GASTO | ABONO
       const isAbono = nat === "ABONO";
 
-      const montoFmt = fmtMoney(r.monto || 0, "$");
+      const symbolVista = getVistaSymbol();
+      const montoVista = convertAmount(r.monto || 0, r.moneda);
+      const montoFmt = fmtMoney(montoVista, symbolVista);
+
       const montoCls = isAbono
         ? "text-success fw-semibold"
         : "text-danger fw-semibold";
+
       const montoConSigno = `${isAbono ? "+" : " "}${montoFmt}`;
       const badgeNat = nat
         ? `<span class="badge ${isAbono ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger"} ms-1">${nat}</span>`
@@ -311,12 +331,16 @@
       tr.dataset.monto = r.monto || "";
       tr.dataset.coment = r.comentario || "";
       tr.dataset.pagado = r.pagado ?? "0";
-
+      tr.dataset.nat = nat;
       tr.innerHTML = `
         <td>${fmtFecha(r.fecha)}</td>
         <td>${safe(r.concepto)}${badgeNat}</td>
-        <td>${prettyMoneda(r.moneda)}</td>
-        <td class="text-end ${montoCls}">${montoConSigno}</td>
+         
+                <td class="text-end ${montoCls} jsMontoVista"
+            data-amt="${Number(r.monto || 0) || 0}"
+            data-mon="${prettyMoneda(r.moneda)}">
+          ${montoConSigno}
+        </td>
         <td class="text-center">${badgePagado(r.pagado)}</td>
         <td>${safe(r.comentario)}</td>
         <td class="text-center">
@@ -338,6 +362,30 @@
     window.feather?.replace?.();
   }
 
+  function refrescarMontosTablaVista() {
+    if (!tbody) return;
+
+    const symbolVista = getVistaSymbol();
+
+    tbody.querySelectorAll("td.jsMontoVista").forEach((td) => {
+      const amt = parseFloat(td.dataset.amt || "0") || 0;
+      const mon = (td.dataset.mon || "").toUpperCase(); // PESOS | DLLS
+      const tr = td.closest("tr");
+
+      // naturaleza para signo/color
+      const nat = String(tr?.dataset?.naturaleza || "").toUpperCase();
+      // OJO: en tu dataset aún no guardas naturaleza; así que lo inferimos por el badge:
+      // Mejor: guarda naturaleza en dataset en renderTabla (abajo te lo pongo)
+      // mientras: usa clase existente y solo actualiza texto.
+
+      const montoVista = convertAmount(amt, mon);
+      const montoFmt = fmtMoney(montoVista, symbolVista);
+
+      // signo: si es abono, antepone "+"
+      const isAbono = String(tr?.dataset?.nat || "").toUpperCase() === "ABONO";
+      td.textContent = `${isAbono ? "+" : " "}${montoFmt}`;
+    });
+  }
   // ---------------------- Totales ----------------------
   function renderTotales(totalesDetalle) {
     if (totalesDetalle) totalesDetalleCache = totalesDetalle;
@@ -573,7 +621,6 @@
         operacion: { PESOS: 0, DLLS: 0 },
       };
 
-      // safety: si cambió la pag por totalPages
       if (
         Array.isArray(data) &&
         data.length === 0 &&
@@ -588,11 +635,9 @@
       renderPaginacion(meta);
       renderMeta(meta);
 
-      // caches
       totalesDetalleCache = totalesDetalle;
       abonosDetalleCache = abonosDetalle;
 
-      // cards
       renderTotales(totalesDetalleCache);
       const { opCost, opAbono, fmt } = computeViewTotals(
         totalesDetalleCache,
@@ -667,7 +712,6 @@
           opListBox.innerHTML = "";
           opListBox.style.display = "none";
 
-          // contenedor ligado informativo
           fetchContenedorLigado(operacionId, (data) => {
             if (!data) {
               if (contFiltroNomInp) contFiltroNomInp.value = "";
@@ -681,9 +725,7 @@
             }
           });
 
-          // carga tipos (filtro + modal)
           loadTiposMovimiento(selTipoModal);
-
           listar(1);
         });
       });
@@ -705,19 +747,16 @@
 
   document.addEventListener("click", (e) => {
     if (!opListBox) return;
-    if (!opListBox.contains(e.target) && e.target !== opNomInp) {
+    if (!opListBox.contains(e.target) && e.target !== opNomInp)
       opListBox.style.display = "none";
-    }
   });
 
   // ---------------------- Filtros / paginación ----------------------
   document.addEventListener("DOMContentLoaded", () => {
     if (perPage < 1) perPage = 10;
 
-    // Cargar tipos siempre (para poblar filtro superior aunque no haya op seleccionada)
     loadTiposMovimiento(selTipoModal);
 
-    // Si ya venía una operación precargada, pinta contenedor y lista
     if (operacionId > 0) {
       fetchContenedorLigado(operacionId, (data) => {
         if (data) {
@@ -758,6 +797,9 @@
       abonosDetalleCache,
     );
     renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
+
+    // ✅ NUEVO: actualiza columna monto en tabla
+    refrescarMontosTablaVista();
   });
 
   inpTipoCambio?.addEventListener("input", () => {
@@ -767,8 +809,10 @@
       abonosDetalleCache,
     );
     renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
-  });
 
+    // ✅ NUEVO: actualiza columna monto en tabla
+    refrescarMontosTablaVista();
+  });
   // ---------------------- Modal: moneda depende del tipo ----------------------
   function syncMonedaPorTipoModal() {
     if (isEditCosto) return;
@@ -806,7 +850,6 @@
     unlockEditFields();
     resetModalView();
 
-    // Si ya hay operación seleccionada, sembrarla
     const fid = parseInt(opIdHid?.value || "0", 10) || 0;
     const fnom = (opNomInp?.value || "").trim();
 
@@ -924,78 +967,9 @@
     }
   });
 
-  // ---------------------- Guardar (crear/editar) ----------------------
-  function validarModal() {
-    const rowId = parseInt(hidRowId?.value || "0", 10) || 0;
-    const opId = parseInt(opIdModal?.value || "0", 10) || 0;
-    const tipoId = parseInt(selTipoModal?.value || "0", 10) || 0;
-
-    const monto = parseFloat(montoModal?.value || "0") || 0;
-    const comentario = (comentModal?.value || "").trim();
-    const pagado = parseInt(selPagadoModal?.value || "0", 10) === 1 ? 1 : 0;
-
-    if (rowId <= 0 && opId <= 0) return { ok: false, msg: "Falta operación." };
-    if (tipoId <= 0)
-      return { ok: false, msg: "Selecciona un tipo de movimiento." };
-    if (!(monto > 0)) return { ok: false, msg: "Monto inválido." };
-
-    return {
-      ok: true,
-      data: {
-        row_id: rowId,
-        operacion_id: opId,
-        tipo_movimiento_id: tipoId,
-        monto: monto,
-        comentario: comentario,
-        costosContenedoresPagado: pagado, // 👈 coincide con tu controlador actual
-      },
-    };
-  }
-
-  function onGuardarClick() {
-    const v = validarModal();
-    if (!v.ok) return toast("warning", "Validación", v.msg);
-
-    const old = btnGuardar ? btnGuardar.innerHTML : "";
-    if (btnGuardar) {
-      btnGuardar.disabled = true;
-      btnGuardar.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando…';
-    }
-
-    guardarCostoXHR(v.data, (status, resp) => {
-      if (btnGuardar) {
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = old;
-      }
-
-      if (status !== 200) {
-        return toast("error", "Error", resp?.message || `HTTP ${status}`);
-      }
-
-      const st = String(resp?.status || "").toLowerCase();
-      if (st === "success") {
-        toast("success", "OK", resp?.message || "Guardado");
-        // cerrar modal
-        try {
-          const bs = bootstrap.Modal.getOrCreateInstance(modalEl);
-          bs.hide();
-        } catch {}
-        // refrescar
-        listar(1);
-      } else if (st === "warning") {
-        toast("warning", "Aviso", resp?.message || "No se pudo guardar.");
-      } else {
-        toast("error", "Error", resp?.message || "No se pudo guardar.");
-      }
-    });
-  }
-
-  if (btnGuardar) btnGuardar.addEventListener("click", onGuardarClick);
-
   // ---------------------- Acciones en tabla ----------------------
   tbody?.addEventListener("click", (e) => {
-    // EDITAR
+    // EDITAR (solo abre modal y prepara campos; el guardado lo hace registrar.js)
     const btnEdit = e.target.closest(".btnEditarCostoOperacion");
     if (btnEdit) {
       const tr = btnEdit.closest("tr");
@@ -1016,7 +990,6 @@
       const tipoNomSel = tr.dataset.tipoNom || "";
 
       loadTiposMovimiento(selTipoModal, tipoIdSel, () => {
-        // fallback si el tipo no vino en catálogo
         if (
           selTipoModal &&
           tipoIdSel &&
@@ -1055,7 +1028,6 @@
           }
         });
       }
-
       return;
     }
 
@@ -1087,9 +1059,8 @@
           btnDel.disabled = false;
           btnDel.innerHTML = oldHtml;
 
-          if (status !== 200) {
+          if (status !== 200)
             return toast("error", "Error", resp?.message || `HTTP ${status}`);
-          }
 
           const st = String(resp?.status || "").toLowerCase();
           if (st === "success") {
@@ -1121,28 +1092,35 @@
       } else {
         if (confirm("¿Desactivar este costo?")) confirmar();
       }
-
       return;
     }
   });
 
   // ---------------------- Exportación ----------------------
-  document
-    .getElementById("btnExportarExcelCostosOperacion")
-    ?.addEventListener("click", () => {
+
+  const btnXlsx = document.getElementById("btnExportarExcelCostosOperacion");
+  if (btnXlsx && !btnXlsx.dataset.bound) {
+    btnXlsx.dataset.bound = "1";
+    btnXlsx.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       ExportarTablas.exportar({
-        ref: "tablaCostosOperacionExportar",
+        ref: "#tablaCostosOperacionExportar",
         formato: "xlsx",
         nombre: "CostosOperacion_MF.xlsx",
-        columnasOcultas: [5], // ajusta si cambió tu tabla
+        columnasOcultas: [5],
         soloVisibles: true,
         sheetName: "Costos MF",
       });
     });
+  }
 
-  document
-    .getElementById("btnExportarPDFCostosOperacion")
-    ?.addEventListener("click", () => {
+  const btnPdf = document.getElementById("btnExportarPDFCostosOperacion");
+  if (btnPdf && !btnPdf.dataset.bound) {
+    btnPdf.dataset.bound = "1";
+    btnPdf.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       ExportarTablas.exportar({
         ref: "#tablaCostosOperacionExportar",
         formato: "pdf",
@@ -1150,8 +1128,9 @@
         titulo: "Costos Operación MF",
         orientacion: "landscape",
         formatoPagina: "letter",
-        columnasOcultas: [5], // ajusta si cambió tu tabla
+        columnasOcultas: [5],
         soloVisibles: true,
       });
     });
+  }
 })();

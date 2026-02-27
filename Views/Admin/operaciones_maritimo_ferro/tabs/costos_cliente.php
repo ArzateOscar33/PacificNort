@@ -145,18 +145,49 @@
                 <div class="col-12 col-md-12">
                     <div class="alert alert-light border mb-0 py-2">
                         <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
-                            <span class="badge bg-secondary text-white" id="costosCliente_metaTotalOps">Ops: 0</span>
-                            <span class="badge bg-primary text-white" id="costosCliente_metaTotalConceptos">Conceptos:
+                            <span class="badge bg-secondary text-white p-2" id="costosCliente_metaTotalOps">Oeraciones: 0</span>
+                            <span class="badge bg-primary text-white p-2" id="costosCliente_metaTotalConceptos">Conceptos:
                                 0</span>
-                            <span class="badge bg-warning text-dark" id="costosCliente_metaPendientes">Pendientes:
+                            <span class="badge bg-warning text-dark p-2" id="costosCliente_metaPendientes">Pendientes:
                                 $0</span>
-                            <span class="badge bg-success text-white" id="costosCliente_metaPagados">Pagados: $0</span>
+                            <span class="badge bg-success text-white p-2" id="costosCliente_metaPagados">Pagados: $0</span>
                         </div>
                     </div>
                 </div>
 
-            </div>
+                <div class="row col-md-12">
+                    <div class="gap-2 col-md-12 d-flex align-items-end justify-content-end">
+                        <button type="button" class="btn btn-sm btn-outline-success" id="btnExportarExcelCostosCliente">
+                            <i data-feather="file-text" class="me-1"></i> Excel
+                        </button>
 
+                        <!-- <button type="button" class="btn btn-sm btn-outline-warning" id="btnExportarPDFCostosCliente">
+                            <i data-feather="file" class="me-1"></i> PDF
+                        </button> -->
+                    </div>
+                </div>
+
+            </div>
+            <!-- Configuración de vista de totales -->
+            <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
+                <div class="d-flex flex-wrap align-items-end mb-2">
+                    <div>
+                        <label class="form-label small mb-1">Mostrar totales en</label>
+                        <select id="costosClienteMonedaVista" class="form-control form-control-sm" style="width:140px;">
+                            <option value="MXN">MXN (pesos)</option>
+                            <option value="USD">USD (dólares)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1">Tipo de cambio</label>
+                        <div class="input-group input-group-sm" style="width:160px;">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.0001" min="0" id="costosClienteTipoCambio" class="form-control mt-1"
+                                value="17.00">
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Tabla -->
             <div class="table-responsive border rounded">
                 <table class="table table-sm table-hover align-middle mb-0 table-bordered" id="costosCliente_table">
@@ -174,7 +205,6 @@
                             <th style="min-width:220px;">Concepto</th>
                             <th style="min-width:120px;" class="text-end">Monto</th>
                             <th style="min-width:110px;" class="text-center">Pagado</th>
-                            <th style="min-width:120px;" class="text-end">Moneda</th>
                         </tr>
                     </thead>
 
@@ -263,3 +293,5 @@
     </div>
 </div>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_clientes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/exportarCostosClientes.js"></script>

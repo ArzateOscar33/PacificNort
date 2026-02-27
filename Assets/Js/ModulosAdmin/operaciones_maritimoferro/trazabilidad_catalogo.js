@@ -628,6 +628,7 @@
       formato: "xlsx",
       nombre: "RutasFerroCaja.xlsx",
       soloVisibles: true,
+      columnasOcultas: [8],
       sheetName: "Rutas",
     });
   });
@@ -640,6 +641,7 @@
       titulo: "Rutas Ferro/Caja",
       orientacion: "landscape",
       formatoPagina: "letter",
+      columnasOcultas: [8],
       soloVisibles: true,
     });
   });

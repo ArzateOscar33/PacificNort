@@ -38,15 +38,19 @@
                   <option>10</option>
                   <option>20</option>
                   <option>50</option>
+                  <option>100</option>
+                  <option>500</option>
+                  <option>1000</option>
                 </select>
               </div>
 
               <div class="row">
                 <div class="gap-2 col-md-12 d-flex align-items-center justify-content-end">
-                  <button class="btn btn-sm btn-outline-success" id="btnExportarExcelCostosOperacion">
+                  <button type="button" class="btn btn-sm btn-outline-success" id="btnExportarExcelCostosOperacion">
                     <i data-feather="file-text" class="me-1"></i> Excel
                   </button>
-                  <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFCostosOperacion">
+
+                  <button type="button" class="btn btn-sm btn-outline-warning" id="btnExportarPDFCostosOperacion">
                     <i data-feather="file" class="me-1"></i> PDF
                   </button>
                 </div>
@@ -163,7 +167,6 @@
               <!-- ELIMINADO: Origen -->
               <!-- ELIMINADO: Contenedor -->
               <th>Concepto</th>
-              <th style="width:120px;">Moneda</th>
               <th class="text-end" style="width:140px;">Monto</th>
               <th class="text-center" style="width:120px;">Estatus</th>
               <th class="text-center" style="width:120px;">Comentario</th>
@@ -269,7 +272,7 @@
           <button type="button" class="btn btn-secondary" id="btnCancelarCostoContenedor" data-bs-dismiss="modal">
             <i data-feather="x"></i> Cancelar
           </button>
-          <button type="submit" id="btnGuardarCostoOperacion" class="btn btn-success">
+          <button type="button" id="btnGuardarCostoOperacion" class="btn btn-success">
             <i data-feather="save"></i> Guardar
           </button>
         </div>

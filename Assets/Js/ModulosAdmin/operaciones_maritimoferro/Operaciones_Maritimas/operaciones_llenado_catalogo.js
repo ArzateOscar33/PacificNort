@@ -1400,7 +1400,7 @@ document
       ref: "operaciones_mar_TablaExportar",
       formato: "xlsx",
       nombre: "OperacionesMaritimas.xlsx",
-      columnasOcultas: [10],
+      columnasOcultas: [25],
       soloVisibles: true,
       sheetName: "Contenedores En Operacion",
     });
@@ -1416,7 +1416,7 @@ document
       titulo: "OperacionesMaritimas",
       orientacion: "landscape",
       formatoPagina: "letter",
-      columnasOcultas: [10],
-      soloVisibles: true,
+      columnasOcultas: [25],
+      soloVisibles: false,
     });
   });

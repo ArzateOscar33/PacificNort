@@ -1,21 +1,12 @@
 /* ============================================================================
    MÓDULO: Costos por Operación (SOLO MF) - REGISTRAR/EDITAR (XHR)
-   Archivo: costos_operacion_registrar.js
+   Archivo: costos_operacion_ferro_registrar.js  (o costos_operacion_registrar.js)
 
-   ✅ Actualizado a tu nueva implementación:
-   - Ya NO se manda "fuente"
-   - Ya NO se manda "operacion_ferro_id"
-   - El backend espera:
-       row_id (0 crea / >0 actualiza)
-       operacion_id
-       tipo_movimiento_id
-       monto
-       comentario
-       costosContenedoresPagado   (ojo: así lo lee tu controlador)
-   - Endpoint:
-       Operaciones_maritimo_ferro_costos_Contenedor/guardar
-   - Refresco:
-       window.listarCostosOperacion(1)
+   ✅ Anti-doble-guardado:
+   - Lock global window.__costosOpSaving
+   - Evita doble binding con dataset.bound
+   - Soporta form id real: formAgregarCostoContenedores (y fallback formCostosOperacion)
+   - Preferencia: guardar por CLICK (tu botón es type="button")
    ============================================================================ */
 (function () {
   "use strict";
@@ -35,21 +26,25 @@
   );
   const selPagadoModal = document.getElementById("costosContenedoresPagado");
 
-  // Opcionales
-  const formModal = document.getElementById("formCostosOperacion");
+  // ✅ Tu vista actual:
+  const formModal =
+    document.getElementById("formAgregarCostoContenedores") ||
+    document.getElementById("formCostosOperacion");
+
   const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
+
+  if (!modalEl || !btnGuardar) {
+    // No hay modal o no hay botón: nada que hacer
+    return;
+  }
 
   // ------- Helpers -------
   function toast(icon, title, text) {
-    if (window.Swal) {
-      Swal.fire({ icon, title, text, confirmButtonText: "OK" });
-    } else {
-      alert(`${title}${text ? `: ${text}` : ""}`);
-    }
+    if (window.Swal) Swal.fire({ icon, title, text, confirmButtonText: "OK" });
+    else alert(`${title}${text ? `: ${text}` : ""}`);
   }
 
   function syncMonedaPorTipo() {
-    // Si tu <option> trae data-moneda, sincroniza moneda
     if (!selTipoModal || !selMonModal) return;
     const opt = selTipoModal.selectedOptions?.[0];
     const m = opt
@@ -64,60 +59,66 @@
     const opId = parseInt(opIdModal?.value || "0", 10) || 0;
     const tipoId = parseInt(selTipoModal?.value || "0", 10) || 0;
 
-    // Soporta "1,234.56" y "1234,56" de forma tolerante
     let montoRaw = String(montoModal?.value || "").trim();
-    montoRaw = montoRaw.replace(/\s/g, "").replace(/,/g, ""); // simple (si usas coma decimal, cámbialo)
+    montoRaw = montoRaw.replace(/\s/g, "").replace(/,/g, "");
     const monto = parseFloat(montoRaw) || 0;
 
     const comentario = String(comentModal?.value || "").trim();
     const pagado = parseInt(selPagadoModal?.value || "0", 10) === 1 ? 1 : 0;
 
-    // Validaciones mínimas (alineadas al controlador)
     if (opId <= 0 && rowId <= 0) return { ok: false, msg: "Falta operación." };
     if (tipoId <= 0) return { ok: false, msg: "Selecciona un tipo/concepto." };
     if (!Number.isFinite(monto) || monto <= 0)
       return { ok: false, msg: "Ingresa un monto válido (> 0)." };
 
     const fd = new FormData();
-    fd.append("row_id", String(rowId)); // siempre
-    if (opId > 0) fd.append("operacion_id", String(opId)); // requerido al crear
-
+    fd.append("row_id", String(rowId));
+    if (opId > 0) fd.append("operacion_id", String(opId));
     fd.append("tipo_movimiento_id", String(tipoId));
     fd.append("monto", String(monto.toFixed(2)));
     fd.append("comentario", comentario);
-
-    // 👇 IMPORTANTE: tu controlador lee este nombre exacto
     fd.append("costosContenedoresPagado", String(pagado));
 
     return { ok: true, data: fd };
   }
 
+  function setBtnLoading(isLoading) {
+    if (!btnGuardar) return;
+    if (!btnGuardar.dataset.oldHtml)
+      btnGuardar.dataset.oldHtml = btnGuardar.innerHTML;
+
+    if (isLoading) {
+      btnGuardar.disabled = true;
+      btnGuardar.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando…';
+    } else {
+      btnGuardar.disabled = false;
+      btnGuardar.innerHTML = btnGuardar.dataset.oldHtml || btnGuardar.innerHTML;
+    }
+  }
+
   function guardarXHR() {
+    // ✅ Lock global anti doble click / doble bind / doble submit
+    if (window.__costosOpSaving) return;
+    window.__costosOpSaving = true;
+
     const pkg = buildPayload();
-    if (!pkg.ok) return toast("warning", "Validación", pkg.msg);
+    if (!pkg.ok) {
+      window.__costosOpSaving = false;
+      return toast("warning", "Validación", pkg.msg);
+    }
+
+    setBtnLoading(true);
 
     const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/guardar`;
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
 
-    // UX: bloquear botón (si existe)
-    const btn =
-      btnGuardar ||
-      (formModal ? formModal.querySelector('button[type="submit"]') : null);
-    const oldHtml = btn ? btn.innerHTML : "";
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando…';
-    }
-
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
 
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = oldHtml;
-      }
+      setBtnLoading(false);
+      window.__costosOpSaving = false;
 
       let resp = {};
       try {
@@ -137,15 +138,12 @@
       if (st === "success") {
         toast("success", "Éxito", mg || "Guardado correctamente");
 
-        // reset row_id para que el siguiente sea "crear"
         if (hidRowId) hidRowId.value = "";
 
-        // cerrar modal
         if (modalEl && window.bootstrap) {
           window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
         }
 
-        // refrescar listado
         if (typeof window.listarCostosOperacion === "function") {
           window.listarCostosOperacion(1);
         }
@@ -159,22 +157,37 @@
     xhr.send(pkg.data);
   }
 
-  // ------- Enganches (form submit o botón) -------
+  // ------- Enganches -------
+  // ✅ Evitar doble binding aunque el script se cargue 2 veces
+  if (btnGuardar.dataset.bound === "1") return;
+  btnGuardar.dataset.bound = "1";
+
+  // Preferimos CLICK (tu botón es type="button")
+  btnGuardar.addEventListener("click", (e) => {
+    e.preventDefault();
+    guardarXHR();
+  });
+
+  // Si el usuario presiona Enter dentro del form, evitamos submit normal
+  // y lo convertimos en guardar, sin duplicar (lock global lo previene).
   if (formModal) {
     formModal.addEventListener("submit", (e) => {
       e.preventDefault();
       guardarXHR();
     });
   }
-  if (btnGuardar) {
-    btnGuardar.addEventListener("click", (e) => {
-      e.preventDefault();
-      guardarXHR();
-    });
-  }
 
-  // ------- UX: cuando abre modal, sincroniza moneda -------
-  modalEl?.addEventListener("shown.bs.modal", () => {
+  // UX: cuando abre modal, sincroniza moneda
+  modalEl.addEventListener("shown.bs.modal", () => {
     syncMonedaPorTipo();
+    // liberamos lock por si el modal se reabrió tras un cierre raro
+    window.__costosOpSaving = false;
+    setBtnLoading(false);
+  });
+
+  // Al cerrar modal, reset lock por seguridad
+  modalEl.addEventListener("hidden.bs.modal", () => {
+    window.__costosOpSaving = false;
+    setBtnLoading(false);
   });
 })();

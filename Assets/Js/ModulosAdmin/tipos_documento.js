@@ -21,6 +21,7 @@ function listar() {
     }
   };
 }
+
 // Render
 function renderTabla(data) {
   tabla.innerHTML = "";
@@ -32,10 +33,14 @@ function renderTabla(data) {
   data.forEach((item) => {
     const row = document.createElement("tr");
     row.classList.add("text-center");
+    const aplicaSobre =
+      item.aplica_sobre === "contenedor_maritimo"
+        ? "Contenedor Maritimo"
+        : "Operacion Por Partida";
     row.innerHTML = `
       <td>${item.clave}</td>
       <td>${item.nombre}</td>
-      <td>${item.aplica_sobre}</td>  
+      <td>${aplicaSobre}</td>  
       <td>
         <button class="btn btn-sm btn-info" onclick="editarTipoDocumento(${item.id_tipo_documento})"><i class="fas fa-edit"></i> Editar</button>
         <button class="btn btn-sm btn-danger" onclick="eliminarTipoDocumento(${item.id_tipo_documento})"><i class="fas fa-trash-alt"></i> Eliminar</button>

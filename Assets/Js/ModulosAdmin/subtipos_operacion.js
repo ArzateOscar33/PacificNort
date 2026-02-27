@@ -54,7 +54,7 @@ btnAgregarSubtipoOperacion.addEventListener("click", () => {
   document.getElementById("id").value = "";
 
   label.innerHTML =
-    '<i data-feather="check-circle" class="me-1"></i> Registrar Tipo de Documento';
+    '<i data-feather="check-circle" class="me-1"></i> Registrar Tipo de Operacion';
   document.getElementById("btnSubmit").innerHTML =
     '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
@@ -73,12 +73,13 @@ form.addEventListener("submit", function (e) {
   http.send(new FormData(form));
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
+      console.log(this.responseText);
       let res;
       try {
         res = JSON.parse(this.responseText);
       } catch {
-        //console.log(this.responseText);
         Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
+        console.log(this.responseText);
         return;
       }
       if (res.status === true || res.status === "success") {

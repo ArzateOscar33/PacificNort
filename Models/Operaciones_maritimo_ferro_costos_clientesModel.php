@@ -221,84 +221,90 @@ class Operaciones_maritimo_ferro_costos_clientesModel extends Query
         // DATA (conceptos de las ops de la página)
         // =========================
         $in = implode(',', array_fill(0, count($opIds), '?'));
-        $argsData = $opIds;
+
+        // IMPORTANTE:
+        // $where trae placeholders (?) por filtros (fechas, pagado, categoria, term, etc.)
+        // Por eso argsData debe ser: primero $args (filtros), luego $opIds (IN)
+        $argsData = array_merge($args, $opIds);
 
         $sqlData = "
-            SELECT
-                o.id_operacion,
-                o.numero_operacion,
+    SELECT
+        o.id_operacion,
+        o.numero_operacion,
 
-                cl.id_cliente,
-                cl.nombre AS cliente,
+        cl.id_cliente,
+        cl.nombre AS cliente,
 
-                e.nombre AS estatus,
-                o.cita_puerto,
-                o.isf,
-                o.eta,
+        e.nombre AS estatus,
+        o.cita_puerto,
+        o.isf,
+        o.eta,
 
-                tr.nombre AS transportista,
+        tr.nombre AS transportista,
 
-                cont.contenedores,
-                bro.brokers,
+        cont.contenedores,
+        bro.brokers,
 
-                co.id_costo_operacion,
-                tm.id_tipo_movimiento,
+        co.id_costo_operacion,
+        tm.id_tipo_movimiento,
 
-                tm.categoria_id,
-                COALESCE(tmc.nombre,'') AS categoria,
+        tm.categoria_id,
+        COALESCE(tmc.nombre,'') AS categoria,
 
-                tm.nombre AS concepto,
-                tm.moneda,
-                co.monto,
-                co.Pagado,
-                co.comentario
+        tm.nombre AS concepto,
+        tm.moneda,
+        co.monto,
+        co.Pagado,
+        co.comentario
 
-            FROM operaciones o
-            LEFT JOIN clientes cl       ON cl.id_cliente = o.cliente_id
-            LEFT JOIN estatus e         ON e.id_estatus = o.estatus_id
-            LEFT JOIN transportistas tr ON tr.id_transportista = o.transportista_id
+    FROM operaciones o
+    LEFT JOIN clientes cl       ON cl.id_cliente = o.cliente_id
+    LEFT JOIN estatus e         ON e.id_estatus = o.estatus_id
+    LEFT JOIN transportistas tr ON tr.id_transportista = o.transportista_id
 
-            /* contenedores concatenados */
-            LEFT JOIN (
-                SELECT
-                    cmo.operacion_id,
-                    GROUP_CONCAT(DISTINCT cm.numero_contenedor
-                        ORDER BY cm.numero_contenedor SEPARATOR ', '
-                    ) AS contenedores
-                FROM contenedores_maritimos_operacion cmo
-                INNER JOIN contenedores_maritimos cm
-                    ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-                GROUP BY cmo.operacion_id
-            ) cont ON cont.operacion_id = o.id_operacion
+    /* contenedores concatenados */
+    LEFT JOIN (
+        SELECT
+            cmo.operacion_id,
+            GROUP_CONCAT(DISTINCT cm.numero_contenedor
+                ORDER BY cm.numero_contenedor SEPARATOR ', '
+            ) AS contenedores
+        FROM contenedores_maritimos_operacion cmo
+        INNER JOIN contenedores_maritimos cm
+            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        GROUP BY cmo.operacion_id
+    ) cont ON cont.operacion_id = o.id_operacion
 
-            /* brokers concatenados */
-            LEFT JOIN (
-                SELECT
-                    ob.operacion_id,
-                    GROUP_CONCAT(DISTINCT b.nombre
-                        ORDER BY b.nombre SEPARATOR ', '
-                    ) AS brokers
-                FROM operacion_brokers ob
-                INNER JOIN brokers b ON b.id_broker = ob.broker_id
-                GROUP BY ob.operacion_id
-            ) bro ON bro.operacion_id = o.id_operacion
+    /* brokers concatenados */
+    LEFT JOIN (
+        SELECT
+            ob.operacion_id,
+            GROUP_CONCAT(DISTINCT b.nombre
+                ORDER BY b.nombre SEPARATOR ', '
+            ) AS brokers
+        FROM operacion_brokers ob
+        INNER JOIN brokers b ON b.id_broker = ob.broker_id
+        GROUP BY ob.operacion_id
+    ) bro ON bro.operacion_id = o.id_operacion
 
-            INNER JOIN costos_operacion co
-                ON co.operacion_id = o.id_operacion
-               AND co.estatus = 1
+    LEFT JOIN subtipos_operacion st
+      ON st.id_subtipo = o.subtipo_operacion_id
 
-            INNER JOIN tipos_movimiento tm
-                ON tm.id_tipo_movimiento = co.tipo_movimiento_id
-               AND tm.estatus = 1
-               AND LOWER(tm.tipo) = 'gasto'
+    INNER JOIN costos_operacion co
+        ON co.operacion_id = o.id_operacion
 
-            LEFT JOIN tipos_movimiento_categorias tmc
-              ON tmc.id_categoria = tm.categoria_id
-             AND tmc.estatus = 1
+    INNER JOIN tipos_movimiento tm
+        ON tm.id_tipo_movimiento = co.tipo_movimiento_id
 
-            WHERE o.id_operacion IN ($in)
-            ORDER BY o.id_operacion DESC, co.id_costo_operacion DESC
-        ";
+    LEFT JOIN tipos_movimiento_categorias tmc
+      ON tmc.id_categoria = tm.categoria_id
+     AND tmc.estatus = 1
+
+    $where
+    AND o.id_operacion IN ($in)
+
+    ORDER BY o.id_operacion DESC, co.id_costo_operacion DESC
+";
 
         $rows = $this->selectAll($sqlData, $argsData) ?: [];
 
