@@ -13,7 +13,7 @@ class Movimiento_logistico extends Controller
 
     public function index()
     {
-        $data['title'] = 'Tipo de Movimiento Logístico';
+        $data['title'] = 'Tipo de Costo Logístico';
         $this->views->getView('admin/movimiento_logistico', "index", $data);
     }
 

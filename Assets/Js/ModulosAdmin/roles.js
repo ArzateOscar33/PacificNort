@@ -1,5 +1,7 @@
 const formRol = document.getElementById("formRol");
-const modalRol = new bootstrap.Modal(document.getElementById("modalRegistrarRol"));
+const modalRol = new bootstrap.Modal(
+  document.getElementById("modalRegistrarRol"),
+);
 
 // Cargar lista al cargar
 window.addEventListener("DOMContentLoaded", listarRoles);
@@ -11,11 +13,11 @@ function listarRoles() {
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let data = JSON.parse(this.responseText);
-      console.log("Roles cargados:", data);
+      //console.log("Roles cargados:", data);
       const tabla = document.getElementById("tablaRoles");
       tabla.innerHTML = "";
 
-      data.forEach(rol => {
+      data.forEach((rol) => {
         const tr = document.createElement("tr");
         tr.classList.add("text-center");
         tr.innerHTML = `
@@ -42,10 +44,12 @@ function editarRol(id) {
       document.getElementById("id").value = data.id_rol;
       document.getElementById("nombre").value = data.nombre;
       document.getElementById("descripcion").value = data.descripcion;
-      document.getElementById("modalRegistrarRolLabel").textContent = "Editar Rol";
+      document.getElementById("modalRegistrarRolLabel").textContent =
+        "Editar Rol";
 
       const btnSubmit = document.getElementById("btnSubmit");
-      btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      btnSubmit.innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
       modalRol.show();
     }
@@ -55,9 +59,11 @@ function editarRol(id) {
 document.getElementById("btnAgregarRol").addEventListener("click", () => {
   formRol.reset();
   document.getElementById("id").value = "";
-  document.getElementById("modalRegistrarRolLabel").textContent = "Registrar Rol";
+  document.getElementById("modalRegistrarRolLabel").textContent =
+    "Registrar Rol";
   const btnSubmit = document.getElementById("btnSubmit");
-  btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+  btnSubmit.innerHTML =
+    '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
 });
 
@@ -69,7 +75,11 @@ formRol.addEventListener("submit", function (e) {
   const descripcion = formData.get("descripcion").trim();
 
   if (nombre === "" || descripcion === "") {
-    Swal.fire("Campos requeridos", "Por favor llena todos los campos", "warning");
+    Swal.fire(
+      "Campos requeridos",
+      "Por favor llena todos los campos",
+      "warning",
+    );
     return;
   }
 
@@ -99,7 +109,7 @@ function eliminarRol(id) {
     showCancelButton: true,
     confirmButtonText: "Sí, eliminar",
     cancelButtonText: "Cancelar",
-    reverseButtons: true
+    reverseButtons: true,
   }).then((result) => {
     if (result.isConfirmed) {
       const http = new XMLHttpRequest();
@@ -137,7 +147,11 @@ inputBuscarRol.addEventListener("keyup", function () {
   }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Roles/buscar?term=" + encodeURIComponent(termino), true);
+  http.open(
+    "GET",
+    base_url + "Roles/buscar?term=" + encodeURIComponent(termino),
+    true,
+  );
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
@@ -186,7 +200,10 @@ inputBuscarRol.addEventListener("keyup", function () {
 });
 
 document.addEventListener("click", function (e) {
-  if (!inputBuscarRol.contains(e.target) && !sugerenciasRoles.contains(e.target)) {
+  if (
+    !inputBuscarRol.contains(e.target) &&
+    !sugerenciasRoles.contains(e.target)
+  ) {
     sugerenciasRoles.innerHTML = "";
     sugerenciasRoles.style.display = "none";
   }

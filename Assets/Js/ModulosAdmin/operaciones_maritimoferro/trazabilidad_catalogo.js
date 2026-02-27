@@ -573,7 +573,7 @@
     const btn = e.target.closest(".btn-traza-detalle");
     if (!btn) return;
 
-    console.log("DATASET BTN:", btn.dataset);
+    //console.log("DATASET BTN:", btn.dataset);
 
     // Badges
     if (badgeOp) badgeOp.textContent = btn.dataset.op || "—";

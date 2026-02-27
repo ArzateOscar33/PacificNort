@@ -1,9 +1,13 @@
-  //definimimos las variables y constantes
-const tabla =document.getElementById('tablaSubTiposOperacion');
-const form  = document.getElementById("formSubtipoOperacion");
-const modal = new bootstrap.Modal(document.getElementById("modalRegistrarSubtipoOperacion"));
-const btnAgregarSubtipoOperacion = document.getElementById("btnAgregarSubtipoOperacion");
-const label=document.getElementById("modalRegistrarSubtipoOperacionLabel");
+//definimimos las variables y constantes
+const tabla = document.getElementById("tablaSubTiposOperacion");
+const form = document.getElementById("formSubtipoOperacion");
+const modal = new bootstrap.Modal(
+  document.getElementById("modalRegistrarSubtipoOperacion"),
+);
+const btnAgregarSubtipoOperacion = document.getElementById(
+  "btnAgregarSubtipoOperacion",
+);
+const label = document.getElementById("modalRegistrarSubtipoOperacionLabel");
 listar();
 // Listar
 function listar() {
@@ -18,11 +22,12 @@ function listar() {
   };
 }
 
- // Render
+// Render
 function renderTabla(data) {
   tabla.innerHTML = "";
   if (!Array.isArray(data) || data.length === 0) {
-    tabla.innerHTML = "<tr><td colspan='2' class='text-center'>No se encontraron resultados</td></tr>";
+    tabla.innerHTML =
+      "<tr><td colspan='2' class='text-center'>No se encontraron resultados</td></tr>";
     return;
   }
   data.forEach((item) => {
@@ -33,7 +38,7 @@ function renderTabla(data) {
       <td>${item.clave}</td>
       <td>${item.nombre}</td>
       <td>${item.prefijo}</td>
-      <td>${item.puerto || 'No Requiere Puerto'}</td>
+      <td>${item.puerto || "No Requiere Puerto"}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="editar(${item.id_subtipo})"><i class="fas fa-edit"></i> Editar</button>
         <button class="btn btn-sm btn-danger" onclick="eliminar(${item.id_subtipo})"><i class="fas fa-trash-alt"></i> Eliminar</button>
@@ -47,18 +52,21 @@ function renderTabla(data) {
 btnAgregarSubtipoOperacion.addEventListener("click", () => {
   form.reset();
   document.getElementById("id").value = "";
-   
-  label.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Registrar Tipo de Documento';
-  document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+
+  label.innerHTML =
+    '<i data-feather="check-circle" class="me-1"></i> Registrar Tipo de Documento';
+  document.getElementById("btnSubmit").innerHTML =
+    '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
-    refrescarPuertoRequerido();
+  refrescarPuertoRequerido();
 });
 
 form.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const id = (document.getElementById("id").value || "").trim();
-  const url = base_url + "SubTipoOperacion/" + (id ? "actualizar" : "registrar");
+  const url =
+    base_url + "SubTipoOperacion/" + (id ? "actualizar" : "registrar");
 
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
@@ -66,10 +74,12 @@ form.addEventListener("submit", function (e) {
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let res;
-      try { res = JSON.parse(this.responseText); } catch { 
-        console.log(this.responseText);
-        Swal.fire("Aviso", "Respuesta inválida del servidor", "error"); 
-        return; 
+      try {
+        res = JSON.parse(this.responseText);
+      } catch {
+        //console.log(this.responseText);
+        Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
+        return;
       }
       if (res.status === true || res.status === "success") {
         modal.hide();
@@ -77,12 +87,12 @@ form.addEventListener("submit", function (e) {
         listar();
       }
       // normaliza status para Swal
-      const tipo = (res.status === true || res.status === "success") ? "success" : "error";
+      const tipo =
+        res.status === true || res.status === "success" ? "success" : "error";
       Swal.fire("Aviso", (res.msg || "").toUpperCase(), tipo);
     }
   };
 });
-
 
 function editar(id) {
   const http = new XMLHttpRequest();
@@ -90,13 +100,12 @@ function editar(id) {
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-      
-        let data;
-      
-      try { 
-        console.log(this.responseText);
-        data = JSON.parse(this.responseText); 
-    } catch (e) {
+      let data;
+
+      try {
+        //console.log(this.responseText);
+        data = JSON.parse(this.responseText);
+      } catch (e) {
         console.error("JSON inválido:", this.responseText);
         Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
         return;
@@ -104,23 +113,24 @@ function editar(id) {
 
       // Setear campos
       document.getElementById("id").value = data.id_subtipo;
-      form.tipo_operacion_id.value    = data.tipo_operacion_id || "";
-      form.claveSubtipoOperacion.value  = data.clave || "";
-      form.nombreSubtipoOperacion.value    = data.nombre || "";
-      form.puerto_id.value  = data.puerto_arribo_default_id || ""; 
+      form.tipo_operacion_id.value = data.tipo_operacion_id || "";
+      form.claveSubtipoOperacion.value = data.clave || "";
+      form.nombreSubtipoOperacion.value = data.nombre || "";
+      form.puerto_id.value = data.puerto_arribo_default_id || "";
       form.prefijo_codigo.value = data.prefijo_codigo || "";
-      label.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Editar Subtipo de Documento';
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      label.innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i> Editar Subtipo de Documento';
+      document.getElementById("btnSubmit").innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
       modal.show();
-      
-refrescarPuertoRequerido();
-      
+
+      refrescarPuertoRequerido();
     }
   };
 }
 // Eliminar
-function eliminar(id) {    
+function eliminar(id) {
   Swal.fire({
     title: "¿Estás seguro?",
     text: "Esta acción no se puede deshacer.",
@@ -131,12 +141,12 @@ function eliminar(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      const url=base_url + "subtipooperacion/eliminar/" + id;
+      const url = base_url + "subtipooperacion/eliminar/" + id;
       http.open("GET", url, true);
       http.send();
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-          console.log(this.responseText);
+          //console.log(this.responseText);
           const res = JSON.parse(this.responseText);
           if (res.status === "success") listar();
           Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
@@ -145,7 +155,7 @@ function eliminar(id) {
     }
   });
 }
-const inputBuscar   = document.getElementById("buscarSubSubtipoOperacion");
+const inputBuscar = document.getElementById("buscarSubSubtipoOperacion");
 const sugerenciasEl = document.getElementById("sugerenciasSubtipoOperacion");
 // Buscar + sugerencias
 inputBuscar?.addEventListener("keyup", function () {
@@ -160,13 +170,21 @@ inputBuscar?.addEventListener("keyup", function () {
   }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "subtipooperacion/buscar?term=" + encodeURIComponent(term), true);
+  http.open(
+    "GET",
+    base_url + "subtipooperacion/buscar?term=" + encodeURIComponent(term),
+    true,
+  );
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let data;
-      try { data = JSON.parse(this.responseText); }
-      catch(e){ console.error("JSON inválido:", this.responseText); return; }
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        return;
+      }
 
       // refresca tabla con el resultado
       renderTabla(data);
@@ -202,29 +220,28 @@ document.addEventListener("click", function (e) {
     sugerenciasEl.innerHTML = "";
     sugerenciasEl.style.display = "none";
   }
-}); 
- 
+});
 
-const selTipoOp  = document.getElementById('tipo_operacion_id');
-const selPuerto  = document.getElementById('puerto_id');
-const lblPuerto  = document.querySelector('label[for="puerto_id"]');
+const selTipoOp = document.getElementById("tipo_operacion_id");
+const selPuerto = document.getElementById("puerto_id");
+const lblPuerto = document.querySelector('label[for="puerto_id"]');
 
 function tipoRequierePuertoFront() {
   const opt = selTipoOp.options[selTipoOp.selectedIndex];
-  return (opt?.dataset?.requierePuerto === '1');
+  return opt?.dataset?.requierePuerto === "1";
 }
 
 function refrescarPuertoRequerido() {
   const requiere = tipoRequierePuertoFront();
   selPuerto.disabled = !requiere;
   selPuerto.required = requiere;
-  if (!requiere) selPuerto.value = '';
-  if (lblPuerto) lblPuerto.textContent = 'Puerto' + (requiere ? ' *' : ' (no aplica)');
+  if (!requiere) selPuerto.value = "";
+  if (lblPuerto)
+    lblPuerto.textContent = "Puerto" + (requiere ? " *" : " (no aplica)");
 }
 
 // Al cargar y al cambiar tipo:
-document.addEventListener('DOMContentLoaded', refrescarPuertoRequerido);
-selTipoOp.addEventListener('change', refrescarPuertoRequerido);
+document.addEventListener("DOMContentLoaded", refrescarPuertoRequerido);
+selTipoOp.addEventListener("change", refrescarPuertoRequerido);
 
- 
 refrescarPuertoRequerido();

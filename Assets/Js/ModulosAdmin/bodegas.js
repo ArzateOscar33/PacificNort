@@ -1,17 +1,19 @@
 // assets/js/modulosAdmin/bodegas.js
 
-const tabla            = document.getElementById("tablaBodegas");
-const formBodega       = document.getElementById("formBodega");
-const modalBodega      = new bootstrap.Modal(document.getElementById("modalRegistrarBodega"));
+const tabla = document.getElementById("tablaBodegas");
+const formBodega = document.getElementById("formBodega");
+const modalBodega = new bootstrap.Modal(
+  document.getElementById("modalRegistrarBodega"),
+);
 const btnAgregarBodega = document.getElementById("btnAgregarBodega");
-const inputBuscar      = document.getElementById("buscarBodega");
-const sugerenciasBox   = document.getElementById("sugerenciasBodega"); 
+const inputBuscar = document.getElementById("buscarBodega");
+const sugerenciasBox = document.getElementById("sugerenciasBodega");
 
 // Campos del formulario
-const fldId        = document.getElementById("id");
-const fldNombre    = document.getElementById("nombre");
+const fldId = document.getElementById("id");
+const fldNombre = document.getElementById("nombre");
 const fldDireccion = document.getElementById("direccion");
-const fldCiudad    = document.getElementById("ciudad_id");
+const fldCiudad = document.getElementById("ciudad_id");
 
 // ===================== LISTAR =====================
 window.addEventListener("DOMContentLoaded", listar);
@@ -22,9 +24,17 @@ function listar() {
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4) {
-      if (this.status !== 200) { console.error("Error listar:", this.responseText); return; }
+      if (this.status !== 200) {
+        console.error("Error listar:", this.responseText);
+        return;
+      }
       let data;
-      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        return;
+      }
       renderTabla(data);
     }
   };
@@ -33,7 +43,8 @@ function listar() {
 function renderTabla(data) {
   tabla.innerHTML = "";
   if (!Array.isArray(data) || data.length === 0) {
-    tabla.innerHTML = "<tr><td colspan='4' class='text-center'>No se encontraron resultados</td></tr>";
+    tabla.innerHTML =
+      "<tr><td colspan='4' class='text-center'>No se encontraron resultados</td></tr>";
     return;
   }
   data.forEach((item) => {
@@ -56,22 +67,28 @@ function renderTabla(data) {
 btnAgregarBodega.addEventListener("click", () => {
   formBodega.reset();
   fldId.value = "";
-  document.getElementById("modalRegistrarBodegaLabel").textContent = "Registrar Bodega";
+  document.getElementById("modalRegistrarBodegaLabel").textContent =
+    "Registrar Bodega";
   const btnSubmit = formBodega.querySelector('button[type="submit"]');
-  btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+  btnSubmit.innerHTML =
+    '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
 });
 
 formBodega.addEventListener("submit", function (e) {
   e.preventDefault();
 
-  const id        = fldId.value.trim();
-  const nombre    = fldNombre.value.trim();
+  const id = fldId.value.trim();
+  const nombre = fldNombre.value.trim();
   const direccion = fldDireccion.value.trim();
   const ciudad_id = fldCiudad.value.trim();
 
   if (!nombre || !direccion || !ciudad_id) {
-    Swal.fire("Campos requeridos", "Completa nombre, dirección y ciudad", "warning");
+    Swal.fire(
+      "Campos requeridos",
+      "Completa nombre, dirección y ciudad",
+      "warning",
+    );
     return;
   }
 
@@ -81,50 +98,67 @@ formBodega.addEventListener("submit", function (e) {
   fd.append("direccion", direccion);
   fd.append("ciudad_id", ciudad_id);
 
-  const url = base_url + (id === "" ? "Bodegas/registrar" : "Bodegas/actualizar");
+  const url =
+    base_url + (id === "" ? "Bodegas/registrar" : "Bodegas/actualizar");
 
   const http = new XMLHttpRequest();
   http.open("POST", url, true);
   http.send(fd);
   http.onreadystatechange = function () {
     if (this.readyState === 4) {
-      if (this.status !== 200) { console.error("Error guardar:", this.responseText); Swal.fire("Error", "No se pudo guardar", "error"); return; }
+      if (this.status !== 200) {
+        console.error("Error guardar:", this.responseText);
+        Swal.fire("Error", "No se pudo guardar", "error");
+        return;
+      }
       let res;
-      try { res = JSON.parse(this.responseText); } 
-      catch (e) { console.error("JSON inválido:", this.responseText); Swal.fire("Error", "Respuesta no válida", "error"); return; }
+      try {
+        res = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        Swal.fire("Error", "Respuesta no válida", "error");
+        return;
+      }
 
-      Swal.fire(res.status === "success" ? "Éxito" : "Atención", res.msg, res.status);
+      Swal.fire(
+        res.status === "success" ? "Éxito" : "Atención",
+        res.msg,
+        res.status,
+      );
       if (res.status === "success") {
         formBodega.reset();
         fldId.value = "";
         modalBodega.hide();
         listar();
 
-        document.getElementById("modalRegistrarBodegaLabel").textContent = "Registrar Bodega";
+        document.getElementById("modalRegistrarBodegaLabel").textContent =
+          "Registrar Bodega";
         const btnSubmit = formBodega.querySelector('button[type="submit"]');
-        btnSubmit.innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
+        btnSubmit.innerHTML =
+          '<i data-feather="check-circle" class="me-1"></i> Agregar';
         feather.replace();
       }
     }
   };
 });
 
-  
 function editarBodega(id) {
   const http = new XMLHttpRequest();
-  const url= base_url + "Bodegas/editar/" + id;
-  http.open("GET",url, true);
+  const url = base_url + "Bodegas/editar/" + id;
+  http.open("GET", url, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-        console.log(this.responseText);
+      //console.log(this.responseText);
       const data = JSON.parse(this.responseText);
-      document.getElementById("id").value = data.id_bodega;   
+      document.getElementById("id").value = data.id_bodega;
       formBodega.nombre.value = data.nombre || "";
-      formBodega.direccion.value  = data.direccion || "";
-      formBodega.ciudad_id.value    = data.ciudad_id || ""; 
-      document.getElementById("modalRegistrarBodegaLabel").textContent = "Editar Bodega";
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      formBodega.direccion.value = data.direccion || "";
+      formBodega.ciudad_id.value = data.ciudad_id || "";
+      document.getElementById("modalRegistrarBodegaLabel").textContent =
+        "Editar Bodega";
+      document.getElementById("btnSubmit").innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
       modalBodega.show();
     }
@@ -132,7 +166,7 @@ function editarBodega(id) {
 }
 
 // Eliminar
-function eliminarBodega(id) {    
+function eliminarBodega(id) {
   Swal.fire({
     title: "¿Estás seguro?",
     text: "Esta acción no se puede deshacer.",
@@ -143,12 +177,12 @@ function eliminarBodega(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      const url=base_url + "Bodegas/eliminar/" + id;
+      const url = base_url + "Bodegas/eliminar/" + id;
       http.open("GET", url, true);
       http.send();
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-          console.log(this.responseText);
+          //console.log(this.responseText);
           const res = JSON.parse(this.responseText);
           if (res.status === "success") listar();
           Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
@@ -162,19 +196,34 @@ inputBuscar.addEventListener("keyup", function () {
   const term = this.value.trim();
 
   if (term === "") {
-    if (sugerenciasBox) { sugerenciasBox.innerHTML = ""; sugerenciasBox.style.display = "none"; }
+    if (sugerenciasBox) {
+      sugerenciasBox.innerHTML = "";
+      sugerenciasBox.style.display = "none";
+    }
     listar();
     return;
   }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Bodegas/buscar?term=" + encodeURIComponent(term), true);
+  http.open(
+    "GET",
+    base_url + "Bodegas/buscar?term=" + encodeURIComponent(term),
+    true,
+  );
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4) {
-      if (this.status !== 200) { console.error("Error buscar:", this.responseText); return; }
+      if (this.status !== 200) {
+        console.error("Error buscar:", this.responseText);
+        return;
+      }
       let data;
-      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        return;
+      }
 
       // refresca la tabla con resultados
       renderTabla(data);
@@ -217,13 +266,25 @@ document.addEventListener("click", function (e) {
 // Helper para filtrar por término seleccionado (usa la misma ruta)
 function listarBodegasFiltradas(termino) {
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Bodegas/buscar?term=" + encodeURIComponent(termino), true);
+  http.open(
+    "GET",
+    base_url + "Bodegas/buscar?term=" + encodeURIComponent(termino),
+    true,
+  );
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4) {
-      if (this.status !== 200) { console.error("Error filtrar:", this.responseText); return; }
+      if (this.status !== 200) {
+        console.error("Error filtrar:", this.responseText);
+        return;
+      }
       let data;
-      try { data = JSON.parse(this.responseText); } catch (e) { console.error("JSON inválido:", this.responseText); return; }
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        return;
+      }
       renderTabla(data);
     }
   };

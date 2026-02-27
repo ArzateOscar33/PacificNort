@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
           res = JSON.parse(this.responseText);
         } catch (e) {
-          console.log(this.responseText);
+          // console.log(this.responseText);
           alertas("Respuesta inválida del servidor.", "error");
           return;
         }

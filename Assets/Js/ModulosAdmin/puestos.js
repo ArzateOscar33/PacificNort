@@ -1,5 +1,5 @@
 const modalPuesto = new bootstrap.Modal(
-  document.getElementById("modalRegistrarPuesto")
+  document.getElementById("modalRegistrarPuesto"),
 );
 const formPuesto = document.querySelector("#formPuesto");
 const nombrePuesto = document.querySelector("#nombrePuesto");
@@ -46,7 +46,7 @@ formPuesto.addEventListener("submit", function (e) {
     Swal.fire(
       "Campo requerido",
       "El nombre del puesto es obligatorio",
-      "warning"
+      "warning",
     );
     return;
   }
@@ -75,7 +75,7 @@ formPuesto.addEventListener("submit", function (e) {
   })
     .then(async (res) => {
       const texto = await res.text();
-      console.log("Respuesta cruda del servidor:", texto);
+      //console.log("Respuesta cruda del servidor:", texto);
 
       try {
         const data = JSON.parse(texto);
@@ -137,7 +137,7 @@ function listarPuestos() {
   fetch(base_url + "Puestos/listar")
     .then((res) => res.json())
     .then((data) => {
-      console.log("Respuesta del servidor:", data); // 👈 Aquí lo ves en consola
+      //console.log("Respuesta del servidor:", data); // 👈 Aquí lo ves en consola
       tabla.innerHTML = "";
       data.forEach((dep) => {
         const tr = document.createElement("tr");
@@ -207,7 +207,7 @@ function eliminarPuesto(id) {
       fetch(base_url + "Puestos/eliminar/" + id)
         .then(async (res) => {
           const texto = await res.text(); // texto crudo de respuesta
-          console.log(" Respuesta cruda al eliminar:", texto);
+          //          console.log(" Respuesta cruda al eliminar:", texto);
 
           try {
             const data = JSON.parse(texto);
@@ -225,7 +225,7 @@ function eliminarPuesto(id) {
             Swal.fire(
               "Error",
               "La respuesta del servidor no es válida",
-              "error"
+              "error",
             );
           }
         })
@@ -287,7 +287,7 @@ inputBuscar.addEventListener("keyup", function () {
   fetch(base_url + "Puestos/buscar?term=" + encodeURIComponent(termino))
     .then((res) => res.json())
     .then((data) => {
-      console.log("Respuesta de búsqueda:", data);
+      //console.log("Respuesta de búsqueda:", data);
       sugerenciasPuestos.innerHTML = "";
       if (data.length === 0) {
         sugerenciasPuestos.style.display = "none";
@@ -308,7 +308,7 @@ inputBuscar.addEventListener("keyup", function () {
           fetch(
             base_url +
               "Puestos/buscar?term=" +
-              encodeURIComponent(dep.nombre_puesto)
+              encodeURIComponent(dep.nombre_puesto),
           )
             .then((res) => res.json())
             .then((depData) => {

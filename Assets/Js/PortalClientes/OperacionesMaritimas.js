@@ -801,9 +801,9 @@
 
       // ✅ 1) Abrir modal detalle Marítima
       if (action === "detalle-mar") {
-        console.log("CLICK detalle-mar", { opId });
-        console.log("modalMar:", modalMar);
-        console.log("bootstrap:", window.bootstrap);
+        //console.log("CLICK detalle-mar", { opId });
+        //console.log("modalMar:", modalMar);
+        //console.log("bootstrap:", window.bootstrap);
 
         if (!modalMar) {
           swal.fire({

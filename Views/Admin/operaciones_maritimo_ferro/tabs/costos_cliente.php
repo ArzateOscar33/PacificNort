@@ -11,13 +11,10 @@
                     </small>
                 </div>
 
-
             </div>
 
             <!-- Filtros -->
             <div class="row g-2 align-items-end mb-3">
-
-
 
                 <!-- Cliente (buscar) 
                 <div class="col-12 col-md-4 position-relative">
@@ -133,8 +130,10 @@
                     <div class="alert alert-light border mb-0 py-2">
                         <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
                             <span class="badge bg-secondary text-white" id="costosCliente_metaTotalOps">Ops: 0</span>
-                            <span class="badge bg-primary text-white" id="costosCliente_metaTotalConceptos">Conceptos: 0</span>
-                            <span class="badge bg-warning text-dark" id="costosCliente_metaPendientes">Pendientes: $0</span>
+                            <span class="badge bg-primary text-white" id="costosCliente_metaTotalConceptos">Conceptos:
+                                0</span>
+                            <span class="badge bg-warning text-dark" id="costosCliente_metaPendientes">Pendientes:
+                                $0</span>
                             <span class="badge bg-success text-white" id="costosCliente_metaPagados">Pagados: $0</span>
                         </div>
                     </div>
@@ -164,8 +163,6 @@
 
                     <tbody id="costosCliente_tbody">
 
-
-
                         <!-- Placeholder vacío -->
                         <tr>
                             <td colspan="11" class="text-center text-muted py-5">
@@ -187,7 +184,6 @@
     </div>
 </div>
 
-
 <!-- Modal: Nuevo / Editar Concepto (solo vista) -->
 <div class="modal fade" id="modalCostoClienteConcepto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -200,7 +196,8 @@
                         <h5 class="modal-title mb-1">Concepto de Costo</h5>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Cerrar"></button>
             </div>
 
             <div class="modal-body">
@@ -249,4 +246,3 @@
     </div>
 </div>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_clientes.js"></script>
-<script>

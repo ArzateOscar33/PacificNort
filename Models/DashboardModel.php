@@ -70,7 +70,7 @@ WHERE o.estatus_id IN (1,5,9);
     {
         $sql = "SELECT COUNT(DISTINCT o.cliente_id) AS n
             FROM operaciones o
-            WHERE o.estatus_id IN (1,5,9) AND o.cliente_id IS NOT NULL";
+            WHERE o.estatus_id IN (1,5,6,9,10,11,12) AND o.cliente_id IS NOT NULL"; //camino a destino,en agua , 
         $row = $this->select($sql);
         return $row ? (int)$row['n'] : 0;
     }
@@ -338,7 +338,7 @@ WHERE o.estatus_id IN (1,5,9);
         $sql = "
             SELECT COUNT(*) AS n
             FROM operaciones o
-            WHERE o.estatus_id IN (1,5,9)
+            WHERE o.estatus_id IN (9)
               AND (o.isf IS NULL OR o.isf = 0)
               AND (
                     " . (empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro") . "
@@ -355,20 +355,20 @@ WHERE o.estatus_id IN (1,5,9);
      */
     public function kpiOperacionesSinCitaPuerto(): int
     {
-        $lazaroIds = $this->getSubtipoLazaroIds();
-        [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
+        // $lazaroIds = $this->getSubtipoLazaroIds();
+        // [$inLazaro, $paramsL] = $this->buildIn($lazaroIds);
 
-        $whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
+        //$whereNoLazaro = empty($lazaroIds) ? "1=1" : "o.subtipo_operacion_id NOT IN $inLazaro";
 
         $sql = "
         SELECT COUNT(*) AS n
         FROM operaciones o
         WHERE o.estatus_id = 11
           AND o.cita_puerto IS NULL
-          AND $whereNoLazaro
+           
     ";
 
-        $row = $this->select($sql, $paramsL);
+        $row = $this->select($sql, []);
         return $row ? (int)$row['n'] : 0;
     }
 

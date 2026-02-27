@@ -59,7 +59,7 @@ function renderKPIs(payload) {
   setText(elOpsSinISF, fmtInt(d.ops_sin_isf || 0));
   setText(elOpsSinCitaPuerto, fmtInt(d.ops_sin_cita_puerto || 0));
   setText(elOpsCitaPuertoProxima, fmtInt(d.ops_cita_puerto_proxima || 0));
-
+  //console.log("Datos KPIs:", d);
   // =========================
   // Contenedores en bodega
   // Soporta:
@@ -224,8 +224,8 @@ function xhrGET(url, onOk, onErr) {
       onErr?.(this.responseText);
       return;
     }
-    console.log(this.responseText);
-    console.log("[Dashboard/kpis raw]", this.responseText);
+    //console.log(this.responseText);
+    //console.log("[Dashboard/kpis raw]", this.responseText);
     let data;
     try {
       data = JSON.parse(this.responseText);

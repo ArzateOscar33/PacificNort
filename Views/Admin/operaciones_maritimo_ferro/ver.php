@@ -11,9 +11,9 @@
         <li class="nav-item">
             <a class="nav-link active" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operaciones</a>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos Maritimos</a>
-        </li>
+        </li>-->
         <!-- FIN MARITMA -->
 
         <!-- FERRO/TERRESTRE -->
@@ -25,9 +25,9 @@
             <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false"><i data-feather="truck"></i>En Transito</a>
         </li> -->
 
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false"><i data-feather="calendar"></i>Eventos Terrestres</a>
-        </li>
+        </li>-->
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
                 <i data-feather="shuffle"></i> Trazabilidad
@@ -96,7 +96,7 @@
             <?php include 'tabs/en_piso.php'; ?>
         </div>
         <div class="tab-pane fade" id="costos-contenedor" role="tabpanel" aria-labelledby="log-tab">
-            <?php include 'tabs/costos.php'; ?>
+            <?php include 'tabs/costos_operacion.php'; ?>
         </div>
         <div class="tab-pane fade" id="costos_operacion_clientes" role="tabpanel" aria-labelledby="costos_operacion_clientes-tab">
             <?php include 'tabs/costos_cliente.php'; ?>
@@ -104,17 +104,7 @@
     </div>
 </div>
 
-<!-- Refuerzo de comportamiento por si algún conflicto impide los tabs -->
-<script>
-    const triggerTabList = document.querySelectorAll('#operacionTabs a');
-    triggerTabList.forEach(tab => {
-        tab.addEventListener('click', function(e) {
-            e.preventDefault();
-            let instance = new bootstrap.Tab(this);
-            instance.show();
-        });
-    });
-</script>
+
 <!--<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> -->
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/xlsx.full.min.js"></script>
 
@@ -126,3 +116,14 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.plugin.autotable.min.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/exportarTablas.js"></script>
 <?php include 'Views/Template/admin_footer.php'; ?>
+<!-- Refuerzo de comportamiento por si algún conflicto impide los tabs -->
+<script>
+    const triggerTabList = document.querySelectorAll('#operacionTabs a');
+    triggerTabList.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            let instance = new bootstrap.Tab(this);
+            instance.show();
+        });
+    });
+</script>

@@ -739,7 +739,7 @@
       document.getElementById("isfContenedor"),
       data.isf == 1 ? "Sí" : "No",
     );
-    console.log("Detalle contenedor:", data);
+    //console.log("Detalle contenedor:", data);
     safeSetText(
       document.getElementById("brokerContenedor"),
       data.broker || "Sin Broker Registrado",

@@ -5,7 +5,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-header bg-primary ">
-          <h3 class="card-title mt-3 mb-3 text-white">Tipo De Movimiento</h3>
+          <h3 class="card-title mt-3 mb-3 text-white">Tipo De Costo</h3>
         </div>
         <!-- /.card-header -->
         <div class="card-body">
@@ -23,7 +23,7 @@
             <div class="col-md-2">
               <label for="tipoMovimiento" class="form-label">Tipo</label>
               <select id="tipoMovimiento" class="form-control" name="tipoMovimiento">
-                <option value="">Tipo de Movimiento</option>
+                <option value="">Tipo de Costo</option>
                 <option value="gasto">Gasto</option>
                 <option value="abono">Abono</option>
               </select>
@@ -57,7 +57,7 @@
             <thead class="table-primary text-center">
               <tr>
                 <th>Nombre</th>
-                <th>Tipo de movimiento</th>
+                <th>Tipo de Costo</th>
                 <th>Moneda</th>
                 <th>Acciones</th>
               </tr>
@@ -85,7 +85,7 @@
       <!-- Encabezado -->
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title" id="modalRegistrarTipoMovimientoLabel">
-          <i data-feather="truck" class="me-2"></i> Registrar Tipo de Movimiento
+          <i data-feather="truck" class="me-2"></i> Registrar Tipo de Costo
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -95,7 +95,7 @@
         <form id="formTipoMovimiento" method="POST" action="#">
           <input type="hidden" name="id_movimiento" id="id_movimiento">
           <div class="mb-3">
-            <label for="nombre_movimiento" class="form-label">Nombre del Tipo de Movimiento</label>
+            <label for="nombre_movimiento" class="form-label">Nombre del Tipo de Costo</label>
             <input type="text" name="nombre_movimiento" class="form-control" placeholder="Ej. Carga, Descarga, Traslado"
               required>
           </div>

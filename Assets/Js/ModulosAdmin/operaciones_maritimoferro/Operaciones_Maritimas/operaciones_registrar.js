@@ -277,9 +277,9 @@ function guardarOperacionMF() {
         };
     x.onreadystatechange = function () {
       if (x.readyState !== 4) return;
-      console.log(this.responseText);
-      console.log("guardarOperacionMF response:", x.responseText);
-      console.log(this.responseText);
+      //console.log(this.responseText);
+      //console.log("guardarOperacionMF response:", x.responseText);
+      //console.log(this.responseText);
       let res = null;
       try {
         res = JSON.parse(x.responseText);
