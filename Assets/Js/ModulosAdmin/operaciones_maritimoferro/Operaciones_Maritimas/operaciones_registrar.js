@@ -182,6 +182,52 @@ function guardarOperacionMF() {
       return;
     }
 
+    // ---- helpers locales para UI ----
+    const clearContenedorInvalid = () => {
+      document
+        .querySelectorAll("#contenedoresRepeater_mf .contenedor-input_mf")
+        .forEach((el) => el.classList.remove("is-invalid"));
+    };
+
+    const markContenedorInvalid = (numero) => {
+      const needle = String(numero || "")
+        .trim()
+        .toUpperCase();
+
+      if (!needle) return false;
+
+      let first = null;
+      document
+        .querySelectorAll("#contenedoresRepeater_mf .contenedor-item")
+        .forEach((row) => {
+          const inp = row.querySelector(".contenedor-input_mf");
+          if (!inp) return;
+
+          const val = String(inp.value || "")
+            .trim()
+            .toUpperCase();
+
+          if (val && val === needle) {
+            inp.classList.add("is-invalid");
+            if (!first) first = inp;
+          }
+        });
+
+      if (first) {
+        try {
+          first.scrollIntoView({ behavior: "smooth", block: "center" });
+        } catch (e) {}
+        first.focus?.();
+        first.select?.();
+        return true;
+      }
+      return false;
+    };
+
+    // Limpia marcados previos
+    clearContenedorInvalid();
+
+    // ---- validaciones existentes ----
     if (!validarBL_MF()) {
       Swal?.fire(
         "BL inválido",
@@ -241,7 +287,7 @@ function guardarOperacionMF() {
     fd.append("cita_puerto", inpCita_MF?.value || "");
 
     // ✅ Contenedores: nombres que el controlador espera
-    const conts = collectContenedoresMF(); // asegúrate que te devuelva: {id, numero, bultos, tipo, peso}
+    const conts = collectContenedoresMF();
     conts.forEach((c) => {
       fd.append("contenedores_id[]", String(c.id || ""));
       fd.append("contenedores_codigo[]", String(c.numero || ""));
@@ -256,14 +302,17 @@ function guardarOperacionMF() {
       );
     });
 
-    // Si el número de operación está en modo auto, permite que el backend lo genere definitivo
+    // ⚠️ OJO: aquí tu código tenía un set a un name que NO usa tu controlador.
+    // Tu controlador lee "numero_operacion_mf". Si quieres que el backend genere folio,
+    // manda numero_operacion_mf vacío.
     if (inpNumeroOp_MF?.hasAttribute("readonly")) {
-      fd.set("maritimo_ferro_numeroOperacion", "");
+      fd.set("numero_operacion_mf", "");
     }
 
     const x = new XMLHttpRequest();
     x.open("POST", base_url + "Operaciones_maritimo_ferro/guardar", true);
     x.timeout = 20000;
+
     x.onerror =
       x.onabort =
       x.ontimeout =
@@ -275,15 +324,15 @@ function guardarOperacionMF() {
           );
           resolve(false);
         };
+
     x.onreadystatechange = function () {
       if (x.readyState !== 4) return;
-      //console.log(this.responseText);
-      //console.log("guardarOperacionMF response:", x.responseText);
-      //console.log(this.responseText);
+
       let res = null;
       try {
         res = JSON.parse(x.responseText);
       } catch (e) {}
+
       if (x.status !== 200 || !res) {
         Swal?.fire("Error", "No se pudo registrar la operación.", "error");
         resolve(false);
@@ -293,43 +342,77 @@ function guardarOperacionMF() {
       if (res.status === "success") {
         const folioFinal =
           res.data?.numero_operacion || res.numero_operacion || "";
+
         if (inpNumeroOp_MF) {
           inpNumeroOp_MF.value = folioFinal;
           inpNumeroOp_MF.setAttribute("readonly", "readonly");
         }
+
         setHelpFolio(
           folioFinal
             ? `Folio definitivo asignado: ${folioFinal}`
             : "Folio asignado",
           true,
         );
+
         Swal?.fire(
           "¡Éxito!",
           `Operación creada${folioFinal ? " (" + folioFinal + ")" : ""}`,
           "success",
         );
+
         window.bootstrap
           ? bootstrap.Modal.getOrCreateInstance(modalElMF).hide()
           : null;
+
         formOpMF.reset();
         resetRepeaterMF?.();
-        // Re-cargar el listado si tienes la función global listar()
+
         try {
           listar?.();
         } catch (e) {}
+
         resolve(true);
-      } else if (res.status === "warning") {
+        return;
+      }
+
+      // ✅ NUEVO: warning con códigos (DUP_CONT_MES)
+      if (res.status === "warning") {
+        // Limpia marcados previos
+        clearContenedorInvalid();
+
+        if (res.code === "DUP_CONT_MES") {
+          const cont = res.data?.contenedor || "";
+          const op = res.data?.operacion || "";
+          const mes = res.data?.mes || "";
+
+          // Marca el input del contenedor (si está en el repeater)
+          markContenedorInvalid(cont);
+
+          Swal?.fire(
+            "Contenedor duplicado",
+            res.msg ||
+              `El contenedor ${cont} ya está asignado a ${op} en ${mes}.`,
+            "warning",
+          );
+          resolve(false);
+          return;
+        }
+
+        // warning genérico
         Swal?.fire("Atención", res.msg || "Revisa los datos.", "warning");
         resolve(false);
-      } else {
-        Swal?.fire("Error", res.msg || "No se pudo registrar.", "error");
-        resolve(false);
+        return;
       }
+
+      // error normal
+      Swal?.fire("Error", res.msg || "No se pudo registrar.", "error");
+      resolve(false);
     };
+
     x.send(fd);
   });
 }
-
 // ===== Wire-up MF =====
 
 // BL: sanitiza en input y valida al blur

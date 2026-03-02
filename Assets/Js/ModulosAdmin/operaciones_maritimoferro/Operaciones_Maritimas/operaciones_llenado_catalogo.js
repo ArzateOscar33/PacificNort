@@ -1193,6 +1193,51 @@
       return;
     }
 
+    // ---- helpers locales para UI (duplicado contenedor) ----
+    const clearContenedorInvalid = () => {
+      document
+        .querySelectorAll("#contenedoresRepeater_mf .contenedor-input_mf")
+        .forEach((el) => el.classList.remove("is-invalid"));
+    };
+
+    const markContenedorInvalid = (numero) => {
+      const needle = String(numero || "")
+        .trim()
+        .toUpperCase();
+      if (!needle) return false;
+
+      let first = null;
+
+      document
+        .querySelectorAll("#contenedoresRepeater_mf .contenedor-item")
+        .forEach((row) => {
+          const inp = row.querySelector(".contenedor-input_mf");
+          if (!inp) return;
+
+          const val = String(inp.value || "")
+            .trim()
+            .toUpperCase();
+
+          if (val && val === needle) {
+            inp.classList.add("is-invalid");
+            if (!first) first = inp;
+          }
+        });
+
+      if (first) {
+        try {
+          first.scrollIntoView({ behavior: "smooth", block: "center" });
+        } catch (e) {}
+        first.focus?.();
+        first.select?.();
+        return true;
+      }
+      return false;
+    };
+
+    // Limpia marcados previos
+    clearContenedorInvalid();
+
     // ✅ 1) Tomar TODO desde los name="" reales de la vista
     const fd = new FormData(form);
 
@@ -1204,23 +1249,20 @@
     const bl = (blInp?.value || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     fd.set("numero_bl_mf", bl);
 
-    // ✅ 3) ISF: tu controlador suele usar isset($_POST['isf'])
-    // - Si no está checked, NO debe existir la key isf en POST
+    // ✅ 3) ISF: tu controlador usa isset($_POST['isf'])
     const chkIsf = document.getElementById("chkIsf");
     fd.delete("isf");
     if (chkIsf && chkIsf.checked) {
       fd.set("isf", "1");
     }
 
-    // ✅ 4) Contenedores: tu repeater NO tiene name="", así que hay que agregarlos aquí
-    // Limpia por si el form ya tuviera algo (defensivo)
+    // ✅ 4) Contenedores: el repeater NO tiene name="", así que hay que agregarlos aquí
     fd.delete("contenedores_id[]");
     fd.delete("contenedores_codigo[]");
     fd.delete("contenedores_bultos[]");
     fd.delete("contenedores_tipo[]");
     fd.delete("contenedores_peso[]");
 
-    // Recorrer filas
     const rows = document.querySelectorAll(
       "#contenedoresRepeater_mf .contenedor-item",
     );
@@ -1229,9 +1271,8 @@
       const numInp = row.querySelector(".contenedor-input_mf");
       const bInp = row.querySelector(".contenedor-bultos_mf");
 
-      // En algunas filas quizá exista tipo/peso (si las agregas con template)
-      const tSel = row.querySelector(".contenedor-tipo_mf"); // select
-      const pInp = row.querySelector(".pesoOperacion_mf"); // input
+      const tSel = row.querySelector(".contenedor-tipo_mf");
+      const pInp = row.querySelector(".pesoOperacion_mf");
 
       const cid = (idInp?.value || "").trim();
       const codigo = (numInp?.value || "").trim().toUpperCase();
@@ -1239,15 +1280,11 @@
       const tipo = (tSel?.value || "").trim();
       const peso = (pInp?.value || "").trim();
 
-      // Solo enviamos si hay contenedor seleccionado
-      // (si tu flujo depende del id, esto es correcto)
       if (!cid) return;
 
       fd.append("contenedores_id[]", cid);
       fd.append("contenedores_codigo[]", codigo);
       fd.append("contenedores_bultos[]", bultos);
-
-      // Estos dos van aunque estén vacíos; tu backend puede decidir si los usa
       fd.append("contenedores_tipo[]", tipo);
       fd.append("contenedores_peso[]", peso);
     });
@@ -1276,16 +1313,40 @@
           "success",
         );
 
-        // Cerrar modal
         bootstrap?.Modal.getOrCreateInstance(modalEl)?.hide();
 
-        // Refrescar lista
         try {
           listar?.();
         } catch (e) {}
-      } else {
-        Swal?.fire("Error", res.msg || "No se pudo actualizar", "error");
+        return;
       }
+
+      // ✅ NUEVO: warning con DUP_CONT_MES
+      if (res.status === "warning") {
+        clearContenedorInvalid();
+
+        if (res.code === "DUP_CONT_MES") {
+          const cont = res.data?.contenedor || "";
+          const op = res.data?.operacion || "";
+          const mes = res.data?.mes || "";
+
+          markContenedorInvalid(cont);
+
+          Swal?.fire(
+            "Contenedor duplicado",
+            res.msg ||
+              `El contenedor ${cont} ya está asignado a ${op} en ${mes}.`,
+            "warning",
+          );
+          return;
+        }
+
+        Swal?.fire("Atención", res.msg || "Revisa los datos.", "warning");
+        return;
+      }
+
+      // error normal
+      Swal?.fire("Error", res.msg || "No se pudo actualizar", "error");
     };
 
     x.send(fd);

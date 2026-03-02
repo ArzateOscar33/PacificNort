@@ -283,18 +283,31 @@ class Operaciones_maritimo_ferro extends Controller
 
         $usuarioId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
 
-        $res = $this->model->insertarOperacion($op, $contenedores, $usuarioId);
+        try {
+            $res = $this->model->insertarOperacion($op, $contenedores, $usuarioId);
+        } catch (\Throwable $e) {
+            $parsed = $this->parseModeloError($e);
+
+            // warning (DUP_CONT_MES) -> lo devolvemos tal cual para el JS
+            if (($parsed['status'] ?? '') === 'warning') {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode($parsed, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // error normal
+            return $this->jsonError($parsed['msg'] ?? 'No se pudo guardar', 200);
+        }
 
         if (!is_array($res) || ($res['status'] ?? 'error') !== 'success') {
             $msg = $res['msg'] ?? 'No se pudo guardar';
-            // mantenemos 200 para que tu JS pueda mostrar Swal con msg
             return $this->jsonError($msg, 200);
         }
 
         return $this->jsonOk([
-            'id_operacion'     => (int)$res['id_operacion'],
-            'numero_operacion' => (string)$res['numero_operacion'],
-            'msg'              => (string)($res['msg'] ?? 'Operación creada'),
+            'id_operacion'     => $res['id_operacion'] ?? 0,
+            'numero_operacion' => $res['numero_operacion'] ?? '',
+            'msg'              => $res['msg'] ?? 'Operación creada',
         ]);
     }
 
@@ -488,7 +501,60 @@ class Operaciones_maritimo_ferro extends Controller
         echo json_encode(['status' => 'error', 'msg' => $msg], JSON_UNESCAPED_UNICODE);
         exit;
     }
+    // ✅ Parsea errores del modelo (DUP_CONT_MES|CONT|OP|YYYY-MM)
+    private function parseModeloError(\Throwable $e): array
+    {
+        $msg = trim((string)$e->getMessage());
 
+        // Caso: DUP_CONT_MES|CSNU900101|LMF-199|2026-03
+        if (strpos($msg, 'DUP_CONT_MES|') === 0) {
+            $parts = explode('|', $msg);
+            $contenedor = $parts[1] ?? '';
+            $opConf     = $parts[2] ?? '';
+            $mes        = $parts[3] ?? '';
+
+            return [
+                'status' => 'warning',
+                'code'   => 'DUP_CONT_MES',
+                'msg'    => "No se puede registrar el contenedor {$contenedor} porque ya está asignado a {$opConf} en {$mes}.",
+                'data'   => [
+                    'contenedor' => $contenedor,
+                    'operacion'  => $opConf,
+                    'mes'        => $mes,
+                ],
+            ];
+        }
+
+        // (Opcional) si tu trigger MySQL lanza MESSAGE_TEXT con DUP_CONT_MES|...
+        if (strpos($msg, 'DUP_CONT_MES') !== false && strpos($msg, '|') !== false) {
+            // intenta rescatar el segmento
+            $pos = strpos($msg, 'DUP_CONT_MES|');
+            if ($pos !== false) {
+                $sub = substr($msg, $pos);
+                $parts = explode('|', $sub);
+                $contenedor = $parts[1] ?? '';
+                $opConf     = $parts[2] ?? '';
+                $mes        = $parts[3] ?? '';
+
+                return [
+                    'status' => 'warning',
+                    'code'   => 'DUP_CONT_MES',
+                    'msg'    => "No se puede registrar el contenedor {$contenedor} porque ya está asignado a {$opConf} en {$mes}.",
+                    'data'   => [
+                        'contenedor' => $contenedor,
+                        'operacion'  => $opConf,
+                        'mes'        => $mes,
+                    ],
+                ];
+            }
+        }
+
+        // default
+        return [
+            'status' => 'error',
+            'msg'    => ($msg !== '' ? $msg : 'Error inesperado'),
+        ];
+    }
 
     /* =============================
        ========== VISTAS (tabs) =====

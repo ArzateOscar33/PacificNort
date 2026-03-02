@@ -1188,12 +1188,132 @@ function renderAlertasAlta(items) {
   if (window.feather) feather.replace();
 }
 
+// =========================
+//  OPS POR ESTATUS (Chart.js)
+// =========================
+let chartOpsPorEstatusRef = null;
+
+function renderOpsPorEstatus(rows) {
+  const canvas = document.getElementById("chartOpsPorEstatus");
+  if (!canvas) return;
+
+  const legend = document.getElementById("legendOpsPorEstatus");
+
+  const arr = Array.isArray(rows) ? rows : [];
+  const labels = arr.map((r) => String(r.nombre || "—"));
+  const data = arr.map((r) => Number(r.total || 0));
+
+  const total = data.reduce((a, b) => a + (Number(b) || 0), 0);
+
+  // Si no hay datos
+  if (!labels.length || total === 0) {
+    if (chartOpsPorEstatusRef) {
+      chartOpsPorEstatusRef.destroy();
+      chartOpsPorEstatusRef = null;
+    }
+    const ctx2d = canvas.getContext("2d");
+    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    ctx2d.font = '600 14px system-ui, -apple-system, "Segoe UI", Roboto';
+    ctx2d.fillStyle = "#64748b";
+    ctx2d.textAlign = "center";
+    ctx2d.textBaseline = "middle";
+    ctx2d.fillText("Sin datos de estatus", canvas.width / 2, canvas.height / 2);
+
+    if (legend) legend.innerHTML = '<span class="text-muted">Sin datos</span>';
+    return;
+  }
+
+  // Destroy anterior
+  if (chartOpsPorEstatusRef) {
+    chartOpsPorEstatusRef.destroy();
+    chartOpsPorEstatusRef = null;
+  }
+
+  chartOpsPorEstatusRef = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Operaciones",
+          data,
+          borderWidth: 0,
+          borderRadius: 6,
+          // si quieres que visualmente “parezca” apilada:
+          stack: "volumen",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2.2,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (item) => {
+              const val = Number(item.raw || 0);
+              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
+              return ` ${val} (${pct}%)`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { maxRotation: 0, autoSkip: false },
+          grid: { display: false },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          ticks: { precision: 0 },
+          grid: { drawBorder: false },
+          title: { display: true, text: "Operaciones" },
+        },
+      },
+    },
+  });
+
+  // Leyenda simple abajo
+  if (legend) {
+    legend.innerHTML = labels
+      .map((lbl, i) => {
+        const val = data[i] ?? 0;
+        const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
+        return `${escapeHtml(lbl)}: <strong>${val}</strong> <span class="text-muted">(${pct}%)</span>`;
+      })
+      .join(" &nbsp;•&nbsp; ");
+  }
+}
+
+function cargarOpsPorEstatus() {
+  xhrGET(
+    base_url + "Dashboard/ops_por_estatus",
+    (res) => {
+      if (res?.status !== "ok" || !Array.isArray(res.data)) {
+        console.warn("[ops_por_estatus] respuesta no OK:", res);
+        renderOpsPorEstatus([]);
+        return;
+      }
+      renderOpsPorEstatus(res.data);
+    },
+    (err) => {
+      console.error("[ops_por_estatus]", err);
+      renderOpsPorEstatus([]);
+    },
+  );
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   cargarKPIs();
   cargarOpsPorSubtipo();
+  cargarOpsPorEstatus(); //
   cargarPuntualidadSemana(8);
   cargarTimelineOperaciones(30, 50);
   cargarAlertas();
-  cargarKPIAlertas(); // si lo usas
+  cargarKPIAlertas();
   loadCostosVsAbonos();
 });

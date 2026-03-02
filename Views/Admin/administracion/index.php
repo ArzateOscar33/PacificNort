@@ -200,7 +200,31 @@
       </div>
     </div>
 
+    <!-- Operaciones por Estatus (Barras apiladas) -->
     <div class="col-lg-6">
+      <div class="card card-soft h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="section-title mb-0">Operaciones por estatus (volumen)</h5>
+            <i data-feather="bar-chart-2"></i>
+          </div>
+
+          <!-- Canvas Chart.js -->
+          <canvas
+            id="chartOpsPorEstatus"
+            height="150"
+            aria-label="Operaciones por estatus"
+            role="img"></canvas>
+
+
+
+          <!-- (Opcional) contenedor de leyenda custom si la quieres como en subtipo -->
+          <div class="small mt-2" id="legendOpsPorEstatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6 d-none">
       <div class="card card-soft h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-2">

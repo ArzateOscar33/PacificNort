@@ -270,10 +270,12 @@
             class="form-control" style="max-width:240px;">
             <option value="">Medida del Contenedor (Todas)</option>
             <option value="20GP">20GP</option>
+            <option value="20HQ">20HQ</option>
             <option value="40GP">40GP</option>
             <option value="40HC">40HC</option>
             <option value="40HQ">40HQ</option>
             <option value="45HC">45HC</option>
+            <option value="45HQ">45HQ</option>
           </select>
 
         </div>
@@ -549,10 +551,12 @@
 
                         <option value="">Seleccione...</option>
                         <option value="20GP">20GP</option>
+                        <option value="20HQ">20HQ</option>
                         <option value="40GP">40GP</option>
                         <option value="40HC">40HC</option>
                         <option value="40HQ">40HQ</option>
                         <option value="45HC">45HC</option>
+                        <option value="45HQ">45HQ</option>
                       </select>
                     </div>
                     <div class="col-md-2">

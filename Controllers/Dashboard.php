@@ -28,112 +28,111 @@ class Dashboard extends Controller
      * - eta_days=7
      * - cita_days=5
      */
-public function kpis()
-{
-    header('Content-Type: application/json; charset=UTF-8');
+    public function kpis()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
 
-    try {
-        $etaDays  = isset($_GET['eta_days'])  ? max(1, (int)$_GET['eta_days'])  : 7;
-        $citaDays = isset($_GET['cita_days']) ? max(0, (int)$_GET['cita_days']) : 5;
+        try {
+            $etaDays  = isset($_GET['eta_days'])  ? max(1, (int)$_GET['eta_days'])  : 7;
+            $citaDays = isset($_GET['cita_days']) ? max(0, (int)$_GET['cita_days']) : 5;
 
-        // KPIs existentes
-        $opsActivas     = (int)$this->model->kpiOperacionesActivas();      // Marítimo
-        $opsFOEnCamino  = (int)$this->model->kpiOperacionesFOEnCamino();    // FO en tránsito
-        $contActivos    = (int)$this->model->kpiContenedoresActivos();      // Contenedores activos
+            // KPIs existentes
+            $opsActivas     = (int)$this->model->kpiOperacionesActivas();      // Marítimo
+            $opsFOEnCamino  = (int)$this->model->kpiOperacionesFOEnCamino();    // FO en tránsito
+            $contActivos    = (int)$this->model->kpiContenedoresActivos();      // Contenedores activos
 
-        $evt     = $this->model->kpiEventosHechosTotal();
-        $hechos  = (int)($evt['hechos'] ?? 0);
-        $total   = (int)($evt['total'] ?? 0);
-        $pct     = $total > 0 ? round(($hechos / $total) * 100, 2) : 0.0;
+            $evt     = $this->model->kpiEventosHechosTotal();
+            $hechos  = (int)($evt['hechos'] ?? 0);
+            $total   = (int)($evt['total'] ?? 0);
+            $pct     = $total > 0 ? round(($hechos / $total) * 100, 2) : 0.0;
 
-        $clientesAct = (int)$this->model->kpiClientesActivos();
-        $opsProxEta  = (int)$this->model->kpiOpsProximasETA($etaDays);
+            $clientesAct = (int)$this->model->kpiClientesActivos();
+            $opsProxEta  = (int)$this->model->kpiOpsProximasETA($etaDays);
 
-        // KPIs nuevos
-        $opsSinISF   = (int)$this->model->kpiOperacionesSinISF();           // excluye Lázaro
-        $opsSinCita  = (int)$this->model->kpiOperacionesSinCitaPuerto();    // excluye Lázaro
-        $opsCitaProx = (int)$this->model->kpiCitaPuertoProxima($citaDays);  // excluye Lázaro
+            // KPIs nuevos
+            $opsSinISF   = (int)$this->model->kpiOperacionesSinISF();           // excluye Lázaro
+            $opsSinCita  = (int)$this->model->kpiOperacionesSinCitaPuerto();    // excluye Lázaro
+            $opsCitaProx = (int)$this->model->kpiCitaPuertoProxima($citaDays);  // excluye Lázaro
 
-        // ✅ KPI: Contenedores en Bodega
-        $bodega = $this->model->kpiContenedoresBodegaPendientes();
- 
+            // ✅ KPI: Contenedores en Bodega
+            $bodega = $this->model->kpiContenedoresBodegaPendientes();
 
-        // ✅ (opcional) detalle TJ/SD
-        $contBodegaDetalle = null;
-        if (method_exists($this->model, 'kpiContenedoresEnBodegaDetalle')) {
-            $contBodegaDetalle = $this->model->kpiContenedoresEnBodegaDetalle();
-            // seguridad mínima
-            if (!is_array($contBodegaDetalle)) $contBodegaDetalle = null;
-        }
+
+            // ✅ (opcional) detalle TJ/SD
+            $contBodegaDetalle = null;
+            if (method_exists($this->model, 'kpiContenedoresEnBodegaDetalle')) {
+                $contBodegaDetalle = $this->model->kpiContenedoresEnBodegaDetalle();
+                // seguridad mínima
+                if (!is_array($contBodegaDetalle)) $contBodegaDetalle = null;
+            }
 
             // Alertas existentes
-        $alertasAlta = $this->model->alertasAltaPrioridadISFyCita(15);
+            $alertasAlta = $this->model->alertasAltaPrioridadISFyCita(15);
 
-        $alertasArribo = $this->model->alertasArriboProximoETA($etaDays, 15);
-        $alertasLazaro = $this->model->alertasLazaroSinCitaPuerto(15);
+            $alertasArribo = $this->model->alertasArriboProximoETA($etaDays, 15);
+            $alertasLazaro = $this->model->alertasLazaroSinCitaPuerto(15);
 
 
-        echo json_encode([
-            'status' => 'ok',
-            'meta'   => [
-                'eta_days'  => $etaDays,
-                'cita_days' => $citaDays
-            ],
-            'data'   => [
-                // Marítimo
-                'ops_activas'     => $opsActivas,
-
-                // FO
-                'ops_activas_fo'  => $opsFOEnCamino,
-
-                // Contenedores
-                'cont_activos'    => $contActivos,
-
-                // ✅ Bodega
-    'cont_bodega'     => $bodega['total'],
-    'cont_bodega_tj'  => $bodega['tj'],
-    'cont_bodega_sd'  => $bodega['sd'],
-
-    // ✅ lo que tu JS ya intenta leer
-    'cont_bodega_det' => [
-      'tj'    => $bodega['tj'],
-      'sd'    => $bodega['sd'],
-      'total' => $bodega['total'],
-      ],
-
-                // Eventos
-                'eventos' => [
-                    'hechos' => $hechos,
-                    'total'  => $total,
-                    'pct'    => $pct
+            echo json_encode([
+                'status' => 'ok',
+                'meta'   => [
+                    'eta_days'  => $etaDays,
+                    'cita_days' => $citaDays
                 ],
+                'data'   => [
+                    // Marítimo
+                    'ops_activas'     => $opsActivas,
 
-                // Clientes + ETA
-                'clientes_activos' => $clientesAct,
-                'ops_prox_eta'     => $opsProxEta,
+                    // FO
+                    'ops_activas_fo'  => $opsFOEnCamino,
 
-                // Reglas ISF / Cita puerto
-                'ops_sin_isf'             => $opsSinISF,
-                'ops_sin_cita_puerto'     => $opsSinCita,
-                'ops_cita_puerto_proxima' => $opsCitaProx,
+                    // Contenedores
+                    'cont_activos'    => $contActivos,
 
-                // Alertas Alta Prioridad
-                'alertas_alta' => $alertasAlta,
-                'alertas_arribo' => $alertasArribo,
-                'alertas_lc_sin_cita' => $alertasLazaro,
-            ]
-        ], JSON_UNESCAPED_UNICODE);
-        die();
+                    // ✅ Bodega
+                    'cont_bodega'     => $bodega['total'],
+                    'cont_bodega_tj'  => $bodega['tj'],
+                    'cont_bodega_sd'  => $bodega['sd'],
 
-    } catch (\Throwable $e) {
-        error_log('[Dashboard::kpis] ' . $e->getMessage());
-        echo json_encode([
-            'status' => 'error',
-            'msg'    => 'No fue posible obtener KPIs'
-        ], JSON_UNESCAPED_UNICODE);
-        die();
+                    // ✅ lo que tu JS ya intenta leer
+                    'cont_bodega_det' => [
+                        'tj'    => $bodega['tj'],
+                        'sd'    => $bodega['sd'],
+                        'total' => $bodega['total'],
+                    ],
+
+                    // Eventos
+                    'eventos' => [
+                        'hechos' => $hechos,
+                        'total'  => $total,
+                        'pct'    => $pct
+                    ],
+
+                    // Clientes + ETA
+                    'clientes_activos' => $clientesAct,
+                    'ops_prox_eta'     => $opsProxEta,
+
+                    // Reglas ISF / Cita puerto
+                    'ops_sin_isf'             => $opsSinISF,
+                    'ops_sin_cita_puerto'     => $opsSinCita,
+                    'ops_cita_puerto_proxima' => $opsCitaProx,
+
+                    // Alertas Alta Prioridad
+                    'alertas_alta' => $alertasAlta,
+                    'alertas_arribo' => $alertasArribo,
+                    'alertas_lc_sin_cita' => $alertasLazaro,
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            die();
+        } catch (\Throwable $e) {
+            error_log('[Dashboard::kpis] ' . $e->getMessage());
+            echo json_encode([
+                'status' => 'error',
+                'msg'    => 'No fue posible obtener KPIs'
+            ], JSON_UNESCAPED_UNICODE);
+            die();
+        }
     }
-}
 
 
     /**
@@ -158,8 +157,8 @@ public function kpis()
             $rowsProx = $this->model->alertasEtaProximas($window, $limit);
             $rowsVenc = $this->model->alertasEtaVencidas($past, $limit);
 
-            $mapEta = function(array $r) {
-                $op   = !empty($r['numero_operacion']) ? $r['numero_operacion'] : ('#'.$r['id_operacion']);
+            $mapEta = function (array $r) {
+                $op   = !empty($r['numero_operacion']) ? $r['numero_operacion'] : ('#' . $r['id_operacion']);
                 $cli  = $r['cliente'] ?? '—';
                 $eta  = $r['eta_fecha'] ?? '—';
                 $dias = (int)($r['dias_restantes'] ?? 0);
@@ -168,7 +167,7 @@ public function kpis()
                 $prio = ($dias <= 2) ? 'alta' : 'media';
 
                 $msg = ($dias < 0)
-                    ? "Op {$op} ({$cli}) — ETA vencida hace ".abs($dias)." día(s) (ETA: {$eta})"
+                    ? "Op {$op} ({$cli}) — ETA vencida hace " . abs($dias) . " día(s) (ETA: {$eta})"
                     : (($dias === 0)
                         ? "Op {$op} ({$cli}) — ETA HOY (ETA: {$eta})"
                         : "Op {$op} ({$cli}) — ETA en {$dias} día(s) (ETA: {$eta})");
@@ -181,7 +180,7 @@ public function kpis()
                     'numero_op'     => $r['numero_operacion'] ?? null,
                     'cliente'       => $cli,
                     'eta'           => $eta,
-                    'dias_restantes'=> $dias
+                    'dias_restantes' => $dias
                 ];
             };
 
@@ -193,8 +192,8 @@ public function kpis()
             if ($inclFin === 1) {
                 $rowsFinal = $this->model->alertasFinalizadaSinEntrega(self::EST_FINALIZADA, $limit);
 
-                $finalSinEntrega = array_map(function($r){
-                    $op  = !empty($r['numero_operacion']) ? $r['numero_operacion'] : ('#'.$r['id_operacion']);
+                $finalSinEntrega = array_map(function ($r) {
+                    $op  = !empty($r['numero_operacion']) ? $r['numero_operacion'] : ('#' . $r['id_operacion']);
                     $cli = $r['cliente'] ?? '—';
                     $eta = $r['eta'] ?: ($r['etd'] ?: '—');
                     return [
@@ -221,7 +220,6 @@ public function kpis()
                 ]
             ], JSON_UNESCAPED_UNICODE);
             die();
-
         } catch (\Throwable $e) {
             error_log('[Dashboard::alertas] ' . $e->getMessage());
             echo json_encode([
@@ -284,10 +282,24 @@ public function kpis()
 
         try {
             $rows = $this->model->costosVsAbonosPorMes($meses, $moneda, $tc);
-            echo json_encode(['status'=>'ok','data'=>$rows], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['status' => 'ok', 'data' => $rows], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
-            echo json_encode(['status'=>'error','msg'=>'No fue posible obtener el dataset'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible obtener el dataset'], JSON_UNESCAPED_UNICODE);
         }
         die();
+    }
+    public function ops_por_estatus()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+
+        try {
+            $rows = $this->model->chartOpsPorEstatus();
+            echo json_encode(['status' => 'ok', 'data' => $rows], JSON_UNESCAPED_UNICODE);
+            die();
+        } catch (\Throwable $e) {
+            error_log('[Dashboard::ops_por_estatus] ' . $e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible obtener datos'], JSON_UNESCAPED_UNICODE);
+            die();
+        }
     }
 }

@@ -677,4 +677,43 @@ WHERE o.estatus_id IN (1,5,9);
         $rows = $this->selectAll($sql, $paramsL);
         return is_array($rows) ? $rows : [];
     }
+
+
+    /**
+     * Chart: Operaciones por Estatus (volumen)
+     * Devuelve: [{id_estatus, nombre, total}, ...]
+     * - Usa operaciones.estatus_id
+     * - Solo estatus activos (estatus.estatus = 1)
+     */
+    public function chartOpsPorEstatus(): array
+    {
+        $sql = "
+        SELECT
+            e.id_estatus,
+            e.nombre,
+            COUNT(o.id_operacion) AS total
+        FROM estatus e
+        LEFT JOIN operaciones o
+            ON o.estatus_id = e.id_estatus
+        WHERE e.estatus = 1
+        GROUP BY e.id_estatus, e.nombre
+        ORDER BY
+            CASE UPPER(TRIM(e.nombre))
+                WHEN 'PUERTO' THEN 1
+                WHEN 'EN AGUA' THEN 2
+                WHEN 'CAMINO A DESTINO' THEN 3
+                WHEN 'BODEGA MX' THEN 4
+                WHEN 'BODEGA USA' THEN 5
+                WHEN 'YARDA MX' THEN 6
+                WHEN 'YARDA USA' THEN 7
+                WHEN 'ENTREGADO' THEN 8
+                WHEN 'CANCELADO' THEN 9
+                ELSE 99
+            END,
+            e.id_estatus ASC
+    ";
+
+        $rows = $this->selectAll($sql);
+        return is_array($rows) ? $rows : [];
+    }
 }

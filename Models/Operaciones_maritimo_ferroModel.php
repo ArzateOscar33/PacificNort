@@ -262,13 +262,21 @@ class Operaciones_maritimo_ferroModel extends Query
     /** Sincroniza: elimina los que ya no vienen, y upsert de los que vienen */
     public function syncContenedoresOperacion(int $opId, array $contenedores, array $opFallback = []): bool
     {
+        // ETA para validación mensual (obligatoria para la regla)
+        $etaOp = trim((string)($opFallback['eta'] ?? ''));
+        if ($etaOp === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $etaOp)) {
+            // Si prefieres NO bloquear, puedes retornar true/false,
+            // pero para tu regla de negocio lo correcto es NO permitir guardar sin ETA.
+            throw new Exception("No se puede validar contenedor por mes: falta ETA válida en la operación.");
+        }
+
         // Normalizar lista deseada a IDs
         $desiredIds = [];
         $items = [];
 
         foreach ($contenedores as $c) {
             $cid   = isset($c['id']) ? (int)$c['id'] : 0;
-            $cnum  = trim($c['numero'] ?? '');
+            $cnum  = trim((string)($c['numero'] ?? ''));
             $cbul  = $c['bultos'] ?? null;
 
             // tipo puede venir por contenedor o uno general (fallback)
@@ -276,6 +284,7 @@ class Operaciones_maritimo_ferroModel extends Query
 
             if ($cid <= 0 && $cnum === '') continue;
 
+            // Resolver / crear contenedor por número
             if ($cid <= 0) {
                 $found = $this->findContenedorByNumero($cnum);
                 if ($found) {
@@ -286,6 +295,16 @@ class Operaciones_maritimo_ferroModel extends Query
                 if ($cid <= 0) return false;
             }
 
+            // ✅ Validación: este contenedor NO puede estar en otra operación del mismo mes (ETA)
+            $conf = $this->findConflictoContenedorMes($cid, $etaOp, $opId);
+            if ($conf) {
+                $numCont = (string)($conf['numero_contenedor'] ?? $cnum);
+                $opConf  = (string)($conf['numero_operacion'] ?? '');
+                $mes     = substr($etaOp, 0, 7); // YYYY-MM
+                // Mensaje parseable para controlador/JS
+                throw new Exception("DUP_CONT_MES|{$numCont}|{$opConf}|{$mes}");
+            }
+
             // Guardar item normalizado
             $desiredIds[$cid] = true;
             $items[] = ['id' => $cid, 'bultos' => $cbul, 'tipo' => $ctipo];
@@ -294,19 +313,19 @@ class Operaciones_maritimo_ferroModel extends Query
         // 1) borrar vínculos que ya no vienen
         $current = $this->selectAll(
             "SELECT contenedor_maritimo_id
-             FROM contenedores_maritimos_operacion
-             WHERE operacion_id = ?",
+         FROM contenedores_maritimos_operacion
+         WHERE operacion_id = ?",
             [$opId]
         ) ?: [];
 
         foreach ($current as $row) {
-            $cid = (int)($row['contenedor_maritimo_id'] ?? 0);
-            if ($cid > 0 && !isset($desiredIds[$cid])) {
+            $cidCur = (int)($row['contenedor_maritimo_id'] ?? 0);
+            if ($cidCur > 0 && !isset($desiredIds[$cidCur])) {
                 $res = $this->save(
                     "DELETE FROM contenedores_maritimos_operacion
-                     WHERE operacion_id = ? AND contenedor_maritimo_id = ?
-                     LIMIT 1",
-                    [$opId, $cid]
+                 WHERE operacion_id = ? AND contenedor_maritimo_id = ?
+                 LIMIT 1",
+                    [$opId, $cidCur]
                 );
                 if ($res === false) return false;
             }
@@ -315,13 +334,42 @@ class Operaciones_maritimo_ferroModel extends Query
         // 2) upsert de los que vienen + update tipo siempre que venga
         foreach ($items as $it) {
             $cid = (int)$it['id'];
+
+            // (Opcional) seguridad extra: re-validar antes del insert (reduce ventanas en flujos raros)
+            // $conf = $this->findConflictoContenedorMes($cid, $etaOp, $opId);
+            // if ($conf) { ... throw ... }
+
             if (!$this->updateContenedorTipo($cid, $it['tipo'])) return false;
             if (!$this->upsertLinkContenedorOperacion($opId, $cid, $it['bultos'])) return false;
         }
 
         return true;
     }
+    public function findConflictoContenedorMes(int $contenedorId, string $eta, int $opIdActual = 0): ?array
+    {
+        // eta esperado YYYY-MM-DD
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $eta)) return null;
 
+        $sql = "
+        SELECT
+            o2.id_operacion,
+            o2.numero_operacion,
+            o2.eta,
+            cm.numero_contenedor
+        FROM contenedores_maritimos_operacion cmo
+        INNER JOIN operaciones o2 ON o2.id_operacion = cmo.operacion_id
+        INNER JOIN contenedores_maritimos cm ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        WHERE cmo.contenedor_maritimo_id = ?
+          AND o2.eta IS NOT NULL
+          AND YEAR(o2.eta) = YEAR(?)
+          AND MONTH(o2.eta) = MONTH(?)
+          AND o2.id_operacion <> ?
+        LIMIT 1
+    ";
+
+        $row = $this->select($sql, [$contenedorId, $eta, $eta, $opIdActual]);
+        return $row ?: null;
+    }
     /* =========================
        ===  HELPERS BROKER   ===
        ========================= */
@@ -411,7 +459,7 @@ class Operaciones_maritimo_ferroModel extends Query
 
         // Medida contenedor (20GP/40GP/40HC/45HC)
         $medida = trim((string)($filters['filtroMedidaContenedor'] ?? ''));
-        $allowedMedidas = ['20GP', '40GP', '40HC', '45HC', '40HQ'];
+        $allowedMedidas = ['20GP', '20HQ', '40GP', '40HC', '45HC', '40HQ', '45HQ'];
         if ($medida !== '' && in_array($medida, $allowedMedidas, true)) {
             $where .= " AND EXISTS (
                 SELECT 1
