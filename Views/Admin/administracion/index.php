@@ -200,7 +200,7 @@
       </div>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-6 ">
       <div class="card card-soft h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-2">
