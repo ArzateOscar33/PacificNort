@@ -15,12 +15,12 @@ class Rastreo extends Controller
 
     /**
      * Endpoint AJAX unificado:
-     * - FO-XX => retorna tramos (tipo=fo)
-     * - LBMF/LC/etc => retorna resumen marítimo (tipo=maritimo)
+     * - FO-XX => retorna tramos (tipo=fo)  (si lo reactivas)
+     * - LBMF/LC/etc o BL => retorna resumen marítimo (tipo=maritimo)
      *
      * URL: base_url + "Rastreo/buscarOperacion"
      * Método: POST
-     * Param: numero_operacion
+     * Param: numero_operacion  (aquí lo tratamos como "termino")
      */
     public function buscarOperacion()
     {
@@ -35,36 +35,38 @@ class Rastreo extends Controller
             return;
         }
 
-        $numeroOperacion = isset($_POST['numero_operacion'])
-            ? trim($_POST['numero_operacion'])
-            : '';
+        // Este campo puede venir con número de operación o con BL
+        $term = isset($_POST['numero_operacion']) ? trim($_POST['numero_operacion']) : '';
 
-        if ($numeroOperacion === '') {
+        if ($term === '') {
             echo json_encode([
                 'ok'  => false,
-                'msg' => 'Debes ingresar un número de operación.'
+                'msg' => 'Debes ingresar un número de operación o BL.'
             ]);
             return;
         }
 
-        // Normalizar
-        $numeroOperacion = strtoupper($numeroOperacion);
+        // Normalizar: mayúsculas y sin espacios (para BL pegado con espacios)
+        $termRaw = $term; // por si quieres loggear / mostrar
+        $term = strtoupper($term);
+        $termNoSpaces = str_replace(' ', '', $term);
 
         try {
 
             // =========================
-            // 1) FO (Ferro / Terrestre)
+            // 1) FO (Ferro / Terrestre)  (si lo reactivas)
             // =========================
-            /* if (strpos($numeroOperacion, 'FO-') === 0) {
+            /*
+            if (strpos($termNoSpaces, 'FO-') === 0) {
 
-                $tramos = $this->model->getTramosPorNumeroOperacionFerro($numeroOperacion);
+                $tramos = $this->model->getTramosPorNumeroOperacionFerro($termNoSpaces);
 
                 if (empty($tramos)) {
                     echo json_encode([
                         'ok'               => false,
                         'tipo'             => 'fo',
                         'msg'              => 'No se encontraron rutas para la operación indicada.',
-                        'numero_operacion' => $numeroOperacion
+                        'numero_operacion' => $termNoSpaces
                     ]);
                     return;
                 }
@@ -72,7 +74,7 @@ class Rastreo extends Controller
                 $first = $tramos[0];
 
                 $encabezado = [
-                    'numero_operacion' => $first['numero_operacion'] ?? $numeroOperacion,
+                    'numero_operacion' => $first['numero_operacion'] ?? $termNoSpaces,
                     'contenedor'       => $first['numero_ferro'] ?? '',
                 ];
 
@@ -84,34 +86,42 @@ class Rastreo extends Controller
                     'tramos'     => $tramos,
                 ]);
                 return;
-            }*/
+            }
+            */
 
             // =========================
-            // 2) Marítimo (LBMF/LC/etc.)
+            // 2) Marítimo (por Operación o por BL)
             // =========================
-            $rows = $this->model->getResumenOperacionMaritima($numeroOperacion);
+            // OJO: el modelo ya debe soportar buscar por numero_operacion OR numero_bl
+            $rows = $this->model->getResumenOperacionMaritima($termNoSpaces);
 
             if (empty($rows)) {
                 echo json_encode([
                     'ok'               => false,
                     'tipo'             => 'maritimo',
                     'msg'              => 'No se encontró la operación marítima indicada.',
-                    'numero_operacion' => $numeroOperacion
+                    'numero_operacion' => $termNoSpaces
                 ]);
                 return;
             }
 
-            // Encabezado marítimo (solo operación)
+            // Si quieres, detectamos si el usuario metió BL o número de operación
+            // - si empieza con prefijos típicos, asumimos operación
+            // - si no, asumimos BL (solo para texto del encabezado)
+            $isOperacion = (preg_match('/^(LBMF|LC|FO|LBC|LB|MF|OP|PN)/', $termNoSpaces) === 1);
+
             $encabezado = [
-                'numero_operacion' => $numeroOperacion,
+                // tu JS solo usa numero_operacion, pero aquí puedes mostrar el término buscado
+                'numero_operacion' => $termNoSpaces,
+                'busqueda_tipo'    => $isOperacion ? 'operacion' : 'bl',
             ];
 
             echo json_encode([
                 'ok'         => true,
                 'tipo'       => 'maritimo',
-                'msg'        => 'Operación marítima encontrada correctamente.',
+                'msg'        => 'Consulta realizada correctamente.',
                 'encabezado' => $encabezado,
-                'data'       => $rows,   // 1 fila por contenedor (o vacío si no hay contenedor ligado)
+                'data'       => $rows, // 1 fila por contenedor
             ]);
             return;
         } catch (Exception $e) {

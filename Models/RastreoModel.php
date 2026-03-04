@@ -95,96 +95,111 @@ class RastreoModel extends Query
         return $this->selectAll($sql, [$numeroOperacion]) ?: [];
     }
 
-    // =========================
-    // MARÍTIMO 
-    // =========================
+ 
+
+// =========================
+// MARÍTIMO
+// =========================
 
     /**
-     * Obtiene la operación marítima por número (LBMF-01, LC-02, etc.)
-     * Sirve para validar existencia y/o traer datos base.
+     * Regresa un resumen “para portal” de una operación marítima buscando por:
+     * - número de operación (LBMF-XX, LC-XX, etc.)
+     * - o BL (operaciones.numero_bl)
+     *
+     * Devuelve 1 fila por contenedor (si hay contenedores ligados).
      */
-    public function getOperacionMaritimaPorNumero(string $numeroOperacion): ?array
+    public function getResumenOperacionMaritima(string $term): array
     {
-        $sql = "SELECT
-                    o.id_operacion,
-                    o.numero_operacion,
-                    o.cliente_id,
-                    o.estatus_id,
-                    e.nombre AS estatus_nombre,
-                    o.notas
-                FROM operaciones o
-                LEFT JOIN estatus e
-                       ON e.id_estatus = o.estatus_id
-                WHERE o.numero_operacion = ?
-                LIMIT 1";
+        $term = trim($term);
+        if ($term === '') return [];
 
-        $row = $this->select($sql, [$numeroOperacion]);
-        return $row ?: null;
+        $sql = "SELECT
+                o.numero_operacion,
+                o.numero_bl,
+
+                -- Contenedor marítimo (pueden ser varios)
+                cm.numero_contenedor AS contenedor,
+
+                -- Estatus actual (desde operaciones)
+                e.nombre AS estatus_nombre,
+
+                -- Último comentario preferido: evento -> notas -> vacío
+                COALESCE(ult.comentario, o.notas, '') AS comentario,
+
+                -- Fecha/hora de la última actualización (si hay evento)
+                ult.fecha_creacion AS actualizacion
+            FROM operaciones o
+            LEFT JOIN estatus e
+                   ON e.id_estatus = o.estatus_id
+
+            -- Relación operación -> contenedor marítimo(s)
+            LEFT JOIN contenedores_maritimos_operacion cmo
+                   ON cmo.operacion_id = o.id_operacion
+            LEFT JOIN contenedores_maritimos cm
+                   ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+
+            -- Último evento por operación y por contenedor (si aplica)
+            LEFT JOIN (
+                SELECT
+                    el.operacion_id,
+                    el.cont_maritimo_operacion_id,
+                    el.comentario,
+                    el.fecha_creacion
+                FROM eventos_logisticos el
+                INNER JOIN (
+                    SELECT
+                        operacion_id,
+                        cont_maritimo_operacion_id,
+                        MAX(fecha_creacion) AS max_fc
+                    FROM eventos_logisticos
+                    WHERE estatus = 1
+                    GROUP BY operacion_id, cont_maritimo_operacion_id
+                ) x
+                  ON x.operacion_id = el.operacion_id
+                 AND (x.cont_maritimo_operacion_id <=> el.cont_maritimo_operacion_id)
+                 AND x.max_fc = el.fecha_creacion
+                WHERE el.estatus = 1
+            ) ult
+              ON ult.operacion_id = o.id_operacion
+             AND (ult.cont_maritimo_operacion_id <=> cmo.id)
+
+            WHERE o.tipo_operacion_id = 11
+              AND (
+                   REPLACE(UPPER(o.numero_operacion), ' ', '') = REPLACE(UPPER(?), ' ', '')
+                OR REPLACE(UPPER(o.numero_bl),        ' ', '') = REPLACE(UPPER(?), ' ', '')
+              )";
+
+        return $this->selectAll($sql, [$term, $term]) ?: [];
     }
 
     /**
-     * Regresa un resumen “para portal” de una operación marítima:
-     * - operación
-     * - contenedor(es)
-     * - estatus actual (de operaciones.estatus_id)
-     * - comentario (último evento_logistico.comentario; si no hay, usa operaciones.notas)
-     * - actualización (último evento_logistico.fecha_creacion)
-     *
-     * Nota: si una operación tiene varios contenedores, devuelve 1 fila por contenedor.
+     * (Opcional) Si aún usas esta validación en algún lado,
+     * hazla compatible también con BL.
      */
-    public function getResumenOperacionMaritima(string $numeroOperacion): array
+    public function getOperacionMaritimaPorNumero(string $term): ?array
     {
+        $term = trim($term);
+        if ($term === '') return null;
+
         $sql = "SELECT
-                    o.numero_operacion,
+                o.id_operacion,
+                o.numero_operacion,
+                o.numero_bl,
+                o.cliente_id,
+                o.estatus_id,
+                e.nombre AS estatus_nombre,
+                o.notas
+            FROM operaciones o
+            LEFT JOIN estatus e
+                   ON e.id_estatus = o.estatus_id
+            WHERE o.tipo_operacion_id = 11
+              AND (
+                   REPLACE(UPPER(o.numero_operacion), ' ', '') = REPLACE(UPPER(?), ' ', '')
+                OR REPLACE(UPPER(o.numero_bl),        ' ', '') = REPLACE(UPPER(?), ' ', '')
+              )
+            LIMIT 1";
 
-                    -- Contenedor marítimo (pueden ser varios)
-                    cm.numero_contenedor AS contenedor,
-
-                    -- Estatus actual (desde operaciones)
-                    e.nombre AS estatus_nombre,
-
-                    -- Último comentario preferido: evento -> notas -> vacío
-                    COALESCE(ult.comentario, o.notas, '') AS comentario,
-
-                    -- Fecha/hora de la última actualización (si hay evento)
-                    ult.fecha_creacion AS actualizacion
-                FROM operaciones o
-                LEFT JOIN estatus e
-                       ON e.id_estatus = o.estatus_id
-
-                -- Relación operación -> contenedor marítimo(s)
-                LEFT JOIN contenedores_maritimos_operacion cmo
-                       ON cmo.operacion_id = o.id_operacion
-                LEFT JOIN contenedores_maritimos cm
-                       ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-
-                -- Último evento por operación y por contenedor (si aplica)
-                LEFT JOIN (
-                    SELECT
-                        el.operacion_id,
-                        el.cont_maritimo_operacion_id,
-                        el.comentario,
-                        el.fecha_creacion
-                    FROM eventos_logisticos el
-                    INNER JOIN (
-                        SELECT
-                            operacion_id,
-                            cont_maritimo_operacion_id,
-                            MAX(fecha_creacion) AS max_fc
-                        FROM eventos_logisticos
-                        WHERE estatus = 1
-                        GROUP BY operacion_id, cont_maritimo_operacion_id
-                    ) x
-                      ON x.operacion_id = el.operacion_id
-                     AND (x.cont_maritimo_operacion_id <=> el.cont_maritimo_operacion_id)
-                     AND x.max_fc = el.fecha_creacion
-                    WHERE el.estatus = 1
-                ) ult
-                  ON ult.operacion_id = o.id_operacion
-                 AND (ult.cont_maritimo_operacion_id <=> cmo.id)
-
-                WHERE o.numero_operacion = ?";
-
-        return $this->selectAll($sql, [$numeroOperacion]) ?: [];
+        $row = $this->select($sql, [$term, $term]);
+        return $row ?: null;
     }
 }

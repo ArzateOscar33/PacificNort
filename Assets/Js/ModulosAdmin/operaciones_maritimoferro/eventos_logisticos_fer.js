@@ -396,7 +396,7 @@
     <th style="min-width:160px" class="text-center">Operación Marítima</th>
     <th style="min-width:190px" class="text-center">Contenedor Marítimo</th>
     <th style="min-width:220px" class="text-center">Cliente</th>
-    <th style="min-width:180px" class="text-center">Ubicación Actual</th>
+    <!--<th style="min-width:180px" class="text-center">Ubicación Actual</th>-->
     <th style="min-width:180px" class="text-center">Destino</th>
     <th style="min-width:180px" class="text-center">Transportista</th>
     <th style="min-width:180px" class="text-center">Caja / Ferro</th>
@@ -426,13 +426,13 @@
 
       if (!groups.has(key)) {
         const cells = {};
-        for (const c of COLS) cells[c.key] = "Sin registrar";
+        for (const c of COLS) cells[c.key] = "-";
 
         groups.set(key, {
           operacion_maritima: r.operacion_maritima || r.operacion || "",
           contenedor_maritimo: r.contenedor_maritimo || "",
           cliente: r.cliente || "",
-          ubicacion_actual: r.ubicacion_actual || "SIN REGISTRAR",
+          //ubicacion_actual: r.ubicacion_actual || "SIN REGISTRAR",
           destino: r.destino || "",
           transportista: r.transportista || "",
           ferro: r.ferro || "",
@@ -446,8 +446,8 @@
       const c = byEvtId.get(String(r.tipo_evento_id));
       if (c) {
         const prev = g.cells[c.key];
-        const val = r.fecha || "Sin registrar";
-        if (prev === "Sin registrar" || String(val) > String(prev)) {
+        const val = r.fecha || "-";
+        if (prev === "-" || String(val) > String(prev)) {
           g.cells[c.key] = val;
         }
       }
@@ -459,11 +459,11 @@
       if (!g.cliente && r.cliente) g.cliente = r.cliente;
       if (!g.contenedor_maritimo && r.contenedor_maritimo)
         g.contenedor_maritimo = r.contenedor_maritimo;
-      if (
+      /*if (
         (!g.ubicacion_actual || g.ubicacion_actual === "SIN REGISTRAR") &&
         r.ubicacion_actual
       )
-        g.ubicacion_actual = r.ubicacion_actual;
+        g.ubicacion_actual = r.ubicacion_actual;*/
       if (!g.destino && r.destino) g.destino = r.destino;
       if (!g.transportista && r.transportista)
         g.transportista = r.transportista;
@@ -505,14 +505,14 @@
   <td class="text-center">${esc(row.operacion_maritima)}</td>
   <td class="text-center">${esc(row.contenedor_maritimo)}</td>
   <td>${esc(row.cliente)}</td>
-  <td class="text-center">${esc(row.ubicacion_actual)}</td>
+ <!-- <td class="text-center">${esc(row.ubicacion_actual)}</td>-->
   <td>${esc(row.destino)}</td>
   <td>${esc(row.transportista)}</td>
   <td class="text-center">${esc(row.ferro)}</td>
 `;
 
       for (const c of COLS) {
-        const val = row.cells[c.key] || "Sin registrar";
+        const val = row.cells[c.key] || "-";
         html += `
           <td class="text-center evfer-cell"
               data-op="${row.op_id}"

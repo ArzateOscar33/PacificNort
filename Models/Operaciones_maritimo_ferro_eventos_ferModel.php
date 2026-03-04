@@ -1,34 +1,34 @@
 <?php
 class Operaciones_maritimo_ferro_eventos_ferModel extends Query
 {
-    /* ============================
+  /* ============================
        COLUMNAS (catálogo terrestre)
        ============================ */
-    public function listarTiposEventoTerrestre(): array
-    {
-        $sql = "SELECT id_tipo_evento, nombre
+  public function listarTiposEventoTerrestre(): array
+  {
+    $sql = "SELECT id_tipo_evento, nombre
                   FROM tipos_evento_logistico
                  WHERE estatus = 1
                    AND id_tipo_operacion = 2     -- TERRESTRE
                  ORDER BY id_tipo_evento ASC";
-        $rows = $this->selectAll($sql);
-        return is_array($rows) ? $rows : [];
-    }
+    $rows = $this->selectAll($sql);
+    return is_array($rows) ? $rows : [];
+  }
 
-    /* =======================================================
+  /* =======================================================
        Sugerencias de OPERACIONES FO (por número o por id)
        ======================================================= */
-    public function sugerirOperacionesFO(string $term, int $limit = 8): array
-    {
-        $limit  = max(1, min(20, (int)$limit));
-        $needle = '%' . mb_strtolower(trim($term), 'UTF-8') . '%';
-        $isNum  = ctype_digit(trim($term));
+  public function sugerirOperacionesFO(string $term, int $limit = 8): array
+  {
+    $limit  = max(1, min(20, (int)$limit));
+    $needle = '%' . mb_strtolower(trim($term), 'UTF-8') . '%';
+    $isNum  = ctype_digit(trim($term));
 
-        $where  = "(LOWER(of.numero_operacion) LIKE ?" . ($isNum ? " OR of.id_operacion_ferro = ?" : "") . ")";
-        $params = [$needle];
-        if ($isNum) $params[] = (int)$term;
+    $where  = "(LOWER(of.numero_operacion) LIKE ?" . ($isNum ? " OR of.id_operacion_ferro = ?" : "") . ")";
+    $params = [$needle];
+    if ($isNum) $params[] = (int)$term;
 
-        $sql = "
+    $sql = "
             SELECT 
                 of.id_operacion_ferro AS id,
                 of.numero_operacion   AS label,
@@ -38,27 +38,27 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
             WHERE {$where}
             ORDER BY of.numero_operacion ASC
             LIMIT {$limit}";
-        $rows = $this->selectAll($sql, $params);
-        return is_array($rows) ? $rows : [];
-    }
+    $rows = $this->selectAll($sql, $params);
+    return is_array($rows) ? $rows : [];
+  }
 
-    /* ================================================================
+  /* ================================================================
        Contenedor(es) FERRO de una operación FO
        En FO estándar hay 1 ferro por operación (columna contenedor_fisico_id).
        ================================================================= */
-    public function buscarFerrosDeOperacion(int $opFerroId, string $term = '', int $limit = 10): array
-    {
-        if ($opFerroId <= 0) return [];
-        $limit  = max(1, (int)$limit);
+  public function buscarFerrosDeOperacion(int $opFerroId, string $term = '', int $limit = 10): array
+  {
+    if ($opFerroId <= 0) return [];
+    $limit  = max(1, (int)$limit);
 
-        $params = [$opFerroId];
-        $filtro = '';
-        if ($term !== '') {
-            $filtro = " AND LOWER(cf.numero_ferro) LIKE ? ";
-            $params[] = '%' . mb_strtolower($term, 'UTF-8') . '%';
-        }
+    $params = [$opFerroId];
+    $filtro = '';
+    if ($term !== '') {
+      $filtro = " AND LOWER(cf.numero_ferro) LIKE ? ";
+      $params[] = '%' . mb_strtolower($term, 'UTF-8') . '%';
+    }
 
-        $sql = "
+    $sql = "
             SELECT 
                 cf.id_fisico    AS id,
                 cf.numero_ferro AS label,
@@ -70,18 +70,18 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
               {$filtro}
             ORDER BY cf.numero_ferro ASC
             LIMIT {$limit}";
-        $rows = $this->selectAll($sql, $params);
-        return is_array($rows) ? $rows : [];
-    }
+    $rows = $this->selectAll($sql, $params);
+    return is_array($rows) ? $rows : [];
+  }
 
-    /* ======================================================
+  /* ======================================================
        Obtener el FERRO principal de una operación FO (1:1)
        ====================================================== */
-    public function getFerroDeOperacion(int $opFerroId): ?array
-    {
-        if ($opFerroId <= 0) return null;
+  public function getFerroDeOperacion(int $opFerroId): ?array
+  {
+    if ($opFerroId <= 0) return null;
 
-        $sql = "
+    $sql = "
             SELECT 
                 cf.id_fisico    AS id,
                 cf.numero_ferro AS label
@@ -90,66 +90,66 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
               ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
             WHERE of.id_operacion_ferro = ?
             LIMIT 1";
-        $row = $this->select($sql, [$opFerroId]);
-        return $row ?: null;
+    $row = $this->select($sql, [$opFerroId]);
+    return $row ?: null;
+  }
+
+  public function listarEventosFOPaginado(
+    int $page,
+    int $perPage,
+    ?int $opId = null,         // puede ser operacion_id (marítima) o id_operacion_ferro (legacy)
+    ?int $ferroId = null,      // contenedores_fisicos.id_fisico
+    string $q = '',
+    ?string $fechaDesde = null,
+    ?string $fechaHasta = null
+  ): array {
+
+    $perPage = min(10000, max(1, $perPage));
+    $offset  = ($page - 1) * $perPage;
+
+    $where  = [];
+    $params = [];
+
+    // Solo ferros activos
+    $where[] = "cf.estatus = 1";
+
+    // Excluir Cancelado/Finalizada tanto en marítima como en FO (segmento)
+    $where[] = "o.estatus_id  NOT IN (13, 7)";
+    $where[] = "of.estatus_id NOT IN (13, 7)";
+
+    // Filtro: opId puede venir como marítima (o.id_operacion) o como FO (of.id_operacion_ferro)
+    if ($opId) {
+      $where[] = "(o.id_operacion = ? OR of.id_operacion_ferro = ?)";
+      $params[] = $opId;
+      $params[] = $opId;
     }
 
-    public function listarEventosFOPaginado(
-        int $page,
-        int $perPage,
-        ?int $opId = null,         // puede ser operacion_id (marítima) o id_operacion_ferro (legacy)
-        ?int $ferroId = null,      // contenedores_fisicos.id_fisico
-        string $q = '',
-        ?string $fechaDesde = null,
-        ?string $fechaHasta = null
-    ): array {
+    if ($ferroId) {
+      $where[] = "cf.id_fisico = ?";
+      $params[] = $ferroId;
+    }
 
-        $perPage = min(100, max(1, $perPage));
-        $offset  = ($page - 1) * $perPage;
+    // 🔥 Búsqueda: ahora incluye contenedor marítimo + ubicación actual
+    if ($q !== '') {
+      $like = '%' . mb_strtolower(trim($q), 'UTF-8') . '%';
+      $where[] = "("
+        . "LOWER(o.numero_operacion) LIKE ? "
+        . "OR LOWER(of.numero_operacion) LIKE ? "
+        . "OR LOWER(cf.numero_ferro) LIKE ? "
+        . "OR LOWER(cl.nombre) LIKE ? "
+        . "OR LOWER(tr.nombre) LIKE ? "
+        . "OR LOWER(ci.nombre_ciudad) LIKE ? "
+        . "OR LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ? "
+        . "OR LOWER(COALESCE(ua.ubicacion_actual, '')) LIKE ? "
+        . ")";
+      array_push($params, $like, $like, $like, $like, $like, $like, $like, $like);
+    }
 
-        $where  = [];
-        $params = [];
+    $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-        // Solo ferros activos
-        $where[] = "cf.estatus = 1";
-
-        // Excluir Cancelado/Finalizada tanto en marítima como en FO (segmento)
-        $where[] = "o.estatus_id  NOT IN (13, 7)";
-        $where[] = "of.estatus_id NOT IN (13, 7)";
-
-        // Filtro: opId puede venir como marítima (o.id_operacion) o como FO (of.id_operacion_ferro)
-        if ($opId) {
-            $where[] = "(o.id_operacion = ? OR of.id_operacion_ferro = ?)";
-            $params[] = $opId;
-            $params[] = $opId;
-        }
-
-        if ($ferroId) {
-            $where[] = "cf.id_fisico = ?";
-            $params[] = $ferroId;
-        }
-
-        // 🔥 Búsqueda: ahora incluye contenedor marítimo + ubicación actual
-        if ($q !== '') {
-            $like = '%' . mb_strtolower(trim($q), 'UTF-8') . '%';
-            $where[] = "("
-                . "LOWER(o.numero_operacion) LIKE ? "
-                . "OR LOWER(of.numero_operacion) LIKE ? "
-                . "OR LOWER(cf.numero_ferro) LIKE ? "
-                . "OR LOWER(cl.nombre) LIKE ? "
-                . "OR LOWER(tr.nombre) LIKE ? "
-                . "OR LOWER(ci.nombre_ciudad) LIKE ? "
-                . "OR LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ? "
-                . "OR LOWER(COALESCE(ua.ubicacion_actual, '')) LIKE ? "
-                . ")";
-            array_push($params, $like, $like, $like, $like, $like, $like, $like, $like);
-        }
-
-        $whereSql = 'WHERE ' . implode(' AND ', $where);
-
-        // --- Subquery: Ubicación actual = último evento (por fecha) del par (op_ferro_id + contenedor_fisico_id)
-        // Nota: si hay empates de fecha, puede escoger cualquiera del mismo día; normalmente no pasa.
-        $sqlUbicacion = "
+    // --- Subquery: Ubicación actual = último evento (por fecha) del par (op_ferro_id + contenedor_fisico_id)
+    // Nota: si hay empates de fecha, puede escoger cualquiera del mismo día; normalmente no pasa.
+    $sqlUbicacion = "
         SELECT
             e.operacion_ferro_id,
             e.contenedor_fisico_id,
@@ -170,8 +170,8 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
         WHERE e.estatus = 1
     ";
 
-        // 1) TOTAL parejas (Marítima + Ferro)
-        $sqlCount = "
+    // 1) TOTAL parejas (Marítima + Ferro)
+    $sqlCount = "
         SELECT COUNT(*) AS total_rows
         FROM (
             SELECT o.id_operacion, cf.id_fisico
@@ -212,11 +212,11 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
         ) t
     ";
 
-        $rowCount  = $this->select($sqlCount, $params);
-        $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
+    $rowCount  = $this->select($sqlCount, $params);
+    $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
 
-        // 2) Página: parejas (Marítima + Ferro) + campos extra
-        $sqlRows = "
+    // 2) Página: parejas (Marítima + Ferro) + campos extra
+    $sqlRows = "
         SELECT
             o.id_operacion                 AS operacion_id,
             o.numero_operacion             AS operacion_maritima,
@@ -227,7 +227,7 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
             cl.nombre                      AS cliente,
 
             -- ✅ ya NO estatus de marítima
-            COALESCE(ua.ubicacion_actual, 'SIN REGISTRAR') AS ubicacion_actual,
+            COALESCE(ua.ubicacion_actual, '-') AS ubicacion_actual,
 
             of.id_operacion_ferro          AS op_ferro_id,
             of.numero_operacion            AS operacion_ferro,
@@ -273,31 +273,31 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
 
         {$whereSql}
         GROUP BY o.id_operacion, cf.id_fisico, op_ferro_id, operacion_maritima, operacion_ferro, ferro
-        ORDER BY o.id_operacion DESC, ferro DESC
+        ORDER BY o.id_operacion desc, ferro desc
         LIMIT {$perPage} OFFSET {$offset}
     ";
 
-        $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
+    $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
 
-        if (empty($rowsPairs)) {
-            return [
-                'rows'     => [],
-                'total'    => $totalRows,
-                'page'     => $page,
-                'per_page' => $perPage
-            ];
-        }
+    if (empty($rowsPairs)) {
+      return [
+        'rows'     => [],
+        'total'    => $totalRows,
+        'page'     => $page,
+        'per_page' => $perPage
+      ];
+    }
 
-        // 3) Trae eventos de esos ferros en esta página
-        $opFerroIds = array_values(array_unique(array_column($rowsPairs, 'op_ferro_id')));
-        $fxIds      = array_values(array_unique(array_column($rowsPairs, 'ferro_id')));
+    // 3) Trae eventos de esos ferros en esta página
+    $opFerroIds = array_values(array_unique(array_column($rowsPairs, 'op_ferro_id')));
+    $fxIds      = array_values(array_unique(array_column($rowsPairs, 'ferro_id')));
 
-        $inOps = implode(',', array_fill(0, count($opFerroIds), '?'));
-        $inFxs = implode(',', array_fill(0, count($fxIds), '?'));
+    $inOps = implode(',', array_fill(0, count($opFerroIds), '?'));
+    $inFxs = implode(',', array_fill(0, count($fxIds), '?'));
 
-        $paramsEvt = array_merge($opFerroIds, $fxIds);
+    $paramsEvt = array_merge($opFerroIds, $fxIds);
 
-        $sqlEvts = "
+    $sqlEvts = "
         SELECT
             e.id_evento,
             e.operacion_ferro_id,
@@ -314,207 +314,207 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
           AND e.contenedor_fisico_id IN ($inFxs)
     ";
 
-        $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
+    $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
 
-        // 4) Mapa por par (op_ferro_id + ferro_id) para pegar los extras
-        $byPair = [];
-        foreach ($rowsPairs as $r) {
-            $key = (int)$r['op_ferro_id'] . '_' . (int)$r['ferro_id'];
-            $byPair[$key] = $r;
-        }
-
-        $out = [];
-
-        foreach ($rowsEvts as $e) {
-            $key = (int)$e['operacion_ferro_id'] . '_' . (int)$e['contenedor_fisico_id'];
-            if (!isset($byPair[$key])) continue;
-
-            $p = $byPair[$key];
-
-            $out[] = [
-                'id_evento'            => (int)$e['id_evento'],
-                'operacion_ferro_id'   => (int)$e['operacion_ferro_id'],
-                'contenedor_fisico_id' => (int)$e['contenedor_fisico_id'],
-                'tipo_evento_id'       => (int)$e['tipo_evento_id'],
-                'evento'               => (string)($e['evento'] ?? ''),
-                'fecha'                => (string)($e['fecha'] ?? ''),
-                'comentario'           => (string)($e['comentario'] ?? ''),
-
-                // ✅ CAMPOS PARA LA TABLA
-                'operacion_id'         => (int)($p['operacion_id'] ?? 0),
-                'operacion_maritima'   => (string)($p['operacion_maritima'] ?? ''),
-                'contenedor_maritimo'  => (string)($p['contenedor_maritimo'] ?? ''),
-                'cliente'              => (string)($p['cliente'] ?? ''),
-                'ubicacion_actual'     => (string)($p['ubicacion_actual'] ?? 'SIN REGISTRAR'),
-                'destino'              => (string)($p['destino'] ?? ''),
-                'transportista'        => (string)($p['transportista'] ?? ''),
-
-                // legacy/útil
-                'operacion'            => (string)($p['operacion_ferro'] ?? ''),
-                'ferro'                => (string)($p['ferro'] ?? ''),
-            ];
-        }
-
-        // 5) Rellena pares sin evento para que sigan apareciendo en la tabla
-        $pairsConEvento = array_unique(array_map(
-            fn($r) => (int)$r['operacion_ferro_id'] . '_' . (int)$r['contenedor_fisico_id'],
-            $out
-        ));
-
-        foreach ($rowsPairs as $r) {
-            $key = (int)$r['op_ferro_id'] . '_' . (int)$r['ferro_id'];
-            if (!in_array($key, $pairsConEvento, true)) {
-                $out[] = [
-                    'id_evento'            => null,
-                    'operacion_ferro_id'   => (int)$r['op_ferro_id'],
-                    'contenedor_fisico_id' => (int)$r['ferro_id'],
-                    'tipo_evento_id'       => null,
-                    'evento'               => null,
-                    'fecha'                => null,
-                    'comentario'           => null,
-
-                    // ✅ CAMPOS PARA LA TABLA
-                    'operacion_id'         => (int)($r['operacion_id'] ?? 0),
-                    'operacion_maritima'   => (string)($r['operacion_maritima'] ?? ''),
-                    'contenedor_maritimo'  => (string)($r['contenedor_maritimo'] ?? ''),
-                    'cliente'              => (string)($r['cliente'] ?? ''),
-                    'ubicacion_actual'     => (string)($r['ubicacion_actual'] ?? 'SIN REGISTRAR'),
-                    'destino'              => (string)($r['destino'] ?? ''),
-                    'transportista'        => (string)($r['transportista'] ?? ''),
-
-                    // legacy
-                    'operacion'            => (string)($r['operacion_ferro'] ?? ''),
-                    'ferro'                => (string)($r['ferro'] ?? ''),
-                ];
-            }
-        }
-
-        return [
-            'rows'     => $out,
-            'total'    => $totalRows,
-            'page'     => $page,
-            'per_page' => $perPage
-        ];
+    // 4) Mapa por par (op_ferro_id + ferro_id) para pegar los extras
+    $byPair = [];
+    foreach ($rowsPairs as $r) {
+      $key = (int)$r['op_ferro_id'] . '_' . (int)$r['ferro_id'];
+      $byPair[$key] = $r;
     }
 
-    /* ==========================================================
+    $out = [];
+
+    foreach ($rowsEvts as $e) {
+      $key = (int)$e['operacion_ferro_id'] . '_' . (int)$e['contenedor_fisico_id'];
+      if (!isset($byPair[$key])) continue;
+
+      $p = $byPair[$key];
+
+      $out[] = [
+        'id_evento'            => (int)$e['id_evento'],
+        'operacion_ferro_id'   => (int)$e['operacion_ferro_id'],
+        'contenedor_fisico_id' => (int)$e['contenedor_fisico_id'],
+        'tipo_evento_id'       => (int)$e['tipo_evento_id'],
+        'evento'               => (string)($e['evento'] ?? ''),
+        'fecha'                => (string)($e['fecha'] ?? ''),
+        'comentario'           => (string)($e['comentario'] ?? ''),
+
+        // ✅ CAMPOS PARA LA TABLA
+        'operacion_id'         => (int)($p['operacion_id'] ?? 0),
+        'operacion_maritima'   => (string)($p['operacion_maritima'] ?? ''),
+        'contenedor_maritimo'  => (string)($p['contenedor_maritimo'] ?? ''),
+        'cliente'              => (string)($p['cliente'] ?? ''),
+        'ubicacion_actual'     => (string)($p['ubicacion_actual'] ?? '-'),
+        'destino'              => (string)($p['destino'] ?? ''),
+        'transportista'        => (string)($p['transportista'] ?? ''),
+
+        // legacy/útil
+        'operacion'            => (string)($p['operacion_ferro'] ?? ''),
+        'ferro'                => (string)($p['ferro'] ?? ''),
+      ];
+    }
+
+    // 5) Rellena pares sin evento para que sigan apareciendo en la tabla
+    $pairsConEvento = array_unique(array_map(
+      fn($r) => (int)$r['operacion_ferro_id'] . '_' . (int)$r['contenedor_fisico_id'],
+      $out
+    ));
+
+    foreach ($rowsPairs as $r) {
+      $key = (int)$r['op_ferro_id'] . '_' . (int)$r['ferro_id'];
+      if (!in_array($key, $pairsConEvento, true)) {
+        $out[] = [
+          'id_evento'            => null,
+          'operacion_ferro_id'   => (int)$r['op_ferro_id'],
+          'contenedor_fisico_id' => (int)$r['ferro_id'],
+          'tipo_evento_id'       => null,
+          'evento'               => null,
+          'fecha'                => null,
+          'comentario'           => null,
+
+          // ✅ CAMPOS PARA LA TABLA
+          'operacion_id'         => (int)($r['operacion_id'] ?? 0),
+          'operacion_maritima'   => (string)($r['operacion_maritima'] ?? ''),
+          'contenedor_maritimo'  => (string)($r['contenedor_maritimo'] ?? ''),
+          'cliente'              => (string)($r['cliente'] ?? ''),
+          'ubicacion_actual'     => (string)($r['ubicacion_actual'] ?? '-'),
+          'destino'              => (string)($r['destino'] ?? ''),
+          'transportista'        => (string)($r['transportista'] ?? ''),
+
+          // legacy
+          'operacion'            => (string)($r['operacion_ferro'] ?? ''),
+          'ferro'                => (string)($r['ferro'] ?? ''),
+        ];
+      }
+    }
+
+    return [
+      'rows'     => $out,
+      'total'    => $totalRows,
+      'page'     => $page,
+      'per_page' => $perPage
+    ];
+  }
+
+  /* ==========================================================
        Reglas de validación (FO=2, eventos TERRESTRES=2) + CRUD
        ========================================================== */
 
-    private function existeEventoFerroDuplicado(int $opFerroId, int $ferroId, int $tipoEvtId, ?int $excluirId = null): bool
-    {
-        if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return false;
+  private function existeEventoFerroDuplicado(int $opFerroId, int $ferroId, int $tipoEvtId, ?int $excluirId = null): bool
+  {
+    if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return false;
 
-        $sql = "SELECT id_evento
+    $sql = "SELECT id_evento
                   FROM eventos_ferroviarios
                  WHERE estatus = 1
                    AND operacion_ferro_id = ?
                    AND contenedor_fisico_id = ?
                    AND tipo_evento_id = ?"
-            . ($excluirId ? " AND id_evento <> ?" : "")
-            . " LIMIT 1";
+      . ($excluirId ? " AND id_evento <> ?" : "")
+      . " LIMIT 1";
 
-        $params = $excluirId
-            ? [$opFerroId, $ferroId, $tipoEvtId, $excluirId]
-            : [$opFerroId, $ferroId, $tipoEvtId];
+    $params = $excluirId
+      ? [$opFerroId, $ferroId, $tipoEvtId, $excluirId]
+      : [$opFerroId, $ferroId, $tipoEvtId];
 
-        return (bool)$this->select($sql, $params);
+    return (bool)$this->select($sql, $params);
+  }
+
+  public function registrar(array $data, int $idUsuario): int
+  {
+    $opFerroId = (int)($data['operacion_ferro_id'] ?? 0);
+    $ferroId   = (int)($data['contenedor_fisico_id'] ?? 0);
+    $tipoEvtId = (int)($data['tipo_evento_id'] ?? 0);
+    $fecha     = (string)($data['fecha'] ?? '');
+    $comentario = $data['comentario'] ?? null;
+
+    if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
+      return 0;
     }
 
-    public function registrar(array $data, int $idUsuario): int
-    {
-        $opFerroId = (int)($data['operacion_ferro_id'] ?? 0);
-        $ferroId   = (int)($data['contenedor_fisico_id'] ?? 0);
-        $tipoEvtId = (int)($data['tipo_evento_id'] ?? 0);
-        $fecha     = (string)($data['fecha'] ?? '');
-        $comentario = $data['comentario'] ?? null;
-
-        if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
-            return 0;
-        }
-
-        // 1) La operación debe existir y ser FO (tipo_operacion_id=2 por tu esquema)
-        $rowOp = $this->select("
+    // 1) La operación debe existir y ser FO (tipo_operacion_id=2 por tu esquema)
+    $rowOp = $this->select("
             SELECT id_operacion_ferro 
               FROM operaciones_ferroviarias 
              WHERE id_operacion_ferro = ? 
              LIMIT 1", [$opFerroId]);
-        if (!$rowOp) return 0; // (si quieres, valida también estatus/FO)
+    if (!$rowOp) return 0; // (si quieres, valida también estatus/FO)
 
-        // 2) El ferro debe estar activo y pertenecer a la operación (1:1 estándar)
-        $rowF = $this->select("
+    // 2) El ferro debe estar activo y pertenecer a la operación (1:1 estándar)
+    $rowF = $this->select("
             SELECT cf.id_fisico
               FROM operaciones_ferroviarias of
               JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
              WHERE of.id_operacion_ferro = ?
                AND cf.id_fisico = ?
              LIMIT 1", [$opFerroId, $ferroId]);
-        if (!$rowF) return 0;
+    if (!$rowF) return 0;
 
-        // 3) Tipo de evento debe ser TERRESTRE y activo
-        $rowEvt = $this->select("
+    // 3) Tipo de evento debe ser TERRESTRE y activo
+    $rowEvt = $this->select("
             SELECT id_tipo_evento
               FROM tipos_evento_logistico
              WHERE id_tipo_evento = ?
                AND id_tipo_operacion = 2
                AND estatus = 1
              LIMIT 1", [$tipoEvtId]);
-        if (!$rowEvt) return 0;
+    if (!$rowEvt) return 0;
 
-        // 4) Evitar duplicado por (opFerroId + ferroId + tipoEvtId)
-        if ($this->existeEventoFerroDuplicado($opFerroId, $ferroId, $tipoEvtId)) {
-            return 0;
-        }
-
-        // 5) Insertar
-        $sqlIns = "INSERT INTO eventos_ferroviarios
-                   (operacion_ferro_id, contenedor_fisico_id, tipo_evento_id, fecha, comentario, creado_por)
-                   VALUES (?, ?, ?, ?, ?, ?)";
-        $params = [$opFerroId, $ferroId, $tipoEvtId, $fecha, $comentario, ($idUsuario ?: null)];
-
-        return (int)$this->insertar($sqlIns, $params);
+    // 4) Evitar duplicado por (opFerroId + ferroId + tipoEvtId)
+    if ($this->existeEventoFerroDuplicado($opFerroId, $ferroId, $tipoEvtId)) {
+      return 0;
     }
 
-    public function actualizar(array $data): bool
-    {
-        $idEvento  = (int)($data['id_evento'] ?? 0);
-        $opFerroId = (int)($data['operacion_ferro_id'] ?? 0);
-        $ferroId   = (int)($data['contenedor_fisico_id'] ?? 0);
-        $tipoEvtId = (int)($data['tipo_evento_id'] ?? 0);
-        $fecha     = (string)($data['fecha'] ?? '');
-        $comentario = $data['comentario'] ?? null;
+    // 5) Insertar
+    $sqlIns = "INSERT INTO eventos_ferroviarios
+                   (operacion_ferro_id, contenedor_fisico_id, tipo_evento_id, fecha, comentario, creado_por)
+                   VALUES (?, ?, ?, ?, ?, ?)";
+    $params = [$opFerroId, $ferroId, $tipoEvtId, $fecha, $comentario, ($idUsuario ?: null)];
 
-        if ($idEvento <= 0 || $opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
-            return false;
-        }
+    return (int)$this->insertar($sqlIns, $params);
+  }
 
-        // Validaciones como en registrar
-        $rowOp = $this->select("SELECT id_operacion_ferro FROM operaciones_ferroviarias WHERE id_operacion_ferro = ? LIMIT 1", [$opFerroId]);
-        if (!$rowOp) return false;
+  public function actualizar(array $data): bool
+  {
+    $idEvento  = (int)($data['id_evento'] ?? 0);
+    $opFerroId = (int)($data['operacion_ferro_id'] ?? 0);
+    $ferroId   = (int)($data['contenedor_fisico_id'] ?? 0);
+    $tipoEvtId = (int)($data['tipo_evento_id'] ?? 0);
+    $fecha     = (string)($data['fecha'] ?? '');
+    $comentario = $data['comentario'] ?? null;
 
-        $rowF = $this->select("
+    if ($idEvento <= 0 || $opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
+      return false;
+    }
+
+    // Validaciones como en registrar
+    $rowOp = $this->select("SELECT id_operacion_ferro FROM operaciones_ferroviarias WHERE id_operacion_ferro = ? LIMIT 1", [$opFerroId]);
+    if (!$rowOp) return false;
+
+    $rowF = $this->select("
             SELECT cf.id_fisico
               FROM operaciones_ferroviarias of
               JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
              WHERE of.id_operacion_ferro = ?
                AND cf.id_fisico = ?
              LIMIT 1", [$opFerroId, $ferroId]);
-        if (!$rowF) return false;
+    if (!$rowF) return false;
 
-        $rowEvt = $this->select("
+    $rowEvt = $this->select("
             SELECT id_tipo_evento
               FROM tipos_evento_logistico
              WHERE id_tipo_evento = ?
                AND id_tipo_operacion = 2
                AND estatus = 1
              LIMIT 1", [$tipoEvtId]);
-        if (!$rowEvt) return false;
+    if (!$rowEvt) return false;
 
-        if ($this->existeEventoFerroDuplicado($opFerroId, $ferroId, $tipoEvtId, $idEvento)) {
-            return false;
-        }
+    if ($this->existeEventoFerroDuplicado($opFerroId, $ferroId, $tipoEvtId, $idEvento)) {
+      return false;
+    }
 
-        $sql = "UPDATE eventos_ferroviarios
+    $sql = "UPDATE eventos_ferroviarios
                    SET operacion_ferro_id = ?,
                        contenedor_fisico_id = ?,
                        tipo_evento_id = ?,
@@ -522,29 +522,29 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
                        comentario = ?
                  WHERE id_evento = ?
                    AND estatus = 1";
-        $params = [$opFerroId, $ferroId, $tipoEvtId, $fecha, $comentario, $idEvento];
+    $params = [$opFerroId, $ferroId, $tipoEvtId, $fecha, $comentario, $idEvento];
 
-        return (bool)$this->save($sql, $params);
-    }
+    return (bool)$this->save($sql, $params);
+  }
 
-    public function eliminar(int $idEvento): bool
-    {
-        if ($idEvento <= 0) return false;
-        $sql = "UPDATE eventos_ferroviarios
+  public function eliminar(int $idEvento): bool
+  {
+    if ($idEvento <= 0) return false;
+    $sql = "UPDATE eventos_ferroviarios
                    SET estatus = 0
                  WHERE id_evento = ?
                  LIMIT 1";
-        return (bool)$this->save($sql, [$idEvento]);
-    }
+    return (bool)$this->save($sql, [$idEvento]);
+  }
 
-    /* ==========================================
+  /* ==========================================
        Obtener un evento por (FO, Ferro, TipoEvt)
        ========================================== */
-    public function obtenerEventoPorClave(int $opFerroId, int $ferroId, int $tipoEvtId): ?array
-    {
-        if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return null;
+  public function obtenerEventoPorClave(int $opFerroId, int $ferroId, int $tipoEvtId): ?array
+  {
+    if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return null;
 
-        $sql = "SELECT 
+    $sql = "SELECT 
                     e.id_evento, e.operacion_ferro_id, e.contenedor_fisico_id,
                     e.tipo_evento_id, e.fecha, e.comentario
                 FROM eventos_ferroviarios e
@@ -553,7 +553,7 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
                   AND e.contenedor_fisico_id = ?
                   AND e.tipo_evento_id = ?
                 LIMIT 1";
-        $row = $this->select($sql, [$opFerroId, $ferroId, $tipoEvtId]);
-        return $row ?: null;
-    }
+    $row = $this->select($sql, [$opFerroId, $ferroId, $tipoEvtId]);
+    return $row ?: null;
+  }
 }
