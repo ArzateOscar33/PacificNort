@@ -393,7 +393,7 @@
   }
 
   // ===== Listar (usa tu endpoint MF) =====
-  function listar() {
+  function listar(silencioso = false) {
     const params = new URLSearchParams();
     const subtipo = (selectSubtipo?.value || "").trim();
     const term = (inputBuscar?.value || "").trim();
@@ -433,7 +433,7 @@
       currentListXHR.abort();
     }
 
-    renderCargando();
+    if (!silencioso) renderCargando();
     const x = new XMLHttpRequest();
     currentListXHR = x;
     x.open("GET", url, true);
@@ -1449,6 +1449,38 @@
     document.addEventListener("mf:trazabilidad-updated", (ev) => {
       requestRefresh(ev.detail || {});
     });
+  })();
+
+  // =========================================================
+  // AUTO-REFRESH: dentro del IIFE para poder acceder a listar()
+  // =========================================================
+  (function () {
+    var INTERVALO_MS = 5000;
+    var autoRefreshTimer = null;
+    var pausado = false;
+
+    function iniciar() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(function () {
+        if (!pausado) listar(true);
+      }, INTERVALO_MS);
+    }
+
+    var modalPrincipal = document.getElementById("modalMaritimoFerro");
+    var modalAsignacion = document.getElementById("modalAsignarFerroCaja");
+
+    [modalPrincipal, modalAsignacion].forEach(function (m) {
+      if (!m) return;
+      m.addEventListener("show.bs.modal", function () {
+        pausado = true;
+      });
+      m.addEventListener("hidden.bs.modal", function () {
+        pausado = false;
+        listar(true);
+      });
+    });
+
+    iniciar();
   })();
 })();
 // ===============================
