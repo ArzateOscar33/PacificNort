@@ -98,7 +98,7 @@ WHERE o.estatus_id IN (1,5,9);
         FROM operaciones o
         INNER JOIN subtipos_operacion s 
             ON s.id_subtipo = o.subtipo_operacion_id
-        WHERE o.estatus_id IN (1,5,9)            -- activos: Pendiente / En revisión / Abierta
+        WHERE o.estatus_id IN (1,5,6,9,10,11,12,14,15,16) 
         GROUP BY s.id_subtipo, s.nombre, s.prefijo_codigo
         ORDER BY total DESC
     ";

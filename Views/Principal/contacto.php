@@ -1,8 +1,4 @@
-
-
- 
-
- <!-- Contacto -->
+<!-- Contacto -->
 
 <section class="section contact-section" id="contacto">
   <div class="container">
@@ -11,8 +7,8 @@
     </div>
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-        <p class="section-subtitle text-center" data-aos="fade-up" data-aos-delay="100">Ponte encontactocon
-          nuestroequipo para conocer más sobre nuestros servicios o solicitar una cotización personalizada.</p>
+        <p class="section-subtitle text-center" data-aos="fade-up" data-aos-delay="100">Ponte en contacto con
+          nuestro equipo para conocer más sobre nuestros servicios o solicitar una cotización personalizada.</p>
       </div>
     </div>
     <div class="row mt-5">
@@ -86,7 +82,3 @@
     </div>
   </div>
 </section>
- 
- 
- 
-

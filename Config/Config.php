@@ -1,7 +1,7 @@
 <?php
-//const BASE_URL = "http://192.168.1.200/PacificNort/";
+const BASE_URL = "http://192.168.1.200/PacificNort/";
 
-const BASE_URL = "http://localhost/PacificNort/";
+//const BASE_URL = "http://localhost/PacificNort/";
 const HOST = "localhost";
 const USER = "root";
 const PASS = "";

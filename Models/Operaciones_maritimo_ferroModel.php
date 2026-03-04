@@ -710,7 +710,7 @@ class Operaciones_maritimo_ferroModel extends Query
             ) asig ON asig.operacion_id = o.id_operacion
 
             $where
-            ORDER BY o.id_operacion DESC
+            ORDER BY o.eta DESC,o.id_operacion DESC
             LIMIT $limit OFFSET $off
         ";
 
