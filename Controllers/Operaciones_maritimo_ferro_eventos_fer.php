@@ -1,19 +1,21 @@
 <?php
 require_once "Models/OperacionesLogModel.php";
- 
+
 
 class Operaciones_maritimo_ferro_eventos_fer extends Controller
 {
     /** @var OperacionesLogModel */
     private $opLog;
- 
+
 
     public function __construct()
     {
         parent::__construct();
-        if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
         $this->opLog = new OperacionesLogModel();
-     
+
         header_remove('X-Powered-By');
     }
 
@@ -24,17 +26,21 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
     {
         header('Content-Type: application/json; charset=UTF-8');
 
-        // Parámetros
         $page    = isset($_GET['page'])     ? max(1, (int)$_GET['page']) : 1;
-        $perPage = isset($_GET['per_page']) ? min(100, max(1, (int)$_GET['per_page'])) : 10;
+        $perPage = isset($_GET['per_page']) ? min(1000000, max(1, (int)$_GET['per_page'])) : 10;
 
-        // Filtros
-        // Soporta ambos nombres por compatibilidad: cont_id (mar) y ferro_id (fer)
-        $opId    = (isset($_GET['op_id'])    && $_GET['op_id']    !== '') ? (int)$_GET['op_id']    : null; // id_operacion_ferro
-        $ferroId = (isset($_GET['ferro_id']) && $_GET['ferro_id'] !== '') ? (int)$_GET['ferro_id'] : null; // contenedores_fisicos.id_fisico
+        // op_id puede venir como marítima o como FO legacy
+        $opId = null;
+        if (isset($_GET['op_id']) && $_GET['op_id'] !== '') $opId = (int)$_GET['op_id'];
+        if ($opId === null && isset($_GET['operacion_id']) && $_GET['operacion_id'] !== '') $opId = (int)$_GET['operacion_id'];
+        if ($opId === null && isset($_GET['mar_id']) && $_GET['mar_id'] !== '') $opId = (int)$_GET['mar_id'];
+
+        // ferro_id / cont_id compat
+        $ferroId = (isset($_GET['ferro_id']) && $_GET['ferro_id'] !== '') ? (int)$_GET['ferro_id'] : null;
         if ($ferroId === null && isset($_GET['cont_id']) && $_GET['cont_id'] !== '') {
-            $ferroId = (int)$_GET['cont_id']; // alias
+            $ferroId = (int)$_GET['cont_id'];
         }
+
         $q = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
 
         try {
@@ -47,7 +53,7 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
                 'per_page' => (int)($res['per_page'] ?? $perPage)
             ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('listar FO eventos: ' . $e->getMessage());
+            error_log('listar eventos terrestres (MF): ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'data'     => [],
@@ -91,7 +97,7 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
                 'columns' => $out
             ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('eventos_ferro_columnas: '.$e->getMessage());
+            error_log('eventos_ferro_columnas: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'ok'    => false,
@@ -113,7 +119,10 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         $term  = isset($_GET['term'])  ? trim((string)$_GET['term'])  : '';
         $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit'])  : 8;
 
-        if ($term === '') { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
+        if ($term === '') {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         try {
             $rows = $this->model->sugerirOperacionesFO($term, $limit);
@@ -126,7 +135,7 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
             }, is_array($rows) ? $rows : []);
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('sugerir_operaciones FO: '.$e->getMessage());
+            error_log('sugerir_operaciones FO: ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -145,7 +154,10 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
         $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10;
 
-        if ($opId <= 0) { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
+        if ($opId <= 0) {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         try {
             $rows = $this->model->buscarFerrosDeOperacion($opId, $term, $limit);
@@ -158,7 +170,7 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
             }, is_array($rows) ? $rows : []);
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('buscar_ferros FO: '.$e->getMessage());
+            error_log('buscar_ferros FO: ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -172,7 +184,10 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
     {
         header('Content-Type: application/json; charset=UTF-8');
         $opId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-        if ($opId <= 0) { echo json_encode(null, JSON_UNESCAPED_UNICODE); die(); }
+        if ($opId <= 0) {
+            echo json_encode(null, JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         $row = $this->model->getFerroDeOperacion($opId);
         echo json_encode($row ?: null, JSON_UNESCAPED_UNICODE);
@@ -197,7 +212,7 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
             }, is_array($rows) ? $rows : []);
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('tipos_evento (ferro): '.$e->getMessage());
+            error_log('tipos_evento (ferro): ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -214,16 +229,28 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         // operacion_ferro_id, contenedor_fisico_id, tipo_evento_id, fecha, comentario
         $evento = [
             'operacion_ferro_id'  => (int)($_POST['operacion_ferro_id'] ?? 0),
-            'contenedor_fisico_id'=> (int)($_POST['contenedor_fisico_id'] ?? 0),
+            'contenedor_fisico_id' => (int)($_POST['contenedor_fisico_id'] ?? 0),
             'tipo_evento_id'      => (int)($_POST['tipo_evento_id'] ?? 0),
             'fecha'               => trim($_POST['fecha'] ?? ''),
             'comentario'          => trim($_POST['comentario'] ?? '')
         ];
 
-        if ($evento['operacion_ferro_id'] <= 0)   { echo json_encode(['status'=>'warning','msg'=>'Selecciona una operación FO.']); die(); }
-        if ($evento['contenedor_fisico_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Falta el ferro/caja ligado a la operación.']); die(); }
-        if ($evento['tipo_evento_id'] <= 0)       { echo json_encode(['status'=>'warning','msg'=>'Selecciona un tipo de evento terrestre.']); die(); }
-        if ($evento['fecha'] === '')              { echo json_encode(['status'=>'warning','msg'=>'Indica la fecha del evento.']); die(); }
+        if ($evento['operacion_ferro_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona una operación FO.']);
+            die();
+        }
+        if ($evento['contenedor_fisico_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Falta el ferro/caja ligado a la operación.']);
+            die();
+        }
+        if ($evento['tipo_evento_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento terrestre.']);
+            die();
+        }
+        if ($evento['fecha'] === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']);
+            die();
+        }
 
         $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
         $id = $this->model->registrar($evento, $usuarioId);
@@ -237,9 +264,9 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
                 'fecha'      => $evento['fecha']
             ]);
             $this->logOp($evento['operacion_ferro_id'], 'creacion', $desc);
-            echo json_encode(['status'=>'success','msg'=>'Evento registrado','id'=>$id]);
+            echo json_encode(['status' => 'success', 'msg' => 'Evento registrado', 'id' => $id]);
         } else {
-            echo json_encode(['status'=>'error','msg'=>'No fue posible registrar el evento (valida FO, ferro activo/pertenencia, tipo terrestre y duplicados).']);
+            echo json_encode(['status' => 'error', 'msg' => 'No fue posible registrar el evento (valida FO, ferro activo/pertenencia, tipo terrestre y duplicados).']);
         }
         die();
     }
@@ -256,8 +283,9 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         $ferId  = (int)($_GET['contenedor_fisico_id'] ?? 0);
         $evtId  = (int)($_GET['tipo_evento_id']       ?? 0);
 
-        if ($opId<=0 || $ferId<=0 || $evtId<=0) {
-            echo json_encode(null, JSON_UNESCAPED_UNICODE); die();
+        if ($opId <= 0 || $ferId <= 0 || $evtId <= 0) {
+            echo json_encode(null, JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         $row = $this->model->obtenerEventoPorClave($opId, $ferId, $evtId);
@@ -281,11 +309,26 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
             'comentario'           => trim($_POST['comentario'] ?? '')
         ];
 
-        if ($evento['id_evento'] <= 0)             { echo json_encode(['status'=>'warning','msg'=>'Falta id_evento']); die(); }
-        if ($evento['operacion_ferro_id'] <= 0)    { echo json_encode(['status'=>'warning','msg'=>'Selecciona una operación FO.']); die(); }
-        if ($evento['contenedor_fisico_id'] <= 0)  { echo json_encode(['status'=>'warning','msg'=>'Falta el ferro/caja ligado a la operación.']); die(); }
-        if ($evento['tipo_evento_id'] <= 0)        { echo json_encode(['status'=>'warning','msg'=>'Selecciona un tipo de evento terrestre.']); die(); }
-        if ($evento['fecha'] === '')               { echo json_encode(['status'=>'warning','msg'=>'Indica la fecha del evento.']); die(); }
+        if ($evento['id_evento'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Falta id_evento']);
+            die();
+        }
+        if ($evento['operacion_ferro_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona una operación FO.']);
+            die();
+        }
+        if ($evento['contenedor_fisico_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Falta el ferro/caja ligado a la operación.']);
+            die();
+        }
+        if ($evento['tipo_evento_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento terrestre.']);
+            die();
+        }
+        if ($evento['fecha'] === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']);
+            die();
+        }
 
         try {
             $ok = $this->model->actualizar($evento);
@@ -298,14 +341,14 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
                     'fecha'     => $evento['fecha']
                 ]);
                 $this->logOp($evento['operacion_ferro_id'], 'actualizacion', $desc);
-                echo json_encode(['status'=>'success','msg'=>'Evento actualizado']);
+                echo json_encode(['status' => 'success', 'msg' => 'Evento actualizado']);
             } else {
-                echo json_encode(['status'=>'error','msg'=>'No fue posible actualizar (valida FO, ferro activo/pertenencia, tipo terrestre y duplicados).']);
+                echo json_encode(['status' => 'error', 'msg' => 'No fue posible actualizar (valida FO, ferro activo/pertenencia, tipo terrestre y duplicados).']);
             }
         } catch (\Throwable $e) {
-            error_log('actualizar evento FER: '.$e->getMessage());
+            error_log('actualizar evento FER: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>'Error interno al actualizar.']);
+            echo json_encode(['status' => 'error', 'msg' => 'Error interno al actualizar.']);
         }
         die();
     }
@@ -318,7 +361,10 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         header('Content-Type: application/json; charset=UTF-8');
 
         $id = (int)($_POST['id_evento'] ?? 0);
-        if ($id <= 0) { echo json_encode(['status'=>'warning','msg'=>'Falta id_evento']); die(); }
+        if ($id <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Falta id_evento']);
+            die();
+        }
 
         try {
             $ok = $this->model->eliminar($id);
@@ -327,9 +373,9 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
                 'msg'    => $ok ? 'Evento eliminado' : 'No se pudo eliminar'
             ]);
         } catch (\Throwable $e) {
-            error_log('eliminar evento FER: '.$e->getMessage());
+            error_log('eliminar evento FER: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>'Error interno al eliminar.']);
+            echo json_encode(['status' => 'error', 'msg' => 'Error interno al eliminar.']);
         }
         die();
     }
@@ -342,9 +388,11 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         try {
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
             $id = $this->opLog->crear($operacionId, $usuarioId, $accion, $descripcion);
-            if (!$id) { error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}"); }
+            if (!$id) {
+                error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}");
+            }
         } catch (\Throwable $e) {
-            error_log("operaciones_log error: ".$e->getMessage());
+            error_log("operaciones_log error: " . $e->getMessage());
         }
     }
 
@@ -352,7 +400,9 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
     {
         if (empty($info)) return $base;
         $kv = [];
-        foreach ($info as $k => $v) { $kv[] = "$k=$v"; }
-        return $base.' ('.implode(', ', $kv).')';
+        foreach ($info as $k => $v) {
+            $kv[] = "$k=$v";
+        }
+        return $base . ' (' . implode(', ', $kv) . ')';
     }
 }

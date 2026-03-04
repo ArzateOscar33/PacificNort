@@ -25,9 +25,9 @@
             <a class="nav-link" id="crear_operaciones_ferro-tab" data-bs-toggle="tab" href="#crear_operaciones_ferro" role="tab" aria-controls="crear_operaciones_ferro" aria-selected="false"><i data-feather="truck"></i>En Transito</a>
         </li> -->
 
-        <!-- <li class="nav-item">
+        <li class="nav-item">
             <a class="nav-link" id="Eventos_Logisticos_ferro-tab" data-bs-toggle="tab" href="#Eventos_Logisticos_ferro" role="tab" aria-controls="Eventos_Logisticos_ferro" aria-selected="false"><i data-feather="calendar"></i>Eventos Terrestres</a>
-        </li>-->
+        </li>
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#trazabilidad">
                 <i data-feather="shuffle"></i> Trazabilidad

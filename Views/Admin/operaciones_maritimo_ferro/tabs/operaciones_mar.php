@@ -122,13 +122,9 @@
     overflow-x: auto;
     overflow-y: hidden;
     height: 14px;
-    /* altura de la barra */
     position: sticky;
-    /* se queda visible al hacer scroll vertical */
     top: var(--mf-sticky-top);
-    /* mismo top que tu header sticky */
     z-index: 80;
-    /* arriba del header */
     background: #fff;
     border: 1px solid rgba(0, 0, 0, .08);
     border-radius: 8px;
@@ -138,9 +134,7 @@
   /* El “relleno” que crea el ancho scrolleable */
   .mf-top-scroll-inner {
     height: 1px;
-    /* mínimo, solo para generar ancho */
     width: 0px;
-    /* se actualiza por JS */
   }
 </style>
 

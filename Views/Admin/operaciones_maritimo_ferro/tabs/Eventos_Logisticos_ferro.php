@@ -1,10 +1,107 @@
+<style>
+  /* =========================================================
+   EVENTOS TERRESTRES (FER) — SOLO ANCHOS / LEGIBILIDAD
+   No cambia colores ni efectos, solo espaciamiento/ancho.
+   ========================================================= */
+
+  /* Evita que el navegador “apriete” columnas */
+  #tablaEventosFer {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    /* clave: respeta min-width y permite scroll horizontal */
+  }
+
+  /* Base: un poco más de padding + no wraps */
+  #tablaEventosFer th,
+  #tablaEventosFer td {
+    padding: .55rem .75rem;
+    /* como tu tabla MF */
+    white-space: nowrap;
+    /* evita que se apachurre en 2 líneas */
+    vertical-align: middle;
+  }
+
+  /* Asegura que el wrapper permita scroll horizontal si hay muchas columnas */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ====== ANCHOS DE COLUMNAS FIJAS (las primeras) ======
+   Ajusta estos valores a tu gusto.
+   (Con tu JS nuevo, ahora tienes 6 columnas fijas antes de las dinámicas)
+*/
+  :root {
+    --evfer-col-op-w: 170px;
+    /* Operación Marítima */
+    --evfer-col-cli-w: 240px;
+    /* Cliente */
+    --evfer-col-est-w: 170px;
+    /* Estatus Marítima */
+    --evfer-col-des-w: 190px;
+    /* Destino */
+    --evfer-col-tra-w: 200px;
+    /* Transportista */
+    --evfer-col-fer-w: 180px;
+    /* Caja/Ferro */
+    --evfer-col-evt-w: 140px;
+    /* Cada evento (columna dinámica) */
+  }
+
+  /* Fijas */
+  #tablaEventosFer th:nth-child(1),
+  #tablaEventosFer td:nth-child(1) {
+    min-width: var(--evfer-col-op-w);
+    width: var(--evfer-col-op-w);
+  }
+
+  #tablaEventosFer th:nth-child(2),
+  #tablaEventosFer td:nth-child(2) {
+    min-width: var(--evfer-col-cli-w);
+    width: var(--evfer-col-cli-w);
+  }
+
+  #tablaEventosFer th:nth-child(3),
+  #tablaEventosFer td:nth-child(3) {
+    min-width: var(--evfer-col-est-w);
+    width: var(--evfer-col-est-w);
+  }
+
+  #tablaEventosFer th:nth-child(4),
+  #tablaEventosFer td:nth-child(4) {
+    min-width: var(--evfer-col-des-w);
+    width: var(--evfer-col-des-w);
+  }
+
+  #tablaEventosFer th:nth-child(5),
+  #tablaEventosFer td:nth-child(5) {
+    min-width: var(--evfer-col-tra-w);
+    width: var(--evfer-col-tra-w);
+  }
+
+  #tablaEventosFer th:nth-child(6),
+  #tablaEventosFer td:nth-child(6) {
+    min-width: var(--evfer-col-fer-w);
+    width: var(--evfer-col-fer-w);
+  }
+
+  /* Dinámicas (eventos): desde la columna 7 en adelante */
+  #tablaEventosFer thead th:nth-child(n+7),
+  #tablaEventosFer tbody td:nth-child(n+7) {
+    min-width: var(--evfer-col-evt-w);
+    width: var(--evfer-col-evt-w);
+    text-align: center;
+  }
+</style>
+
 <div class="container py-4 col-md-12">
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
         <i data-feather="file-text" class="me-1"></i> Eventos Terrestres
       </h5>
-      <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticosFer"
+      <button class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticosFer"
         id="btnAbrirModalDetallesFer">
         <i data-feather="plus-circle" class="me-1"></i> Añadir / Editar Evento
       </button>
@@ -45,6 +142,9 @@
             <option value="25">25</option>
             <option value="50">50</option>
             <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+            <option value="10000000">Todos</option>
           </select>
           <span class="small text-muted">por página</span>
         </div>
@@ -52,12 +152,12 @@
 
       <!-- Tabla de eventos por contenedor ferroviario -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle" id="tablaEventosFer">
+        <table class="table table-hover  align-middle" id="tablaEventosFer">
           <thead class="table-primary">
             <tr id="theadEventosFer" class="text-center">
               <!-- Fijos -->
-              <th style="min-width: 140px;">Operación</th>
-              <th style="min-width: 180px;">Contenedor ferroviario</th>
+              <th style="min-width: 140px;" class="text-center">Operación</th>
+              <th style="min-width: 180px;" class="text-center">Caja / Ferro</th>
               <!-- Dinámicos (JS): una <th> por cada tipo de evento terrestre -->
             </tr>
           </thead>
@@ -101,7 +201,7 @@
           <input type="hidden" id="eventoContenedorTipoFer">
           <div class="row g-3 mb-2">
             <!-- Operación con sugerencias -->
-            <div class="col-md-6">
+            <div class="col-md-6 d-none">
               <label for="eventoOperacionNombreFer" class="form-label">Operación</label>
               <div class="position-relative">
                 <input type="hidden" id="eventoOperacionIdFer" name="eventoOperacionIdFer">
@@ -186,7 +286,7 @@
             <input id="cellOpTxtFer" class="form-control" readonly>
           </div>
           <div class="mb-2">
-            <label class="form-label">Contenedor</label>
+            <label class="form-label">Ferro/Caja / Maritimo</label>
             <input id="cellCtnTxtFer" class="form-control" readonly>
           </div>
           <div class="mb-2">
@@ -215,21 +315,21 @@
 <script>
   feather.replace();
 </script>
-<!-- JS específico ferroviario --> 
+<!-- JS específico ferroviario -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/eventos_logisticos_fer.js"></script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
 
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
 
-// Uso
-forzarMayusculas("eventoOperacionNombreFer"); 
+  // Uso
+  forzarMayusculas("eventoOperacionNombreFer");
 </script>
