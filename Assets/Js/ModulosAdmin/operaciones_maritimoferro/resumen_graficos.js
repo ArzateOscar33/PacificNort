@@ -123,7 +123,7 @@
 
     const ctx = $canvas.getContext("2d");
     chart = new Chart(ctx, {
-      type: "doughnut",
+      type: "bar",
       data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
       options: {
         responsive: true,

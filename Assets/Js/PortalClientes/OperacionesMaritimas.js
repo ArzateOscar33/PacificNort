@@ -376,13 +376,13 @@
               <i data-feather="eye" class="me-1"></i> Ver
             </button>
 
-            <button class="btn btn-outline-primary"
+          <!--  <button class="btn btn-outline-primary"
                     type="button"
                     data-action="docs"
                     data-id="${esc(opId)}"
                     data-num="${esc(opNum)}">
               <i data-feather="file-text" class="me-1"></i> Docs
-            </button>
+            </button> -->
           </div>
         </td>
       </tr>
@@ -935,3 +935,29 @@
   // ===== Init =====
   cargarListado();
 })();
+// ===============================
+// Exportaciones
+// ===============================
+document.getElementById("btnExcelOpMar")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "tblOpsMar",
+    formato: "xlsx",
+    nombre: "OperacionesMaritimas.xlsx",
+    columnasOcultas: [],
+    soloVisibles: true,
+    sheetName: "Contenedores En Operacion",
+  });
+});
+
+document.getElementById("btnPdfOpMar")?.addEventListener("click", () => {
+  ExportarTablas.exportar({
+    ref: "#tblOpsMar",
+    formato: "pdf",
+    nombre: "OperacionesMaritimas.pdf",
+    titulo: "OperacionesMaritimas",
+    orientacion: "landscape",
+    formatoPagina: "letter",
+    columnasOcultas: [],
+    soloVisibles: false,
+  });
+});

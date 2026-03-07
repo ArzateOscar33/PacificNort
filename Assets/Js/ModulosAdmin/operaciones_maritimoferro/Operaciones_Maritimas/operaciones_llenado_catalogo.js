@@ -1455,7 +1455,7 @@
   // AUTO-REFRESH: dentro del IIFE para poder acceder a listar()
   // =========================================================
   (function () {
-    var INTERVALO_MS = 5000;
+    var INTERVALO_MS = 15000;
     var autoRefreshTimer = null;
     var pausado = false;
 

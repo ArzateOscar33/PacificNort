@@ -11,9 +11,9 @@
         <li class="nav-item">
             <a class="nav-link active" id="crear_operacions-tab" data-bs-toggle="tab" href="#crear_operacions" role="tab" aria-controls="crear_operacions" aria-selected="false"><i data-feather="anchor"></i>Operaciones</a>
         </li>
-        <!-- <li class="nav-item">
+        <li class="nav-item">
             <a class="nav-link" id="Eventos_Logisticos-tab" data-bs-toggle="tab" href="#Eventos_Logisticos" role="tab" aria-controls="Eventos_Logisticos" aria-selected="false"><i data-feather="calendar"></i>Eventos Maritimos</a>
-        </li>-->
+        </li>
         <!-- FIN MARITMA -->
 
         <!-- FERRO/TERRESTRE -->

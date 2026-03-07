@@ -161,7 +161,7 @@
           <div>
             <h4 class="mb-0" id="pageTitle">Operaciones</h4>
             <div class="search-hint" id="pageHint">
-              Consulta y filtra tus operaciones. Puedes <b>subir documentos</b> por operación.
+              Consulta y filtra tus operaciones.
             </div>
           </div>
 
@@ -177,17 +177,16 @@
     <div class="container-fluid py-4" id="pnContainer">
 
 
-      <!-- KPIs -->
       <div class="row g-3 mb-3" id="kpiRow">
 
-        <!-- Marítimas en agua -->
+        <!-- En agua -->
         <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-mar-agua" id="kpiCardMarAgua" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
-                <div class="pn-muted small text-truncate">Marítimas en agua</div>
+                <div class="pn-muted small text-truncate">En agua</div>
                 <div class="h4 mb-0" id="kpiMarEnAgua">0</div>
-                <div class="small pn-muted text-truncate" id="kpiMarEnAguaSub">En tránsito</div>
+                <div class="small pn-muted text-truncate" id="kpiMarEnAguaSub">Operaciones en agua</div>
               </div>
               <div class="kpi-icon pn-kpi-ic">
                 <i data-feather="droplet"></i>
@@ -196,14 +195,14 @@
           </div>
         </div>
 
-        <!-- Terrestres en camino -->
+        <!-- En camino a destino -->
         <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-ter-camino" id="kpiCardTerCamino" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
-                <div class="pn-muted small text-truncate">Terrestres en camino</div>
+                <div class="pn-muted small text-truncate">En camino a destino</div>
                 <div class="h4 mb-0" id="kpiTerEnCamino">0</div>
-                <div class="small pn-muted text-truncate" id="kpiTerEnCaminoSub">Ruta activa</div>
+                <div class="small pn-muted text-truncate" id="kpiTerEnCaminoSub">Operaciones terrestres en tránsito</div>
               </div>
               <div class="kpi-icon pn-kpi-ic">
                 <i data-feather="truck"></i>
@@ -212,14 +211,14 @@
           </div>
         </div>
 
-        <!-- Marítimas en puerto -->
+        <!-- En puerto -->
         <div class="col-12 col-md-6 col-xl-2">
           <div class="kpi-card p-3 pn-kpi-pro kpi-mar-puerto" id="kpiCardMarPuerto" role="button" tabindex="0">
             <div class="d-flex align-items-center justify-content-between">
               <div class="min-w-0">
-                <div class="pn-muted small text-truncate">Marítimas en puerto</div>
+                <div class="pn-muted small text-truncate">En puerto</div>
                 <div class="h4 mb-0" id="kpiMarEnPuerto">0</div>
-                <div class="small pn-muted text-truncate" id="kpiMarEnPuertoSub">Contenedores en puerto</div>
+                <div class="small pn-muted text-truncate" id="kpiMarEnPuertoSub">Operaciones en puerto</div>
               </div>
               <div class="kpi-icon pn-kpi-ic">
                 <i data-feather="anchor"></i>
@@ -235,7 +234,7 @@
               <div class="min-w-0">
                 <div class="pn-muted small text-truncate">Bodegas</div>
                 <div class="h4 mb-0" id="kpiBodegas">0</div>
-                <div class="small pn-muted text-truncate" id="kpiBodegasSub">TJ + SD</div>
+                <div class="small pn-muted text-truncate" id="kpiBodegasSub">Bodega MX + Bodega USA</div>
               </div>
               <div class="kpi-icon pn-kpi-ic">
                 <i data-feather="package"></i>
@@ -251,7 +250,7 @@
               <div class="min-w-0">
                 <div class="pn-muted small text-truncate">Yardas</div>
                 <div class="h4 mb-0" id="kpiYardas">0</div>
-                <div class="small pn-muted text-truncate" id="kpiYardasSub">TJ + SD</div>
+                <div class="small pn-muted text-truncate" id="kpiYardasSub">Yarda MX + Yarda USA</div>
               </div>
               <div class="kpi-icon pn-kpi-ic">
                 <i data-feather="map-pin"></i>
@@ -368,9 +367,9 @@
                 <button class="btn btn-sm btn-outline-success" id="btnExcelOpMar">
                   <i data-feather="file-text" class="me-1"></i> Excel
                 </button>
-                <button class="btn btn-sm btn-outline-warning" id="btnPdfOpMar">
+                <!--  <button class="btn btn-sm btn-outline-warning" id="btnPdfOpMar">
                   <i data-feather="file" class="me-1"></i> PDF
-                </button>
+                </button> -->
               </div>
             </div>
           </div>
@@ -378,37 +377,36 @@
 
         <div class="card-body px-4 pb-4">
           <table class="table table-spacious align-middle mb-0" id="tblOpsMar">
-            <table class="table align-middle mb-0" id="tblOpsMar">
-              <thead>
-                <tr>
-                  <th>Operación</th>
-                  <th>Contenedor Martimo</th>
-                  <th>BL</th>
-                  <th>ETD</th>
-                  <th>ETA</th>
-                  <th>Estatus</th>
-                  <th>Peso</th>
-                  <th>Medida</th>
-                  <th>Mercancia</th>
-                  <th>Transportista</th>
-                  <th>Broker</th>
-                  <th>Cita Puerto</th>
-                  <th>Caja/Ferro</th>
-                  <th>Destino</th>
-                  <th>Fecha salida</th>
-                  <th>Ubicacion Actual</th>
-                  <th> Transportista Caja/Ferro</th>
+            <thead>
+              <tr>
+                <th>Operación</th>
+                <th>Contenedor Martimo</th>
+                <th>BL</th>
+                <th>ETD</th>
+                <th>ETA</th>
+                <th>Estatus</th>
+                <th>Peso</th>
+                <th>Medida</th>
+                <th>Mercancia</th>
+                <th>Transportista</th>
+                <th>Broker</th>
+                <th>Cita Puerto</th>
+                <th>Caja/Ferro</th>
+                <th>Destino</th>
+                <th>Fecha salida</th>
+                <th>Ubicacion Actual</th>
+                <th> Transportista Caja/Ferro</th>
 
 
-                  <th class="text-end">Acciones</th>
-                </tr>
-              </thead>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
 
-              <!-- ✅ tbody con ID para render dinámico -->
-              <tbody id="tbOpsMar">
-                <!-- Render JS -->
-              </tbody>
-            </table>
+            <!-- ✅ tbody con ID para render dinámico -->
+            <tbody id="tbOpsMar">
+              <!-- Render JS -->
+            </tbody>
+          </table>
         </div>
 
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="marPagingWrap">
@@ -931,6 +929,10 @@
 <!-- JS del portal -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/Kpis.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/xlsx.full.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.plugin.autotable.min.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/exportarTablas.js"></script>
 
 <script>
   feather.replace();

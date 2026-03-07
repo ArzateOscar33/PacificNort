@@ -14,7 +14,7 @@
 
   // ===== Helpers base url =====
   const BASE_URL =
-    window.BASE_URL || (typeof base_url !== "undefined" ? base_url : "");
+    window.BASE_URL || (typeof base_url !== "undefined" ? base_url : "") || "";
 
   const ENDPOINT = BASE_URL + "PortalClientes/kpis";
 
@@ -35,7 +35,6 @@
   const elSubEntregadas = document.getElementById("kpiEntregadasSub");
 
   // Si no existe lo mínimo, no hacemos nada
-  // (Los nuevos KPIs son opcionales por si aún no están en alguna vista)
   if (!elMarAgua || !elTerCamino || !elMarPuerto || !elEntregadas) return;
 
   // ===== Utils =====
@@ -44,59 +43,76 @@
     return Number.isFinite(n) ? n : 0;
   }
 
-  // Animación simple de conteo (sutil)
+  function setText(el, value) {
+    if (!el) return;
+    el.textContent = String(toInt(value));
+  }
+
+  // Animación simple de conteo
   function animateCount(el, toValue, durationMs = 450) {
     if (!el) return;
 
     const fromValue = toInt(el.textContent);
+    const endValue = toInt(toValue);
+
+    if (fromValue === endValue) {
+      el.textContent = String(endValue);
+      return;
+    }
+
     const start = performance.now();
 
     function tick(now) {
       const t = Math.min(1, (now - start) / durationMs);
       const eased = 1 - Math.pow(1 - t, 3);
-      const current = Math.round(fromValue + (toValue - fromValue) * eased);
+      const current = Math.round(fromValue + (endValue - fromValue) * eased);
       el.textContent = String(current);
-      if (t < 1) requestAnimationFrame(tick);
+
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        el.textContent = String(endValue);
+      }
     }
 
     requestAnimationFrame(tick);
   }
 
-  // Refrescar
-  if (btnRefrescar) {
-    btnRefrescar.addEventListener("click", function () {
-      loadKpis();
-    });
+  function setLoadingState() {
+    setText(elMarAgua, 0);
+    setText(elMarPuerto, 0);
+    setText(elTerCamino, 0);
+    setText(elEntregadas, 0);
+
+    if (elBodegas) setText(elBodegas, 0);
+    if (elYardas) setText(elYardas, 0);
   }
 
   function paintKpis(k) {
-    // Endpoint: { ok:true, kpis: { mar_agua, mar_puerto, fo_camino, bodegas, yardas, entregadas } }
+    // El backend sigue devolviendo:
+    // { mar_agua, mar_puerto, fo_camino, bodegas, yardas, entregadas }
     const marAgua = toInt(k.mar_agua);
     const marPuerto = toInt(k.mar_puerto);
-    const foCamino = toInt(k.fo_camino);
+    const enCaminoDestino = toInt(k.fo_camino); // <-- misma key, nueva lógica
     const bodegas = toInt(k.bodegas);
     const yardas = toInt(k.yardas);
     const entregadas = toInt(k.entregadas);
 
     animateCount(elMarAgua, marAgua);
     animateCount(elMarPuerto, marPuerto);
-    animateCount(elTerCamino, foCamino);
+    animateCount(elTerCamino, enCaminoDestino);
     animateCount(elEntregadas, entregadas);
 
-    // Nuevos (si existen en la vista)
-    animateCount(elBodegas, bodegas);
-    animateCount(elYardas, yardas);
+    if (elBodegas) animateCount(elBodegas, bodegas);
+    if (elYardas) animateCount(elYardas, yardas);
 
-    // Subtext opcional (puedes dejarlo fijo)
-    if (elSubMarAgua) elSubMarAgua.textContent = "En tránsito";
-    if (elSubMarPuerto) elSubMarPuerto.textContent = "Contenedores en puerto";
-    if (elSubTerCamino) elSubTerCamino.textContent = "Ruta activa";
-
-    if (elSubBodegas) elSubBodegas.textContent = "Contenedores En Bodega";
-    if (elSubYardas) elSubYardas.textContent = "Contenedores en Yarda";
-
-    if (elSubEntregadas)
-      elSubEntregadas.textContent = "Operaciones Totales Entregadas";
+    // Subtextos actualizados a la nueva lógica
+    if (elSubMarAgua) elSubMarAgua.textContent = "Operaciones en agua";
+    if (elSubMarPuerto) elSubMarPuerto.textContent = "Operaciones en puerto";
+    if (elSubTerCamino) elSubTerCamino.textContent = "En camino a destino";
+    if (elSubBodegas) elSubBodegas.textContent = "Bodega MX / Bodega USA";
+    if (elSubYardas) elSubYardas.textContent = "Yarda MX / Yarda USA";
+    if (elSubEntregadas) elSubEntregadas.textContent = "Operaciones entregadas";
   }
 
   function loadKpis() {
@@ -111,20 +127,32 @@
         try {
           const data = JSON.parse(xhr.responseText);
 
-          if (!data || data.ok !== true || !data.kpis) return;
+          if (!data || data.ok !== true || !data.kpis) {
+            return;
+          }
 
           paintKpis(data.kpis);
         } catch (e) {
-          // silencioso
+          console.error("Error al parsear KPIs del portal:", e);
         }
+        return;
       }
+
+      console.error("Error al cargar KPIs del portal. HTTP:", xhr.status);
     };
 
     xhr.onerror = function () {
-      // silencioso
+      console.error("Error de red al cargar KPIs del portal.");
     };
 
     xhr.send(null);
+  }
+
+  // Refrescar manual
+  if (btnRefrescar) {
+    btnRefrescar.addEventListener("click", function () {
+      loadKpis();
+    });
   }
 
   // ===== Init =====
