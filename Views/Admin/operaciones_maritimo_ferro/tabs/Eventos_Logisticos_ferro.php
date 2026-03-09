@@ -112,26 +112,69 @@
       <!-- Filtros superiores -->
       <div class="row g-3 align-items-end mb-3">
         <!-- Operación con sugerencias -->
-        <div class="col-md-8">
+        <div class="col-md-3">
           <label for="eventosFerFiltroOpNombre" class="form-label mb-1">Operación</label>
           <div class="position-relative">
             <input type="hidden" id="eventosFerFiltroOpId">
             <input type="text" id="eventosFerFiltroOpNombre" class="form-control"
-              placeholder="Escribe para buscar (ej. FO)" autocomplete="off">
+              placeholder="Escribe para buscar" autocomplete="off">
             <div id="eventosFerFiltroOpSugerencias" class="list-group"
               style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
           <div class="form-text" id="eventosFerFiltroOpMeta"></div>
         </div>
+        <div class="col-md-3">
+          <label for="">Transportista</label>
+          <select class="form-control" id="eventosFerFiltroTransportista" name="eventosFerFiltroTransportista">
+            <option value="">Transportista (Todos)</option>
+            <?php if (!empty($data['transportistas'])): ?>
+              <?php foreach ($data['transportistas'] as $st): ?>
+                <option value="<?= (int)$st['id_transportista']; ?>">
+                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="">Cliente</label>
+          <select class="form-control" id="eventosFerFiltroCliente" name="eventosFerFiltroCliente">
+            <option value="">Cliente (Todos)</option>
+            <?php if (!empty($data['clientes'])): ?>
+              <?php foreach ($data['clientes'] as $cl): ?>
+                <option value="<?= (int)$cl['id_cliente']; ?>">
+                  <?= htmlspecialchars($cl['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="">Destino</label>
+          <select class="form-control" id="eventosFerFiltroDestino" name="eventosFerFiltroDestino">
+            <option value="">Destino (Todos)</option>
+            <?php if (!empty($data['ciudades'])): ?>
+              <?php foreach ($data['ciudades'] as $c): ?>
+                <option value="<?= (int)$c['id_ciudad']; ?>">
+                  <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
 
         <!-- Exportaciones -->
-        <div class="col-md-4 d-flex gap-2">
-          <button class="btn btn-sm btn-outline-success w-100" id="btnExportarExcelEventosLogisticosFer">
-            <i data-feather="file-text" class="me-1"></i> Excel
-          </button>
-          <button class="btn btn-sm btn-outline-warning w-100" id="btnExportarPDFEventosLogisticosFer">
-            <i data-feather="file" class="me-1"></i> PDF
-          </button>
+        <div class="row d-flex col-md-12 align-items-end justify-content-end">
+          <div class="col-md-1 d-flex">
+            <button class="btn btn-sm btn-outline-success " id="btnExportarExcelEventosLogisticosFer">
+              <i data-feather="file-text" class="me-1"></i> Excel
+            </button>
+            <button class="btn btn-sm btn-outline-warning " id="btnExportarPDFEventosLogisticosFer">
+              <i data-feather="file" class="me-1"></i> PDF
+            </button>
+          </div>
         </div>
 
         <!-- perPage -->

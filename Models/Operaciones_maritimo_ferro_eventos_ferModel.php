@@ -16,28 +16,82 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
   }
 
   /* =======================================================
-       Sugerencias de OPERACIONES FO (por número o por id)
-       ======================================================= */
-  public function sugerirOperacionesFO(string $term, int $limit = 8): array
+   Sugerencias de OPERACIÓN MARÍTIMA / FERRO / CONTENEDOR
+   Devuelve la operación marítima maestra (LBMF)
+   ======================================================= */
+  public function sugerirOperacionesMFoContenedor(string $term, int $limit = 8): array
   {
-    $limit  = max(1, min(20, (int)$limit));
-    $needle = '%' . mb_strtolower(trim($term), 'UTF-8') . '%';
-    $isNum  = ctype_digit(trim($term));
+    $term = trim($term);
+    if ($term === '') return [];
 
-    $where  = "(LOWER(of.numero_operacion) LIKE ?" . ($isNum ? " OR of.id_operacion_ferro = ?" : "") . ")";
-    $params = [$needle];
-    if ($isNum) $params[] = (int)$term;
+    $limit  = max(1, min(20, (int)$limit));
+    $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
+    $isNum  = ctype_digit($term);
+
+    $where = "(
+        LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
+        OR LOWER(COALESCE(of.numero_operacion, '')) LIKE ?
+        OR LOWER(COALESCE(cf.numero_ferro, '')) LIKE ?
+        OR LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ?
+    )";
+
+    $params = [$needle, $needle, $needle, $needle];
+
+    if ($isNum) {
+      $where = "(
+            {$where}
+            OR o.id_operacion = ?
+            OR of.id_operacion_ferro = ?
+        )";
+      $params[] = (int)$term;
+      $params[] = (int)$term;
+    }
 
     $sql = "
-            SELECT 
-                of.id_operacion_ferro AS id,
-                of.numero_operacion   AS label,
-                cf.numero_ferro       AS ferro
-            FROM operaciones_ferroviarias of
-            LEFT JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id
-            WHERE {$where}
-            ORDER BY of.numero_operacion ASC
-            LIMIT {$limit}";
+        SELECT
+            o.id_operacion AS id,
+            o.numero_operacion AS label,
+
+            GROUP_CONCAT(
+                DISTINCT NULLIF(TRIM(cf.numero_ferro), '')
+                ORDER BY cf.numero_ferro ASC
+                SEPARATOR ', '
+            ) AS ferro,
+
+            GROUP_CONCAT(
+                DISTINCT NULLIF(TRIM(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')), '')
+                ORDER BY COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '') ASC
+                SEPARATOR ', '
+            ) AS contenedor
+
+        FROM operacion_ferro_operacion ofo
+        INNER JOIN operaciones o
+            ON o.id_operacion = ofo.operacion_id
+        INNER JOIN operaciones_ferroviarias of
+            ON of.id_operacion_ferro = ofo.operacion_ferro_id
+        LEFT JOIN contenedores_fisicos cf
+            ON cf.id_fisico = of.contenedor_fisico_id
+           AND cf.estatus = 1
+        LEFT JOIN contenedor_maritimo_ferro cmf
+            ON cmf.operacion_ferro_id = of.id_operacion_ferro
+           AND cmf.contenedor_fisico_id = cf.id_fisico
+           AND cmf.estatus = 1
+        LEFT JOIN contenedores_maritimos cm
+            ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+        LEFT JOIN contenedores_maritimos_operacion cmo
+            ON cmo.id = cmf.cont_maritimo_operacion_id
+        LEFT JOIN contenedores_maritimos cm2
+            ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+        WHERE
+            o.estatus = 1
+            AND o.estatus_id NOT IN (13, 7)
+            AND of.estatus_id NOT IN (13, 7)
+            AND {$where}
+        GROUP BY o.id_operacion, o.numero_operacion
+        ORDER BY o.numero_operacion ASC
+        LIMIT {$limit}
+    ";
+
     $rows = $this->selectAll($sql, $params);
     return is_array($rows) ? $rows : [];
   }
@@ -97,11 +151,17 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
   public function listarEventosFOPaginado(
     int $page,
     int $perPage,
-    ?int $opId = null,         // puede ser operacion_id (marítima) o id_operacion_ferro (legacy)
-    ?int $ferroId = null,      // contenedores_fisicos.id_fisico
+    ?int $opId = null,              // puede ser operacion_id (marítima) o id_operacion_ferro (legacy)
+    ?int $ferroId = null,           // contenedores_fisicos.id_fisico
     string $q = '',
     ?string $fechaDesde = null,
-    ?string $fechaHasta = null
+    ?string $fechaHasta = null,
+    ?int $transportistaId = null,
+    ?int $clienteId = null,
+    ?int $destinoId = null,
+    string $contenedor = '',
+    string $ferro = '',
+    string $operacion = ''
   ): array {
 
     $perPage = min(10000, max(1, $perPage));
@@ -113,23 +173,68 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     // Solo ferros activos
     $where[] = "cf.estatus = 1";
 
-    // Excluir Cancelado/Finalizada tanto en marítima como en FO (segmento)
+    // Excluir Cancelado/Finalizada tanto en marítima como en FO
     $where[] = "o.estatus_id  NOT IN (13, 7)";
     $where[] = "of.estatus_id NOT IN (13, 7)";
 
-    // Filtro: opId puede venir como marítima (o.id_operacion) o como FO (of.id_operacion_ferro)
+    // Filtro por operación id (puede venir marítima o FO)
     if ($opId) {
-      $where[] = "(o.id_operacion = ? OR of.id_operacion_ferro = ?)";
-      $params[] = $opId;
+      $where[] = "(o.id_operacion = ?)";
       $params[] = $opId;
     }
 
+    // Filtro por ferro id
     if ($ferroId) {
       $where[] = "cf.id_fisico = ?";
       $params[] = $ferroId;
     }
 
-    // 🔥 Búsqueda: ahora incluye contenedor marítimo + ubicación actual
+    // ==========================
+    // NUEVOS FILTROS EXACTOS
+    // ==========================
+
+    if ($transportistaId) {
+      $where[] = "of.transportista_id = ?";
+      $params[] = $transportistaId;
+    }
+
+    if ($clienteId) {
+      $where[] = "o.cliente_id = ?";
+      $params[] = $clienteId;
+    }
+
+    if ($destinoId) {
+      $where[] = "of.destino_id = ?";
+      $params[] = $destinoId;
+    }
+
+    // ==========================
+    // NUEVOS FILTROS POR TEXTO
+    // ==========================
+
+    if ($contenedor !== '') {
+      $where[] = "LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ?";
+      $params[] = '%' . mb_strtolower(trim($contenedor), 'UTF-8') . '%';
+    }
+
+    if ($ferro !== '') {
+      $where[] = "LOWER(COALESCE(cf.numero_ferro, '')) LIKE ?";
+      $params[] = '%' . mb_strtolower(trim($ferro), 'UTF-8') . '%';
+    }
+
+    if ($operacion !== '') {
+      $likeOperacion = '%' . mb_strtolower(trim($operacion), 'UTF-8') . '%';
+      $where[] = "(
+      LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
+      OR LOWER(COALESCE(of.numero_operacion, '')) LIKE ?
+    )";
+      $params[] = $likeOperacion;
+      $params[] = $likeOperacion;
+    }
+
+    // ==========================
+    // BÚSQUEDA GLOBAL
+    // ==========================
     if ($q !== '') {
       $like = '%' . mb_strtolower(trim($q), 'UTF-8') . '%';
       $where[] = "("
@@ -145,137 +250,150 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
       array_push($params, $like, $like, $like, $like, $like, $like, $like, $like);
     }
 
+    // ==========================
+    // FECHAS (si luego las usas)
+    // ==========================
+    if (!empty($fechaDesde)) {
+      $where[] = "EXISTS (
+      SELECT 1
+      FROM eventos_ferroviarios efd
+      WHERE efd.estatus = 1
+        AND efd.operacion_ferro_id = of.id_operacion_ferro
+        AND efd.contenedor_fisico_id = cf.id_fisico
+        AND DATE(efd.fecha) >= ?
+    )";
+      $params[] = $fechaDesde;
+    }
+
+    if (!empty($fechaHasta)) {
+      $where[] = "EXISTS (
+      SELECT 1
+      FROM eventos_ferroviarios efh
+      WHERE efh.estatus = 1
+        AND efh.operacion_ferro_id = of.id_operacion_ferro
+        AND efh.contenedor_fisico_id = cf.id_fisico
+        AND DATE(efh.fecha) <= ?
+    )";
+      $params[] = $fechaHasta;
+    }
+
     $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-    // --- Subquery: Ubicación actual = último evento (por fecha) del par (op_ferro_id + contenedor_fisico_id)
-    // Nota: si hay empates de fecha, puede escoger cualquiera del mismo día; normalmente no pasa.
+    // Última ubicación por par (op_ferro_id + contenedor_fisico_id)
     $sqlUbicacion = "
-        SELECT
-            e.operacion_ferro_id,
-            e.contenedor_fisico_id,
-            te.nombre AS ubicacion_actual,
-            e.fecha   AS ubicacion_fecha
-        FROM eventos_ferroviarios e
-        JOIN (
-            SELECT operacion_ferro_id, contenedor_fisico_id, MAX(fecha) AS max_fecha
-            FROM eventos_ferroviarios
-            WHERE estatus = 1
-            GROUP BY operacion_ferro_id, contenedor_fisico_id
-        ) mx
-          ON mx.operacion_ferro_id = e.operacion_ferro_id
-         AND mx.contenedor_fisico_id = e.contenedor_fisico_id
-         AND mx.max_fecha = e.fecha
-        LEFT JOIN tipos_evento_logistico te
-          ON te.id_tipo_evento = e.tipo_evento_id
-        WHERE e.estatus = 1
-    ";
+      SELECT
+          e.operacion_ferro_id,
+          e.contenedor_fisico_id,
+          te.nombre AS ubicacion_actual,
+          e.fecha   AS ubicacion_fecha
+      FROM eventos_ferroviarios e
+      JOIN (
+          SELECT operacion_ferro_id, contenedor_fisico_id, MAX(fecha) AS max_fecha
+          FROM eventos_ferroviarios
+          WHERE estatus = 1
+          GROUP BY operacion_ferro_id, contenedor_fisico_id
+      ) mx
+        ON mx.operacion_ferro_id = e.operacion_ferro_id
+       AND mx.contenedor_fisico_id = e.contenedor_fisico_id
+       AND mx.max_fecha = e.fecha
+      LEFT JOIN tipos_evento_logistico te
+        ON te.id_tipo_evento = e.tipo_evento_id
+      WHERE e.estatus = 1
+  ";
 
-    // 1) TOTAL parejas (Marítima + Ferro)
+    // 1) TOTAL parejas
     $sqlCount = "
-        SELECT COUNT(*) AS total_rows
-        FROM (
-            SELECT o.id_operacion, cf.id_fisico
-            FROM operacion_ferro_operacion ofo
-            JOIN operaciones o
-              ON o.id_operacion = ofo.operacion_id
-            JOIN operaciones_ferroviarias of
-              ON of.id_operacion_ferro = ofo.operacion_ferro_id
-            JOIN contenedores_fisicos cf
-              ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
+      SELECT COUNT(*) AS total_rows
+      FROM (
+          SELECT o.id_operacion, cf.id_fisico
+          FROM operacion_ferro_operacion ofo
+          JOIN operaciones o
+            ON o.id_operacion = ofo.operacion_id
+          JOIN operaciones_ferroviarias of
+            ON of.id_operacion_ferro = ofo.operacion_ferro_id
+          JOIN contenedores_fisicos cf
+            ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
 
-            LEFT JOIN clientes cl
-              ON cl.id_cliente = o.cliente_id
-            LEFT JOIN transportistas tr
-              ON tr.id_transportista = of.transportista_id
-            LEFT JOIN ciudades ci
-              ON ci.id_ciudad = of.destino_id
+          LEFT JOIN clientes cl
+            ON cl.id_cliente = o.cliente_id
+          LEFT JOIN transportistas tr
+            ON tr.id_transportista = of.transportista_id
+          LEFT JOIN ciudades ci
+            ON ci.id_ciudad = of.destino_id
 
-            -- ✅ Contenedor marítimo (por cmf.contenedor_maritimo_id o cmf.cont_maritimo_operacion_id)
-            LEFT JOIN contenedor_maritimo_ferro cmf
-              ON cmf.operacion_ferro_id = of.id_operacion_ferro
-             AND cmf.contenedor_fisico_id = cf.id_fisico
-             AND cmf.estatus = 1
-            LEFT JOIN contenedores_maritimos cm
-              ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
-            LEFT JOIN contenedores_maritimos_operacion cmo
-              ON cmo.id = cmf.cont_maritimo_operacion_id
-            LEFT JOIN contenedores_maritimos cm2
-              ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+          LEFT JOIN contenedor_maritimo_ferro cmf
+            ON cmf.operacion_ferro_id = of.id_operacion_ferro
+           AND cmf.contenedor_fisico_id = cf.id_fisico
+           AND cmf.estatus = 1
+          LEFT JOIN contenedores_maritimos cm
+            ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+          LEFT JOIN contenedores_maritimos_operacion cmo
+            ON cmo.id = cmf.cont_maritimo_operacion_id
+          LEFT JOIN contenedores_maritimos cm2
+            ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
 
-            -- ✅ Ubicación actual (último evento)
-            LEFT JOIN ( $sqlUbicacion ) ua
-              ON ua.operacion_ferro_id = of.id_operacion_ferro
-             AND ua.contenedor_fisico_id = cf.id_fisico
+          LEFT JOIN ( $sqlUbicacion ) ua
+            ON ua.operacion_ferro_id = of.id_operacion_ferro
+           AND ua.contenedor_fisico_id = cf.id_fisico
 
-            {$whereSql}
-            GROUP BY o.id_operacion, cf.id_fisico
-        ) t
-    ";
+          {$whereSql}
+          GROUP BY o.id_operacion, cf.id_fisico
+      ) t
+  ";
 
     $rowCount  = $this->select($sqlCount, $params);
     $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
 
-    // 2) Página: parejas (Marítima + Ferro) + campos extra
+    // 2) Página
     $sqlRows = "
-        SELECT
-            o.id_operacion                 AS operacion_id,
-            o.numero_operacion             AS operacion_maritima,
+      SELECT
+          o.id_operacion                 AS operacion_id,
+          o.numero_operacion             AS operacion_maritima,
+          COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '') AS contenedor_maritimo,
+          cl.nombre                      AS cliente,
+          COALESCE(ua.ubicacion_actual, '-') AS ubicacion_actual,
+          of.id_operacion_ferro          AS op_ferro_id,
+          of.numero_operacion            AS operacion_ferro,
+          cf.id_fisico                   AS ferro_id,
+          cf.numero_ferro                AS ferro,
+          ci.nombre_ciudad               AS destino,
+          tr.nombre                      AS transportista
 
-            -- ✅ nueva col 2
-            COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '') AS contenedor_maritimo,
+      FROM operacion_ferro_operacion ofo
+      JOIN operaciones o
+        ON o.id_operacion = ofo.operacion_id
+      JOIN operaciones_ferroviarias of
+        ON of.id_operacion_ferro = ofo.operacion_ferro_id
+      JOIN contenedores_fisicos cf
+        ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
 
-            cl.nombre                      AS cliente,
+      LEFT JOIN clientes cl
+        ON cl.id_cliente = o.cliente_id
+      LEFT JOIN ciudades ci
+        ON ci.id_ciudad = of.destino_id
+      LEFT JOIN transportistas tr
+        ON tr.id_transportista = of.transportista_id
 
-            -- ✅ ya NO estatus de marítima
-            COALESCE(ua.ubicacion_actual, '-') AS ubicacion_actual,
+      LEFT JOIN contenedor_maritimo_ferro cmf
+        ON cmf.operacion_ferro_id = of.id_operacion_ferro
+       AND cmf.contenedor_fisico_id = cf.id_fisico
+       AND cmf.estatus = 1
+      LEFT JOIN contenedores_maritimos cm
+        ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+      LEFT JOIN contenedores_maritimos_operacion cmo
+        ON cmo.id = cmf.cont_maritimo_operacion_id
+      LEFT JOIN contenedores_maritimos cm2
+        ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
 
-            of.id_operacion_ferro          AS op_ferro_id,
-            of.numero_operacion            AS operacion_ferro,
+      LEFT JOIN ( $sqlUbicacion ) ua
+        ON ua.operacion_ferro_id = of.id_operacion_ferro
+       AND ua.contenedor_fisico_id = cf.id_fisico
 
-            cf.id_fisico                   AS ferro_id,
-            cf.numero_ferro                AS ferro,
-
-            ci.nombre_ciudad               AS destino,
-            tr.nombre                      AS transportista
-
-        FROM operacion_ferro_operacion ofo
-        JOIN operaciones o
-          ON o.id_operacion = ofo.operacion_id
-        JOIN operaciones_ferroviarias of
-          ON of.id_operacion_ferro = ofo.operacion_ferro_id
-        JOIN contenedores_fisicos cf
-          ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
-
-        LEFT JOIN clientes cl
-          ON cl.id_cliente = o.cliente_id
-
-        LEFT JOIN ciudades ci
-          ON ci.id_ciudad = of.destino_id
-        LEFT JOIN transportistas tr
-          ON tr.id_transportista = of.transportista_id
-
-        -- ✅ Contenedor marítimo
-        LEFT JOIN contenedor_maritimo_ferro cmf
-          ON cmf.operacion_ferro_id = of.id_operacion_ferro
-         AND cmf.contenedor_fisico_id = cf.id_fisico
-         AND cmf.estatus = 1
-        LEFT JOIN contenedores_maritimos cm
-          ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
-        LEFT JOIN contenedores_maritimos_operacion cmo
-          ON cmo.id = cmf.cont_maritimo_operacion_id
-        LEFT JOIN contenedores_maritimos cm2
-          ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-
-        -- ✅ Ubicación actual
-        LEFT JOIN ( $sqlUbicacion ) ua
-          ON ua.operacion_ferro_id = of.id_operacion_ferro
-         AND ua.contenedor_fisico_id = cf.id_fisico
-
-        {$whereSql}
-        GROUP BY o.id_operacion, cf.id_fisico, op_ferro_id, operacion_maritima, operacion_ferro, ferro
-        ORDER BY o.id_operacion desc, ferro desc
-        LIMIT {$perPage} OFFSET {$offset}
-    ";
+      {$whereSql}
+      GROUP BY o.id_operacion, cf.id_fisico, op_ferro_id, operacion_maritima, operacion_ferro, ferro
+      ORDER BY o.id_operacion DESC, ferro DESC
+      LIMIT {$perPage} OFFSET {$offset}
+  ";
 
     $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
 
@@ -288,7 +406,7 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
       ];
     }
 
-    // 3) Trae eventos de esos ferros en esta página
+    // 3) Eventos de esos ferros
     $opFerroIds = array_values(array_unique(array_column($rowsPairs, 'op_ferro_id')));
     $fxIds      = array_values(array_unique(array_column($rowsPairs, 'ferro_id')));
 
@@ -298,25 +416,25 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     $paramsEvt = array_merge($opFerroIds, $fxIds);
 
     $sqlEvts = "
-        SELECT
-            e.id_evento,
-            e.operacion_ferro_id,
-            e.contenedor_fisico_id,
-            e.tipo_evento_id,
-            te.nombre AS evento,
-            e.fecha,
-            e.comentario
-        FROM eventos_ferroviarios e
-        LEFT JOIN tipos_evento_logistico te
-          ON te.id_tipo_evento = e.tipo_evento_id
-        WHERE e.estatus = 1
-          AND e.operacion_ferro_id IN ($inOps)
-          AND e.contenedor_fisico_id IN ($inFxs)
-    ";
+      SELECT
+          e.id_evento,
+          e.operacion_ferro_id,
+          e.contenedor_fisico_id,
+          e.tipo_evento_id,
+          te.nombre AS evento,
+          e.fecha,
+          e.comentario
+      FROM eventos_ferroviarios e
+      LEFT JOIN tipos_evento_logistico te
+        ON te.id_tipo_evento = e.tipo_evento_id
+      WHERE e.estatus = 1
+        AND e.operacion_ferro_id IN ($inOps)
+        AND e.contenedor_fisico_id IN ($inFxs)
+  ";
 
     $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
 
-    // 4) Mapa por par (op_ferro_id + ferro_id) para pegar los extras
+    // 4) Mapa por par
     $byPair = [];
     foreach ($rowsPairs as $r) {
       $key = (int)$r['op_ferro_id'] . '_' . (int)$r['ferro_id'];
@@ -340,7 +458,6 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
         'fecha'                => (string)($e['fecha'] ?? ''),
         'comentario'           => (string)($e['comentario'] ?? ''),
 
-        // ✅ CAMPOS PARA LA TABLA
         'operacion_id'         => (int)($p['operacion_id'] ?? 0),
         'operacion_maritima'   => (string)($p['operacion_maritima'] ?? ''),
         'contenedor_maritimo'  => (string)($p['contenedor_maritimo'] ?? ''),
@@ -348,14 +465,12 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
         'ubicacion_actual'     => (string)($p['ubicacion_actual'] ?? '-'),
         'destino'              => (string)($p['destino'] ?? ''),
         'transportista'        => (string)($p['transportista'] ?? ''),
-
-        // legacy/útil
         'operacion'            => (string)($p['operacion_ferro'] ?? ''),
         'ferro'                => (string)($p['ferro'] ?? ''),
       ];
     }
 
-    // 5) Rellena pares sin evento para que sigan apareciendo en la tabla
+    // 5) Rellenar pares sin evento
     $pairsConEvento = array_unique(array_map(
       fn($r) => (int)$r['operacion_ferro_id'] . '_' . (int)$r['contenedor_fisico_id'],
       $out
@@ -373,7 +488,6 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
           'fecha'                => null,
           'comentario'           => null,
 
-          // ✅ CAMPOS PARA LA TABLA
           'operacion_id'         => (int)($r['operacion_id'] ?? 0),
           'operacion_maritima'   => (string)($r['operacion_maritima'] ?? ''),
           'contenedor_maritimo'  => (string)($r['contenedor_maritimo'] ?? ''),
@@ -381,8 +495,6 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
           'ubicacion_actual'     => (string)($r['ubicacion_actual'] ?? '-'),
           'destino'              => (string)($r['destino'] ?? ''),
           'transportista'        => (string)($r['transportista'] ?? ''),
-
-          // legacy
           'operacion'            => (string)($r['operacion_ferro'] ?? ''),
           'ferro'                => (string)($r['ferro'] ?? ''),
         ];

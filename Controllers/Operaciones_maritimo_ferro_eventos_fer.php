@@ -26,35 +26,87 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
     {
         header('Content-Type: application/json; charset=UTF-8');
 
-        $page    = isset($_GET['page'])     ? max(1, (int)$_GET['page']) : 1;
+        $page    = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
         $perPage = isset($_GET['per_page']) ? min(1000000, max(1, (int)$_GET['per_page'])) : 10;
 
-        // op_id puede venir como marítima o como FO legacy
+        // op_id = id_operacion marítima
         $opId = null;
-        if (isset($_GET['op_id']) && $_GET['op_id'] !== '') $opId = (int)$_GET['op_id'];
-        if ($opId === null && isset($_GET['operacion_id']) && $_GET['operacion_id'] !== '') $opId = (int)$_GET['operacion_id'];
-        if ($opId === null && isset($_GET['mar_id']) && $_GET['mar_id'] !== '') $opId = (int)$_GET['mar_id'];
+        if (isset($_GET['op_id']) && $_GET['op_id'] !== '') {
+            $opId = (int)$_GET['op_id'];
+        }
+        if ($opId === null && isset($_GET['operacion_id']) && $_GET['operacion_id'] !== '') {
+            $opId = (int)$_GET['operacion_id'];
+        }
+        if ($opId === null && isset($_GET['mar_id']) && $_GET['mar_id'] !== '') {
+            $opId = (int)$_GET['mar_id'];
+        }
 
-        // ferro_id / cont_id compat
-        $ferroId = (isset($_GET['ferro_id']) && $_GET['ferro_id'] !== '') ? (int)$_GET['ferro_id'] : null;
+        // ferro_id / compat
+        $ferroId = null;
+        if (isset($_GET['ferro_id']) && $_GET['ferro_id'] !== '') {
+            $ferroId = (int)$_GET['ferro_id'];
+        }
         if ($ferroId === null && isset($_GET['cont_id']) && $_GET['cont_id'] !== '') {
             $ferroId = (int)$_GET['cont_id'];
         }
 
+        // búsqueda global principal
         $q = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
 
+        // fechas
+        $fechaDesde = (isset($_GET['fecha_desde']) && $_GET['fecha_desde'] !== '')
+            ? trim((string)$_GET['fecha_desde'])
+            : null;
+
+        $fechaHasta = (isset($_GET['fecha_hasta']) && $_GET['fecha_hasta'] !== '')
+            ? trim((string)$_GET['fecha_hasta'])
+            : null;
+
+        // filtros por select
+        $transportistaId = (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '')
+            ? (int)$_GET['transportista_id']
+            : null;
+
+        $clienteId = (isset($_GET['cliente_id']) && $_GET['cliente_id'] !== '')
+            ? (int)$_GET['cliente_id']
+            : null;
+
+        $destinoId = (isset($_GET['destino_id']) && $_GET['destino_id'] !== '')
+            ? (int)$_GET['destino_id']
+            : null;
+
+        // filtros legacy / secundarios
+        $contenedor = isset($_GET['contenedor']) ? trim((string)$_GET['contenedor']) : '';
+        $ferro      = isset($_GET['ferro']) ? trim((string)$_GET['ferro']) : '';
+        $operacion  = isset($_GET['operacion']) ? trim((string)$_GET['operacion']) : '';
+
         try {
-            $res = $this->model->listarEventosFOPaginado($page, $perPage, $opId, $ferroId, $q);
+            $res = $this->model->listarEventosFOPaginado(
+                $page,
+                $perPage,
+                $opId,
+                $ferroId,
+                $q,
+                $fechaDesde,
+                $fechaHasta,
+                $transportistaId,
+                $clienteId,
+                $destinoId,
+                $contenedor,
+                $ferro,
+                $operacion
+            );
 
             echo json_encode([
-                'data'     => $res['rows']     ?? [],
-                'total'    => (int)($res['total']    ?? 0),
-                'page'     => (int)($res['page']     ?? $page),
+                'data'     => $res['rows'] ?? [],
+                'total'    => (int)($res['total'] ?? 0),
+                'page'     => (int)($res['page'] ?? $page),
                 'per_page' => (int)($res['per_page'] ?? $perPage)
             ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
             error_log('listar eventos terrestres (MF): ' . $e->getMessage());
             http_response_code(500);
+
             echo json_encode([
                 'data'     => [],
                 'total'    => 0,
@@ -63,6 +115,7 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
                 'error'    => 'No fue posible obtener el listado.'
             ], JSON_UNESCAPED_UNICODE);
         }
+
         die();
     }
 
@@ -107,17 +160,14 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         die();
     }
 
-    /* =============================================================
-       AUTOCOMPLETE: OPERACIONES FO
-       GET ?term=FO-01[&limit=8]
-       Respuesta: [{id,label,ferro}]
-       ============================================================= */
+
+
     public function sugerir_operaciones()
     {
         header('Content-Type: application/json; charset=UTF-8');
 
-        $term  = isset($_GET['term'])  ? trim((string)$_GET['term'])  : '';
-        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit'])  : 8;
+        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
+        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 8;
 
         if ($term === '') {
             echo json_encode([], JSON_UNESCAPED_UNICODE);
@@ -125,22 +175,25 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         }
 
         try {
-            $rows = $this->model->sugerirOperacionesFO($term, $limit);
-            $out  = array_map(function ($r) {
+            $rows = $this->model->sugerirOperacionesMFoContenedor($term, $limit);
+
+            $out = array_map(function ($r) {
                 return [
-                    'id'    => (int)($r['id'] ?? 0),          // id_operacion_ferro
-                    'label' => (string)($r['label'] ?? ''),   // numero_operacion
-                    'ferro' => (string)($r['ferro'] ?? '')    // numero_ferro (si existe)
+                    'id'         => (int)($r['id'] ?? 0),         // id_operacion marítima
+                    'label'      => (string)($r['label'] ?? ''), // número operación marítima
+                    'ferro'      => (string)($r['ferro'] ?? ''),
+                    'contenedor' => (string)($r['contenedor'] ?? '')
                 ];
             }, is_array($rows) ? $rows : []);
+
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('sugerir_operaciones FO: ' . $e->getMessage());
+            error_log('sugerir_operaciones MF/Contenedor: ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
+
         die();
     }
-
     /* =============================================================
        AUTOCOMPLETE: FERROS DE UNA OPERACIÓN FO
        GET ?operacion_id=123[&term=FX...&limit=10]
