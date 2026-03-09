@@ -170,60 +170,64 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     $where  = [];
     $params = [];
 
+    // Normalizar textos
+    $q          = trim($q);
+    $contenedor = trim($contenedor);
+    $ferro      = trim($ferro);
+    $operacion  = trim($operacion);
+
     // Solo ferros activos
     $where[] = "cf.estatus = 1";
 
     // Excluir Cancelado/Finalizada tanto en marítima como en FO
-    $where[] = "o.estatus_id  NOT IN (13, 7)";
+    $where[] = "o.estatus_id NOT IN (13, 7)";
     $where[] = "of.estatus_id NOT IN (13, 7)";
 
-    // Filtro por operación id (puede venir marítima o FO)
-    if ($opId) {
+    // Filtro por operación id (marítima)
+    if (!empty($opId) && $opId > 0) {
       $where[] = "(o.id_operacion = ?)";
       $params[] = $opId;
     }
 
     // Filtro por ferro id
-    if ($ferroId) {
+    if (!empty($ferroId) && $ferroId > 0) {
       $where[] = "cf.id_fisico = ?";
       $params[] = $ferroId;
     }
 
     // ==========================
-    // NUEVOS FILTROS EXACTOS
+    // FILTROS EXACTOS
     // ==========================
-
-    if ($transportistaId) {
+    if (!empty($transportistaId) && $transportistaId > 0) {
       $where[] = "of.transportista_id = ?";
       $params[] = $transportistaId;
     }
 
-    if ($clienteId) {
+    if (!empty($clienteId) && $clienteId > 0) {
       $where[] = "o.cliente_id = ?";
       $params[] = $clienteId;
     }
 
-    if ($destinoId) {
+    if (!empty($destinoId) && $destinoId > 0) {
       $where[] = "of.destino_id = ?";
       $params[] = $destinoId;
     }
 
     // ==========================
-    // NUEVOS FILTROS POR TEXTO
+    // FILTROS POR TEXTO
     // ==========================
-
     if ($contenedor !== '') {
       $where[] = "LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ?";
-      $params[] = '%' . mb_strtolower(trim($contenedor), 'UTF-8') . '%';
+      $params[] = '%' . mb_strtolower($contenedor, 'UTF-8') . '%';
     }
 
     if ($ferro !== '') {
       $where[] = "LOWER(COALESCE(cf.numero_ferro, '')) LIKE ?";
-      $params[] = '%' . mb_strtolower(trim($ferro), 'UTF-8') . '%';
+      $params[] = '%' . mb_strtolower($ferro, 'UTF-8') . '%';
     }
 
     if ($operacion !== '') {
-      $likeOperacion = '%' . mb_strtolower(trim($operacion), 'UTF-8') . '%';
+      $likeOperacion = '%' . mb_strtolower($operacion, 'UTF-8') . '%';
       $where[] = "(
       LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
       OR LOWER(COALESCE(of.numero_operacion, '')) LIKE ?
@@ -236,22 +240,22 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     // BÚSQUEDA GLOBAL
     // ==========================
     if ($q !== '') {
-      $like = '%' . mb_strtolower(trim($q), 'UTF-8') . '%';
-      $where[] = "("
-        . "LOWER(o.numero_operacion) LIKE ? "
-        . "OR LOWER(of.numero_operacion) LIKE ? "
-        . "OR LOWER(cf.numero_ferro) LIKE ? "
-        . "OR LOWER(cl.nombre) LIKE ? "
-        . "OR LOWER(tr.nombre) LIKE ? "
-        . "OR LOWER(ci.nombre_ciudad) LIKE ? "
-        . "OR LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ? "
-        . "OR LOWER(COALESCE(ua.ubicacion_actual, '')) LIKE ? "
-        . ")";
+      $like = '%' . mb_strtolower($q, 'UTF-8') . '%';
+      $where[] = "(
+      LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
+      OR LOWER(COALESCE(of.numero_operacion, '')) LIKE ?
+      OR LOWER(COALESCE(cf.numero_ferro, '')) LIKE ?
+      OR LOWER(COALESCE(cl.nombre, '')) LIKE ?
+      OR LOWER(COALESCE(tr.nombre, '')) LIKE ?
+      OR LOWER(COALESCE(ci.nombre_ciudad, '')) LIKE ?
+      OR LOWER(COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '')) LIKE ?
+      OR LOWER(COALESCE(ua.ubicacion_actual, '')) LIKE ?
+    )";
       array_push($params, $like, $like, $like, $like, $like, $like, $like, $like);
     }
 
     // ==========================
-    // FECHAS (si luego las usas)
+    // FECHAS
     // ==========================
     if (!empty($fechaDesde)) {
       $where[] = "EXISTS (
@@ -281,98 +285,46 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
 
     // Última ubicación por par (op_ferro_id + contenedor_fisico_id)
     $sqlUbicacion = "
-      SELECT
-          e.operacion_ferro_id,
-          e.contenedor_fisico_id,
-          te.nombre AS ubicacion_actual,
-          e.fecha   AS ubicacion_fecha
-      FROM eventos_ferroviarios e
-      JOIN (
-          SELECT operacion_ferro_id, contenedor_fisico_id, MAX(fecha) AS max_fecha
-          FROM eventos_ferroviarios
-          WHERE estatus = 1
-          GROUP BY operacion_ferro_id, contenedor_fisico_id
-      ) mx
-        ON mx.operacion_ferro_id = e.operacion_ferro_id
-       AND mx.contenedor_fisico_id = e.contenedor_fisico_id
-       AND mx.max_fecha = e.fecha
-      LEFT JOIN tipos_evento_logistico te
-        ON te.id_tipo_evento = e.tipo_evento_id
-      WHERE e.estatus = 1
+    SELECT
+      e.operacion_ferro_id,
+      e.contenedor_fisico_id,
+      te.nombre AS ubicacion_actual,
+      e.fecha   AS ubicacion_fecha
+    FROM eventos_ferroviarios e
+    JOIN (
+      SELECT operacion_ferro_id, contenedor_fisico_id, MAX(fecha) AS max_fecha
+      FROM eventos_ferroviarios
+      WHERE estatus = 1
+      GROUP BY operacion_ferro_id, contenedor_fisico_id
+    ) mx
+      ON mx.operacion_ferro_id = e.operacion_ferro_id
+     AND mx.contenedor_fisico_id = e.contenedor_fisico_id
+     AND mx.max_fecha = e.fecha
+    LEFT JOIN tipos_evento_logistico te
+      ON te.id_tipo_evento = e.tipo_evento_id
+    WHERE e.estatus = 1
   ";
 
     // 1) TOTAL parejas
     $sqlCount = "
-      SELECT COUNT(*) AS total_rows
-      FROM (
-          SELECT o.id_operacion, cf.id_fisico
-          FROM operacion_ferro_operacion ofo
-          JOIN operaciones o
-            ON o.id_operacion = ofo.operacion_id
-          JOIN operaciones_ferroviarias of
-            ON of.id_operacion_ferro = ofo.operacion_ferro_id
-          JOIN contenedores_fisicos cf
-            ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
-
-          LEFT JOIN clientes cl
-            ON cl.id_cliente = o.cliente_id
-          LEFT JOIN transportistas tr
-            ON tr.id_transportista = of.transportista_id
-          LEFT JOIN ciudades ci
-            ON ci.id_ciudad = of.destino_id
-
-          LEFT JOIN contenedor_maritimo_ferro cmf
-            ON cmf.operacion_ferro_id = of.id_operacion_ferro
-           AND cmf.contenedor_fisico_id = cf.id_fisico
-           AND cmf.estatus = 1
-          LEFT JOIN contenedores_maritimos cm
-            ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
-          LEFT JOIN contenedores_maritimos_operacion cmo
-            ON cmo.id = cmf.cont_maritimo_operacion_id
-          LEFT JOIN contenedores_maritimos cm2
-            ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-
-          LEFT JOIN ( $sqlUbicacion ) ua
-            ON ua.operacion_ferro_id = of.id_operacion_ferro
-           AND ua.contenedor_fisico_id = cf.id_fisico
-
-          {$whereSql}
-          GROUP BY o.id_operacion, cf.id_fisico
-      ) t
-  ";
-
-    $rowCount  = $this->select($sqlCount, $params);
-    $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
-
-    // 2) Página
-    $sqlRows = "
-      SELECT
-          o.id_operacion                 AS operacion_id,
-          o.numero_operacion             AS operacion_maritima,
-          COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '') AS contenedor_maritimo,
-          cl.nombre                      AS cliente,
-          COALESCE(ua.ubicacion_actual, '-') AS ubicacion_actual,
-          of.id_operacion_ferro          AS op_ferro_id,
-          of.numero_operacion            AS operacion_ferro,
-          cf.id_fisico                   AS ferro_id,
-          cf.numero_ferro                AS ferro,
-          ci.nombre_ciudad               AS destino,
-          tr.nombre                      AS transportista
-
+    SELECT COUNT(*) AS total_rows
+    FROM (
+      SELECT o.id_operacion, cf.id_fisico
       FROM operacion_ferro_operacion ofo
       JOIN operaciones o
         ON o.id_operacion = ofo.operacion_id
       JOIN operaciones_ferroviarias of
         ON of.id_operacion_ferro = ofo.operacion_ferro_id
       JOIN contenedores_fisicos cf
-        ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
+        ON cf.id_fisico = of.contenedor_fisico_id
+       AND cf.estatus = 1
 
       LEFT JOIN clientes cl
         ON cl.id_cliente = o.cliente_id
-      LEFT JOIN ciudades ci
-        ON ci.id_ciudad = of.destino_id
       LEFT JOIN transportistas tr
         ON tr.id_transportista = of.transportista_id
+      LEFT JOIN ciudades ci
+        ON ci.id_ciudad = of.destino_id
 
       LEFT JOIN contenedor_maritimo_ferro cmf
         ON cmf.operacion_ferro_id = of.id_operacion_ferro
@@ -390,9 +342,63 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
        AND ua.contenedor_fisico_id = cf.id_fisico
 
       {$whereSql}
-      GROUP BY o.id_operacion, cf.id_fisico, op_ferro_id, operacion_maritima, operacion_ferro, ferro
-      ORDER BY o.id_operacion DESC, ferro DESC
-      LIMIT {$perPage} OFFSET {$offset}
+      GROUP BY o.id_operacion, cf.id_fisico
+    ) t
+  ";
+
+    $rowCount  = $this->select($sqlCount, $params);
+    $totalRows = $rowCount ? (int)$rowCount['total_rows'] : 0;
+
+    // 2) Página
+    $sqlRows = "
+    SELECT
+      o.id_operacion AS operacion_id,
+      o.numero_operacion AS operacion_maritima,
+      COALESCE(cm.numero_contenedor, cm2.numero_contenedor, '') AS contenedor_maritimo,
+      cl.nombre AS cliente,
+      COALESCE(ua.ubicacion_actual, '-') AS ubicacion_actual,
+      of.id_operacion_ferro AS op_ferro_id,
+      of.numero_operacion AS operacion_ferro,
+      cf.id_fisico AS ferro_id,
+      cf.numero_ferro AS ferro,
+      ci.nombre_ciudad AS destino,
+      tr.nombre AS transportista
+
+    FROM operacion_ferro_operacion ofo
+    JOIN operaciones o
+      ON o.id_operacion = ofo.operacion_id
+    JOIN operaciones_ferroviarias of
+      ON of.id_operacion_ferro = ofo.operacion_ferro_id
+    JOIN contenedores_fisicos cf
+      ON cf.id_fisico = of.contenedor_fisico_id
+     AND cf.estatus = 1
+
+    LEFT JOIN clientes cl
+      ON cl.id_cliente = o.cliente_id
+    LEFT JOIN ciudades ci
+      ON ci.id_ciudad = of.destino_id
+    LEFT JOIN transportistas tr
+      ON tr.id_transportista = of.transportista_id
+
+    LEFT JOIN contenedor_maritimo_ferro cmf
+      ON cmf.operacion_ferro_id = of.id_operacion_ferro
+     AND cmf.contenedor_fisico_id = cf.id_fisico
+     AND cmf.estatus = 1
+    LEFT JOIN contenedores_maritimos cm
+      ON cm.id_contenedor_maritimo = cmf.contenedor_maritimo_id
+    LEFT JOIN contenedores_maritimos_operacion cmo
+      ON cmo.id = cmf.cont_maritimo_operacion_id
+    LEFT JOIN contenedores_maritimos cm2
+      ON cm2.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+
+    LEFT JOIN ( $sqlUbicacion ) ua
+      ON ua.operacion_ferro_id = of.id_operacion_ferro
+     AND ua.contenedor_fisico_id = cf.id_fisico
+
+    {$whereSql}
+    GROUP BY o.id_operacion, cf.id_fisico, op_ferro_id, operacion_maritima, operacion_ferro, ferro
+    ORDER BY o.id_operacion DESC, ferro DESC
+    LIMIT {$perPage} OFFSET {$offset}
   ";
 
     $rowsPairs = $this->selectAll($sqlRows, $params) ?: [];
@@ -416,20 +422,20 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     $paramsEvt = array_merge($opFerroIds, $fxIds);
 
     $sqlEvts = "
-      SELECT
-          e.id_evento,
-          e.operacion_ferro_id,
-          e.contenedor_fisico_id,
-          e.tipo_evento_id,
-          te.nombre AS evento,
-          e.fecha,
-          e.comentario
-      FROM eventos_ferroviarios e
-      LEFT JOIN tipos_evento_logistico te
-        ON te.id_tipo_evento = e.tipo_evento_id
-      WHERE e.estatus = 1
-        AND e.operacion_ferro_id IN ($inOps)
-        AND e.contenedor_fisico_id IN ($inFxs)
+    SELECT
+      e.id_evento,
+      e.operacion_ferro_id,
+      e.contenedor_fisico_id,
+      e.tipo_evento_id,
+      te.nombre AS evento,
+      e.fecha,
+      e.comentario
+    FROM eventos_ferroviarios e
+    LEFT JOIN tipos_evento_logistico te
+      ON te.id_tipo_evento = e.tipo_evento_id
+    WHERE e.estatus = 1
+      AND e.operacion_ferro_id IN ($inOps)
+      AND e.contenedor_fisico_id IN ($inFxs)
   ";
 
     $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
@@ -510,19 +516,19 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
   }
 
   /* ==========================================================
-       Reglas de validación (FO=2, eventos TERRESTRES=2) + CRUD
-       ========================================================== */
+            Reglas de validación (FO=2, eventos TERRESTRES=2) + CRUD
+            ========================================================== */
 
   private function existeEventoFerroDuplicado(int $opFerroId, int $ferroId, int $tipoEvtId, ?int $excluirId = null): bool
   {
     if ($opFerroId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return false;
 
     $sql = "SELECT id_evento
-                  FROM eventos_ferroviarios
-                 WHERE estatus = 1
-                   AND operacion_ferro_id = ?
-                   AND contenedor_fisico_id = ?
-                   AND tipo_evento_id = ?"
+                        FROM eventos_ferroviarios
+                      WHERE estatus = 1
+                        AND operacion_ferro_id = ?
+                        AND contenedor_fisico_id = ?
+                        AND tipo_evento_id = ?"
       . ($excluirId ? " AND id_evento <> ?" : "")
       . " LIMIT 1";
 
@@ -547,30 +553,30 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
 
     // 1) La operación debe existir y ser FO (tipo_operacion_id=2 por tu esquema)
     $rowOp = $this->select("
-            SELECT id_operacion_ferro 
-              FROM operaciones_ferroviarias 
-             WHERE id_operacion_ferro = ? 
-             LIMIT 1", [$opFerroId]);
+                  SELECT id_operacion_ferro 
+                    FROM operaciones_ferroviarias 
+                  WHERE id_operacion_ferro = ? 
+                  LIMIT 1", [$opFerroId]);
     if (!$rowOp) return 0; // (si quieres, valida también estatus/FO)
 
     // 2) El ferro debe estar activo y pertenecer a la operación (1:1 estándar)
     $rowF = $this->select("
-            SELECT cf.id_fisico
-              FROM operaciones_ferroviarias of
-              JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
-             WHERE of.id_operacion_ferro = ?
-               AND cf.id_fisico = ?
-             LIMIT 1", [$opFerroId, $ferroId]);
+                  SELECT cf.id_fisico
+                    FROM operaciones_ferroviarias of
+                    JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
+                  WHERE of.id_operacion_ferro = ?
+                    AND cf.id_fisico = ?
+                  LIMIT 1", [$opFerroId, $ferroId]);
     if (!$rowF) return 0;
 
     // 3) Tipo de evento debe ser TERRESTRE y activo
     $rowEvt = $this->select("
-            SELECT id_tipo_evento
-              FROM tipos_evento_logistico
-             WHERE id_tipo_evento = ?
-               AND id_tipo_operacion = 2
-               AND estatus = 1
-             LIMIT 1", [$tipoEvtId]);
+                  SELECT id_tipo_evento
+                    FROM tipos_evento_logistico
+                  WHERE id_tipo_evento = ?
+                    AND id_tipo_operacion = 2
+                    AND estatus = 1
+                  LIMIT 1", [$tipoEvtId]);
     if (!$rowEvt) return 0;
 
     // 4) Evitar duplicado por (opFerroId + ferroId + tipoEvtId)
@@ -580,8 +586,8 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
 
     // 5) Insertar
     $sqlIns = "INSERT INTO eventos_ferroviarios
-                   (operacion_ferro_id, contenedor_fisico_id, tipo_evento_id, fecha, comentario, creado_por)
-                   VALUES (?, ?, ?, ?, ?, ?)";
+                        (operacion_ferro_id, contenedor_fisico_id, tipo_evento_id, fecha, comentario, creado_por)
+                        VALUES (?, ?, ?, ?, ?, ?)";
     $params = [$opFerroId, $ferroId, $tipoEvtId, $fecha, $comentario, ($idUsuario ?: null)];
 
     return (int)$this->insertar($sqlIns, $params);
@@ -605,21 +611,21 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     if (!$rowOp) return false;
 
     $rowF = $this->select("
-            SELECT cf.id_fisico
-              FROM operaciones_ferroviarias of
-              JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
-             WHERE of.id_operacion_ferro = ?
-               AND cf.id_fisico = ?
-             LIMIT 1", [$opFerroId, $ferroId]);
+                  SELECT cf.id_fisico
+                    FROM operaciones_ferroviarias of
+                    JOIN contenedores_fisicos cf ON cf.id_fisico = of.contenedor_fisico_id AND cf.estatus = 1
+                  WHERE of.id_operacion_ferro = ?
+                    AND cf.id_fisico = ?
+                  LIMIT 1", [$opFerroId, $ferroId]);
     if (!$rowF) return false;
 
     $rowEvt = $this->select("
-            SELECT id_tipo_evento
-              FROM tipos_evento_logistico
-             WHERE id_tipo_evento = ?
-               AND id_tipo_operacion = 2
-               AND estatus = 1
-             LIMIT 1", [$tipoEvtId]);
+                  SELECT id_tipo_evento
+                    FROM tipos_evento_logistico
+                  WHERE id_tipo_evento = ?
+                    AND id_tipo_operacion = 2
+                    AND estatus = 1
+                  LIMIT 1", [$tipoEvtId]);
     if (!$rowEvt) return false;
 
     if ($this->existeEventoFerroDuplicado($opFerroId, $ferroId, $tipoEvtId, $idEvento)) {
@@ -627,13 +633,13 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     }
 
     $sql = "UPDATE eventos_ferroviarios
-                   SET operacion_ferro_id = ?,
-                       contenedor_fisico_id = ?,
-                       tipo_evento_id = ?,
-                       fecha = ?,
-                       comentario = ?
-                 WHERE id_evento = ?
-                   AND estatus = 1";
+                        SET operacion_ferro_id = ?,
+                            contenedor_fisico_id = ?,
+                            tipo_evento_id = ?,
+                            fecha = ?,
+                            comentario = ?
+                      WHERE id_evento = ?
+                        AND estatus = 1";
     $params = [$opFerroId, $ferroId, $tipoEvtId, $fecha, $comentario, $idEvento];
 
     return (bool)$this->save($sql, $params);

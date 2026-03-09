@@ -6,12 +6,16 @@
      * transportista
      * cliente
      * destino
+     * contenedor marítimo
+     * ferro
    - Manda al backend:
      * op_id
      * transportista_id
      * cliente_id
      * destino_id
      * operacion
+     * contenedor
+     * ferro
    =============================================================== */
 (function evFERListPivot() {
   "use strict";
@@ -33,6 +37,12 @@
   );
   const filtroCliente = document.getElementById("eventosFerFiltroCliente");
   const filtroDestino = document.getElementById("eventosFerFiltroDestino");
+
+  // ---- NUEVOS FILTROS TEXTO ----
+  const filtroContenedor = document.getElementById(
+    "eventosFerFiltroContenedor",
+  );
+  const filtroFerro = document.getElementById("eventosFerFiltroFerro");
 
   // ---- Estado ----
   let COLS = []; // [{id, nombre, key}]
@@ -66,6 +76,14 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function debounce(fn, wait = 300) {
+    let t = null;
+    return function (...args) {
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), wait);
+    };
   }
 
   function buildHead() {
@@ -133,8 +151,9 @@
         g.contenedor_maritimo = r.contenedor_maritimo;
       }
       if (!g.destino && r.destino) g.destino = r.destino;
-      if (!g.transportista && r.transportista)
+      if (!g.transportista && r.transportista) {
         g.transportista = r.transportista;
+      }
       if (!g.ferro && r.ferro) g.ferro = r.ferro;
     });
 
@@ -263,6 +282,8 @@
     const transportistaId = (filtroTransportista?.value || "").trim();
     const clienteId = (filtroCliente?.value || "").trim();
     const destinoId = (filtroDestino?.value || "").trim();
+    const contenedor = (filtroContenedor?.value || "").trim();
+    const ferro = (filtroFerro?.value || "").trim();
 
     if (opId) {
       params.append("op_id", opId);
@@ -273,6 +294,10 @@
     if (transportistaId) params.append("transportista_id", transportistaId);
     if (clienteId) params.append("cliente_id", clienteId);
     if (destinoId) params.append("destino_id", destinoId);
+
+    // ---- NUEVOS FILTROS ----
+    if (contenedor) params.append("contenedor", contenedor);
+    if (ferro) params.append("ferro", ferro);
 
     return params.toString();
   }
@@ -359,6 +384,31 @@
   filtroDestino?.addEventListener("change", () => {
     currentPage = 1;
     listar();
+  });
+
+  // ---- NUEVOS FILTROS TEXTO ----
+  const onTextoFiltro = debounce(() => {
+    currentPage = 1;
+    listar();
+  }, 300);
+
+  filtroContenedor?.addEventListener("input", onTextoFiltro);
+  filtroFerro?.addEventListener("input", onTextoFiltro);
+
+  filtroContenedor?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      currentPage = 1;
+      listar();
+    }
+  });
+
+  filtroFerro?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      currentPage = 1;
+      listar();
+    }
   });
 
   // ---- Filtro superior: Operación (autocomplete) ----
@@ -639,3 +689,32 @@
 
   init();
 })();
+// ---------------------- Exportación (opcional, solo lectura) ----------------------
+document
+  .getElementById("btnExportarExcelEventosLogisticosFer")
+  ?.addEventListener("click", () => {
+    ExportarTablas.exportar({
+      ref: "tablaEventosFer",
+      formato: "xlsx",
+      nombre: `Eventos Logisticos .xlsx`,
+      columnasOcultas: [],
+      soloVisibles: true,
+      sheetName: `Eventos Logisticos`,
+    });
+  });
+
+document
+  .getElementById("btnExportarPDFEventosLogisticosFer")
+  ?.addEventListener("click", () => {
+    const tag = window.fuenteSel === "MF" ? "MF" : "FO";
+    ExportarTablas.exportar({
+      ref: "#tablaEventosFer",
+      formato: "pdf",
+      nombre: `Eventos Logisticos.pdf`,
+      titulo: `Eventos Logisticos`,
+      orientacion: "landscape",
+      formatoPagina: "letter",
+      columnasOcultas: [],
+      soloVisibles: true,
+    });
+  });

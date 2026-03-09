@@ -112,7 +112,7 @@
       <!-- Filtros superiores -->
       <div class="row g-3 align-items-end mb-3">
         <!-- Operación con sugerencias -->
-        <div class="col-md-3">
+        <div class="col-md-3 d-none">
           <label for="eventosFerFiltroOpNombre" class="form-label mb-1">Operación</label>
           <div class="position-relative">
             <input type="hidden" id="eventosFerFiltroOpId">
@@ -123,7 +123,19 @@
           </div>
           <div class="form-text" id="eventosFerFiltroOpMeta"></div>
         </div>
-        <div class="col-md-3">
+
+        <div class="col-md-2">
+          <label for="eventosFerFiltroContenedor">Contendor maritimo </label>
+          <input type="text" id="eventosFerFiltroContenedor" name="eventosFerFiltroContenedor" class="form-control"
+            placeholder="Escribe para buscar" autocomplete="off">
+
+        </div>
+        <div class="col-md-2">
+          <label for="eventosFerFiltroFerro">Ferro / Caja</label>
+          <input type="text" id="eventosFerFiltroFerro" name="eventosFerFiltroFerro" class="form-control"
+            placeholder="FXEU..." autocomplete="off">
+        </div>
+        <div class="col-md-2">
           <label for="">Transportista</label>
           <select class="form-control" id="eventosFerFiltroTransportista" name="eventosFerFiltroTransportista">
             <option value="">Transportista (Todos)</option>
@@ -137,7 +149,7 @@
           </select>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label for="">Cliente</label>
           <select class="form-control" id="eventosFerFiltroCliente" name="eventosFerFiltroCliente">
             <option value="">Cliente (Todos)</option>

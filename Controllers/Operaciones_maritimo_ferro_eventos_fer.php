@@ -29,56 +29,97 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         $page    = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
         $perPage = isset($_GET['per_page']) ? min(1000000, max(1, (int)$_GET['per_page'])) : 10;
 
+        // =========================
         // op_id = id_operacion marítima
+        // =========================
         $opId = null;
         if (isset($_GET['op_id']) && $_GET['op_id'] !== '') {
-            $opId = (int)$_GET['op_id'];
+            $tmp = (int)$_GET['op_id'];
+            $opId = $tmp > 0 ? $tmp : null;
         }
         if ($opId === null && isset($_GET['operacion_id']) && $_GET['operacion_id'] !== '') {
-            $opId = (int)$_GET['operacion_id'];
+            $tmp = (int)$_GET['operacion_id'];
+            $opId = $tmp > 0 ? $tmp : null;
         }
         if ($opId === null && isset($_GET['mar_id']) && $_GET['mar_id'] !== '') {
-            $opId = (int)$_GET['mar_id'];
+            $tmp = (int)$_GET['mar_id'];
+            $opId = $tmp > 0 ? $tmp : null;
         }
 
+        // =========================
         // ferro_id / compat
+        // =========================
         $ferroId = null;
         if (isset($_GET['ferro_id']) && $_GET['ferro_id'] !== '') {
-            $ferroId = (int)$_GET['ferro_id'];
+            $tmp = (int)$_GET['ferro_id'];
+            $ferroId = $tmp > 0 ? $tmp : null;
         }
         if ($ferroId === null && isset($_GET['cont_id']) && $_GET['cont_id'] !== '') {
-            $ferroId = (int)$_GET['cont_id'];
+            $tmp = (int)$_GET['cont_id'];
+            $ferroId = $tmp > 0 ? $tmp : null;
         }
 
+        // =========================
         // búsqueda global principal
+        // =========================
         $q = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
 
+        // =========================
         // fechas
-        $fechaDesde = (isset($_GET['fecha_desde']) && $_GET['fecha_desde'] !== '')
+        // =========================
+        $fechaDesde = (isset($_GET['fecha_desde']) && trim((string)$_GET['fecha_desde']) !== '')
             ? trim((string)$_GET['fecha_desde'])
             : null;
 
-        $fechaHasta = (isset($_GET['fecha_hasta']) && $_GET['fecha_hasta'] !== '')
+        $fechaHasta = (isset($_GET['fecha_hasta']) && trim((string)$_GET['fecha_hasta']) !== '')
             ? trim((string)$_GET['fecha_hasta'])
             : null;
 
+        // =========================
         // filtros por select
-        $transportistaId = (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '')
-            ? (int)$_GET['transportista_id']
-            : null;
+        // =========================
+        $transportistaId = null;
+        if (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
+            $tmp = (int)$_GET['transportista_id'];
+            $transportistaId = $tmp > 0 ? $tmp : null;
+        }
 
-        $clienteId = (isset($_GET['cliente_id']) && $_GET['cliente_id'] !== '')
-            ? (int)$_GET['cliente_id']
-            : null;
+        $clienteId = null;
+        if (isset($_GET['cliente_id']) && $_GET['cliente_id'] !== '') {
+            $tmp = (int)$_GET['cliente_id'];
+            $clienteId = $tmp > 0 ? $tmp : null;
+        }
 
-        $destinoId = (isset($_GET['destino_id']) && $_GET['destino_id'] !== '')
-            ? (int)$_GET['destino_id']
-            : null;
+        $destinoId = null;
+        if (isset($_GET['destino_id']) && $_GET['destino_id'] !== '') {
+            $tmp = (int)$_GET['destino_id'];
+            $destinoId = $tmp > 0 ? $tmp : null;
+        }
 
-        // filtros legacy / secundarios
-        $contenedor = isset($_GET['contenedor']) ? trim((string)$_GET['contenedor']) : '';
-        $ferro      = isset($_GET['ferro']) ? trim((string)$_GET['ferro']) : '';
-        $operacion  = isset($_GET['operacion']) ? trim((string)$_GET['operacion']) : '';
+        // =========================
+        // filtros por texto
+        // nuevos inputs + compat aliases
+        // =========================
+        $contenedor = '';
+        if (isset($_GET['contenedor'])) {
+            $contenedor = trim((string)$_GET['contenedor']);
+        } elseif (isset($_GET['contenedor_maritimo'])) {
+            $contenedor = trim((string)$_GET['contenedor_maritimo']);
+        }
+
+        $ferro = '';
+        if (isset($_GET['ferro'])) {
+            $ferro = trim((string)$_GET['ferro']);
+        } elseif (isset($_GET['numero_ferro'])) {
+            $ferro = trim((string)$_GET['numero_ferro']);
+        }
+
+        $operacion = '';
+        if (isset($_GET['operacion'])) {
+            $operacion = trim((string)$_GET['operacion']);
+        } elseif (isset($_GET['numero_operacion'])) {
+            $operacion = trim((string)$_GET['numero_operacion']);
+        }
 
         try {
             $res = $this->model->listarEventosFOPaginado(
