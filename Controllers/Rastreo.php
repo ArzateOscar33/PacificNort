@@ -5,6 +5,8 @@ class Rastreo extends Controller
     {
         parent::__construct();
         session_start();
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()

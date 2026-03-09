@@ -17,6 +17,8 @@ class Operaciones_maritimo_ferro_eventos_fer extends Controller
         $this->opLog = new OperacionesLogModel();
 
         header_remove('X-Powered-By');
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     /* ======================

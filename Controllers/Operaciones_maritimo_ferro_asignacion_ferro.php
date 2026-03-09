@@ -11,6 +11,8 @@ class Operaciones_maritimo_ferro_asignacion_ferro extends Controller
             header("Location: " . BASE_URL);
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     /* =========================================================

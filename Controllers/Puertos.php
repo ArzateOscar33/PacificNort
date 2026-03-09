@@ -9,6 +9,8 @@ class Puertos extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()
@@ -66,39 +68,46 @@ class Puertos extends Controller
         $ciudad  = trim($_POST['ciudad_id'] ?? '');
 
         if ($nombre === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio'], JSON_UNESCAPED_UNICODE);
+            die();
         }
         if ($ciudad === '' || (int)$ciudad <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'La ciudad es obligatoria'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'La ciudad es obligatoria'], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         // CREAR
         if ($id === '') {
             if ($this->model->existePorNombreCiudad($nombre, (int)$ciudad)) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un puerto con ese nombre en esa ciudad'], JSON_UNESCAPED_UNICODE); die();
+                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un puerto con ese nombre en esa ciudad'], JSON_UNESCAPED_UNICODE);
+                die();
             }
             $ok = $this->model->registrar($nombre, (int)$ciudad);
             echo json_encode([
                 'status' => $ok ? 'success' : 'error',
                 'msg'    => $ok ? 'Puerto registrado' : 'Error al registrar'
-            ], JSON_UNESCAPED_UNICODE); die();
+            ], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         // EDITAR
         $idInt = (int)$id;
         if ($idInt <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'ID inválido'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'ID inválido'], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         if ($this->model->existeOtro($nombre, (int)$ciudad, $idInt)) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe otro puerto con ese nombre en esa ciudad'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe otro puerto con ese nombre en esa ciudad'], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         $ok = $this->model->actualizar($idInt, $nombre, (int)$ciudad);
         echo json_encode([
             'status' => $ok ? 'success' : 'error',
             'msg'    => $ok ? 'Puerto actualizado' : 'Error al actualizar'
-        ], JSON_UNESCAPED_UNICODE); die();
+        ], JSON_UNESCAPED_UNICODE);
+        die();
     }
 
     public function editar(int $id)

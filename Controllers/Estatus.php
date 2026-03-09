@@ -9,6 +9,8 @@ class Estatus extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
     public function index()
     {
@@ -16,8 +18,9 @@ class Estatus extends Controller
 
         $this->views->getView('admin/Estatus', "index", $data);
     }
- 
-    public function listar(){
+
+    public function listar()
+    {
         $data = $this->model->listar();
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
@@ -25,7 +28,7 @@ class Estatus extends Controller
     public function registrar()
     {
         $id   = $_POST['id_estatus'] ?? '';
-        $nombre = trim($_POST['nombre'] ?? ''); 
+        $nombre = trim($_POST['nombre'] ?? '');
         if ($nombre === '') {
             echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio']);
             return;
@@ -56,7 +59,7 @@ class Estatus extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-     public function eliminar($id)
+    public function eliminar($id)
     {
         $res = $this->model->eliminar($id);
         echo json_encode([
@@ -64,7 +67,7 @@ class Estatus extends Controller
             'msg'    => $res ? 'Estatus eliminado' : 'Error al eliminar'
         ]);
     }
- 
+
     public function buscar()
     {
         $term = $_GET['term'] ?? '';
@@ -72,5 +75,4 @@ class Estatus extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-    
 }

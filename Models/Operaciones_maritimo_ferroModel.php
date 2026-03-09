@@ -484,22 +484,46 @@ class Operaciones_maritimo_ferroModel extends Query
             foreach ($terms as $t) {
                 $needle = '%' . $t . '%';
                 $where .= " AND (
-                    LOWER(o.numero_operacion) LIKE ?
-                    OR LOWER(o.numero_bl)     LIKE ?
-                    OR LOWER(p.nombre)        LIKE ?
-                    OR LOWER(e.nombre)        LIKE ?
-                    OR LOWER(c.nombre)        LIKE ?
-                    OR LOWER(s.nombre)        LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM contenedores_maritimos_operacion cmo2
-                        JOIN contenedores_maritimos cm2
-                            ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                        WHERE cmo2.operacion_id = o.id_operacion
-                        AND LOWER(cm2.numero_contenedor) LIKE ?
-                    )
-                )";
-                array_push($args, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
+            LOWER(o.numero_operacion) LIKE ?
+            OR LOWER(o.numero_bl)     LIKE ?
+            OR LOWER(p.nombre)        LIKE ?
+            OR LOWER(e.nombre)        LIKE ?
+            OR LOWER(c.nombre)        LIKE ?
+            OR LOWER(s.nombre)        LIKE ?
+
+            OR EXISTS (
+                SELECT 1
+                FROM contenedores_maritimos_operacion cmo2
+                INNER JOIN contenedores_maritimos cm2
+                    ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                WHERE cmo2.operacion_id = o.id_operacion
+                  AND LOWER(cm2.numero_contenedor) LIKE ?
+            )
+
+            OR EXISTS (
+                SELECT 1
+                FROM contenedores_maritimos_operacion cmo3
+                INNER JOIN contenedor_maritimo_ferro cmf3
+                    ON cmf3.cont_maritimo_operacion_id = cmo3.id
+                   AND cmf3.estatus = 1
+                INNER JOIN contenedores_fisicos cf3
+                    ON cf3.id_fisico = cmf3.contenedor_fisico_id
+                   AND cf3.estatus = 1
+                WHERE cmo3.operacion_id = o.id_operacion
+                  AND LOWER(cf3.numero_ferro) LIKE ?
+            )
+        )";
+                array_push(
+                    $args,
+                    $needle, // o.numero_operacion
+                    $needle, // o.numero_bl
+                    $needle, // p.nombre
+                    $needle, // e.nombre
+                    $needle, // c.nombre
+                    $needle, // s.nombre
+                    $needle, // cm2.numero_contenedor
+                    $needle  // cf3.numero_ferro
+                );
             }
         }
 

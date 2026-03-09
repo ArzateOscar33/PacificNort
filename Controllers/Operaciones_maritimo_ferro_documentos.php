@@ -17,6 +17,8 @@ class Operaciones_maritimo_ferro_documentos extends Controller
             @session_start();
         }
         $this->opLog = new OperacionesLogModel();
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     /* ===== Helpers de auditoría ===== */

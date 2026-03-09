@@ -9,6 +9,8 @@ class Tipos_documentos extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
     public function index()
     {
@@ -17,13 +19,14 @@ class Tipos_documentos extends Controller
         $this->views->getView('admin/tipos_documentos', "index", $data);
     }
 
-    public function listar(){
+    public function listar()
+    {
         $data = $this->model->listar();
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-    
-        // OBTENER (para editar)
+
+    // OBTENER (para editar)
     public function editar($id)
     {
         $data = $this->model->obtener($id);
@@ -35,12 +38,12 @@ class Tipos_documentos extends Controller
     public function registrar()
     {
         $id   = $_POST['idTipoDocumento'] ?? '';
-        $nombre = trim($_POST['nombreDocumento'] ?? ''); 
-        $clave = trim($_POST['clave'] ?? ''); 
+        $nombre = trim($_POST['nombreDocumento'] ?? '');
+        $clave = trim($_POST['clave'] ?? '');
         $descripcion = trim($_POST['descripcionDocumento'] ?? '');
         $aplicaSobre = trim($_POST['aplicaSobre'] ?? '');
 
-         // Validaciones básicas
+        // Validaciones básicas
 
         if ($nombre === '') {
             echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio']);
@@ -68,16 +71,15 @@ class Tipos_documentos extends Controller
                 'msg'    => $res ? 'Tipo de documento registrado' : 'Error al registrar'
             ]);
         } else {
-            $res = $this->model->actualizar($id,$clave, $nombre, $descripcion, $aplicaSobre );
+            $res = $this->model->actualizar($id, $clave, $nombre, $descripcion, $aplicaSobre);
             echo json_encode([
                 'status' => $res ? 'success' : 'error',
                 'msg'    => $res ? 'Tipo de documento actualizado' : 'Error al actualizar'
             ]);
         }
-        
     }
 
-        // ELIMINAR (soft delete)
+    // ELIMINAR (soft delete)
     public function eliminar($id)
     {
         $res = $this->model->eliminar($id);
@@ -95,12 +97,9 @@ class Tipos_documentos extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-/*
+    /*
 
 
     
 */
-
- 
-
 }

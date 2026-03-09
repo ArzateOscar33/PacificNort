@@ -11,6 +11,12 @@ class Contactos extends Controller
     {
         parent::__construct();
         session_start();
+        if (empty($_SESSION['nombre_usuario'])) {
+            header('Location: ' . BASE_URL . 'admin');
+            exit;
+        }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()
@@ -84,7 +90,7 @@ class Contactos extends Controller
 
                 $mailUsuario->isHTML(true);
                 $mailUsuario->Subject = 'Gracias por contactarnos - ' . TITLE;
-              $mailUsuario->Body = '
+                $mailUsuario->Body = '
                         <div
                             style="max-width:600px; margin:0 auto; font-family:\'Segoe UI\', sans-serif; background:#f9f9f9; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
                             <div style="background-color:#1c1e74; padding:30px; text-align:center;">

@@ -15,6 +15,8 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
 
         require_once "Models/OperacionesLogModel.php";
         $this->opLog = new OperacionesLogModel();
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function listarPaginado()

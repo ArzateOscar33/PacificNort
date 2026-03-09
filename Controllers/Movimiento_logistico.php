@@ -9,6 +9,8 @@ class Movimiento_logistico extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()

@@ -8,6 +8,8 @@ class Operaciones_maritimo_ferro_trazabilidad_terrestre extends Controller
         if (session_status() === PHP_SESSION_NONE) {
             @session_start();
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     // =========================

@@ -13,6 +13,8 @@ class Operaciones_maritimas_eventos extends Controller
             @session_start();
         }
         $this->opLog = new OperacionesLogModel();
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     /* =============================================================
@@ -79,7 +81,7 @@ class Operaciones_maritimas_eventos extends Controller
                 'columns' => $out
             ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('eventos_maritimos_columnas (Mar): '.$e->getMessage());
+            error_log('eventos_maritimos_columnas (Mar): ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'ok'    => false,
@@ -101,7 +103,10 @@ class Operaciones_maritimas_eventos extends Controller
         $term  = isset($_GET['term'])  ? trim($_GET['term'])  : '';
         $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10;
 
-        if ($term === '') { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
+        if ($term === '') {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         try {
             $rows = $this->model->buscarOperacionesMaritimas($term, $limit);
@@ -119,7 +124,7 @@ class Operaciones_maritimas_eventos extends Controller
 
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('buscar_operaciones (Mar): '.$e->getMessage());
+            error_log('buscar_operaciones (Mar): ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -137,14 +142,17 @@ class Operaciones_maritimas_eventos extends Controller
         $term  = isset($_GET['term'])  ? trim((string)$_GET['term'])  : '';
         $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit'])  : 10;
 
-        if ($term === '') { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
+        if ($term === '') {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         try {
             $rows = $this->model->buscarOperacionesMaritimas($term, $limit);
 
             $out = array_map(function ($r) {
                 $contenedores = isset($r['contenedores']) ? trim((string)$r['contenedores']) : '';
-                $fallback     = isset($r['maritimos']) ? ((int)$r['maritimos'].' contenedor(es)') : '';
+                $fallback     = isset($r['maritimos']) ? ((int)$r['maritimos'] . ' contenedor(es)') : '';
 
                 return [
                     'id'    => (int)($r['id'] ?? 0),
@@ -155,7 +163,7 @@ class Operaciones_maritimas_eventos extends Controller
 
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('sugerir_operaciones (Mar): '.$e->getMessage());
+            error_log('sugerir_operaciones (Mar): ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -174,7 +182,10 @@ class Operaciones_maritimas_eventos extends Controller
         $term        = isset($_GET['term']) ? trim($_GET['term']) : '';
         $limit       = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 15;
 
-        if ($operacionId <= 0) { echo json_encode([], JSON_UNESCAPED_UNICODE); die(); }
+        if ($operacionId <= 0) {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         try {
             $rows = $this->model->buscarContenedoresMarDeOperacion($operacionId, $term, $limit);
@@ -189,7 +200,7 @@ class Operaciones_maritimas_eventos extends Controller
 
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('buscar_contenedores (Mar): '.$e->getMessage());
+            error_log('buscar_contenedores (Mar): ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -200,7 +211,10 @@ class Operaciones_maritimas_eventos extends Controller
     {
         header('Content-Type: application/json; charset=UTF-8');
         $opId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-        if ($opId <= 0) { echo json_encode(null, JSON_UNESCAPED_UNICODE); die(); }
+        if ($opId <= 0) {
+            echo json_encode(null, JSON_UNESCAPED_UNICODE);
+            die();
+        }
 
         $row = $this->model->getContenedorMaritimoDeOperacion($opId);
         echo json_encode($row ?: null, JSON_UNESCAPED_UNICODE);
@@ -226,7 +240,7 @@ class Operaciones_maritimas_eventos extends Controller
 
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
-            error_log('tipos_evento (Mar): '.$e->getMessage());
+            error_log('tipos_evento (Mar): ' . $e->getMessage());
             echo json_encode([], JSON_UNESCAPED_UNICODE);
         }
         die();
@@ -240,9 +254,11 @@ class Operaciones_maritimas_eventos extends Controller
         try {
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
             $id = $this->opLog->crear($operacionId, $usuarioId, $accion, $descripcion);
-            if (!$id) { error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}"); }
+            if (!$id) {
+                error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}");
+            }
         } catch (\Throwable $e) {
-            error_log("operaciones_log error: ".$e->getMessage());
+            error_log("operaciones_log error: " . $e->getMessage());
         }
     }
 
@@ -250,8 +266,10 @@ class Operaciones_maritimas_eventos extends Controller
     {
         if (empty($info)) return $base;
         $kv = [];
-        foreach ($info as $k => $v) { $kv[] = "$k=$v"; }
-        return $base.' ('.implode(', ', $kv).')';
+        foreach ($info as $k => $v) {
+            $kv[] = "$k=$v";
+        }
+        return $base . ' (' . implode(', ', $kv) . ')';
     }
 
     /* =============================================================
@@ -271,16 +289,20 @@ class Operaciones_maritimas_eventos extends Controller
         ];
 
         if ($evento['operacion_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona una operación marítima.']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona una operación marítima.']);
+            die();
         }
         if ($evento['cont_maritimo_operacion_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un contenedor marítimo.']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un contenedor marítimo.']);
+            die();
         }
         if ($evento['tipo_evento_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento marítimo.']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento marítimo.']);
+            die();
         }
         if ($evento['fecha'] === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']);
+            die();
         }
 
         $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
@@ -318,8 +340,9 @@ class Operaciones_maritimas_eventos extends Controller
         $cmoId = (int)($_GET['cont_maritimo_operacion_id'] ?? 0);
         $evtId = (int)($_GET['tipo_evento_id'] ?? 0);
 
-        if ($opId<=0 || $cmoId<=0 || $evtId<=0) {
-            echo json_encode(null, JSON_UNESCAPED_UNICODE); die();
+        if ($opId <= 0 || $cmoId <= 0 || $evtId <= 0) {
+            echo json_encode(null, JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         $row = $this->model->obtenerEventoPorClave($opId, $cmoId, $evtId);
@@ -343,11 +366,26 @@ class Operaciones_maritimas_eventos extends Controller
             'comentario'                 => trim($_POST['comentario'] ?? '')
         ];
 
-        if ($evento['id_evento'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Falta id_evento']); die(); }
-        if ($evento['operacion_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona una operación marítima.']); die(); }
-        if ($evento['cont_maritimo_operacion_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona un contenedor marítimo.']); die(); }
-        if ($evento['tipo_evento_id'] <= 0) { echo json_encode(['status'=>'warning','msg'=>'Selecciona un tipo de evento marítimo.']); die(); }
-        if ($evento['fecha'] === '') { echo json_encode(['status'=>'warning','msg'=>'Indica la fecha del evento.']); die(); }
+        if ($evento['id_evento'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Falta id_evento']);
+            die();
+        }
+        if ($evento['operacion_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona una operación marítima.']);
+            die();
+        }
+        if ($evento['cont_maritimo_operacion_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un contenedor marítimo.']);
+            die();
+        }
+        if ($evento['tipo_evento_id'] <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento marítimo.']);
+            die();
+        }
+        if ($evento['fecha'] === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']);
+            die();
+        }
 
         try {
             $ok = $this->model->actualizar($evento);
@@ -361,14 +399,14 @@ class Operaciones_maritimas_eventos extends Controller
                 ]);
                 $this->logOp($evento['operacion_id'], 'actualizacion', $desc);
 
-                echo json_encode(['status'=>'success','msg'=>'Evento actualizado']);
+                echo json_encode(['status' => 'success', 'msg' => 'Evento actualizado']);
             } else {
-                echo json_encode(['status'=>'error','msg'=>'No fue posible actualizar. Verifica operación marítima, contenedor activo/pertenencia, tipo marítimo y que no sea duplicado.']);
+                echo json_encode(['status' => 'error', 'msg' => 'No fue posible actualizar. Verifica operación marítima, contenedor activo/pertenencia, tipo marítimo y que no sea duplicado.']);
             }
         } catch (\Throwable $e) {
-            error_log('actualizar evento Mar: '.$e->getMessage());
+            error_log('actualizar evento Mar: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>'Error interno al actualizar.']);
+            echo json_encode(['status' => 'error', 'msg' => 'Error interno al actualizar.']);
         }
         die();
     }
@@ -381,7 +419,10 @@ class Operaciones_maritimas_eventos extends Controller
         header('Content-Type: application/json; charset=UTF-8');
 
         $id = (int)($_POST['id_evento'] ?? 0);
-        if ($id <= 0) { echo json_encode(['status'=>'warning','msg'=>'Falta id_evento']); die(); }
+        if ($id <= 0) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Falta id_evento']);
+            die();
+        }
 
         try {
             $ok = $this->model->eliminar($id);
@@ -390,9 +431,9 @@ class Operaciones_maritimas_eventos extends Controller
                 'msg'    => $ok ? 'Evento eliminado' : 'No se pudo eliminar'
             ]);
         } catch (\Throwable $e) {
-            error_log('eliminar evento Mar: '.$e->getMessage());
+            error_log('eliminar evento Mar: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['status'=>'error','msg'=>'Error interno al eliminar.']);
+            echo json_encode(['status' => 'error', 'msg' => 'Error interno al eliminar.']);
         }
         die();
     }

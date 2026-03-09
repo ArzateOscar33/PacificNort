@@ -12,6 +12,8 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
         }
         require_once "Models/OperacionesLogModel.php";
         $this->opLog = new OperacionesLogModel();
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     /* ===== Helpers de auditoría ===== */

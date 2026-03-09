@@ -9,6 +9,8 @@ class Shippers extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()
@@ -33,7 +35,8 @@ class Shippers extends Controller
         $direccion = trim($_POST['direccion'] ?? '');
 
         if ($nombre === '' || $contacto === '' || $direccion === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']);
+            die();
         }
 
         // Evitar duplicado por nombre
@@ -42,15 +45,18 @@ class Shippers extends Controller
             $msg = ((int)$existe['estatus'] === 1)
                 ? 'Ya existe un shipper con ese nombre'
                 : 'Existe un shipper con ese nombre desactivado. Cambia el nombre o reactívalo.';
-            echo json_encode(['status' => 'warning', 'msg' => $msg]); die();
+            echo json_encode(['status' => 'warning', 'msg' => $msg]);
+            die();
         }
 
         $nuevoId = $this->model->registrar($nombre, $contacto, $direccion);
         if (!$nuevoId) {
-            echo json_encode(['status' => 'error', 'msg' => 'No se pudo registrar el shipper']); die();
+            echo json_encode(['status' => 'error', 'msg' => 'No se pudo registrar el shipper']);
+            die();
         }
 
-        echo json_encode(['status' => 'success', 'msg' => 'Shipper registrado correctamente']); die();
+        echo json_encode(['status' => 'success', 'msg' => 'Shipper registrado correctamente']);
+        die();
     }
 
     /* ===== OBTENER UNO (para editar) ===== */
@@ -70,7 +76,8 @@ class Shippers extends Controller
         $direccion  = trim($_POST['direccion']  ?? '');
 
         if ($id_shipper <= 0 || $nombre === '' || $contacto === '' || $direccion === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']);
+            die();
         }
 
         // Colisión con OTRO shipper del mismo nombre
@@ -79,15 +86,18 @@ class Shippers extends Controller
             $msg = ((int)$dup['estatus'] === 1)
                 ? 'Ya existe otro shipper con ese nombre'
                 : 'Existe otro shipper con ese nombre desactivado.';
-            echo json_encode(['status' => 'warning', 'msg' => $msg]); die();
+            echo json_encode(['status' => 'warning', 'msg' => $msg]);
+            die();
         }
 
         $ok = $this->model->actualizar($id_shipper, $nombre, $contacto, $direccion);
         if (!$ok) {
-            echo json_encode(['status' => 'error', 'msg' => 'No se pudo actualizar el shipper']); die();
+            echo json_encode(['status' => 'error', 'msg' => 'No se pudo actualizar el shipper']);
+            die();
         }
 
-        echo json_encode(['status' => 'success', 'msg' => 'Shipper actualizado correctamente']); die();
+        echo json_encode(['status' => 'success', 'msg' => 'Shipper actualizado correctamente']);
+        die();
     }
 
     /* ===== ELIMINAR (lógico) ===== */
@@ -95,16 +105,21 @@ class Shippers extends Controller
     {
         $ok = $this->model->eliminar($id);
         if ($ok) {
-            echo json_encode(['status' => 'success', 'msg' => 'Shipper desactivado correctamente']); die();
+            echo json_encode(['status' => 'success', 'msg' => 'Shipper desactivado correctamente']);
+            die();
         }
-        echo json_encode(['status' => 'error', 'msg' => 'No se pudo desactivar el shipper']); die();
+        echo json_encode(['status' => 'error', 'msg' => 'No se pudo desactivar el shipper']);
+        die();
     }
 
     /* ===== BÚSQUEDA ===== */
     public function buscar()
     {
         $term = $_GET['term'] ?? '';
-        if ($term === '') { echo json_encode([]); die(); }
+        if ($term === '') {
+            echo json_encode([]);
+            die();
+        }
         $data = $this->model->buscar($term);
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();

@@ -9,6 +9,8 @@ class Tipos_operacion extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
     public function index()
     {
@@ -23,7 +25,7 @@ class Tipos_operacion extends Controller
         die();
     }
 
-       public function registrar()
+    public function registrar()
     {
         $nombre = trim($_POST['nombreTipoOperacion']);
 
@@ -76,7 +78,7 @@ class Tipos_operacion extends Controller
     }
 
 
-        public function eliminar($id)
+    public function eliminar($id)
     {
         $res = $this->model->eliminarTipoOperacion($id);
         echo json_encode([
@@ -93,7 +95,4 @@ class Tipos_operacion extends Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
-
-
-
 }

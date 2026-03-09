@@ -101,7 +101,7 @@ class Operaciones_maritimo_ferro_eventos_marModel extends Query
           ON cli.id_cliente = o.cliente_id
         $whereSql
         GROUP BY o.id_operacion, cmo.id, operacion, contenedor, cliente
-        ORDER BY operacion DESC, contenedor ASC
+        ORDER BY  cmo.id DESC
         LIMIT $perPage OFFSET $offset
     ";
         $rowsPairs = $this->selectAll($sqlPairs, $params) ?: [];
@@ -157,7 +157,7 @@ class Operaciones_maritimo_ferro_eventos_marModel extends Query
               AND e.cont_maritimo_operacion_id = p.cmo_id
         LEFT JOIN tipos_evento_logistico te
                ON te.id_tipo_evento = e.tipo_evento_id
-        ORDER BY p.operacion DESC, p.contenedor ASC, e.tipo_evento_id ASC, e.fecha DESC
+        ORDER BY p.id_operacion DESC, p.cmo_id DESC
     ";
         $rows = $this->selectAll($sqlPageWithEvents, $paramsEvt) ?: [];
 

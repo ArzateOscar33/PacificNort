@@ -7,6 +7,8 @@ class Operaciones_maritimo_ferro_trazabilidad extends Controller
         if (session_status() === PHP_SESSION_NONE) {
             @session_start();
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
     public function listar()
     {

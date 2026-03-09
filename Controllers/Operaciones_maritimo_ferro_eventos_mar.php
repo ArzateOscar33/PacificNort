@@ -12,6 +12,9 @@ class Operaciones_maritimo_ferro_eventos_mar extends Controller
             @session_start();
         }
         $this->opLog = new OperacionesLogModel();
+
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
     public function listar()
     {

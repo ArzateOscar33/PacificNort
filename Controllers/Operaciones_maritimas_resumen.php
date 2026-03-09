@@ -7,6 +7,8 @@ class Operaciones_maritimas_resumen extends Controller
         if (session_status() === PHP_SESSION_NONE) {
             @session_start();
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     // GET /operaciones_maritimas_resumen/sugerencias?term=EN-
@@ -344,7 +346,7 @@ class Operaciones_maritimas_resumen extends Controller
      * GET /operaciones_maritimas_resumen/eventos_contenedor?operacion_id=48&tipo=Ferro&id_contenedor=579
      * GET /operaciones_maritimas_resumen/eventos_contenedor?operacion_id=48&tipo=Maritimo&id_contenedor=52
      */
-    
+
     public function eventos_contenedor()
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -387,38 +389,38 @@ class Operaciones_maritimas_resumen extends Controller
     }
 
     // GET /operaciones_maritimas_resumen/eventos_progreso?operacion_id=48&tipo=F|M&id_contenedor=...
-public function eventos_progreso() {
-    header('Content-Type: application/json; charset=utf-8');
+    public function eventos_progreso()
+    {
+        header('Content-Type: application/json; charset=utf-8');
 
-    if (empty($_SESSION['nombre_usuario'])) {
-        echo json_encode(['status'=>'warning','data'=>[],'message'=>'Sesión expirada'], JSON_UNESCAPED_UNICODE);
-        return;
-    }
-
-    $operacionId  = (int)($_GET['operacion_id'] ?? 0);
-    $tipoRaw      = trim($_GET['tipo'] ?? '');
-    $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
-
-    if ($operacionId<=0 || $idContenedor<=0 || $tipoRaw==='') {
-        echo json_encode(['status'=>'error','data'=>[],'message'=>'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
-        return;
-    }
-
-    $t = mb_strtoupper($tipoRaw,'UTF-8');
-    if ($t==='FISICO'||$t==='FÍSICO'||$t==='F') $t='F';
-    if ($t==='MARITIMO'||$t==='MARÍTIMO'||$t==='M') $t='M';
-
-    try {
-        if ($t==='F') {
-            $data = $this->model->getEventosProgresoFisico($operacionId, $idContenedor);
-        } else {
-            $data = $this->model->getEventosProgresoMaritimo($operacionId, $idContenedor);
+        if (empty($_SESSION['nombre_usuario'])) {
+            echo json_encode(['status' => 'warning', 'data' => [], 'message' => 'Sesión expirada'], JSON_UNESCAPED_UNICODE);
+            return;
         }
-        echo json_encode(['status'=>'ok','data'=>$data], JSON_UNESCAPED_UNICODE);
-    } catch (Throwable $e) {
-        error_log("ERR eventos_progreso: ".$e->getMessage());
-        echo json_encode(['status'=>'error','data'=>[],'message'=>'No fue posible obtener el progreso'], JSON_UNESCAPED_UNICODE);
+
+        $operacionId  = (int)($_GET['operacion_id'] ?? 0);
+        $tipoRaw      = trim($_GET['tipo'] ?? '');
+        $idContenedor = (int)($_GET['id_contenedor'] ?? 0);
+
+        if ($operacionId <= 0 || $idContenedor <= 0 || $tipoRaw === '') {
+            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'Parámetros inválidos'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $t = mb_strtoupper($tipoRaw, 'UTF-8');
+        if ($t === 'FISICO' || $t === 'FÍSICO' || $t === 'F') $t = 'F';
+        if ($t === 'MARITIMO' || $t === 'MARÍTIMO' || $t === 'M') $t = 'M';
+
+        try {
+            if ($t === 'F') {
+                $data = $this->model->getEventosProgresoFisico($operacionId, $idContenedor);
+            } else {
+                $data = $this->model->getEventosProgresoMaritimo($operacionId, $idContenedor);
+            }
+            echo json_encode(['status' => 'ok', 'data' => $data], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            error_log("ERR eventos_progreso: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'data' => [], 'message' => 'No fue posible obtener el progreso'], JSON_UNESCAPED_UNICODE);
+        }
     }
-}
- 
 }
