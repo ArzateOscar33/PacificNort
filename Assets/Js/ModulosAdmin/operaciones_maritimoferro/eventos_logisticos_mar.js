@@ -2,6 +2,8 @@
    MODAL - Registrar Evento (Operación MF + Evento Marítimo)
    Aísla todo en un IIFE para evitar colisiones globales.
    Requiere que exista "base_url" disponible en la página.
+
+   
    =========================================================== */
 (function evMFModal() {
   "use strict";
@@ -435,6 +437,7 @@
       <th style="min-width:140px">Operación</th>
       <th style="min-width:180px">Contenedor marítimo</th>
       <th style="min-width:220px">Cliente</th>
+      <th style="min-width:220px">Arribo al puerto</th>
     `;
 
     for (const c of COLS) {
@@ -453,16 +456,18 @@
     (rows || []).forEach((r) => {
       const opId = r.operacion_id;
       const cmoId = r.cont_maritimo_operacion_id;
+      const eta = r.arribo_puerto || "";
       const key = `${opId}||${cmoId}`;
 
       if (!groups.has(key)) {
         const cells = {};
-        for (const c of COLS) cells[c.key] = "Sin registrar";
+        for (const c of COLS) cells[c.key] = "-";
 
         groups.set(key, {
           operacion: r.operacion || "",
           contenedor: r.contenedor || "",
           cliente: r.cliente || "",
+          eta: eta,
           operacion_id: opId,
           cmo_id: cmoId,
           cells,
@@ -473,8 +478,8 @@
       const c = byEvtId.get(String(r.tipo_evento_id));
       if (c) {
         const prev = g.cells[c.key];
-        const val = r.fecha || "Sin registrar";
-        if (prev === "Sin registrar" || String(val) > String(prev)) {
+        const val = r.fecha || "-";
+        if (prev === "-" || String(val) > String(prev)) {
           g.cells[c.key] = val;
         }
       }
@@ -492,7 +497,7 @@
     tbody.innerHTML = "";
 
     if (!Array.isArray(pivoted) || pivoted.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="${3 + COLS.length}" class="text-center text-muted py-3">No hay registros</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${4 + COLS.length}" class="text-center text-danger py-3">Error al obtener datos</td></tr>`;
       return;
     }
 
@@ -501,11 +506,13 @@
       tr.dataset.oplabel = row.operacion || "";
       tr.dataset.ctnlabel = row.contenedor || "";
       tr.dataset.clientelabel = row.cliente || "";
+      tr.dataset.arribo_puerto = row.eta || "";
 
       let html = `
         <td class="text-center">${row.operacion || ""}</td>
         <td class="text-center">${row.contenedor || ""}</td>
         <td>${row.cliente || ""}</td>
+        <td class="text-center">${row.eta || ""}</td>
       `;
 
       for (const c of COLS) {
@@ -609,7 +616,7 @@
       },
       (err) => {
         console.error("Listar MF:", err);
-        tbody.innerHTML = `<tr><td colspan="${3 + COLS.length}" class="text-center text-danger py-3">Error al obtener datos</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${4 + COLS.length}" class="text-center text-danger py-3">Error al obtener datos</td></tr>`;
       },
     );
   }

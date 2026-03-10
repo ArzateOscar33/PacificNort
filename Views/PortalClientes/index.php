@@ -388,8 +388,6 @@
                 <th>Peso</th>
                 <th>Medida</th>
                 <th>Mercancia</th>
-                <th>Transportista</th>
-                <th>Broker</th>
                 <th>Cita Puerto</th>
                 <th>Caja/Ferro</th>
                 <th>Destino</th>

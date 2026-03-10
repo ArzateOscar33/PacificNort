@@ -88,6 +88,7 @@ class Operaciones_maritimo_ferro_eventos_marModel extends Query
         SELECT 
             o.id_operacion,
             o.numero_operacion   AS operacion,
+            o.eta AS arribo_puerto,
             cmo.id               AS cmo_id,
             cm.numero_contenedor AS contenedor,
             COALESCE(cli.nombre, '') AS cliente
@@ -100,7 +101,7 @@ class Operaciones_maritimo_ferro_eventos_marModel extends Query
         LEFT JOIN clientes cli
           ON cli.id_cliente = o.cliente_id
         $whereSql
-        GROUP BY o.id_operacion, cmo.id, operacion, contenedor, cliente
+        GROUP BY o.id_operacion, cmo.id, operacion, arribo_puerto, contenedor, cliente
         ORDER BY  cmo.id DESC
         LIMIT $perPage OFFSET $offset
     ";
@@ -121,44 +122,46 @@ class Operaciones_maritimo_ferro_eventos_marModel extends Query
         $paramsEvt = $cmoIds;
 
         $sqlPageWithEvents = "
-        SELECT
-            p.id_operacion,
-            p.operacion,
-            p.cmo_id,
-            p.contenedor,
-            p.cliente,
-            e.id_evento,
-            e.operacion_id,
-            e.cont_maritimo_operacion_id,
-            e.tipo_evento_id,
-            te.nombre AS evento,
-            e.fecha,
-            e.comentario
-        FROM (
-            SELECT 
-                o.id_operacion,
-                o.numero_operacion   AS operacion,
-                cmo.id               AS cmo_id,
-                cm.numero_contenedor AS contenedor,
-                COALESCE(cli.nombre, '') AS cliente
-            FROM contenedores_maritimos_operacion cmo
-            JOIN operaciones o 
-              ON o.id_operacion = cmo.operacion_id
-            JOIN contenedores_maritimos cm 
-              ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-             AND cm.estatus = 1
-            LEFT JOIN clientes cli
-              ON cli.id_cliente = o.cliente_id
-            WHERE cmo.id IN ($in)
-            GROUP BY o.id_operacion, cmo.id, operacion, contenedor, cliente
-        ) p
-        LEFT JOIN eventos_logisticos e
-               ON e.estatus = 1
-              AND e.cont_maritimo_operacion_id = p.cmo_id
-        LEFT JOIN tipos_evento_logistico te
-               ON te.id_tipo_evento = e.tipo_evento_id
-        ORDER BY p.id_operacion DESC, p.cmo_id DESC
-    ";
+SELECT
+    p.id_operacion,
+    p.operacion,
+    p.arribo_puerto,
+    p.cmo_id,
+    p.contenedor,
+    p.cliente,
+    e.id_evento,
+    e.operacion_id,
+    e.cont_maritimo_operacion_id,
+    e.tipo_evento_id,
+    te.nombre AS evento,
+    e.fecha,
+    e.comentario
+FROM (
+    SELECT 
+        o.id_operacion,
+        o.numero_operacion   AS operacion,
+        o.eta                AS arribo_puerto,
+        cmo.id               AS cmo_id,
+        cm.numero_contenedor AS contenedor,
+        COALESCE(cli.nombre, '') AS cliente
+    FROM contenedores_maritimos_operacion cmo
+    JOIN operaciones o 
+      ON o.id_operacion = cmo.operacion_id
+    JOIN contenedores_maritimos cm 
+      ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+     AND cm.estatus = 1
+    LEFT JOIN clientes cli
+      ON cli.id_cliente = o.cliente_id
+    WHERE cmo.id IN ($in)
+    GROUP BY o.id_operacion, cmo.id, operacion, arribo_puerto, contenedor, cliente
+) p
+LEFT JOIN eventos_logisticos e
+       ON e.estatus = 1
+      AND e.cont_maritimo_operacion_id = p.cmo_id
+LEFT JOIN tipos_evento_logistico te
+       ON te.id_tipo_evento = e.tipo_evento_id
+ORDER BY p.id_operacion DESC, p.cmo_id DESC
+";
         $rows = $this->selectAll($sqlPageWithEvents, $paramsEvt) ?: [];
 
         // ---- 4) Normalizar salida
@@ -175,6 +178,7 @@ class Operaciones_maritimo_ferro_eventos_marModel extends Query
                 'operacion'                  => (string)($r['operacion'] ?? ''),
                 'contenedor'                 => (string)($r['contenedor'] ?? ''),
                 'cliente'                    => (string)($r['cliente'] ?? ''),
+                'arribo_puerto'              => (string)($r['arribo_puerto'] ?? ''),
             ];
         }
 

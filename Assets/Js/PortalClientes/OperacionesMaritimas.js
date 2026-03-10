@@ -357,8 +357,6 @@
         <td>${esc(peso || "—")}</td>
         <td>${esc(medida || "—")}</td>
         <td>${esc(mercancia || "—")}</td>
-        <td>${esc(transportista || "—")}</td>
-        <td>${esc(brokers || "—")}</td>
         <td>${esc(cita || "—")}</td>
 
         <td>${asig.ferros}</td>
