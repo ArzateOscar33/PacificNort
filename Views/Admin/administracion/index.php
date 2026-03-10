@@ -61,6 +61,48 @@
   .bg-slate {
     background: linear-gradient(135deg, #334155 0%, #64748B 100%);
   }
+
+  /* Contenedor del chart */
+  .chart-ops-estatus-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 320px;
+  }
+
+  /* Leyenda bonita tipo chips */
+  #legendOpsPorEstatus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .ops-estatus-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: #f8fafc;
+    font-size: 12px;
+    color: #334155;
+    line-height: 1;
+  }
+
+  .ops-estatus-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 10px;
+  }
+
+  .ops-estatus-label {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 </style>
 
 <div class="container-fluid">
@@ -210,12 +252,13 @@
           </div>
 
           <!-- Canvas Chart.js -->
-          <canvas
-            id="chartOpsPorEstatus"
-            height="150"
-            aria-label="Operaciones por estatus"
-            role="img"></canvas>
-
+          <div class="chart-ops-estatus-wrap">
+            <canvas
+              id="chartOpsPorEstatus"
+              height="150"
+              aria-label="Operaciones por estatus"
+              role="img"></canvas>
+          </div>
 
 
           <!-- (Opcional) contenedor de leyenda custom si la quieres como en subtipo -->

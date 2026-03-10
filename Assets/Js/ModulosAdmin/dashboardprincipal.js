@@ -1189,7 +1189,7 @@ function renderAlertasAlta(items) {
 }
 
 // =========================
-//  OPS POR ESTATUS (Chart.js)
+// OPS POR ESTATUS (Chart.js) - MEJORADO
 // =========================
 let chartOpsPorEstatusRef = null;
 
@@ -1198,6 +1198,7 @@ function renderOpsPorEstatus(rows) {
   if (!canvas) return;
 
   const legend = document.getElementById("legendOpsPorEstatus");
+  const wrap = canvas.parentElement;
 
   const arr = Array.isArray(rows) ? rows : [];
   const labels = arr.map((r) => String(r.nombre || "—"));
@@ -1205,12 +1206,38 @@ function renderOpsPorEstatus(rows) {
 
   const total = data.reduce((a, b) => a + (Number(b) || 0), 0);
 
+  // Paleta de colores
+  const palette = [
+    "#3B82F6", // azul
+    "#10B981", // verde
+    "#F59E0B", // amarillo
+    "#EF4444", // rojo
+    "#8B5CF6", // morado
+    "#06B6D4", // cyan
+    "#F97316", // naranja
+    "#14B8A6", // teal
+    "#EC4899", // rosa
+    "#84CC16", // lima
+    "#6366F1", // índigo
+    "#A855F7", // violeta
+  ];
+
+  const backgroundColors = labels.map((_, i) => palette[i % palette.length]);
+
+  // Ajustar altura dinámica para barras horizontales
+  // mínimo 320, máximo razonable según cantidad
+  if (wrap) {
+    const dynamicHeight = Math.max(320, labels.length * 42);
+    wrap.style.height = `${dynamicHeight}px`;
+  }
+
   // Si no hay datos
   if (!labels.length || total === 0) {
     if (chartOpsPorEstatusRef) {
       chartOpsPorEstatusRef.destroy();
       chartOpsPorEstatusRef = null;
     }
+
     const ctx2d = canvas.getContext("2d");
     ctx2d.clearRect(0, 0, canvas.width, canvas.height);
     ctx2d.font = '600 14px system-ui, -apple-system, "Segoe UI", Roboto';
@@ -1223,7 +1250,7 @@ function renderOpsPorEstatus(rows) {
     return;
   }
 
-  // Destroy anterior
+  // Destruir anterior
   if (chartOpsPorEstatusRef) {
     chartOpsPorEstatusRef.destroy();
     chartOpsPorEstatusRef = null;
@@ -1237,55 +1264,116 @@ function renderOpsPorEstatus(rows) {
         {
           label: "Operaciones",
           data,
-          borderWidth: 0,
-          borderRadius: 6,
-          // si quieres que visualmente “parezca” apilada:
-          stack: "volumen",
+          backgroundColor: backgroundColors,
+          borderColor: backgroundColors,
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false,
+          barThickness: 22,
+          maxBarThickness: 24,
         },
       ],
     },
     options: {
+      indexAxis: "y", // <-- barras horizontales
       responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio: 2.2,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 500,
+      },
+      layout: {
+        padding: {
+          top: 8,
+          right: 16,
+          bottom: 8,
+          left: 8,
+        },
+      },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: false,
+        },
         tooltip: {
+          backgroundColor: "#0f172a",
+          titleColor: "#ffffff",
+          bodyColor: "#e2e8f0",
+          padding: 10,
+          cornerRadius: 10,
+          displayColors: true,
           callbacks: {
+            title: (items) => items?.[0]?.label || "",
             label: (item) => {
               const val = Number(item.raw || 0);
               const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
-              return ` ${val} (${pct}%)`;
+              return ` ${val} operaciones (${pct}%)`;
             },
           },
         },
       },
       scales: {
         x: {
-          stacked: true,
-          ticks: { maxRotation: 0, autoSkip: false },
-          grid: { display: false },
+          beginAtZero: true,
+          grid: {
+            color: "rgba(148, 163, 184, 0.18)",
+            drawBorder: false,
+          },
+          ticks: {
+            precision: 0,
+            color: "#64748b",
+            font: {
+              size: 11,
+            },
+          },
+          title: {
+            display: true,
+            text: "Operaciones",
+            color: "#475569",
+            font: {
+              size: 12,
+              weight: "600",
+            },
+          },
         },
         y: {
-          stacked: true,
-          beginAtZero: true,
-          ticks: { precision: 0 },
-          grid: { drawBorder: false },
-          title: { display: true, text: "Operaciones" },
+          grid: {
+            display: false,
+            drawBorder: false,
+          },
+          ticks: {
+            color: "#334155",
+            font: {
+              size: 11,
+              weight: "500",
+            },
+            callback: function (value) {
+              const label = this.getLabelForValue(value);
+              // recorta un poco visualmente, pero mantiene lectura
+              return label.length > 28 ? label.substring(0, 28) + "..." : label;
+            },
+          },
         },
       },
     },
   });
 
-  // Leyenda simple abajo
+  // Leyenda tipo chips abajo
   if (legend) {
     legend.innerHTML = labels
       .map((lbl, i) => {
         const val = data[i] ?? 0;
         const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
-        return `${escapeHtml(lbl)}: <strong>${val}</strong> <span class="text-muted">(${pct}%)</span>`;
+        const color = backgroundColors[i];
+
+        return `
+          <span class="ops-estatus-chip">
+            <span class="ops-estatus-dot" style="background:${color}"></span>
+            <span class="ops-estatus-label">${escapeHtml(lbl)}</span>
+            <strong>${val}</strong>
+            <span class="text-muted">(${pct}%)</span>
+          </span>
+        `;
       })
-      .join(" &nbsp;•&nbsp; ");
+      .join("");
   }
 }
 
