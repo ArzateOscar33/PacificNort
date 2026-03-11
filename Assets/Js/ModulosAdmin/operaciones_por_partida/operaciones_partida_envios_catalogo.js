@@ -8,6 +8,8 @@
     base_url + "Operaciones_por_partida_envios/sugerirFacturas";
   const URL_PRODUCTOS_FACTURA =
     base_url + "Operaciones_por_partida_envios/productosFactura";
+  const URL_OBTENER = base_url + "Operaciones_por_partida_envios/obtener";
+  const URL_ACTUALIZAR = base_url + "Operaciones_por_partida_envios/actualizar";
 
   // =========================
   // ELEMENTOS LISTADO
@@ -30,6 +32,18 @@
   const btnRefrescar = document.getElementById(
     "partidas_transito_btnRefrescar",
   );
+
+  // =========================
+  // ELEMENTOS MODAL / FORM
+  // =========================
+  const modalEl = document.getElementById("modalPartidasTransitoEnvio");
+  const formEl = document.getElementById("partidas_transito_formEnvio");
+  const btnGuardar = document.getElementById(
+    "partidas_transito_btnGuardarEnvio",
+  );
+
+  const hiddenIdEnvio = document.getElementById("partidas_transito_id_envio");
+
   const selTransportista = document.getElementById(
     "partidas_transito_transportista_id",
   );
@@ -39,6 +53,7 @@
   const selDestino = document.getElementById("partidas_transito_destino_id");
   const selEstatus = document.getElementById("partidas_transito_estatus");
   const txtNotas = document.getElementById("partidas_transito_nota");
+
   // =========================
   // ELEMENTOS MODAL / CATALOGO
   // =========================
@@ -68,6 +83,14 @@
     "partidas_transito_listaProductos",
   );
 
+  const modalTitleSpan = modalEl
+    ? modalEl.querySelector(".modal-title span")
+    : null;
+
+  const modalSubtitulo = modalEl
+    ? modalEl.querySelector(".modal-header .small")
+    : null;
+
   // Opcionales, si existen en tu vista
   const txtResumenProductos = document.getElementById(
     "partidas_transito_resumenProductos",
@@ -92,6 +115,9 @@
   let productosFacturaActual = [];
   let facturaActual = null;
 
+  let modoFormulario = "crear"; // crear | editar
+  let enviandoActualizacion = false;
+
   // =========================
   // HELPERS
   // =========================
@@ -106,6 +132,18 @@
 
   function featherRefresh() {
     if (window.feather) feather.replace();
+  }
+
+  function mostrarAlerta(tipo, mensaje) {
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        icon: tipo,
+        text: mensaje,
+        confirmButtonText: "Aceptar",
+      });
+      return;
+    }
+    alert(mensaje);
   }
 
   function obtenerBadgeEstatus(estatus) {
@@ -155,6 +193,12 @@
         if (typeof onError === "function") {
           onError("Ocurrió un error al consultar el servidor.");
         }
+      }
+    };
+
+    xhr.onerror = function () {
+      if (typeof onError === "function") {
+        onError("Ocurrió un error de red.");
       }
     };
 
@@ -211,6 +255,62 @@
     }
 
     return URL_LISTAR + "?" + params.toString();
+  }
+
+  function setDisabled(el, disabled) {
+    if (!el) return;
+    el.disabled = !!disabled;
+    el.readOnly = !!disabled;
+  }
+
+  function bloquearBotonGuardar(bloquear, texto) {
+    if (!btnGuardar) return;
+
+    btnGuardar.disabled = !!bloquear;
+
+    if (bloquear) {
+      if (!btnGuardar.dataset.htmlOriginal) {
+        btnGuardar.dataset.htmlOriginal = btnGuardar.innerHTML;
+      }
+      btnGuardar.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+        (texto || "Guardando...");
+    } else if (btnGuardar.dataset.htmlOriginal) {
+      btnGuardar.innerHTML = btnGuardar.dataset.htmlOriginal;
+      featherRefresh();
+    }
+  }
+
+  function abrirModalBootstrap() {
+    if (!modalEl || !window.bootstrap) return;
+
+    const instancia =
+      window.bootstrap.Modal.getInstance(modalEl) ||
+      new window.bootstrap.Modal(modalEl);
+
+    instancia.show();
+  }
+
+  function cerrarModalBootstrap() {
+    if (!modalEl || !window.bootstrap) return;
+
+    const instancia =
+      window.bootstrap.Modal.getInstance(modalEl) ||
+      new window.bootstrap.Modal(modalEl);
+
+    instancia.hide();
+  }
+
+  function setFechaHoySiEstaVacia() {
+    if (!inpFechaEnvio) return;
+    if ((inpFechaEnvio.value || "").trim() !== "") return;
+
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, "0");
+    const dd = String(hoy.getDate()).padStart(2, "0");
+
+    inpFechaEnvio.value = yyyy + "-" + mm + "-" + dd;
   }
 
   // =========================
@@ -299,6 +399,8 @@
         })
         .join("<br>");
 
+      const idEnvio = Number(row.id_envio || 0);
+
       html += `
         <tr>
           <td class="text-center fw-semibold">${escapar(row.ferro || "—")}</td>
@@ -311,8 +413,14 @@
           <td class="text-center fw-semibold">${Number(row.total_cajas || 0)}</td>
           <td>${escapar(row.notas || "")}</td>
           <td class="text-center">
-            <button type="button" class="btn btn-outline-primary btn-sm" disabled>
-              <i data-feather="eye"></i>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              data-partidas-transito-editar="1"
+              data-id-envio="${idEnvio}"
+              ${idEnvio > 0 ? "" : "disabled"}
+            >
+              Editar
             </button>
           </td>
         </tr>
@@ -430,6 +538,7 @@
 
   function buscarSugerenciasFerro(term) {
     if (!inpFerroTxt || !boxSugFerro) return;
+    if (modoFormulario === "editar") return;
 
     const texto = String(term || "").trim();
 
@@ -535,6 +644,7 @@
 
   function buscarSugerenciasFacturas(term) {
     if (!inpBuscarFactura || !boxSugFacturas) return;
+    if (modoFormulario === "editar") return;
 
     const texto = String(term || "").trim();
 
@@ -563,6 +673,7 @@
 
   function cargarProductosFactura(facturaId) {
     if (!listaProductos) return;
+    if (modoFormulario === "editar") return;
 
     facturaId = Number(facturaId || 0);
 
@@ -600,12 +711,13 @@
   // DETALLE SELECCIONADO
   // =========================
   function agregarOActualizarDetalle(producto, cajas) {
+    if (modoFormulario === "editar") return;
+
     const productoId = Number(producto.id || 0);
     const facturaId = Number(
       producto.factura_id || (facturaActual ? facturaActual.id : 0),
     );
 
-    // El backend manda "cajas_restantes", no "cajas"
     const cajasMax = normalizarNumero(producto.cajas_restantes);
     cajas = Math.floor(normalizarNumero(cajas));
 
@@ -621,15 +733,7 @@
     }
 
     if (cajasMax <= 0) {
-      if (typeof Swal !== "undefined") {
-        Swal.fire({
-          icon: "warning",
-          text: "Este producto ya no tiene cajas disponibles.",
-          confirmButtonText: "Aceptar",
-        });
-      } else {
-        alert("Este producto ya no tiene cajas disponibles.");
-      }
+      mostrarAlerta("warning", "Este producto ya no tiene cajas disponibles.");
       return;
     }
 
@@ -668,6 +772,8 @@
   }
 
   function quitarDetalle(productoId) {
+    if (modoFormulario === "editar") return;
+
     productoId = Number(productoId || 0);
 
     detalleSeleccionado = detalleSeleccionado.filter(function (item) {
@@ -679,6 +785,8 @@
   }
 
   function actualizarNotasDetalle(productoId, notas) {
+    if (modoFormulario === "editar") return;
+
     productoId = Number(productoId || 0);
 
     const item = detalleSeleccionado.find(function (row) {
@@ -695,6 +803,16 @@
   // =========================
   function renderProductosFactura() {
     if (!listaProductos) return;
+
+    if (modoFormulario === "editar") {
+      listaProductos.innerHTML = `
+        <div class="text-center text-muted py-4">
+          En edición no se modifican facturas ni productos del envío.
+        </div>
+      `;
+      featherRefresh();
+      return;
+    }
 
     if (
       !Array.isArray(productosFacturaActual) ||
@@ -825,20 +943,26 @@
       detalleSeleccionado.length === 0
     ) {
       tbodyDetalle.innerHTML = `
-        <tr>
-          <td colspan="6" class="text-center text-muted py-4">
-            No has agregado productos al envío.
-          </td>
-        </tr>
-      `;
+      <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+          ${
+            modoFormulario === "editar"
+              ? "Este envío no tiene detalle registrado."
+              : "No has agregado productos al envío."
+          }
+        </td>
+      </tr>
+    `;
       actualizarResumenModal();
+      featherRefresh();
       return;
     }
 
     let html = "";
 
     detalleSeleccionado.forEach(function (item) {
-      html += `
+      if (modoFormulario === "editar") {
+        html += `
         <tr>
           <td>${escapar(item.factura || "—")}</td>
           <td>${escapar(item.descripcion || "—")}</td>
@@ -847,46 +971,69 @@
           <td>
             <input
               type="text"
-              class="form-control form-control-sm partidas-transito-input-nota"
-              data-producto-id="${Number(item.producto_id || 0)}"
+              class="form-control form-control-sm"
               value="${escapar(item.notas_detalle || "")}"
-              placeholder="Notas"
+              readonly
+              disabled
             >
           </td>
-          <td class="text-center">
-            <button
-              type="button"
-              class="btn btn-outline-danger btn-sm partidas-transito-btn-eliminar-detalle"
-              data-producto-id="${Number(item.producto_id || 0)}"
-            >
-              <i data-feather="trash-2"></i>
-            </button>
-          </td>
+          <td class="text-center text-muted">—</td>
         </tr>
       `;
+        return;
+      }
+
+      html += `
+      <tr>
+        <td>${escapar(item.factura || "—")}</td>
+        <td>${escapar(item.descripcion || "—")}</td>
+        <td>${escapar(item.upc || "—")}</td>
+        <td class="text-center fw-semibold">${Number(item.cajas_enviadas || 0)}</td>
+        <td>
+          <input
+            type="text"
+            class="form-control form-control-sm partidas-transito-input-nota"
+            data-producto-id="${Number(item.producto_id || 0)}"
+            value="${escapar(item.notas_detalle || "")}"
+            placeholder="Notas"
+          >
+        </td>
+        <td class="text-center">
+          <button
+            type="button"
+            class="btn btn-outline-danger btn-sm partidas-transito-btn-eliminar-detalle"
+            data-producto-id="${Number(item.producto_id || 0)}"
+          >
+            <i data-feather="trash-2"></i>
+          </button>
+        </td>
+      </tr>
+    `;
     });
 
     tbodyDetalle.innerHTML = html;
 
-    const btnsEliminar = tbodyDetalle.querySelectorAll(
-      ".partidas-transito-btn-eliminar-detalle",
-    );
-    btnsEliminar.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        const productoId = Number(this.getAttribute("data-producto-id") || 0);
-        quitarDetalle(productoId);
+    if (modoFormulario !== "editar") {
+      const btnsEliminar = tbodyDetalle.querySelectorAll(
+        ".partidas-transito-btn-eliminar-detalle",
+      );
+      btnsEliminar.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const productoId = Number(this.getAttribute("data-producto-id") || 0);
+          quitarDetalle(productoId);
+        });
       });
-    });
 
-    const inputsNotas = tbodyDetalle.querySelectorAll(
-      ".partidas-transito-input-nota",
-    );
-    inputsNotas.forEach(function (input) {
-      input.addEventListener("input", function () {
-        const productoId = Number(this.getAttribute("data-producto-id") || 0);
-        actualizarNotasDetalle(productoId, this.value || "");
+      const inputsNotas = tbodyDetalle.querySelectorAll(
+        ".partidas-transito-input-nota",
+      );
+      inputsNotas.forEach(function (input) {
+        input.addEventListener("input", function () {
+          const productoId = Number(this.getAttribute("data-producto-id") || 0);
+          actualizarNotasDetalle(productoId, this.value || "");
+        });
       });
-    });
+    }
 
     featherRefresh();
     actualizarResumenModal();
@@ -921,6 +1068,117 @@
   }
 
   // =========================
+  // MODO FORMULARIO
+  // =========================
+  function actualizarUiModoFormulario() {
+    const esEdicion = modoFormulario === "editar";
+
+    if (modalTitleSpan) {
+      modalTitleSpan.textContent = esEdicion
+        ? "Editar envío"
+        : "Registrar nuevo envío";
+    }
+
+    if (modalSubtitulo) {
+      modalSubtitulo.textContent = esEdicion
+        ? "Solo puedes actualizar el estatus y las notas del envío"
+        : "Captura encabezado del envío y agrega productos desde una factura";
+    }
+
+    if (btnGuardar) {
+      btnGuardar.innerHTML = esEdicion
+        ? '<i data-feather="save" class="me-1"></i> Actualizar envío'
+        : '<i data-feather="save" class="me-1"></i> Guardar envío';
+      btnGuardar.dataset.htmlOriginal = btnGuardar.innerHTML;
+    }
+
+    setDisabled(inpFerroTxt, esEdicion);
+    setDisabled(selTransportista, esEdicion);
+    setDisabled(inpFechaEnvio, esEdicion);
+    setDisabled(selDestino, esEdicion);
+
+    if (inpFerroId) inpFerroId.disabled = esEdicion;
+    if (inpFacturaId) inpFacturaId.disabled = esEdicion;
+
+    setDisabled(inpBuscarFactura, esEdicion);
+    setDisabled(inpFacturaProveedor, true);
+    setDisabled(inpFacturaCajas, true);
+
+    if (listaProductos) {
+      listaProductos.style.pointerEvents = esEdicion ? "none" : "";
+      listaProductos.style.opacity = esEdicion ? "0.65" : "";
+    }
+
+    if (tbodyDetalle) {
+      tbodyDetalle.style.pointerEvents = esEdicion ? "none" : "";
+      tbodyDetalle.style.opacity = esEdicion ? "0.65" : "";
+    }
+
+    ocultarSugerencias(boxSugFerro);
+    ocultarSugerencias(boxSugFacturas);
+
+    featherRefresh();
+  }
+
+  function prepararModoCrear() {
+    modoFormulario = "crear";
+    limpiarModalEnvio();
+    setFechaHoySiEstaVacia();
+    actualizarUiModoFormulario();
+  }
+
+  function prepararModoEditar() {
+    modoFormulario = "editar";
+    actualizarUiModoFormulario();
+    renderProductosFactura();
+    renderDetalleSeleccionado();
+    actualizarResumenModal();
+  }
+
+  function poblarFormularioEdicion(envio) {
+    if (!envio || typeof envio !== "object") {
+      throw new Error("Datos de envío inválidos.");
+    }
+
+    const detalleApi = Array.isArray(envio.detalle) ? envio.detalle : [];
+
+    detalleSeleccionado = detalleApi.map(function (item) {
+      return {
+        id_envio_detalle: Number(item.id_envio_detalle || 0),
+        envio_id: Number(item.envio_id || 0),
+        factura_id: Number(item.factura_id || 0),
+        producto_id: Number(item.producto_id || 0),
+        cajas_enviadas: Number(item.cajas_enviadas || 0),
+        notas_detalle: String(item.notas_detalle || ""),
+        descripcion: String(item.descripcion || ""),
+        upc: String(item.upc || ""),
+        marca: String(item.marca || ""),
+        factura: String(item.numero_factura || ""),
+        cajas_disponibles: 0,
+      };
+    });
+
+    productosFacturaActual = [];
+    facturaActual = null;
+
+    if (hiddenIdEnvio) hiddenIdEnvio.value = envio.id_envio || "";
+    if (inpFerroId) inpFerroId.value = envio.contenedor_fisico_id || "";
+    if (inpFerroTxt) inpFerroTxt.value = envio.ferro || "";
+    if (selTransportista) selTransportista.value = envio.transportista_id || "";
+    if (inpFechaEnvio) inpFechaEnvio.value = envio.fecha_envio || "";
+    if (selDestino) selDestino.value = envio.destino_ciudad_id || "";
+    if (selEstatus) selEstatus.value = normalizarEstatus(envio.estatus_envio);
+    if (txtNotas) txtNotas.value = envio.notas || "";
+
+    if (inpFacturaId) inpFacturaId.value = "";
+    if (inpBuscarFactura) inpBuscarFactura.value = "";
+    if (inpFacturaProveedor) inpFacturaProveedor.value = "";
+    if (inpFacturaCajas) inpFacturaCajas.value = "";
+
+    prepararModoEditar();
+  }
+
+  // =========================
   // LIMPIEZA
   // =========================
   function limpiarModalEnvio() {
@@ -931,6 +1189,7 @@
     productosFacturaActual = [];
     facturaActual = null;
 
+    if (hiddenIdEnvio) hiddenIdEnvio.value = "";
     if (inpFerroTxt) inpFerroTxt.value = "";
     if (inpBuscarFactura) inpBuscarFactura.value = "";
     if (inpFacturaId) inpFacturaId.value = "";
@@ -945,6 +1204,131 @@
 
     renderProductosFactura();
     renderDetalleSeleccionado();
+  }
+
+  // =========================
+  // EDICION
+  // =========================
+  function validarActualizacion() {
+    const idEnvio = Number(hiddenIdEnvio ? hiddenIdEnvio.value : 0);
+    const estatus = String(selEstatus ? selEstatus.value : "").trim();
+
+    if (idEnvio <= 0) {
+      return "No se encontró el ID del envío.";
+    }
+
+    if (!estatus) {
+      return "Debes seleccionar un estatus de envío.";
+    }
+
+    return "";
+  }
+
+  function abrirEditarEnvio(idEnvio) {
+    idEnvio = Number(idEnvio || 0);
+
+    if (idEnvio <= 0) {
+      mostrarAlerta("warning", "ID de envío inválido.");
+      return;
+    }
+
+    bloquearBotonGuardar(true, "Cargando...");
+    modoFormulario = "editar";
+    actualizarUiModoFormulario();
+
+    xhrGetJson(
+      URL_OBTENER + "?id_envio=" + encodeURIComponent(idEnvio),
+      function (resp) {
+        bloquearBotonGuardar(false);
+
+        if (!resp || !resp.ok || !resp.envio) {
+          mostrarAlerta(
+            "error",
+            (resp && resp.msg) || "No fue posible obtener el envío.",
+          );
+          prepararModoCrear();
+          return;
+        }
+
+        try {
+          poblarFormularioEdicion(resp.envio);
+          abrirModalBootstrap();
+        } catch (err) {
+          console.error(err);
+          mostrarAlerta(
+            "error",
+            "No fue posible cargar la información del envío.",
+          );
+          prepararModoCrear();
+        }
+      },
+      function (mensaje) {
+        bloquearBotonGuardar(false);
+        mostrarAlerta("error", mensaje || "Error al obtener el envío.");
+        prepararModoCrear();
+      },
+    );
+  }
+
+  function actualizarEnvio() {
+    if (modoFormulario !== "editar") return;
+    if (enviandoActualizacion) return;
+
+    const error = validarActualizacion();
+    if (error) {
+      mostrarAlerta("warning", error);
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append("id_envio", hiddenIdEnvio ? hiddenIdEnvio.value : "");
+    fd.append("estatus_envio", selEstatus ? selEstatus.value : "");
+    fd.append("notas", txtNotas ? txtNotas.value : "");
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", URL_ACTUALIZAR, true);
+
+    enviandoActualizacion = true;
+    bloquearBotonGuardar(true, "Actualizando...");
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      enviandoActualizacion = false;
+      bloquearBotonGuardar(false);
+
+      let resp = null;
+      try {
+        resp = JSON.parse(xhr.responseText);
+      } catch (e) {
+        console.error("Respuesta inválida actualizar:", xhr.responseText);
+        mostrarAlerta("error", "La respuesta del servidor no es JSON válido.");
+        return;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && resp && resp.ok) {
+        mostrarAlerta(
+          "success",
+          resp.msg || "Envío actualizado correctamente.",
+        );
+        cerrarModalBootstrap();
+        cargarListado();
+        return;
+      }
+
+      mostrarAlerta(
+        "error",
+        (resp && resp.msg) || "No fue posible actualizar el envío.",
+      );
+    };
+
+    xhr.onerror = function () {
+      enviandoActualizacion = false;
+      bloquearBotonGuardar(false);
+      mostrarAlerta("error", "Ocurrió un error de red al actualizar el envío.");
+    };
+
+    xhr.send(fd);
   }
 
   // =========================
@@ -996,6 +1380,8 @@
     // autocomplete ferro
     if (inpFerroTxt) {
       inpFerroTxt.addEventListener("input", function () {
+        if (modoFormulario === "editar") return;
+
         if (inpFerroId) inpFerroId.value = "";
 
         clearTimeout(timerSugFerro);
@@ -1014,6 +1400,8 @@
     // autocomplete factura
     if (inpBuscarFactura) {
       inpBuscarFactura.addEventListener("input", function () {
+        if (modoFormulario === "editar") return;
+
         if (inpFacturaId) inpFacturaId.value = "";
 
         clearTimeout(timerSugFactura);
@@ -1029,13 +1417,59 @@
       });
     }
 
-    // opcional: reset modal al abrir/cerrar si usas bootstrap modal
+    // nuevo
     document.addEventListener("click", function (e) {
       const btnNuevo = e.target.closest("[data-partidas-transito-nuevo]");
       if (btnNuevo) {
-        limpiarModalEnvio();
+        prepararModoCrear();
       }
     });
+
+    // editar
+    document.addEventListener("click", function (e) {
+      const btnEditar = e.target.closest("[data-partidas-transito-editar]");
+      if (!btnEditar) return;
+
+      e.preventDefault();
+
+      const idEnvio =
+        btnEditar.getAttribute("data-id-envio") ||
+        btnEditar.dataset.idEnvio ||
+        btnEditar.getAttribute("data-envio-id") ||
+        "0";
+
+      abrirEditarEnvio(idEnvio);
+    });
+
+    // submit del modal en edición
+    if (btnGuardar) {
+      btnGuardar.addEventListener("click", function () {
+        if (modoFormulario === "editar") {
+          actualizarEnvio();
+        }
+      });
+    }
+
+    if (formEl) {
+      formEl.addEventListener("submit", function (e) {
+        if (modoFormulario === "editar") {
+          e.preventDefault();
+          actualizarEnvio();
+        }
+      });
+    }
+
+    if (modalEl) {
+      modalEl.addEventListener("shown.bs.modal", function () {
+        if (modoFormulario === "crear") {
+          setFechaHoySiEstaVacia();
+        }
+      });
+
+      modalEl.addEventListener("hidden.bs.modal", function () {
+        prepararModoCrear();
+      });
+    }
   }
 
   // =========================
@@ -1051,13 +1485,32 @@
     obtenerDetalle: function () {
       return detalleSeleccionado.slice();
     },
+    abrirEditar: function (idEnvio) {
+      abrirEditarEnvio(idEnvio);
+    },
+    obtenerModoFormulario: function () {
+      return modoFormulario;
+    },
   };
 
   // =========================
   // INIT
   // =========================
+  prepararModoCrear();
   bindEventos();
   renderProductosFactura();
   renderDetalleSeleccionado();
   cargarListado();
+
+  function normalizarEstatus(valor) {
+    const v = String(valor || "")
+      .trim()
+      .toLowerCase();
+
+    if (v === "en camino") return "En camino";
+    if (v === "entregado") return "Entregado";
+    if (v === "programado") return "Programado";
+
+    return "";
+  }
 })();

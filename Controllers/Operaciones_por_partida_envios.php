@@ -481,4 +481,149 @@ class Operaciones_por_partida_envios extends Controller
             ], 500);
         }
     }
+
+    /*actualizar*/
+    /**
+     * GET
+     * Obtiene un envío por id para edición
+     * Params:
+     * - id_envio
+     */
+    public function obtener()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->methodNotAllowed();
+        }
+
+        $envioId = isset($_GET['id_envio']) ? (int)$_GET['id_envio'] : 0;
+
+        if ($envioId <= 0) {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'ID de envío inválido.'
+            ], 400);
+        }
+
+        try {
+            $envio = $this->model->obtenerEnvioPorId($envioId);
+
+            if (!$envio) {
+                $this->jsonResponse([
+                    'ok'  => false,
+                    'msg' => 'Envío no encontrado.'
+                ], 404);
+            }
+
+            $detalle = isset($envio['detalle']) && is_array($envio['detalle'])
+                ? $envio['detalle']
+                : [];
+
+            $detalleOut = array_map(function ($row) {
+                return [
+                    'id_envio_detalle' => (int)($row['id_envio_detalle'] ?? 0),
+                    'envio_id'         => (int)($row['envio_id'] ?? 0),
+                    'factura_id'       => (int)($row['factura_id'] ?? 0),
+                    'producto_id'      => (int)($row['producto_id'] ?? 0),
+                    'numero_factura'   => (string)($row['numero_factura'] ?? ''),
+                    'descripcion'      => (string)($row['descripcion'] ?? ''),
+                    'upc'              => (string)($row['upc'] ?? ''),
+                    'marca'            => (string)($row['marca'] ?? ''),
+                    'cajas_enviadas'   => (int)($row['cajas_enviadas'] ?? 0),
+                    'notas_detalle'    => (string)($row['notas_detalle'] ?? '')
+                ];
+            }, $detalle);
+
+            $this->jsonResponse([
+                'ok'    => true,
+                'envio' => [
+                    'id_envio'             => (int)($envio['id_envio'] ?? 0),
+                    'contenedor_fisico_id' => (int)($envio['contenedor_fisico_id'] ?? 0),
+                    'ferro'                => (string)($envio['ferro'] ?? ''),
+                    'transportista_id'     => isset($envio['transportista_id']) ? (int)$envio['transportista_id'] : null,
+                    'transportista'        => (string)($envio['transportista'] ?? ''),
+                    'fecha_envio'          => (string)($envio['fecha_envio'] ?? ''),
+                    'destino_ciudad_id'    => isset($envio['destino_ciudad_id']) ? (int)$envio['destino_ciudad_id'] : null,
+                    'destino'              => (string)($envio['destino'] ?? ''),
+                    'estatus_envio'        => (string)($envio['estatus_envio'] ?? ''),
+                    'notas'                => (string)($envio['notas'] ?? ''),
+                    'detalle'              => $detalleOut
+                ]
+            ]);
+        } catch (Exception $e) {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'Error al obtener el envío.',
+                'err' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * POST
+     * Actualiza un envío (solo estatus y notas)
+     *
+     * Espera:
+     * - id_envio
+     * - estatus_envio
+     * - notas
+     */
+    public function actualizar()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->methodNotAllowed();
+        }
+
+        $envioId = isset($_POST['id_envio']) ? (int)$_POST['id_envio'] : 0;
+        $estatusEnvio = isset($_POST['estatus_envio']) ? trim((string)$_POST['estatus_envio']) : '';
+        $notas = isset($_POST['notas']) ? trim((string)$_POST['notas']) : '';
+
+        if ($envioId <= 0) {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'ID de envío inválido.'
+            ], 400);
+        }
+
+        if ($estatusEnvio === '') {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'El estatus del envío es obligatorio.'
+            ], 400);
+        }
+
+        try {
+            $envio = $this->model->obtenerEnvioPorId($envioId);
+
+            if (!$envio) {
+                $this->jsonResponse([
+                    'ok'  => false,
+                    'msg' => 'El envío no existe o ya no está disponible.'
+                ], 404);
+            }
+
+            $ok = $this->model->actualizarEnvioEditable(
+                $envioId,
+                $estatusEnvio,
+                $notas
+            );
+
+            if (!$ok) {
+                $this->jsonResponse([
+                    'ok'  => false,
+                    'msg' => 'No fue posible actualizar el envío.'
+                ], 500);
+            }
+
+            $this->jsonResponse([
+                'ok'  => true,
+                'msg' => 'Envío actualizado correctamente.'
+            ]);
+        } catch (Exception $e) {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'Error al actualizar el envío.',
+                'err' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

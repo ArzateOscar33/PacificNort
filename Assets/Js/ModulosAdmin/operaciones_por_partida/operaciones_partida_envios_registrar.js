@@ -178,6 +178,9 @@
   }
 
   function enviarRegistro() {
+    if (estaEnModoEditar()) {
+      return;
+    }
     if (enviando) return;
 
     const payload = construirPayload();
@@ -278,12 +281,16 @@
 
   function bindEventos() {
     if (btnGuardar) {
-      btnGuardar.addEventListener("click", enviarRegistro);
+      btnGuardar.addEventListener("click", function (e) {
+        if (estaEnModoEditar()) return;
+        enviarRegistro();
+      });
     }
 
     if (formEl) {
       formEl.addEventListener("submit", function (e) {
         e.preventDefault();
+        if (estaEnModoEditar()) return;
         enviarRegistro();
       });
     }
@@ -296,4 +303,27 @@
   }
 
   bindEventos();
+
+  function normalizarEstatus(valor) {
+    const v = String(valor || "")
+      .trim()
+      .toLowerCase();
+
+    if (v === "en camino") return "En camino";
+    if (v === "entregado") return "Entregado";
+    if (v === "programado") return "Programado";
+
+    return "";
+  }
+  function estaEnModoEditar() {
+    if (
+      window.partidasTransitoListado &&
+      typeof window.partidasTransitoListado.obtenerModoFormulario === "function"
+    ) {
+      return (
+        window.partidasTransitoListado.obtenerModoFormulario() === "editar"
+      );
+    }
+    return false;
+  }
 })();

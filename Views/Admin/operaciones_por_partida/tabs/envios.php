@@ -141,8 +141,8 @@
                 </div>
 
                 <div class="col-md-2">
-                    <label for="partidas_transito_filtroEstatus" class="form-label">Estatus</label>
-                    <select id="partidas_transito_filtroEstatus" class="form-control">
+                    <label for="partidas_transito_Estatus" class="form-label">Estatus</label>
+                    <select id="partidas_transito_filtroEstatus" class="form-select">
                         <option value="" selected>Todos</option>
                         <option value="En camino">En camino</option>
                         <option value="Entregado">Entregado</option>
@@ -233,7 +233,7 @@
                                     Datos del envío
                                 </div>
                                 <div class="panel-body">
-
+                                    <input type="hidden" id="partidas_transito_id_envio" name="id_envio" value="">
                                     <div class="mb-3">
                                         <label for="partidas_transito_fisico_txt" class="form-label">Ferro / Caja</label>
                                         <div class="position-relative">
@@ -285,7 +285,7 @@
 
                                     <div class="mb-3">
                                         <label for="partidas_transito_estatus" class="form-label">Estatus</label>
-                                        <select id="partidas_transito_estatus" class="form-control">
+                                        <select id="partidas_transito_estatus" class="form-select">
                                             <option value="En camino" selected>En camino</option>
                                             <option value="Entregado">Entregado</option>
                                             <option value="Programado">Programado</option>

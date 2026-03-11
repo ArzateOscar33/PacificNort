@@ -524,4 +524,90 @@ class Operaciones_por_partida_enviosModel extends Query
         $restantes = (int)($producto['cajas_restantes'] ?? 0);
         return $cajasSolicitadas > 0 && $cajasSolicitadas <= $restantes;
     }
+
+
+    /*Edicion */
+
+
+    public function obtenerEnvioPorId(int $envioId): ?array
+    {
+        $sql = "SELECT
+                e.id_envio,
+                e.contenedor_fisico_id,
+                cf.numero_ferro AS ferro,
+                e.transportista_id,
+                COALESCE(t.nombre, '') AS transportista,
+                e.fecha_envio,
+                e.destino_ciudad_id,
+                COALESCE(c.nombre_ciudad, '') AS destino,
+                e.estatus_envio,
+                COALESCE(e.notas, '') AS notas,
+                e.estatus
+            FROM operaciones_partida_envios e
+            INNER JOIN contenedores_fisicos cf
+                ON cf.id_fisico = e.contenedor_fisico_id
+            LEFT JOIN transportistas t
+                ON t.id_transportista = e.transportista_id
+            LEFT JOIN ciudades c
+                ON c.id_ciudad = e.destino_ciudad_id
+            WHERE e.id_envio = ?
+              AND e.estatus = 1
+            LIMIT 1";
+
+        $envio = $this->select($sql, [$envioId]);
+
+        if (!is_array($envio) || empty($envio)) {
+            return null;
+        }
+
+        $envio['detalle'] = $this->obtenerDetalleEnvio((int)$envioId);
+
+        return $envio;
+    }
+
+    public function obtenerDetalleEnvio(int $envioId): array
+    {
+        $sql = "SELECT
+                d.id_envio_detalle,
+                d.envio_id,
+                d.factura_id,
+                d.producto_id,
+                COALESCE(f.numero_factura, '') AS numero_factura,
+                COALESCE(p.descripcion, '') AS descripcion,
+                COALESCE(p.upc, '') AS upc,
+                COALESCE(p.marca, '') AS marca,
+                d.cajas_enviadas,
+                COALESCE(d.notas_detalle, '') AS notas_detalle
+            FROM operaciones_partida_envio_detalle d
+            INNER JOIN op_partida_facturas f
+                ON f.id_factura = d.factura_id
+            INNER JOIN op_partida_productos p
+                ON p.id_producto = d.producto_id
+            WHERE d.envio_id = ?
+              AND d.estatus = 1
+            ORDER BY p.descripcion ASC, d.id_envio_detalle ASC";
+
+        $rows = $this->selectAll($sql, [$envioId]);
+        return is_array($rows) ? $rows : [];
+    }
+
+    public function actualizarEnvioEditable(
+        int $envioId,
+        string $estatusEnvio,
+        string $notas = ''
+    ): bool {
+        $sql = "UPDATE operaciones_partida_envios
+            SET estatus_envio = ?,
+                notas = ?
+            WHERE id_envio = ?
+              AND estatus = 1";
+
+        $result = $this->save($sql, [
+            trim($estatusEnvio),
+            trim($notas),
+            $envioId
+        ]);
+
+        return $result == 1;
+    }
 }
