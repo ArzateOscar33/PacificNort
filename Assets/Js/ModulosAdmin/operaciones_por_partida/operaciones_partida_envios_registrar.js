@@ -1,6 +1,10 @@
 (function () {
   "use strict";
-
+  const base_url =
+    (typeof window.base_url !== "undefined" && window.base_url) ||
+    (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
+    (typeof BASE_URL !== "undefined" && BASE_URL) ||
+    "";
   const URL_REGISTRAR = base_url + "Operaciones_por_partida_envios/registrar";
 
   // =========================
@@ -184,7 +188,8 @@
       mostrarAlerta("warning", error);
       return;
     }
-
+    console.log("PAYLOAD A ENVIAR:", payload);
+    console.log("DETALLE ACTUAL:", detalleActual);
     const fd = new FormData();
     fd.append("contenedor_fisico_id", payload.contenedor_fisico_id);
     fd.append("numero_ferro", payload.numero_ferro);

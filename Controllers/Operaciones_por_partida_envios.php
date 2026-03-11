@@ -124,40 +124,7 @@ class Operaciones_por_partida_envios extends Controller
      * - term
      * - limit (opcional)
      */
-    public function sugerirDestinos()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $this->methodNotAllowed();
-        }
 
-        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
-        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10;
-
-        if ($term === '') {
-            $this->jsonResponse([]);
-        }
-
-        try {
-            $rows = $this->model->sugerirDestinos($term, $limit);
-
-            $out = array_map(function ($r) {
-                return [
-                    'id'    => (int)($r['id'] ?? 0),
-                    'label' => (string)($r['nombre'] ?? ''),
-                    'value' => (string)($r['nombre'] ?? ''),
-                    'nombre' => (string)($r['nombre'] ?? '')
-                ];
-            }, is_array($rows) ? $rows : []);
-
-            $this->jsonResponse($out);
-        } catch (Exception $e) {
-            $this->jsonResponse([
-                'ok'  => false,
-                'msg' => 'Error al buscar destinos.',
-                'err' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * GET
