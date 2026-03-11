@@ -114,36 +114,8 @@ class Operaciones_por_partida_envios extends Controller
        CATÁLOGOS / BÚSQUEDAS
        ========================================================= */
 
-    /**
-     * GET
-     * Lista transportistas para llenar selects
-     */
-    public function listarTransportistas()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $this->methodNotAllowed();
-        }
 
-        try {
-            $rows = $this->model->listarTransportistas();
 
-            $out = array_map(function ($r) {
-                return [
-                    'id'     => (int)($r['id'] ?? 0),
-                    'nombre' => (string)($r['nombre'] ?? ''),
-                    'tipo'   => (string)($r['tipo'] ?? '')
-                ];
-            }, is_array($rows) ? $rows : []);
-
-            $this->jsonResponse($out);
-        } catch (Exception $e) {
-            $this->jsonResponse([
-                'ok'  => false,
-                'msg' => 'Error al listar transportistas.',
-                'err' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * GET

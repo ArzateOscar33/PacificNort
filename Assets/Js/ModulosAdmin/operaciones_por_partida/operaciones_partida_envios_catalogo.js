@@ -604,7 +604,9 @@
     const facturaId = Number(
       producto.factura_id || (facturaActual ? facturaActual.id : 0),
     );
-    const cajasMax = normalizarNumero(producto.cajas);
+
+    // El backend manda "cajas_restantes", no "cajas"
+    const cajasMax = normalizarNumero(producto.cajas_restantes);
     cajas = Math.floor(normalizarNumero(cajas));
 
     if (productoId <= 0 || facturaId <= 0) return;
@@ -615,6 +617,19 @@
       });
       renderProductosFactura();
       renderDetalleSeleccionado();
+      return;
+    }
+
+    if (cajasMax <= 0) {
+      if (typeof Swal !== "undefined") {
+        Swal.fire({
+          icon: "warning",
+          text: "Este producto ya no tiene cajas disponibles.",
+          confirmButtonText: "Aceptar",
+        });
+      } else {
+        alert("Este producto ya no tiene cajas disponibles.");
+      }
       return;
     }
 

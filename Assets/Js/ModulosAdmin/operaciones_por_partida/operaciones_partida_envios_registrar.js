@@ -87,8 +87,11 @@
   }
 
   function validarFormulario(data, detalle) {
-    if (!data.contenedor_fisico_id || data.contenedor_fisico_id <= 0) {
-      return "Debes seleccionar un ferro/caja válido.";
+    if (
+      (!data.contenedor_fisico_id || data.contenedor_fisico_id <= 0) &&
+      !data.numero_ferro
+    ) {
+      return "Debes seleccionar o escribir un ferro/caja válido.";
     }
 
     if (!data.fecha_envio) {
@@ -160,6 +163,7 @@
 
     return {
       contenedor_fisico_id: intValue(inpFisicoId),
+      numero_ferro: trimValue(inpFisicoTxt),
       destino_ciudad_id: intValue(selDestino) || "",
       fecha_envio: trimValue(inpFechaEnvio),
       estatus_envio: trimValue(selEstatus),
@@ -183,6 +187,7 @@
 
     const fd = new FormData();
     fd.append("contenedor_fisico_id", payload.contenedor_fisico_id);
+    fd.append("numero_ferro", payload.numero_ferro);
     fd.append("destino_ciudad_id", payload.destino_ciudad_id);
     fd.append("fecha_envio", payload.fecha_envio);
     fd.append("estatus_envio", payload.estatus_envio);
