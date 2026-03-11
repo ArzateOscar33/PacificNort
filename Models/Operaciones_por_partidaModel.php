@@ -69,7 +69,7 @@ class Operaciones_por_partidaModel extends Query
 
         // ===== Rows =====
         // Ajusta "b.bodega" si tu columna de nombre real es distinta (p.ej. b.nombre)
-       $sqlRows = "SELECT
+        $sqlRows = "SELECT
         f.id_factura,
         f.numero_factura,
         f.proveedor,
@@ -105,7 +105,7 @@ class Operaciones_por_partidaModel extends Query
     }
 
     /**
-      * Traer una factura por ID (para modal editar/ver).
+     * Traer una factura por ID (para modal editar/ver).
      */
     public function getFacturaById(int $idFactura)
     {
@@ -163,14 +163,14 @@ class Operaciones_por_partidaModel extends Query
         $rowSums = $this->select($sqlSums, $params);
 
         $totals = [
-        'total_cajas'       => (int)($rowSums['total_cajas'] ?? 0),
-        'total_piezas'      => (int)($rowSums['total_piezas'] ?? 0),
-        'total_pallets_rcv' => (int)($rowSums['total_pallets_rcv'] ?? 0),
+            'total_cajas'       => (int)($rowSums['total_cajas'] ?? 0),
+            'total_piezas'      => (int)($rowSums['total_piezas'] ?? 0),
+            'total_pallets_rcv' => (int)($rowSums['total_pallets_rcv'] ?? 0),
         ];
 
 
-            // ===== Rows =====
-            $sqlRows = "SELECT
+        // ===== Rows =====
+        $sqlRows = "SELECT
                             p.id_producto,
                             p.factura_id,
                             p.descripcion,
@@ -189,21 +189,21 @@ class Operaciones_por_partidaModel extends Query
                         ORDER BY p.id_producto DESC
                         LIMIT $perPage OFFSET $offset";
 
-            $rows = $this->selectAll($sqlRows, $params);
-            if ($rows === false) $rows = [];
+        $rows = $this->selectAll($sqlRows, $params);
+        if ($rows === false) $rows = [];
 
-            return [
-                'rows'   => $rows,
-                'total'  => $total,
-                'totals' => $totals
-            ];
+        return [
+            'rows'   => $rows,
+            'total'  => $total,
+            'totals' => $totals
+        ];
     }
 
 
-/**
- * Lista bodegas activas (para selects).
- * Devuelve id y nombre.
- */
+    /**
+     * Lista bodegas activas (para selects).
+     * Devuelve id y nombre.
+     */
     public function listarBodegasActivas(): array
     {
         $sql = "SELECT id_bodega, nombre
@@ -214,7 +214,7 @@ class Operaciones_por_partidaModel extends Query
         return ($rows === false || empty($rows)) ? [] : $rows;
     }
 
- 
+
     public function registrarFactura(array $data): array
     {
         $bodegaId      = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
@@ -292,7 +292,7 @@ class Operaciones_por_partidaModel extends Query
         return ['ok' => true, 'msg' => 'Factura registrada correctamente.', 'id_factura' => (int)$id];
     }
 
-//obtener factura para editar
+    //obtener factura para editar
     public function getFacturaByIdEditar(int $idFactura)
     {
         $sql = "SELECT
@@ -325,23 +325,23 @@ class Operaciones_por_partidaModel extends Query
         $palletsInv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
         $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
         $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
-        $actualizadoPor= isset($data['actualizado_por']) && $data['actualizado_por'] !== '' ? (int)$data['actualizado_por'] : null;
+        $actualizadoPor = isset($data['actualizado_por']) && $data['actualizado_por'] !== '' ? (int)$data['actualizado_por'] : null;
 
         // ===== Validaciones =====
         if ($idFactura <= 0) {
-            return ['ok'=>false,'msg'=>'Factura inválida.'];
+            return ['ok' => false, 'msg' => 'Factura inválida.'];
         }
         if ($bodegaId <= 0) {
-            return ['ok'=>false,'msg'=>'Selecciona una bodega válida.'];
+            return ['ok' => false, 'msg' => 'Selecciona una bodega válida.'];
         }
         if ($numeroFactura === '') {
-            return ['ok'=>false,'msg'=>'El número de factura es obligatorio.'];
+            return ['ok' => false, 'msg' => 'El número de factura es obligatorio.'];
         }
         if ($proveedor === '') {
-            return ['ok'=>false,'msg'=>'El proveedor es obligatorio.'];
+            return ['ok' => false, 'msg' => 'El proveedor es obligatorio.'];
         }
         if ($palletsInv < 0) {
-            return ['ok'=>false,'msg'=>'Pallets INV (Factura) debe ser 0 o mayor.'];
+            return ['ok' => false, 'msg' => 'Pallets INV (Factura) debe ser 0 o mayor.'];
         }
 
         // Validar que exista factura activa
@@ -350,7 +350,7 @@ class Operaciones_por_partidaModel extends Query
             [$idFactura]
         );
         if (!$exists) {
-            return ['ok'=>false,'msg'=>'La factura no existe o está inactiva.'];
+            return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
         }
 
         // Validar bodega activa
@@ -359,7 +359,7 @@ class Operaciones_por_partidaModel extends Query
             [$bodegaId]
         );
         if (!$bodega) {
-            return ['ok'=>false,'msg'=>'La bodega seleccionada no existe o está inactiva.'];
+            return ['ok' => false, 'msg' => 'La bodega seleccionada no existe o está inactiva.'];
         }
 
         // Evitar duplicado (si tienes UNIQUE por bodega/numero/proveedor)
@@ -374,7 +374,7 @@ class Operaciones_por_partidaModel extends Query
             [$bodegaId, $numeroFactura, $proveedor, $idFactura]
         );
         if ($dup) {
-            return ['ok'=>false,'msg'=>'Ya existe otra factura con esa bodega, número y proveedor.'];
+            return ['ok' => false, 'msg' => 'Ya existe otra factura con esa bodega, número y proveedor.'];
         }
 
         $sql = "UPDATE op_partida_facturas
@@ -397,23 +397,23 @@ class Operaciones_por_partidaModel extends Query
             $palletsInv,
             ($fechaRecibido === '' ? null : $fechaRecibido),
             ($notas === '' ? null : $notas),
-        
+
             $idFactura
         ];
 
         $ok = $this->save($sql, $params);
 
         if (!$ok) {
-            return ['ok'=>false,'msg'=>'No se pudo actualizar la factura.'];
+            return ['ok' => false, 'msg' => 'No se pudo actualizar la factura.'];
         }
 
-        return ['ok'=>true,'msg'=>'Factura actualizada correctamente.'];
+        return ['ok' => true, 'msg' => 'Factura actualizada correctamente.'];
     }
 
-/**
- * Baja lógica de factura (no elimina productos).
- * Cambia estatus a 0.
- */
+    /**
+     * Baja lógica de factura (no elimina productos).
+     * Cambia estatus a 0.
+     */
     public function bajaFactura(int $idFactura, ?int $usuarioId = null): array
     {
         if ($idFactura <= 0) {
@@ -434,14 +434,14 @@ class Operaciones_por_partidaModel extends Query
             return ['ok' => false, 'msg' => 'La factura no existe o ya está dada de baja.'];
         }
 
-        
+
         $sql = "UPDATE op_partida_facturas
                 SET estatus = 0,
                     actualizado_en = NOW()
                 WHERE id_factura = ?
                 AND estatus = 1";
 
-        $ok = $this->save($sql, [ $idFactura]);
+        $ok = $this->save($sql, [$idFactura]);
 
         if (!$ok) {
             return ['ok' => false, 'msg' => 'No se pudo dar de baja la factura.'];
@@ -451,7 +451,7 @@ class Operaciones_por_partidaModel extends Query
     }
 
 
-//registrar productos
+    //registrar productos
     public function existeFacturaActiva(int $factura_id): bool
     {
         $sql = "SELECT id_factura
@@ -605,19 +605,19 @@ class Operaciones_por_partidaModel extends Query
             if ($idProducto > 0) {
                 $r = $this->actualizarProductoFactura($idProducto, $facturaId, $d);
                 if (!$r['ok']) {
-                    return ['ok' => false, 'msg' => "Error en producto #".($i+1).": ".$r['msg']];
+                    return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": " . $r['msg']];
                 }
                 $actualizados++;
             } else {
                 // Validaciones mínimas para insert
                 $upc = trim((string)($d['upc'] ?? ''));
                 if ($upc === '') {
-                    return ['ok' => false, 'msg' => "Error en producto #".($i+1).": El UPC es obligatorio."];
+                    return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": El UPC es obligatorio."];
                 }
 
                 $newId = $this->insertarProductoFactura($d);
                 if ($newId <= 0) {
-                    return ['ok' => false, 'msg' => "Error en producto #".($i+1).": No se pudo insertar."];
+                    return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": No se pudo insertar."];
                 }
                 $insertados++;
                 $idsInsertados[] = $newId;
@@ -694,7 +694,31 @@ class Operaciones_por_partidaModel extends Query
     }
 
 
+    public function listarTransportistas(): array
+    {
+        $sql = "SELECT 
+                    t.id_transportista ,
+                    t.nombre,
+                    t.tipo
+                FROM transportistas t
+                WHERE t.estatus = 1
+                ORDER BY t.nombre ASC";
 
+        $rows = $this->selectAll($sql);
+        return is_array($rows) ? $rows : [];
+    }
+
+    function listarCiudades(): array
+    {
+        $sql = "SELECT 
+                    c.id_ciudad,
+                    c.nombre_ciudad
+                FROM ciudades c
+                WHERE c.estatus = 1
+                ORDER BY c.nombre_ciudad ASC";
+        $rows = $this->selectAll($sql);
+        return is_array($rows) ? $rows : [];
+    }
 
 
     //rutas
@@ -919,5 +943,4 @@ public function sugerirCajaFerro(string $term, int $limit = 10): array
     return $rows;
 }
 */
-
 }

@@ -18,6 +18,8 @@ class Operaciones_por_partida extends Controller
     {
         $data['title'] = 'Operaciones por Partida';
         $data['bodegas'] = $this->model->listarBodegasActivas();
+        $data['transportistas'] = $this->model->listarTransportistas();
+        $data['ciudades'] = $this->model->listarCiudades();
 
         // Si en tu vista el filtro de bodegas se llena con PHP:
         // $data['bodegas'] = $this->model->getBodegasActivas();  (opcional, después)
@@ -1125,6 +1127,7 @@ class Operaciones_por_partida extends Controller
             exit;
         }
     }
+
 
 
     //RUTAS
