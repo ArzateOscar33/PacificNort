@@ -20,6 +20,7 @@ class Operaciones_por_partida extends Controller
         $data['bodegas'] = $this->model->listarBodegasActivas();
         $data['transportistas'] = $this->model->listarTransportistas();
         $data['ciudades'] = $this->model->listarCiudades();
+        $data['clientes'] = $this->model->listarClientes();
 
         // Si en tu vista el filtro de bodegas se llena con PHP:
         // $data['bodegas'] = $this->model->getBodegasActivas();  (opcional, después)
@@ -255,13 +256,13 @@ class Operaciones_por_partida extends Controller
     }
 
 
-    //
     public function getFactura()
     {
         header('Content-Type: application/json; charset=utf-8');
 
         try {
             $id = isset($_GET['id_factura']) ? (int)$_GET['id_factura'] : 0;
+
             if ($id <= 0) {
                 echo json_encode([
                     'ok' => false,
@@ -271,7 +272,7 @@ class Operaciones_por_partida extends Controller
                 exit;
             }
 
-            // OJO: usa el método “para editar” (con fecha formateada)
+            // Usa el método para editar, que ya incluye cliente_id y cliente_nombre
             $factura = $this->model->getFacturaByIdEditar($id);
 
             if (!$factura) {
@@ -300,24 +301,31 @@ class Operaciones_por_partida extends Controller
         }
     }
 
-
     public function actualizar()
     {
         header('Content-Type: application/json; charset=utf-8');
 
         try {
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                echo json_encode(['ok' => false, 'msg' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+                echo json_encode([
+                    'ok' => false,
+                    'msg' => 'Método no permitido.'
+                ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
             $idFactura = isset($_POST['operaciones_partida_id']) ? (int)$_POST['operaciones_partida_id'] : 0;
+
             if ($idFactura <= 0) {
-                echo json_encode(['ok' => false, 'msg' => 'ID de factura inválido.'], JSON_UNESCAPED_UNICODE);
+                echo json_encode([
+                    'ok' => false,
+                    'msg' => 'ID de factura inválido.'
+                ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
             $bodegaId      = isset($_POST['operaciones_partida_bodega']) ? (int)$_POST['operaciones_partida_bodega'] : 0;
+            $clienteId     = isset($_POST['operaciones_partida_cliente']) ? (int)$_POST['operaciones_partida_cliente'] : 0;
             $numeroFactura = isset($_POST['invoice_number']) ? trim((string)$_POST['invoice_number']) : '';
             $proveedor     = isset($_POST['vendor_name']) ? trim((string)$_POST['vendor_name']) : '';
             $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
@@ -329,6 +337,7 @@ class Operaciones_por_partida extends Controller
 
             $resp = $this->model->actualizarFactura($idFactura, [
                 'bodega_id'       => $bodegaId,
+                'cliente_id'      => $clienteId,
                 'numero_factura'  => $numeroFactura,
                 'proveedor'       => $proveedor,
                 'revision_pasa'   => $revisionPasa,
@@ -346,8 +355,8 @@ class Operaciones_por_partida extends Controller
                 exit;
             }
 
-            // Opcional: devolver factura actualizada para refrescar tabla sin recargar
-            $factura = $this->model->getFacturaById($idFactura);
+            // Devuelve la factura actualizada
+            $factura = $this->model->getFacturaByIdEditar($idFactura);
 
             echo json_encode([
                 'ok' => true,

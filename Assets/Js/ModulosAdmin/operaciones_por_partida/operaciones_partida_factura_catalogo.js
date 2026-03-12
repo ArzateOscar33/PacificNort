@@ -16,19 +16,27 @@
   // ==========================
   // REFS (TU VISTA)
   // ==========================
-  const tbody         = document.getElementById("operaciones_partida_facturasBody");
-  const inputBuscar   = document.getElementById("operaciones_partida_buscar");
-  const selectBodega  = document.getElementById("operaciones_partida_filtroXDock");
-  const inpFi         = document.getElementById("operaciones_partida_fechaInicio");
-  const inpFf         = document.getElementById("operaciones_partida_fechaFin");
+  const tbody = document.getElementById("operaciones_partida_facturasBody");
+  const inputBuscar = document.getElementById("operaciones_partida_buscar");
+  const selectBodega = document.getElementById(
+    "operaciones_partida_filtroXDock",
+  );
+  const inpFi = document.getElementById("operaciones_partida_fechaInicio");
+  const inpFf = document.getElementById("operaciones_partida_fechaFin");
   const selectPerPage = document.getElementById("operaciones_partida_perPage");
-  const ulPaginacion  = document.getElementById("operaciones_partida_paginacion");
-  const lblMeta       = document.getElementById("operaciones_partida_metaResumen");
-  const tabla         = document.getElementById("operaciones_partida_TablaFacturasExportar");
+  const ulPaginacion = document.getElementById(
+    "operaciones_partida_paginacion",
+  );
+  const lblMeta = document.getElementById("operaciones_partida_metaResumen");
+  const tabla = document.getElementById(
+    "operaciones_partida_TablaFacturasExportar",
+  );
 
   // Guard rail
   if (!tbody) {
-    console.error("[OP Partida Facturas] No existe #operaciones_partida_facturasBody. Revisa tu vista/IDs.");
+    console.error(
+      "[OP Partida Facturas] No existe #operaciones_partida_facturasBody. Revisa tu vista/IDs.",
+    );
     return;
   }
 
@@ -59,10 +67,23 @@
     const [y, m, d] = part.split("-");
     if (!y || !m || !d) return esc(dateStr);
 
-    const months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    const months = [
+      "ene",
+      "feb",
+      "mar",
+      "abr",
+      "may",
+      "jun",
+      "jul",
+      "ago",
+      "sep",
+      "oct",
+      "nov",
+      "dic",
+    ];
     const mm = parseInt(m, 10);
     const yy = String(y).slice(-2);
-    return `${parseInt(d, 10)}-${months[(mm - 1) || 0]}-${yy}`;
+    return `${parseInt(d, 10)}-${months[mm - 1 || 0]}-${yy}`;
   }
 
   function buildQuery(params) {
@@ -78,13 +99,13 @@
   function setLoading() {
     tbody.innerHTML = `
       <tr class="text-center">
-        <td colspan="9" class="py-4 text-muted">Cargando...</td>
+        <td colspan="10" class="py-4 text-muted">Cargando...</td>
       </tr>`;
   }
 
   function badgeRevision(val) {
     const s = String(val ?? "").toLowerCase();
-    const ok = (s === "1" || s === "si" || s === "sí" || s === "true");
+    const ok = s === "1" || s === "si" || s === "sí" || s === "true";
     return ok
       ? `<span class="badge bg-success text-white">Sí</span>`
       : `<span class="badge bg-secondary text-white">No</span>`;
@@ -97,7 +118,7 @@
     if (!rows || rows.length === 0) {
       tbody.innerHTML = `
         <tr class="text-center">
-          <td colspan="9" class="py-4 text-muted">Sin resultados.</td>
+          <td colspan="10" class="py-4 text-muted">Sin resultados.</td>
         </tr>`;
       if (window.feather) window.feather.replace();
       return;
@@ -114,6 +135,7 @@
       const proveedor = r.proveedor ?? "—";
       const fechaRec = fmtDateToDDMMMYY(r.fecha_recibido);
       const productosCount = r.productos_count ?? 0;
+      const cliente = r.cliente_nombre ?? "—";
 
       const idPretty = `FAC-${String(idFactura).padStart(5, "0")}`;
 
@@ -123,6 +145,7 @@
           <td>${esc(bodega)}</td>
           <td>${badgeRevision(revision)}</td>
           <td>${esc(numeroFactura)}</td>
+          <td>${esc(cliente)}</td>
           <td>${esc(pallets)}</td>
           <td class="text-start">${esc(proveedor)}</td>
           <td>${esc(fechaRec)}</td>
@@ -136,6 +159,7 @@
                 data-bs-target="#modalProductosFactura"
                 data-invoice="${esc(idFactura)}"
                 data-vendor="${esc(proveedor)}"
+                data-cliente="${esc(cliente)}"
                 data-xdock="${esc(bodega)}"
                 data-recibido="${esc(fechaRec)}"
                 data-revision="${esc(String(revision).toUpperCase())}"
@@ -174,7 +198,7 @@
     const page = meta?.page ?? 1;
     const per_page = meta?.per_page ?? perPage;
 
-    const from = total === 0 ? 0 : ((page - 1) * per_page + 1);
+    const from = total === 0 ? 0 : (page - 1) * per_page + 1;
     const to = Math.min(total, page * per_page);
 
     lblMeta.textContent = `Mostrando ${from}-${to} de ${total}`;
@@ -204,7 +228,8 @@
 
     if (start > 1) {
       html += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
-      if (start > 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+      if (start > 2)
+        html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
     }
 
     for (let p = start; p <= end; p++) {
@@ -215,7 +240,8 @@
     }
 
     if (end < totalPages) {
-      if (end < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+      if (end < totalPages - 1)
+        html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
       html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
     }
 
@@ -235,10 +261,10 @@
       if (currentXHR && currentXHR.readyState !== 4) currentXHR.abort();
     } catch (_) {}
 
-    const bodega_id = selectBodega ? (selectBodega.value || "") : "";
+    const bodega_id = selectBodega ? selectBodega.value || "" : "";
     const term = inputBuscar ? (inputBuscar.value || "").trim() : "";
-    const fi = inpFi ? (inpFi.value || "") : "";
-    const ff = inpFf ? (inpFf.value || "") : "";
+    const fi = inpFi ? inpFi.value || "" : "";
+    const ff = inpFf ? inpFf.value || "" : "";
     perPage = parseInt(selectPerPage?.value || String(perPage || 10), 10) || 10;
 
     const qs = buildQuery({
@@ -247,7 +273,7 @@
       fi,
       ff,
       page: currentPage,
-      per_page: perPage
+      per_page: perPage,
     });
 
     const url = base_url + ENDPOINT_LISTAR + "?" + qs;
@@ -263,9 +289,14 @@
 
       if (xhr.status >= 200 && xhr.status < 300) {
         let res;
-        try { res = JSON.parse(xhr.responseText); }
-        catch (e) {
-          console.error("[OP Partida Facturas] JSON inválido:", e, xhr.responseText);
+        try {
+          res = JSON.parse(xhr.responseText);
+        } catch (e) {
+          console.error(
+            "[OP Partida Facturas] JSON inválido:",
+            e,
+            xhr.responseText,
+          );
           renderRows([]);
           renderMeta({ total: 0, page: 1, per_page: perPage, total_pages: 0 });
           renderPaginacion({ page: 1, total_pages: 0 });
@@ -275,7 +306,14 @@
         if (!res || res.ok !== true) {
           console.warn("[OP Partida Facturas] Respuesta no ok:", res);
           renderRows([]);
-          renderMeta(res?.meta || { total: 0, page: 1, per_page: perPage, total_pages: 0 });
+          renderMeta(
+            res?.meta || {
+              total: 0,
+              page: 1,
+              per_page: perPage,
+              total_pages: 0,
+            },
+          );
           renderPaginacion(res?.meta || { page: 1, total_pages: 0 });
           return;
         }
@@ -286,7 +324,11 @@
         return;
       }
 
-      console.error("[OP Partida Facturas] Error HTTP:", xhr.status, xhr.responseText);
+      console.error(
+        "[OP Partida Facturas] Error HTTP:",
+        xhr.status,
+        xhr.responseText,
+      );
       renderRows([]);
       renderMeta({ total: 0, page: 1, per_page: perPage, total_pages: 0 });
       renderPaginacion({ page: 1, total_pages: 0 });
@@ -366,5 +408,4 @@
     bindFilters();
     cargarFacturas();
   });
-
 })();

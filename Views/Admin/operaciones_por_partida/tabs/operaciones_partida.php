@@ -27,11 +27,11 @@
           style="max-width:240px;">
           <option value="">Selecciona bodega</option>
           <?php if (!empty($data['bodegas'])): ?>
-          <?php foreach ($data['bodegas'] as $b): ?>
-          <option value="<?= (int)$b['id_bodega']; ?>">
-            <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-          </option>
-          <?php endforeach; ?>
+            <?php foreach ($data['bodegas'] as $b): ?>
+              <option value="<?= (int)$b['id_bodega']; ?>">
+                <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+              </option>
+            <?php endforeach; ?>
           <?php endif; ?>
         </select>
 
@@ -78,6 +78,7 @@
               <th style="width:150px;">Bodega</th>
               <th style="width:220px;">Revisión</th>
               <th style="width:160px;">Número de factura</th>
+              <th style="width:160px;">Cliente</th>
               <th style="min-width:220px;">Pallets INV</th>
               <th style="min-width:220px;">Proveedor</th>
               <th style="width:160px;">Fecha recibido</th>
@@ -158,21 +159,37 @@
 
           <div class="row g-3">
 
-<div class="col-md-4">
-  <label class="form-label">Bodega</label>
-  <select id="operaciones_partida_bodega" name="operaciones_partida_bodega" class="form-control">
-    <option value="">Selecciona bodega</option>
+            <div class="col-md-2">
+              <label class="form-label">Bodega</label>
+              <select id="operaciones_partida_bodega" name="operaciones_partida_bodega" class="form-control">
+                <option value="">Selecciona bodega</option>
 
-    <?php if (!empty($data['bodegas'])): ?>
-      <?php foreach ($data['bodegas'] as $b): ?>
-        <option value="<?= (int)$b['id_bodega']; ?>">
-          <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-        </option>
-      <?php endforeach; ?>
-    <?php endif; ?>
+                <?php if (!empty($data['bodegas'])): ?>
+                  <?php foreach ($data['bodegas'] as $b): ?>
+                    <option value="<?= (int)$b['id_bodega']; ?>">
+                      <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
 
-  </select>
-</div>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Cliente</label>
+              <select name="operaciones_partida_cliente" id="operaciones_partida_cliente" class="form-select">
+                <option value="">Selecciona Cliente</option>
+
+                <?php if (!empty($data['clientes'])): ?>
+                  <?php foreach ($data['clientes'] as $c): ?>
+                    <option value="<?= (int)$c['id_cliente']; ?>">
+                      <?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+
+              </select>
+            </div>
 
 
             <div class="col-md-2">
@@ -265,12 +282,12 @@
           </div>
 
         </div>
-            <div class="ms-auto d-flex align-items-end justify-content-end col-md-8" >
-            <span class="small text-muted">Totales:</span>
-            <span class="badge bg-success text-white" id="pf_totalCajas">Cajas: 0</span>
-            <span class="badge bg-primary text-white" id="pf_totalPiezas">Piezas: 0</span>
-            <span class="badge bg-secondary text-white" id="pf_totalPalletsRcv">Pallets RCV: 0</span>
-          </div>
+        <div class="ms-auto d-flex align-items-end justify-content-end col-md-8">
+          <span class="small text-muted">Totales:</span>
+          <span class="badge bg-success text-white" id="pf_totalCajas">Cajas: 0</span>
+          <span class="badge bg-primary text-white" id="pf_totalPiezas">Piezas: 0</span>
+          <span class="badge bg-secondary text-white" id="pf_totalPalletsRcv">Pallets RCV: 0</span>
+        </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
@@ -279,7 +296,7 @@
         <!-- Hidden opcional para ID real de factura -->
         <input type="hidden" id="pf_invoice_id" value="">
 
- 
+
 
 
 
@@ -359,8 +376,8 @@
 
             <td>
               <div class="btn-group btn-group-sm" role="group">
- 
-                <button type="button" class="btn btn-outline-danger pf_btnEliminarFila"   title="Eliminar producto">
+
+                <button type="button" class="btn btn-outline-danger pf_btnEliminarFila" title="Eliminar producto">
                   <i data-feather="trash-2"></i>
                 </button>
               </div>
@@ -399,14 +416,13 @@
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_registrar.js"></script>
 <script>
-  
-// Excel
+  // Excel
   document.getElementById('operaciones_partida_ExportarExcel')?.addEventListener('click', () => {
     ExportarTablas.exportar({
-      ref: '#operaciones_partida_TablaFacturasExportar',       // "#tablaEventos" o el elemento también funciona
+      ref: '#operaciones_partida_TablaFacturasExportar', // "#tablaEventos" o el elemento también funciona
       formato: 'xlsx',
       nombre: 'OperacionesPorPartida.xlsx',
-      columnasOcultas: [8],      // oculta columna ID
+      columnasOcultas: [8], // oculta columna ID
       soloVisibles: true,
       sheetName: 'Operaciones por Partida'
     });
@@ -419,26 +435,26 @@
       formato: 'pdf',
       nombre: 'OperacionesPorPartida.pdf',
       titulo: 'Operaciones por Partida',
-      orientacion: 'landscape',  // o 'portrait'
-      formatoPagina: 'letter',   // o 'a4'
+      orientacion: 'landscape', // o 'portrait'
+      formatoPagina: 'letter', // o 'a4'
       columnasOcultas: [8],
       soloVisibles: true
     });
   });
 </script>
 <script>
-document.addEventListener("input", function (e) {
-  const el = e.target;
-  if (!el || !el.classList.contains("form-control")) return;
+  document.addEventListener("input", function(e) {
+    const el = e.target;
+    if (!el || !el.classList.contains("form-control")) return;
 
-  const start = el.selectionStart;
-  const end   = el.selectionEnd;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
 
-  el.value = (el.value || "").toUpperCase();
+    el.value = (el.value || "").toUpperCase();
 
-  // Mantener cursor (si el input lo soporta)
-  if (typeof start === "number" && typeof end === "number") {
-    el.setSelectionRange(start, end);
-  }
-});
+    // Mantener cursor (si el input lo soporta)
+    if (typeof start === "number" && typeof end === "number") {
+      el.setSelectionRange(start, end);
+    }
+  });
 </script>

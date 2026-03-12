@@ -6,36 +6,21 @@ class Operaciones_por_partidaModel extends Query
         parent::__construct();
     }
 
-    /**
-     * Lista facturas con filtros y paginación.
-     *
-     * @param array $filters [
-     *   'bodega_id' => (int|string) 0|''|id,
-     *   'term'      => (string) búsqueda por numero_factura o proveedor,
-     *   'fi'        => (string) YYYY-MM-DD fecha inicio,
-     *   'ff'        => (string) YYYY-MM-DD fecha fin,
-     *   'page'      => (int) 1..n,
-     *   'per_page'  => (int) 10/25/50/100
-     * ]
-     *
-     * @return array [
-     *   'rows' => [...],
-     *   'total' => (int)
-     * ]
-     */
+
     public function listarFacturas(array $filters = []): array
     {
         $page     = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
         $perPage  = isset($filters['per_page']) ? max(1, (int)$filters['per_page']) : 10;
         $offset   = ($page - 1) * $perPage;
 
-        $bodegaId = isset($filters['bodega_id']) ? trim((string)$filters['bodega_id']) : '';
-        $term     = isset($filters['term']) ? trim((string)$filters['term']) : '';
-        $fi       = isset($filters['fi']) ? trim((string)$filters['fi']) : '';
-        $ff       = isset($filters['ff']) ? trim((string)$filters['ff']) : '';
+        $bodegaId  = isset($filters['bodega_id']) ? trim((string)$filters['bodega_id']) : '';
+        $clienteId = isset($filters['cliente_id']) ? trim((string)$filters['cliente_id']) : '';
+        $term      = isset($filters['term']) ? trim((string)$filters['term']) : '';
+        $fi        = isset($filters['fi']) ? trim((string)$filters['fi']) : '';
+        $ff        = isset($filters['ff']) ? trim((string)$filters['ff']) : '';
 
         // ===== WHERE dinámico =====
-        $where = " WHERE f.estatus = 1 ";
+        $where  = " WHERE f.estatus = 1 ";
         $params = [];
 
         if ($bodegaId !== '' && $bodegaId !== '0') {
@@ -43,9 +28,19 @@ class Operaciones_por_partidaModel extends Query
             $params[] = (int)$bodegaId;
         }
 
+        if ($clienteId !== '' && $clienteId !== '0') {
+            $where .= " AND f.cliente_id = ? ";
+            $params[] = (int)$clienteId;
+        }
+
         if ($term !== '') {
-            $where .= " AND (f.numero_factura LIKE ? OR f.proveedor LIKE ?) ";
+            $where .= " AND (
+            f.numero_factura LIKE ?
+            OR f.proveedor LIKE ?
+            OR c.nombre LIKE ?
+        ) ";
             $like = '%' . $term . '%';
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
         }
@@ -62,41 +57,48 @@ class Operaciones_por_partidaModel extends Query
 
         // ===== Total =====
         $sqlTotal = "SELECT COUNT(*) AS total
-                     FROM op_partida_facturas f
-                     $where";
+                 FROM op_partida_facturas f
+                 LEFT JOIN clientes c
+                    ON c.id_cliente = f.cliente_id
+                 $where";
+
         $rowTotal = $this->select($sqlTotal, $params);
         $total = $rowTotal ? (int)$rowTotal['total'] : 0;
 
         // ===== Rows =====
-        // Ajusta "b.bodega" si tu columna de nombre real es distinta (p.ej. b.nombre)
         $sqlRows = "SELECT
-        f.id_factura,
-        f.numero_factura,
-        f.proveedor,
-        f.revision_pasa,
-        f.pallets_inv,
-        f.fecha_recibido,
-        f.notas,
-        f.bodega_id,
-        b.nombre AS bodega_nombre,
-        (
-        SELECT COUNT(*)
-        FROM op_partida_productos p
-        WHERE p.factura_id = f.id_factura
-            AND p.estatus = 1
-        ) AS productos_count
-        FROM op_partida_facturas f
-        LEFT JOIN bodegas b
-            ON b.id_bodega = f.bodega_id
-        AND b.estatus = 1
-        $where
-        ORDER BY f.id_factura DESC
-        LIMIT $perPage OFFSET $offset";
-
-
+                    f.id_factura,
+                    f.numero_factura,
+                    f.proveedor,
+                    f.revision_pasa,
+                    f.pallets_inv,
+                    f.fecha_recibido,
+                    f.notas,
+                    f.bodega_id,
+                    b.nombre AS bodega_nombre,
+                    f.cliente_id,
+                    c.nombre AS cliente_nombre,
+                    (
+                        SELECT COUNT(*)
+                        FROM op_partida_productos p
+                        WHERE p.factura_id = f.id_factura
+                          AND p.estatus = 1
+                    ) AS productos_count
+                FROM op_partida_facturas f
+                LEFT JOIN bodegas b
+                    ON b.id_bodega = f.bodega_id
+                   AND b.estatus = 1
+                LEFT JOIN clientes c
+                    ON c.id_cliente = f.cliente_id
+                   AND c.estatus = 1
+                $where
+                ORDER BY f.id_factura DESC
+                LIMIT $perPage OFFSET $offset";
 
         $rows = $this->selectAll($sqlRows, $params);
-        if ($rows === false) $rows = [];
+        if ($rows === false) {
+            $rows = [];
+        }
 
         return [
             'rows'  => $rows,
@@ -292,13 +294,15 @@ class Operaciones_por_partidaModel extends Query
         return ['ok' => true, 'msg' => 'Factura registrada correctamente.', 'id_factura' => (int)$id];
     }
 
-    //obtener factura para editar
+    // obtener factura para editar
     public function getFacturaByIdEditar(int $idFactura)
     {
         $sql = "SELECT
                 f.id_factura,
                 f.bodega_id,
                 b.nombre AS bodega_nombre,
+                f.cliente_id,
+                c.nombre AS cliente_nombre,
                 f.numero_factura,
                 f.proveedor,
                 f.revision_pasa,
@@ -306,98 +310,138 @@ class Operaciones_por_partidaModel extends Query
                 DATE_FORMAT(f.fecha_recibido, '%Y-%m-%d') AS fecha_recibido,
                 f.notas,
                 f.estatus
-                FROM op_partida_facturas f
-                LEFT JOIN bodegas b
+            FROM op_partida_facturas f
+            LEFT JOIN bodegas b
                 ON b.id_bodega = f.bodega_id
-                WHERE f.id_factura = ?
-                AND f.estatus = 1
-                LIMIT 1";
+               AND b.estatus = 1
+            LEFT JOIN clientes c
+                ON c.id_cliente = f.cliente_id
+               AND c.estatus = 1
+            WHERE f.id_factura = ?
+              AND f.estatus = 1
+            LIMIT 1";
 
         return $this->select($sql, [$idFactura]);
     }
 
     public function actualizarFactura(int $idFactura, array $data): array
     {
-        $bodegaId      = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
-        $numeroFactura = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
-        $proveedor     = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
-        $revisionPasa  = !empty($data['revision_pasa']) ? 1 : 0;
-        $palletsInv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
-        $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
-        $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
+        $bodegaId       = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
+        $clienteId      = isset($data['cliente_id']) && $data['cliente_id'] !== '' ? (int)$data['cliente_id'] : 0;
+        $numeroFactura  = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
+        $proveedor      = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
+        $revisionPasa   = !empty($data['revision_pasa']) ? 1 : 0;
+        $palletsInv     = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
+        $fechaRecibido  = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
+        $notas          = isset($data['notas']) ? trim((string)$data['notas']) : null;
         $actualizadoPor = isset($data['actualizado_por']) && $data['actualizado_por'] !== '' ? (int)$data['actualizado_por'] : null;
 
         // ===== Validaciones =====
         if ($idFactura <= 0) {
             return ['ok' => false, 'msg' => 'Factura inválida.'];
         }
+
         if ($bodegaId <= 0) {
             return ['ok' => false, 'msg' => 'Selecciona una bodega válida.'];
         }
+
+        if ($clienteId <= 0) {
+            return ['ok' => false, 'msg' => 'Selecciona un cliente válido.'];
+        }
+
         if ($numeroFactura === '') {
             return ['ok' => false, 'msg' => 'El número de factura es obligatorio.'];
         }
+
         if ($proveedor === '') {
             return ['ok' => false, 'msg' => 'El proveedor es obligatorio.'];
         }
+
         if ($palletsInv < 0) {
             return ['ok' => false, 'msg' => 'Pallets INV (Factura) debe ser 0 o mayor.'];
         }
 
         // Validar que exista factura activa
         $exists = $this->select(
-            "SELECT id_factura FROM op_partida_facturas WHERE id_factura = ? AND estatus = 1 LIMIT 1",
+            "SELECT id_factura
+         FROM op_partida_facturas
+         WHERE id_factura = ?
+           AND estatus = 1
+         LIMIT 1",
             [$idFactura]
         );
+
         if (!$exists) {
             return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
         }
 
         // Validar bodega activa
         $bodega = $this->select(
-            "SELECT id_bodega FROM bodegas WHERE id_bodega = ? AND estatus = 1 LIMIT 1",
+            "SELECT id_bodega
+         FROM bodegas
+         WHERE id_bodega = ?
+           AND estatus = 1
+         LIMIT 1",
             [$bodegaId]
         );
+
         if (!$bodega) {
             return ['ok' => false, 'msg' => 'La bodega seleccionada no existe o está inactiva.'];
         }
 
-        // Evitar duplicado (si tienes UNIQUE por bodega/numero/proveedor)
+        // Validar cliente activo
+        $cliente = $this->select(
+            "SELECT id_cliente
+         FROM clientes
+         WHERE id_cliente = ?
+           AND estatus = 1
+         LIMIT 1",
+            [$clienteId]
+        );
+
+        if (!$cliente) {
+            return ['ok' => false, 'msg' => 'El cliente seleccionado no existe o está inactivo.'];
+        }
+
+        // Evitar duplicado
         $dup = $this->select(
             "SELECT id_factura
-            FROM op_partida_facturas
-            WHERE bodega_id = ?
-            AND numero_factura = ?
-            AND proveedor = ?
-            AND id_factura <> ?
-            LIMIT 1",
-            [$bodegaId, $numeroFactura, $proveedor, $idFactura]
+         FROM op_partida_facturas
+         WHERE bodega_id = ?
+           AND cliente_id = ?
+           AND numero_factura = ?
+           AND proveedor = ?
+           AND id_factura <> ?
+         LIMIT 1",
+            [$bodegaId, $clienteId, $numeroFactura, $proveedor, $idFactura]
         );
+
         if ($dup) {
-            return ['ok' => false, 'msg' => 'Ya existe otra factura con esa bodega, número y proveedor.'];
+            return ['ok' => false, 'msg' => 'Ya existe otra factura con esa bodega, cliente, número y proveedor.'];
         }
 
         $sql = "UPDATE op_partida_facturas
-                SET bodega_id = ?,
-                    numero_factura = ?,
-                    proveedor = ?,
-                    revision_pasa = ?,
-                    pallets_inv = ?,
-                    fecha_recibido = ?,
-                    notas = ?,
-                    actualizado_en = NOW()
-                WHERE id_factura = ?
-                AND estatus = 1";
+            SET bodega_id = ?,
+                cliente_id = ?,
+                numero_factura = ?,
+                proveedor = ?,
+                revision_pasa = ?,
+                pallets_inv = ?,
+                fecha_recibido = ?,
+                notas = ?,
+                actualizado_en = NOW()
+            WHERE id_factura = ?
+              AND estatus = 1";
 
         $params = [
             $bodegaId,
+            $clienteId,
             $numeroFactura,
             $proveedor,
             $revisionPasa,
             $palletsInv,
             ($fechaRecibido === '' ? null : $fechaRecibido),
             ($notas === '' ? null : $notas),
-
             $idFactura
         ];
 
@@ -718,6 +762,15 @@ class Operaciones_por_partidaModel extends Query
                 ORDER BY c.nombre_ciudad ASC";
         $rows = $this->selectAll($sql);
         return is_array($rows) ? $rows : [];
+    }
+    public function listarClientes(): array
+    {
+        $sql = "SELECT id_cliente, nombre
+                FROM clientes
+                WHERE estatus = 1
+                ORDER BY nombre ASC";
+        $rows = $this->selectAll($sql);
+        return ($rows === false || empty($rows)) ? [] : $rows;
     }
 
 
