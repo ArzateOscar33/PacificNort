@@ -122,3 +122,4 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/exportarTablas.js"></script>
 
 <?php include 'Views/Template/admin_footer.php'; ?>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_eventos_catalogo.js"></script>
