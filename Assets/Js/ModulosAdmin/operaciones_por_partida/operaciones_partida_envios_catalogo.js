@@ -404,6 +404,7 @@
       html += `
         <tr>
           <td class="text-center fw-semibold">${escapar(row.ferro || "—")}</td>
+          <td>${escapar(row.clientes || "—")}</td>
           <td>${escapar(row.transportista || "—")}</td>
           <td class="text-center">${escapar(row.fecha_envio || "—")}</td>
           <td>${escapar(row.destino || "—")}</td>

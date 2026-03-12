@@ -81,7 +81,7 @@ class Operaciones_por_partida_envios extends Controller
                 'per_page'    => $perPage,
                 'total_pages' => $totalPages
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'Error al listar los envíos.',

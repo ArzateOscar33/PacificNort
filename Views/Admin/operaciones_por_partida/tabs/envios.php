@@ -191,6 +191,7 @@
                 <thead class="table-dark">
                     <tr class="text-center">
                         <th style="min-width:130px;">Ferro / Caja</th>
+                        <th style="min-width:180px;">Cliente</th>
                         <th style="min-width:180px;">Transportista</th>
                         <th style="width:130px;">Fecha envío</th>
                         <th style="min-width:160px;">Destino</th>

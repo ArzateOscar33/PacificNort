@@ -5,6 +5,7 @@ class Operaciones_por_partida_enviosModel extends Query
     {
         parent::__construct();
     }
+
     public function listarPaginado(
         int $page,
         int $perPage,
@@ -49,12 +50,15 @@ class Operaciones_por_partida_enviosModel extends Query
                 FROM operaciones_partida_envio_detalle d2
                 INNER JOIN op_partida_facturas f2
                     ON f2.id_factura = d2.factura_id
+                LEFT JOIN clientes cli2
+                    ON cli2.id_cliente = f2.cliente_id
                 INNER JOIN op_partida_productos p2
                     ON p2.id_producto = d2.producto_id
                 WHERE d2.envio_id = e.id_envio
                   AND d2.estatus = 1
                   AND (
                         LOWER(COALESCE(f2.numero_factura, '')) LIKE ?
+                        OR LOWER(COALESCE(cli2.nombre, '')) LIKE ?
                         OR LOWER(COALESCE(p2.descripcion, '')) LIKE ?
                         OR LOWER(COALESCE(p2.marca, '')) LIKE ?
                   )
@@ -69,6 +73,7 @@ class Operaciones_por_partida_enviosModel extends Query
                 $like, // estatus_envio
                 $like, // notas
                 $like, // factura
+                $like, // cliente
                 $like, // producto
                 $like  // marca
             );
@@ -109,6 +114,7 @@ class Operaciones_por_partida_enviosModel extends Query
             e.destino_ciudad_id,
             COALESCE(c.nombre_ciudad, '') AS destino,
             e.estatus_envio,
+            COALESCE(det.clientes, '') AS clientes,
             COALESCE(det.facturas, '') AS facturas,
             COALESCE(det.productos, '') AS productos,
             COALESCE(det.total_cajas, 0) AS total_cajas,
@@ -123,6 +129,11 @@ class Operaciones_por_partida_enviosModel extends Query
         LEFT JOIN (
             SELECT
                 d.envio_id,
+                GROUP_CONCAT(
+                    DISTINCT COALESCE(cli.nombre, 'Sin cliente')
+                    ORDER BY cli.nombre ASC
+                    SEPARATOR ' / '
+                ) AS clientes,
                 GROUP_CONCAT(
                     DISTINCT f.numero_factura
                     ORDER BY f.numero_factura ASC
@@ -142,6 +153,8 @@ class Operaciones_por_partida_enviosModel extends Query
             FROM operaciones_partida_envio_detalle d
             INNER JOIN op_partida_facturas f
                 ON f.id_factura = d.factura_id
+            LEFT JOIN clientes cli
+                ON cli.id_cliente = f.cliente_id
             INNER JOIN op_partida_productos p
                 ON p.id_producto = d.producto_id
             WHERE d.estatus = 1
