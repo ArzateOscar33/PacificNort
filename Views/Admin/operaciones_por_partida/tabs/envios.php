@@ -165,6 +165,8 @@
                         <option value="En camino">En camino</option>
                         <option value="Entregado">Entregado</option>
                         <option value="Programado">Programado</option>
+                        <option value="Disponible en destino">Disponible en Destino</option>
+                        <option value="Cancelado">Cancelado</option>
                     </select>
                 </div>
 
@@ -308,6 +310,8 @@
                                             <option value="En camino" selected>En camino</option>
                                             <option value="Entregado">Entregado</option>
                                             <option value="Programado">Programado</option>
+                                            <option value="Disponible en destino">Disponible en Destino</option>
+                                            <option value="Cancelado">Cancelado</option>
                                         </select>
                                     </div>
 

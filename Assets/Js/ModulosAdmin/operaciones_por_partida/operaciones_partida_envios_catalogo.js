@@ -152,15 +152,21 @@
       .toLowerCase();
 
     if (valor === "en camino") {
-      return '<span class="badge bg-warning text-dark">En camino</span>';
+      return '<span class="badge bg-warning text-dark p-2">En camino</span>';
     }
 
     if (valor === "entregado") {
-      return '<span class="badge bg-success">Entregado</span>';
+      return '<span class="badge bg-success text-white p-2">Entregado</span>';
     }
 
     if (valor === "programado") {
-      return '<span class="badge bg-secondary">Programado</span>';
+      return '<span class="badge bg-secondary text-white p-2">Programado</span>';
+    }
+    if (valor === "disponible en destino") {
+      return '<span class="badge bg-primary text-white p-2">Disponible en destino</span>';
+    }
+    if (valor === "cancelado") {
+      return '<span class="badge bg-danger text-white p-2">Cancelado</span>';
     }
 
     return (
@@ -1511,6 +1517,8 @@
     if (v === "en camino") return "En camino";
     if (v === "entregado") return "Entregado";
     if (v === "programado") return "Programado";
+    if (v === "disponible en destino") return "Disponible en destino";
+    if (v === "cancelado") return "Cancelado";
 
     return "";
   }

@@ -312,6 +312,8 @@
     if (v === "en camino") return "En camino";
     if (v === "entregado") return "Entregado";
     if (v === "programado") return "Programado";
+    if (v === "disponible en destino") return "Disponible en destino";
+    if (v === "cancelado") return "Cancelado";
 
     return "";
   }
