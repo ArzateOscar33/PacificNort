@@ -168,23 +168,26 @@
                                     <li class="sidebar-item"><a href="<?= BASE_URL ?>roles" class="sidebar-link"><i
                                                 data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
                                 <?php endif; ?>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
-                                        class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
-                                            de Operación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>subtipoOperacion"
-                                        class="sidebar-link"><i data-feather="refresh-cw"></i><span class="hide-menu">Tipos
-                                            de SubOperación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
-                                        class="sidebar-link"><i data-feather="dollar-sign"></i><span class="hide-menu">Tipos
-                                            de Costo</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_eventos_logisticos"
-                                        class="sidebar-link"><i data-feather="activity"></i><span
-                                            class="hide-menu">Tipos de Evento Logístico</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Tipos_documentos"
-                                        class="sidebar-link"><i data-feather="file-text"></i><span
-                                            class="hide-menu">Tipos de Documento</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
-                                            data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
+                                            class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
+                                                de Operación</span></a></li>
+
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>subtipoOperacion"
+                                            class="sidebar-link"><i data-feather="refresh-cw"></i><span class="hide-menu">Tipos
+                                                de SubOperación</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
+                                            class="sidebar-link"><i data-feather="dollar-sign"></i><span class="hide-menu">Tipos
+                                                de Costo</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_eventos_logisticos"
+                                            class="sidebar-link"><i data-feather="activity"></i><span
+                                                class="hide-menu">Tipos de Evento Logístico</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>Tipos_documentos"
+                                            class="sidebar-link"><i data-feather="file-text"></i><span
+                                                class="hide-menu">Tipos de Documento</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
+                                                data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
+                                <?php endif; ?>
                                 <?php if ($_SESSION['rol_usuario'] == 1): ?>
                                     <li class="sidebar-item"><a href="<?= BASE_URL ?>permisos" class="sidebar-link"><i
                                                 data-feather="key"></i><span class="hide-menu">Permisos de
@@ -234,20 +237,24 @@
                             <ul aria-expanded="false" class="collapse first-level">
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>bodegas" class="sidebar-link"><i
                                             data-feather="package"></i><span class="hide-menu">Bodegas</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>brokers" class="sidebar-link"><i
-                                            data-feather="user-check"></i><span class="hide-menu">Brokers</span></a>
-                                </li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>brokers" class="sidebar-link"><i
+                                                data-feather="user-check"></i><span class="hide-menu">Brokers</span></a>
+                                    </li>
+                                <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>transportistas" class="sidebar-link"><i
                                             data-feather="truck"></i><span class="hide-menu">Transportistas</span></a>
                                 </li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>navieras" class="sidebar-link"><i
-                                            data-feather="navigation"></i><span class="hide-menu">Navieras</span></a>
-                                </li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>shippers" class="sidebar-link"><i
-                                            data-feather="send"></i><span class="hide-menu">Shippers</span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>navieras" class="sidebar-link"><i
+                                                data-feather="navigation"></i><span class="hide-menu">Navieras</span></a>
+                                    </li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>shippers" class="sidebar-link"><i
+                                                data-feather="send"></i><span class="hide-menu">Shippers</span></a></li>
 
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>forwarders" class="sidebar-link"><i
-                                            data-feather="send"></i><span class="hide-menu">Forwarders</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>forwarders" class="sidebar-link"><i
+                                                data-feather="send"></i><span class="hide-menu">Forwarders</span></a></li>
+                                <?php endif; ?>
                             </ul>
                         </li>
 
@@ -260,10 +267,12 @@
                             <ul aria-expanded="false" class="collapse first-level">
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_fisicos"
                                         class="sidebar-link"><i data-feather="box"></i><span
-                                            class="hide-menu">Contenedores Físicos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_maritimos"
-                                        class="sidebar-link"><i data-feather="package"></i><span
-                                            class="hide-menu">Contenedores Marítimos</span></a></li>
+                                            class="hide-menu">Cajas/Ferros</span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_maritimos"
+                                            class="sidebar-link"><i data-feather="package"></i><span
+                                                class="hide-menu">Contenedores Marítimos</span></a></li>
+                                <?php endif; ?>
                                 <!--      <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
                                         class="sidebar-link"><i data-feather="layers"></i><span
                                             class="hide-menu">Contenedores en Operación</span></a></li> -->
@@ -285,9 +294,11 @@
                                                                             ?>" class="sidebar-link"><i
                                             data-feather="anchor"></i><span class="hide-menu">
                                             Operaciones Maritimas</span></a></li>-->
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Operaciones_maritimo_ferro/ver"
-                                        class="sidebar-link"><i data-feather="truck"></i><span
-                                            class="hide-menu">Operaciones </span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>Operaciones_maritimo_ferro/ver"
+                                            class="sidebar-link"><i data-feather="truck"></i><span
+                                                class="hide-menu">Operaciones </span></a></li>
+                                <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_por_partida"
                                         class="sidebar-link"><i data-feather="navigation"></i><span
                                             class="hide-menu">Operaciones Por Partida</span></a></li>
