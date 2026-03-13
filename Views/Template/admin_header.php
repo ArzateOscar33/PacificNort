@@ -306,7 +306,21 @@
                         </li>
 
 
+                        <!-- Finanzas -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="bar-chart"></i>
+                                <span class="hide-menu">Finanzas</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
 
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>Finanzas/index"
+                                            class="sidebar-link"><i data-feather="dollar-sign"></i><span
+                                                class="hide-menu">Finanzas </span></a></li>
+                                <?php endif; ?>
+
+                        </li>
 
                         <!-- AUDITORÍA -->
                         <?php if ($_SESSION['rol_usuario'] == 1): ?>

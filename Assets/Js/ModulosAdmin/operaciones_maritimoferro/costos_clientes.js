@@ -10,7 +10,7 @@
     (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
-
+  console.log("BASE_URL:", base);
   const api =
     base + "Operaciones_maritimo_ferro_costos_clientes/listarPaginado";
 
@@ -358,6 +358,7 @@
           pendientes: {},
           pagados: {},
         });
+        console.log("Error al listar:", json);
         pagUl.innerHTML = "";
         pagInfo.textContent = "Mostrando 0 de 0";
         return;

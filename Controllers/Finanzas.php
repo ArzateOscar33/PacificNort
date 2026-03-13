@@ -10,13 +10,20 @@ class Finanzas extends Controller
             exit;
         }
     }
-    public function index()
+    public function index($id)
     {
         $data['title'] = 'Finanzas';
+        $data['id_operacion']   = (int)$id;
+        $data['brokers']        = $this->model->getBrokers();
+        $data['transportistas'] = $this->model->getTransportistas();
+        $data['ciudades']       = $this->model->listarDestinos();
+        $data['categoriasCostos']     = $this->model->listarCategoriasCostos();
 
-        $this->views->getView('admin/Finanzas', "index", $data);
+        $data['clientes']       = $this->model->catalogoClientes();
+
+        $this->views->getView('admin/Finanzas', "ver", $data);
     }
- 
+
     public function costos_logisticos()
     {
         $data['title'] = 'Costos de Operaciones';
