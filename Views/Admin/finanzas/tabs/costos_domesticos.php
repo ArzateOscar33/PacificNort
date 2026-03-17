@@ -35,7 +35,7 @@
                                 <select
                                     id="costosPartidaFiltroMoneda"
                                     name="costosPartidaFiltroMoneda"
-                                    class="form-select form-select-sm"
+                                    class="form-control"
                                     style="max-width:140px;">
                                     <option value="">Moneda: Todas</option>
                                     <option value="PESOS">PESOS</option>
@@ -48,7 +48,7 @@
                                 <select
                                     id="costosPartidaPerPage"
                                     name="costosPartidaPerPage"
-                                    class="form-select form-select-sm"
+                                    class="form-control form-control-sm"
                                     style="width:90px;">
                                     <option value="10">10</option>
                                     <option value="20">20</option>
@@ -101,26 +101,19 @@
                         </div>
                     </div>
 
-                    <!-- Caja/Ferro ligado -->
+                    <!-- Caja/Ferro de la factura -->
                     <div class="row flex-wrap gap-2 align-items-center mb-2">
                         <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
-                            <label for="costosPartidaFiltroFerroNombre" class="form-label mb-1">Caja/Ferro ligado</label>
-                            <div class="position-relative">
-                                <input type="hidden" id="costosPartidaFiltroFerroId" name="costosPartidaFiltroFerroId">
-                                <input
-                                    type="text"
-                                    id="costosPartidaFiltroFerroNombre"
-                                    name="costosPartidaFiltroFerroNombre"
-                                    class="form-control"
-                                    placeholder=""
-                                    autocomplete="off"
-                                    readonly>
-                                <div
-                                    id="costosPartidaFiltroFerroSugerencias"
-                                    class="list-group"
-                                    style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                            <label for="costosPartidaFiltroFerroId" class="form-label mb-1">Caja/Ferro</label>
+                            <select
+                                id="costosPartidaFiltroFerroId"
+                                name="costosPartidaFiltroFerroId"
+                                class="form-control">
+                                <option value="">Seleccione una factura primero</option>
+                            </select>
+                            <div class="form-text" id="costosPartidaFiltroFerroMeta">
+                                Selecciona la factura para cargar sus ferros/cajas.
                             </div>
-                            <div class="form-text" id="costosPartidaFiltroFerroMeta"></div>
                         </div>
                     </div>
 
@@ -132,7 +125,7 @@
                                 <select
                                     id="costosPartidaMonedaVista"
                                     name="costosPartidaMonedaVista"
-                                    class="form-select form-select-sm"
+                                    class="form-control form-control-sm"
                                     style="width:140px;">
                                     <option value="MXN">MXN (pesos)</option>
                                     <option value="USD">USD (dólares)</option>
@@ -270,21 +263,16 @@
                     </div>
 
                     <div class="mb-3">
-                        <div class="position-relative">
-                            <label for="costosPartidaFerroNombre" class="form-label">Caja/Ferro ligado</label>
-                            <input type="hidden" id="costosPartidaFerroId" name="costosPartidaFerroId">
-                            <input
-                                type="text"
-                                id="costosPartidaFerroNombre"
-                                name="costosPartidaFerroNombre"
-                                class="form-control"
-                                placeholder="Se cargará automáticamente"
-                                autocomplete="off"
-                                readonly>
-                            <div
-                                id="costosPartidaSugerenciasFerro"
-                                class="list-group"
-                                style="position:absolute; z-index:1061; width:100%; display:none;"></div>
+                        <label for="costosPartidaFerroId" class="form-label">Caja/Ferro ligado</label>
+                        <select
+                            id="costosPartidaFerroId"
+                            name="contenedor_fisico_id"
+                            class="form-control"
+                            required>
+                            <option value="">Seleccione una factura primero</option>
+                        </select>
+                        <div class="form-text" id="costosPartidaFerroMeta">
+                            Selecciona una factura para cargar sus ferros/cajas.
                         </div>
                     </div>
 
@@ -293,7 +281,7 @@
                         <select
                             id="costosPartidaTipoMovimientoId"
                             name="tipo_movimiento_id"
-                            class="form-select"
+                            class="form-control"
                             required>
                             <option value="">Seleccione un tipo</option>
                         </select>
@@ -317,7 +305,7 @@
                         <select
                             id="costosPartidaMoneda"
                             name="costosPartidaMoneda"
-                            class="form-select"
+                            class="form-control"
                             readonly
                             disabled>
                             <option value="">Seleccione</option>
@@ -329,7 +317,7 @@
                         <select
                             id="costosPartidaPagado"
                             name="costosContenedoresPagado"
-                            class="form-select">
+                            class="form-control">
                             <option value="0">Pendiente</option>
                             <option value="1">Pagado</option>
                         </select>
@@ -370,6 +358,7 @@
     feather.replace();
 </script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_costos_catalogo.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_costos_registrar.js"></script>
 <script>
     function forzarMayusculas(inputId) {
         const input = document.getElementById(inputId);

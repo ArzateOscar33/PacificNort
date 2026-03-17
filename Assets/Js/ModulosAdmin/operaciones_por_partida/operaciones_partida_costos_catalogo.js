@@ -1,18 +1,14 @@
 // ============================================================================
 //  MÓDULO: Costos por Operación por Partida / Domésticos
 //  Catálogo / Vista
-//  Adaptado a:
-//  - Controlador: Operaciones_por_partida_costos
-//  - Vista con prefijo: costosPartida...
-//  - Eje principal: factura_id
+//  SIN guardar: el guardado se queda en otro JS
 // ============================================================================
 
 (function () {
   "use strict";
 
   // ---------------------- BASE URL ----------------------
-  const base =
-    (typeof window.base !== "undefined" && window.base) ||
+  const base_url =
     (typeof window.base_url !== "undefined" && window.base_url) ||
     (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
@@ -22,7 +18,7 @@
   const tbody = document.getElementById("tbodyCostosPartida");
   const inpBuscar = document.getElementById("costosPartidaBuscar");
   const selMonedaFiltro = document.getElementById("costosPartidaFiltroMoneda");
-  const selTipoFiltro = document.getElementById("costosPartidaFiltroTipo"); // opcional, puede no existir
+  const selTipoFiltro = document.getElementById("costosPartidaFiltroTipo"); // opcional
   const selPerPage = document.getElementById("costosPartidaPerPage");
   const ulPag = document.getElementById("costosPartidaPaginacion");
   const metaTxt = document.getElementById("costosPartidaMeta");
@@ -35,7 +31,7 @@
   const selMonedaVista = document.getElementById("costosPartidaMonedaVista");
   const inpTipoCambio = document.getElementById("costosPartidaTipoCambio");
 
-  // Filtro superior: factura
+  // Factura (filtro superior)
   const facturaIdHid = document.getElementById("costosPartidaFiltroFacturaId");
   const facturaNomInp = document.getElementById(
     "costosPartidaFiltroFacturaNombre",
@@ -45,12 +41,10 @@
   );
   const facturaMeta = document.getElementById("costosPartidaFiltroFacturaMeta");
 
-  // Filtro superior: ferro/caja ligado
-  const ferroFiltroIdHid = document.getElementById(
-    "costosPartidaFiltroFerroId",
-  );
-  const ferroFiltroNomInp = document.getElementById(
-    "costosPartidaFiltroFerroNombre",
+  // Ferro/Caja (filtro superior)
+  const selFerroFiltro = document.getElementById("costosPartidaFiltroFerroId");
+  const ferroFiltroMeta = document.getElementById(
+    "costosPartidaFiltroFerroMeta",
   );
 
   // ---------------------- DOM (modal) ----------------------
@@ -63,14 +57,14 @@
     "costosPartidaSugerenciasFacturas",
   );
 
+  const selFerroModal = document.getElementById("costosPartidaFerroId");
+  const ferroModalMeta = document.getElementById("costosPartidaFerroMeta");
+
   const selTipoModal = document.getElementById("costosPartidaTipoMovimientoId");
   const selMonModal = document.getElementById("costosPartidaMoneda");
   const montoModal = document.getElementById("costosPartidaMonto");
   const comentModal = document.getElementById("costosPartidaComentario");
   const selPagadoModal = document.getElementById("costosPartidaPagado");
-
-  const ferroIdModal = document.getElementById("costosPartidaFerroId");
-  const ferroNomModal = document.getElementById("costosPartidaFerroNombre");
 
   const btnNuevo = document.getElementById("costosPartidaBtnNuevo");
 
@@ -87,7 +81,7 @@
   let abonosDetalleCache = null;
 
   // ---------------------- Helpers ----------------------
-  const safe = (v) => (v === undefined || v === null ? "" : v);
+  const safe = (v) => (v === undefined || v === null ? "" : String(v));
   const prettyMoneda = (m) => String(m || "").toUpperCase();
   const fmtFecha = (s) => (s ? String(s).substring(0, 10) : "");
 
@@ -134,6 +128,21 @@
       : `<span class="badge bg-danger text-white">Pendiente</span>`;
   }
 
+  function lockEditFields() {
+    if (facturaNomModal) facturaNomModal.readOnly = true;
+    if (selTipoModal) selTipoModal.disabled = true;
+    if (listFacturasModal) {
+      listFacturasModal.innerHTML = "";
+      listFacturasModal.style.display = "none";
+    }
+  }
+
+  function unlockEditFields() {
+    if (facturaNomModal) facturaNomModal.readOnly = false;
+    if (selTipoModal) selTipoModal.disabled = false;
+  }
+
+  // ---------------------- Conversión vista ----------------------
   function normVistaMoneda(vista) {
     const v = String(vista || "").toUpperCase();
     return v === "USD" ? "USD" : "MXN";
@@ -163,27 +172,25 @@
 
     const n = Number(amt || 0) || 0;
     if (src === dst) return n;
-
     if (src === "USD" && dst === "MXN") return n * tc;
     if (src === "MXN" && dst === "USD") return n / tc;
-
     return n;
   }
 
   // ---------------------- Endpoints ----------------------
   const END = {
     tiposMovimiento: () =>
-      `${base}Operaciones_por_partida_costos/tiposMovimiento`,
+      `${base_url}Operaciones_por_partida_costos/tiposMovimiento`,
     listarPaginado: (qs) =>
-      `${base}Operaciones_por_partida_costos/listarPaginado?${qs}`,
+      `${base_url}Operaciones_por_partida_costos/listarPaginado?${qs}`,
     buscarOperaciones: (term) =>
-      `${base}Operaciones_por_partida_costos/buscarOperaciones?term=${encodeURIComponent(term)}`,
-    contenedorLigado: (fid) =>
-      `${base}Operaciones_por_partida_costos/contenedorLigado?factura_id=${encodeURIComponent(fid)}`,
-    desactivar: () =>
-      `${base}Operaciones_por_partida_costos/desactivarCostoOperacion`,
+      `${base_url}Operaciones_por_partida_costos/buscarOperaciones?term=${encodeURIComponent(term)}`,
+    obtenerFerrosPorFactura: (facturaId) =>
+      `${base_url}Operaciones_por_partida_costos/obtenerFerrosPorFactura?factura_id=${encodeURIComponent(facturaId)}`,
     obtenerUno: (id) =>
-      `${base}Operaciones_por_partida_costos/obtenerUno?id=${encodeURIComponent(id)}`,
+      `${base_url}Operaciones_por_partida_costos/obtenerUno?id=${encodeURIComponent(id)}`,
+    desactivar: () =>
+      `${base_url}Operaciones_por_partida_costos/desactivarCostoOperacion`,
   };
 
   // ---------------------- Tipos movimiento ----------------------
@@ -226,7 +233,10 @@
 
       let html = '<option value="">Seleccione un tipo</option>';
       rows.forEach((r) => {
-        html += `<option value="${r.id_tipo_movimiento}" data-moneda="${prettyMoneda(r.moneda)}">${safe(r.nombre)}</option>`;
+        const id = r.id_tipo_movimiento;
+        const nom = r.nombre || "";
+        const mon = (r.moneda || "").toUpperCase();
+        html += `<option value="${id}" data-moneda="${mon}">${nom}</option>`;
       });
 
       selectEl.innerHTML = html;
@@ -237,13 +247,43 @@
     xhr.send();
   }
 
-  // ---------------------- Ferro/caja ligado ----------------------
-  function fetchContenedorLigado(fid, cb) {
+  // ---------------------- Ferros por factura ----------------------
+  function cargarFerrosPorFactura(
+    facturaIdArg,
+    selectEl,
+    metaEl,
+    selectedId = "",
+    done = null,
+  ) {
+    if (!selectEl) return;
+
+    const fid = parseInt(facturaIdArg || "0", 10) || 0;
+
+    if (fid <= 0) {
+      selectEl.innerHTML =
+        '<option value="">Seleccione una factura primero</option>';
+      if (metaEl)
+        metaEl.textContent =
+          "Selecciona la factura para cargar sus ferros/cajas.";
+      if (typeof done === "function") done([]);
+      return;
+    }
+
+    selectEl.innerHTML = '<option value="">Cargando ferros/cajas...</option>';
+    if (metaEl) metaEl.textContent = "Cargando ferros/cajas vinculados...";
+
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", END.contenedorLigado(fid), true);
+    xhr.open("GET", END.obtenerFerrosPorFactura(fid), true);
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
-      if (xhr.status !== 200) return cb(null);
+
+      if (xhr.status !== 200) {
+        selectEl.innerHTML = '<option value="">Error al cargar</option>';
+        if (metaEl)
+          metaEl.textContent = "No fue posible cargar los ferros/cajas.";
+        if (typeof done === "function") done([]);
+        return;
+      }
 
       let resp = {};
       try {
@@ -252,13 +292,70 @@
         resp = {};
       }
 
-      if (resp.status !== "success" || !resp.data) return cb(null);
-      cb(resp.data);
+      const rows = Array.isArray(resp.data) ? resp.data : [];
+
+      if (rows.length === 0) {
+        selectEl.innerHTML =
+          '<option value="">Sin ferros/cajas vinculados</option>';
+        if (metaEl)
+          metaEl.textContent = "La factura no tiene ferros/cajas vinculados.";
+        if (typeof done === "function") done([]);
+        return;
+      }
+
+      let html = '<option value="">Seleccione una caja/ferro</option>';
+      rows.forEach((r) => {
+        const id = r.contenedor_fisico_id || r.id_fisico || "";
+        const numero =
+          r.numero ||
+          r.numero_ferro ||
+          r.contenedor ||
+          r.ferro ||
+          `Ferro/Caja #${id}`;
+        const totalEnvios = Number(r.total_envios || 0) || 0;
+
+        html += `<option value="${id}">${safe(numero)}${totalEnvios > 0 ? `` : ""}</option>`;
+      });
+
+      selectEl.innerHTML = html;
+
+      if (selectedId) {
+        selectEl.value = String(selectedId);
+      }
+
+      if (!selectEl.value && rows.length === 1) {
+        selectEl.value = String(
+          rows[0].contenedor_fisico_id || rows[0].id_fisico || "",
+        );
+      }
+
+      if (metaEl) {
+        metaEl.textContent = `${rows.length} ferro(s)/caja(s) vinculado(s) a la factura.`;
+      }
+
+      if (typeof done === "function") done(rows);
     };
     xhr.send();
   }
 
-  // ---------------------- Desactivar ----------------------
+  function obtenerCostoXHR(id, onDone) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", END.obtenerUno(id), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      let resp = {};
+      try {
+        resp = JSON.parse(xhr.responseText) || {};
+      } catch {
+        resp = {};
+      }
+
+      if (typeof onDone === "function") onDone(xhr.status, resp);
+    };
+    xhr.send();
+  }
+
   function desactivarCostoXHR(id, onDone) {
     const fd = new FormData();
     fd.append("id", String(id));
@@ -278,7 +375,7 @@
     xhr.send(fd);
   }
 
-  // ---------------------- Tabla ----------------------
+  // ---------------------- Render tabla ----------------------
   function renderTabla(rows) {
     if (!tbody) return;
 
@@ -317,6 +414,9 @@
       tr.dataset.coment = r.comentario || "";
       tr.dataset.pagado = r.pagado ?? "0";
       tr.dataset.nat = nat;
+      tr.dataset.contenedorFisicoId =
+        r.contenedor_fisico_id || r.contenedor_id || "";
+      tr.dataset.contenedor = r.numero_ferro || r.contenedor || "";
 
       tr.innerHTML = `
         <td>${fmtFecha(r.fecha)}</td>
@@ -358,6 +458,7 @@
 
       const montoVista = convertAmount(amt, mon);
       const montoFmt = fmtMoney(montoVista, symbolVista);
+
       td.textContent = `${isAbono ? "+" : " "}${montoFmt}`;
     });
   }
@@ -549,9 +650,9 @@
     const buscar = (inpBuscar?.value || "").trim();
     const moneda = (selMonedaFiltro?.value || "").toUpperCase();
     const tipoId = parseInt(selTipoFiltro?.value || "0", 10) || 0;
+    const contenedorFisicoId = parseInt(selFerroFiltro?.value || "0", 10) || 0;
 
     if (currentXHR && currentXHR.readyState !== 4) currentXHR.abort();
-
     renderCargando();
 
     const params = new URLSearchParams({
@@ -561,6 +662,7 @@
       moneda,
       tipo: String(tipoId),
       factura_id: String(facturaId),
+      contenedor_fisico_id: String(contenedorFisicoId),
       solo_activos: "1",
     });
 
@@ -623,10 +725,9 @@
     };
     currentXHR.send();
   }
-
   window.listarCostosPartida = listar;
 
-  // ---------------------- Autocomplete filtro superior ----------------------
+  // ---------------------- Buscar facturas (filtro superior) ----------------------
   function buscarFacturas(term) {
     if (!facturaListBox) return;
 
@@ -669,6 +770,7 @@
         const nom = r.numero_operacion || "";
         const cli = r.cliente || "";
         const prov = r.proveedor || "";
+
         html += `
           <button type="button" class="list-group-item list-group-item-action"
                   data-id="${id}" data-nom="${safe(nom)}" data-cli="${safe(cli)}" data-prov="${safe(prov)}">
@@ -692,23 +794,17 @@
             facturaListBox.innerHTML = "";
             facturaListBox.style.display = "none";
 
-            fetchContenedorLigado(facturaId, (data) => {
-              if (!data) {
-                if (ferroFiltroNomInp) ferroFiltroNomInp.value = "";
-                if (ferroFiltroIdHid) ferroFiltroIdHid.value = "";
-              } else {
-                if (ferroFiltroNomInp)
-                  ferroFiltroNomInp.value = data.numero || "";
-                if (ferroFiltroIdHid) {
-                  ferroFiltroIdHid.value = String(
-                    data.ids?.contenedor_fisico_id || "",
-                  );
-                }
-              }
-            });
+            cargarFerrosPorFactura(
+              facturaId,
+              selFerroFiltro,
+              ferroFiltroMeta,
+              "",
+              function () {
+                listar(1);
+              },
+            );
 
-            loadTiposMovimiento(selTipoModal);
-            listar(1);
+            if (facturaMeta) facturaMeta.textContent = "Factura seleccionada.";
           });
         });
     };
@@ -721,162 +817,22 @@
     if (facturaIdHid) facturaIdHid.value = "";
     facturaId = 0;
 
-    if (ferroFiltroNomInp) ferroFiltroNomInp.value = "";
-    if (ferroFiltroIdHid) ferroFiltroIdHid.value = "";
+    if (selFerroFiltro) {
+      selFerroFiltro.innerHTML =
+        '<option value="">Seleccione una factura primero</option>';
+    }
+    if (ferroFiltroMeta) {
+      ferroFiltroMeta.textContent =
+        "Selecciona la factura para cargar sus ferros/cajas.";
+    }
 
     buscarFacturas(term);
   });
 
-  document.addEventListener("click", (e) => {
-    if (!facturaListBox) return;
-    if (!facturaListBox.contains(e.target) && e.target !== facturaNomInp) {
-      facturaListBox.style.display = "none";
-    }
-  });
-
-  // ---------------------- Filtros / init ----------------------
-  document.addEventListener("DOMContentLoaded", () => {
-    if (perPage < 1) perPage = 10;
-
-    loadTiposMovimiento(selTipoModal);
-
-    if (facturaId > 0) {
-      fetchContenedorLigado(facturaId, (data) => {
-        if (data) {
-          if (ferroFiltroNomInp) ferroFiltroNomInp.value = data.numero || "";
-          if (ferroFiltroIdHid) {
-            ferroFiltroIdHid.value = String(
-              data.ids?.contenedor_fisico_id || "",
-            );
-          }
-        }
-      });
-      listar(1);
-    } else {
-      renderVacio("Selecciona una factura para ver sus costos.");
-    }
-  });
-
-  selPerPage?.addEventListener("change", () => {
-    perPage = parseInt(selPerPage.value || "10", 10) || 10;
-    listar(1);
-  });
-
-  inpBuscar?.addEventListener("keyup", (e) => {
-    clearTimeout(debounceId);
-    debounceId = setTimeout(() => listar(1), 250);
-
-    if (e.key === "Enter") {
-      clearTimeout(debounceId);
-      listar(1);
-    }
-  });
-
-  selMonedaFiltro?.addEventListener("change", () => listar(1));
-  selTipoFiltro?.addEventListener("change", () => listar(1));
-
-  selMonedaVista?.addEventListener("change", () => {
-    renderTotales(totalesDetalleCache);
-    const { opCost, opAbono, fmt } = computeViewTotals(
-      totalesDetalleCache,
-      abonosDetalleCache,
-    );
-    renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
-    refrescarMontosTablaVista();
-  });
-
-  inpTipoCambio?.addEventListener("input", () => {
-    renderTotales(totalesDetalleCache);
-    const { opCost, opAbono, fmt } = computeViewTotals(
-      totalesDetalleCache,
-      abonosDetalleCache,
-    );
-    renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
-    refrescarMontosTablaVista();
-  });
-
-  // ---------------------- Modal: moneda por tipo ----------------------
-  function syncMonedaPorTipoModal() {
-    if (isEditCosto) return;
-    if (!selTipoModal) return;
-
-    const opt = selTipoModal.selectedOptions?.[0];
-    const m = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
-
-    if (selMonModal) {
-      selMonModal.value = m === "PESOS" || m === "DLLS" ? m : "";
-    }
-  }
-
-  selTipoModal?.addEventListener("change", syncMonedaPorTipoModal);
-
-  function resetModalView() {
-    if (hidRowId) hidRowId.value = "";
-    if (facturaIdModal) facturaIdModal.value = "";
-    if (facturaNomModal) facturaNomModal.value = "";
-
-    if (selTipoModal) selTipoModal.value = "";
-    if (selMonModal) selMonModal.value = "";
-    if (montoModal) montoModal.value = "";
-    if (comentModal) comentModal.value = "";
-    if (selPagadoModal) selPagadoModal.value = "0";
-
-    if (ferroIdModal) ferroIdModal.value = "";
-    if (ferroNomModal) ferroNomModal.value = "";
-
-    if (listFacturasModal) {
-      listFacturasModal.innerHTML = "";
-      listFacturasModal.style.display = "none";
-    }
-  }
-
-  function lockEditFields() {
-    if (facturaNomModal) facturaNomModal.readOnly = true;
-    if (selTipoModal) selTipoModal.disabled = true;
-
-    if (listFacturasModal) {
-      listFacturasModal.innerHTML = "";
-      listFacturasModal.style.display = "none";
-    }
-  }
-
-  function unlockEditFields() {
-    if (facturaNomModal) facturaNomModal.readOnly = false;
-    if (selTipoModal) selTipoModal.disabled = false;
-  }
-
-  // ---------------------- Nuevo ----------------------
-  btnNuevo?.addEventListener("click", () => {
-    isEditCosto = false;
-    unlockEditFields();
-    resetModalView();
-
-    const fid = parseInt(facturaIdHid?.value || "0", 10) || 0;
-    const fnom = (facturaNomInp?.value || "").trim();
-
-    loadTiposMovimiento(selTipoModal);
-
-    if (fid && fnom) {
-      if (facturaIdModal) facturaIdModal.value = String(fid);
-      if (facturaNomModal) facturaNomModal.value = fnom;
-
-      fetchContenedorLigado(fid, (data) => {
-        if (data) {
-          if (ferroNomModal) ferroNomModal.value = data.numero || "";
-          if (ferroIdModal) {
-            ferroIdModal.value = String(data.ids?.contenedor_fisico_id || "");
-          }
-        }
-      });
-    }
-  });
-
-  // ---------------------- Autocomplete modal ----------------------
-  facturaNomModal?.addEventListener("input", () => {
-    if (isEditCosto) return;
+  // ---------------------- Buscar facturas (modal) ----------------------
+  function buscarFacturasModal(term) {
     if (!listFacturasModal) return;
 
-    const term = (facturaNomModal.value || "").trim();
     if (!term || term.length < 2) {
       listFacturasModal.style.display = "none";
       listFacturasModal.innerHTML = "";
@@ -913,6 +869,7 @@
         const nom = r.numero_operacion || "";
         const cli = r.cliente || "";
         const prov = r.proveedor || "";
+
         html += `
           <button type="button" class="list-group-item list-group-item-action"
                   data-id="${id}" data-nom="${safe(nom)}" data-cli="${safe(cli)}" data-prov="${safe(prov)}">
@@ -935,21 +892,7 @@
             if (facturaIdModal) facturaIdModal.value = String(id);
             if (facturaNomModal) facturaNomModal.value = btn.textContent.trim();
 
-            loadTiposMovimiento(selTipoModal);
-
-            fetchContenedorLigado(id, (data) => {
-              if (data) {
-                if (ferroNomModal) ferroNomModal.value = data.numero || "";
-                if (ferroIdModal) {
-                  ferroIdModal.value = String(
-                    data.ids?.contenedor_fisico_id || "",
-                  );
-                }
-              } else {
-                if (ferroNomModal) ferroNomModal.value = "";
-                if (ferroIdModal) ferroIdModal.value = "";
-              }
-            });
+            cargarFerrosPorFactura(id, selFerroModal, ferroModalMeta);
 
             listFacturasModal.innerHTML = "";
             listFacturasModal.style.display = "none";
@@ -957,6 +900,153 @@
         });
     };
     xhr.send();
+  }
+
+  // ---------------------- Init ----------------------
+  document.addEventListener("DOMContentLoaded", () => {
+    if (perPage < 1) perPage = 10;
+
+    loadTiposMovimiento(selTipoModal);
+
+    if (facturaId > 0) {
+      cargarFerrosPorFactura(
+        facturaId,
+        selFerroFiltro,
+        ferroFiltroMeta,
+        "",
+        function () {
+          listar(1);
+        },
+      );
+    } else {
+      renderVacio("Selecciona una factura para ver sus costos.");
+    }
+  });
+
+  // ---------------------- Filtros ----------------------
+  document.addEventListener("click", (e) => {
+    if (
+      facturaListBox &&
+      !facturaListBox.contains(e.target) &&
+      e.target !== facturaNomInp
+    ) {
+      facturaListBox.style.display = "none";
+    }
+
+    if (
+      listFacturasModal &&
+      !listFacturasModal.contains(e.target) &&
+      e.target !== facturaNomModal
+    ) {
+      listFacturasModal.style.display = "none";
+    }
+  });
+
+  selPerPage?.addEventListener("change", () => {
+    perPage = parseInt(selPerPage.value || "10", 10) || 10;
+    listar(1);
+  });
+
+  inpBuscar?.addEventListener("keyup", (e) => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => listar(1), 250);
+    if (e.key === "Enter") {
+      clearTimeout(debounceId);
+      listar(1);
+    }
+  });
+
+  selMonedaFiltro?.addEventListener("change", () => listar(1));
+  selTipoFiltro?.addEventListener("change", () => listar(1));
+  selFerroFiltro?.addEventListener("change", () => listar(1));
+
+  selMonedaVista?.addEventListener("change", () => {
+    renderTotales(totalesDetalleCache);
+    const { opCost, opAbono, fmt } = computeViewTotals(
+      totalesDetalleCache,
+      abonosDetalleCache,
+    );
+    renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
+    refrescarMontosTablaVista();
+  });
+
+  inpTipoCambio?.addEventListener("input", () => {
+    renderTotales(totalesDetalleCache);
+    const { opCost, opAbono, fmt } = computeViewTotals(
+      totalesDetalleCache,
+      abonosDetalleCache,
+    );
+    renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
+    refrescarMontosTablaVista();
+  });
+
+  // ---------------------- Modal: moneda por tipo ----------------------
+  function syncMonedaPorTipoModal() {
+    if (isEditCosto) return;
+    if (!selTipoModal) return;
+
+    const opt = selTipoModal.selectedOptions?.[0];
+    const m = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
+    if (selMonModal) {
+      selMonModal.value = m === "PESOS" || m === "DLLS" ? m : "";
+    }
+  }
+
+  selTipoModal?.addEventListener("change", syncMonedaPorTipoModal);
+
+  function resetModalView() {
+    if (hidRowId) hidRowId.value = "";
+    if (facturaIdModal) facturaIdModal.value = "";
+    if (facturaNomModal) facturaNomModal.value = "";
+
+    if (selTipoModal) selTipoModal.value = "";
+    if (selMonModal) selMonModal.value = "";
+    if (montoModal) montoModal.value = "";
+    if (comentModal) comentModal.value = "";
+    if (selPagadoModal) selPagadoModal.value = "0";
+
+    if (selFerroModal) {
+      selFerroModal.innerHTML =
+        '<option value="">Seleccione una factura primero</option>';
+    }
+    if (ferroModalMeta) {
+      ferroModalMeta.textContent =
+        "Selecciona una factura para cargar sus ferros/cajas.";
+    }
+
+    if (listFacturasModal) {
+      listFacturasModal.innerHTML = "";
+      listFacturasModal.style.display = "none";
+    }
+  }
+
+  // ---------------------- Abrir modal nuevo ----------------------
+  btnNuevo?.addEventListener("click", () => {
+    isEditCosto = false;
+    unlockEditFields();
+    resetModalView();
+    loadTiposMovimiento(selTipoModal);
+
+    const fid = parseInt(facturaIdHid?.value || "0", 10) || 0;
+    const fnom = (facturaNomInp?.value || "").trim();
+    const ferroSel = parseInt(selFerroFiltro?.value || "0", 10) || 0;
+
+    if (fid && fnom) {
+      if (facturaIdModal) facturaIdModal.value = String(fid);
+      if (facturaNomModal) facturaNomModal.value = fnom;
+
+      cargarFerrosPorFactura(
+        fid,
+        selFerroModal,
+        ferroModalMeta,
+        ferroSel ? String(ferroSel) : "",
+      );
+    }
+  });
+
+  facturaNomModal?.addEventListener("input", () => {
+    if (isEditCosto) return;
+    buscarFacturasModal((facturaNomModal.value || "").trim());
   });
 
   modalEl?.addEventListener("shown.bs.modal", () => {
@@ -971,67 +1061,88 @@
     }
   });
 
-  // ---------------------- Editar / eliminar ----------------------
+  // ---------------------- Acciones en tabla ----------------------
   tbody?.addEventListener("click", (e) => {
     const btnEdit = e.target.closest(".btnEditarCostoPartida");
     if (btnEdit) {
       const tr = btnEdit.closest("tr");
       if (!tr) return;
 
+      const rowId = parseInt(tr.dataset.rowId || "0", 10) || 0;
+      if (!rowId) return;
+
       isEditCosto = true;
       resetModalView();
 
-      if (hidRowId) hidRowId.value = tr.dataset.rowId || "";
-      if (facturaIdModal) facturaIdModal.value = tr.dataset.facturaId || "";
-      if (facturaNomModal) facturaNomModal.value = tr.dataset.facturaNom || "";
-      if (montoModal) montoModal.value = tr.dataset.monto || "";
-      if (comentModal) comentModal.value = tr.dataset.coment || "";
-      if (selPagadoModal)
-        selPagadoModal.value = String(tr.dataset.pagado ?? "0");
+      obtenerCostoXHR(rowId, (status, resp) => {
+        if (status !== 200) {
+          return toast("error", "Error", resp?.message || `HTTP ${status}`);
+        }
 
-      const tipoIdSel = tr.dataset.tipoId || "";
-      const tipoNomSel = tr.dataset.tipoNom || "";
-
-      loadTiposMovimiento(selTipoModal, tipoIdSel, () => {
         if (
-          selTipoModal &&
-          tipoIdSel &&
-          !selTipoModal.querySelector(`option[value="${String(tipoIdSel)}"]`)
+          String(resp?.status || "").toLowerCase() !== "success" ||
+          !resp.data
         ) {
-          const opt = document.createElement("option");
-          opt.value = String(tipoIdSel);
-          opt.textContent = tipoNomSel || "Concepto";
-          opt.setAttribute(
-            "data-moneda",
-            (tr.dataset.moneda || "").toUpperCase(),
+          return toast(
+            "warning",
+            "Aviso",
+            resp?.message || "No se pudo obtener el registro.",
           );
-          selTipoModal.appendChild(opt);
-          selTipoModal.value = String(tipoIdSel);
         }
 
-        if (selMonModal) {
-          selMonModal.value = (tr.dataset.moneda || "").toUpperCase();
+        const row = resp.data;
+
+        if (hidRowId) hidRowId.value = row.row_id || "";
+        if (facturaIdModal) facturaIdModal.value = row.factura_id || "";
+        if (facturaNomModal) {
+          facturaNomModal.value =
+            row.numero_factura || row.numero_operacion || "";
         }
+        if (montoModal) montoModal.value = row.monto || "";
+        if (comentModal) comentModal.value = row.comentario || "";
+        if (selPagadoModal) selPagadoModal.value = String(row.pagado ?? "0");
 
-        lockEditFields();
+        const tipoIdSel = row.tipo_movimiento_id || "";
+        const tipoNomSel = row.concepto || "";
 
-        try {
-          const bs = bootstrap.Modal.getOrCreateInstance(modalEl);
-          bs.show();
-        } catch {}
-      });
+        loadTiposMovimiento(selTipoModal, tipoIdSel, () => {
+          if (
+            selTipoModal &&
+            tipoIdSel &&
+            !selTipoModal.querySelector(`option[value="${String(tipoIdSel)}"]`)
+          ) {
+            const opt = document.createElement("option");
+            opt.value = String(tipoIdSel);
+            opt.textContent = tipoNomSel || "Concepto";
+            opt.setAttribute("data-moneda", (row.moneda || "").toUpperCase());
+            selTipoModal.appendChild(opt);
+            selTipoModal.value = String(tipoIdSel);
+          }
 
-      const fid = parseInt(tr.dataset.facturaId || "0", 10) || 0;
-      if (fid) {
-        fetchContenedorLigado(fid, (data) => {
-          if (data) {
-            if (ferroNomModal) ferroNomModal.value = data.numero || "";
-            if (ferroIdModal) {
-              ferroIdModal.value = String(data.ids?.contenedor_fisico_id || "");
-            }
+          if (selMonModal) {
+            selMonModal.value = (row.moneda || "").toUpperCase();
           }
         });
-      }
+
+        const fid = parseInt(row.factura_id || "0", 10) || 0;
+        const cfid = parseInt(row.contenedor_fisico_id || "0", 10) || 0;
+
+        cargarFerrosPorFactura(
+          fid,
+          selFerroModal,
+          ferroModalMeta,
+          cfid ? String(cfid) : "",
+          () => {
+            lockEditFields();
+
+            try {
+              const bs = bootstrap.Modal.getOrCreateInstance(modalEl);
+              bs.show();
+            } catch {}
+          },
+        );
+      });
+
       return;
     }
 
@@ -1052,6 +1163,7 @@
         desactivarCostoXHR(rowId, (status, resp) => {
           btnDel.disabled = false;
           btnDel.innerHTML = oldHtml;
+          window.feather?.replace?.();
 
           if (status !== 200) {
             return toast("error", "Error", resp?.message || `HTTP ${status}`);
@@ -1087,6 +1199,7 @@
       } else {
         if (confirm("¿Desactivar este costo?")) confirmar();
       }
+      return;
     }
   });
 
@@ -1099,8 +1212,11 @@
       e.stopPropagation();
 
       if (typeof ExportarTablas === "undefined") {
-        toast("warning", "Aviso", "No se encontró el módulo de exportación.");
-        return;
+        return toast(
+          "warning",
+          "Aviso",
+          "No se encontró el módulo de exportación.",
+        );
       }
 
       ExportarTablas.exportar({
@@ -1122,8 +1238,11 @@
       e.stopPropagation();
 
       if (typeof ExportarTablas === "undefined") {
-        toast("warning", "Aviso", "No se encontró el módulo de exportación.");
-        return;
+        return toast(
+          "warning",
+          "Aviso",
+          "No se encontró el módulo de exportación.",
+        );
       }
 
       ExportarTablas.exportar({
