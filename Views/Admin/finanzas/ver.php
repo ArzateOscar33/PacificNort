@@ -14,6 +14,11 @@
         </li>
 
 
+
+
+        <li class="nav-item">
+            <a class="nav-link" id="costos-domesticos-tab" data-bs-toggle="tab" href="#costos_domesticos" role="tab" aria-controls="costos_domesticos" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Domésticos</a>
+        </li>
         <li class="nav-item">
             <a class="nav-link" id="costos-operaciones-clientes-tab" data-bs-toggle="tab" href="#costos_operacion_clientes" role="tab" aria-controls="costos_operacion_clientes" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Clientes</a>
         </li>
@@ -28,6 +33,9 @@
 
         <div class="tab-pane fade" id="costos_operacion_clientes" role="tabpanel" aria-labelledby="costos_operacion_clientes-tab">
             <?php include 'tabs/costos_cliente.php'; ?>
+        </div>
+        <div class="tab-pane fade" id="costos_domesticos" role="tabpanel" aria-labelledby="costos-domesticos-tab">
+            <?php include 'tabs/costos_domesticos.php'; ?>
         </div>
     </div>
 </div>
