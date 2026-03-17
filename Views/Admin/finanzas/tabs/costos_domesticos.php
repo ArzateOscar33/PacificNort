@@ -5,13 +5,16 @@
             <!-- Encabezado + botón -->
             <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
                 <div>
-                    <h3 class="mb-1">Costos por Operacion por Partida y Domesticos</h3>
-                    <small class="text-muted">Consulta y administra los costos a nivel operación por partida y domesticos.</small>
+                    <h3 class="mb-1">Costos por Operación por Partida y Domésticos</h3>
+                    <small class="text-muted">Consulta y administra los costos a nivel factura de operación por partida y domésticos.</small>
                 </div>
 
                 <div class="ms-auto col-md-12 d-flex justify-content-end mb-3">
-                    <button class="btn btn-success" id="costosOperacionPorPartidaBtnNuevo" data-bs-toggle="modal"
-                        data-bs-target="#modalCostoOperacionPorPartida">
+                    <button
+                        class="btn btn-success"
+                        id="costosPartidaBtnNuevo"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalCostoPartida">
                         <i data-feather="plus"></i> Añadir Costo
                     </button>
                 </div>
@@ -22,10 +25,18 @@
                     <div class="row justify-content-end align-items-center mb-2">
                         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
                             <div class="d-flex gap-2">
-                                <input type="text" class="form-control form-control-sm" id="costosOperacionPorPartidaBuscar"
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    id="costosPartidaBuscar"
+                                    name="costosPartidaBuscar"
                                     placeholder="Buscar concepto o comentario…">
-                                <!-- ELIMINADO: costosOperacionPorPartidaFiltroOrigen -->
-                                <select id="costosOperacionPorPartidaFiltroMoneda" class="form-control form-control-sm" style="max-width:140px;">
+
+                                <select
+                                    id="costosPartidaFiltroMoneda"
+                                    name="costosPartidaFiltroMoneda"
+                                    class="form-select form-select-sm"
+                                    style="max-width:140px;">
                                     <option value="">Moneda: Todas</option>
                                     <option value="PESOS">PESOS</option>
                                     <option value="DLLS">DLLS</option>
@@ -33,24 +44,34 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-2">
-                                <label class="small mb-0">Por página:</label>
-                                <select id="costosOperacionPorPartidaPerPage" class="form-control form-control-sm" style="width:90px;">
-                                    <option>10</option>
-                                    <option>20</option>
-                                    <option>50</option>
-                                    <option>100</option>
-                                    <option>500</option>
-                                    <option>1000</option>
+                                <label class="small mb-0" for="costosPartidaPerPage">Por página:</label>
+                                <select
+                                    id="costosPartidaPerPage"
+                                    name="costosPartidaPerPage"
+                                    class="form-select form-select-sm"
+                                    style="width:90px;">
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="500">500</option>
+                                    <option value="1000">1000</option>
                                 </select>
                             </div>
 
                             <div class="row">
                                 <div class="gap-2 col-md-12 d-flex align-items-center justify-content-end">
-                                    <button type="button" class="btn btn-sm btn-outline-success" id="btnExportarExcelCostosOperacion">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-success"
+                                        id="btnExportarExcelCostosPartida">
                                         <i data-feather="file-text" class="me-1"></i> Excel
                                     </button>
 
-                                    <button type="button" class="btn btn-sm btn-outline-warning" id="btnExportarPDFCostosOperacion">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-warning"
+                                        id="btnExportarPDFCostosPartida">
                                         <i data-feather="file" class="me-1"></i> PDF
                                     </button>
                                 </div>
@@ -58,84 +79,109 @@
                         </div>
                     </div>
 
-                    <!-- Sugerencia de operación -->
+                    <!-- Sugerencia de factura -->
                     <div class="row flex-wrap gap-2 align-items-center mb-2">
                         <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
-                            <label for="costosOperacionPorPartidaFiltroOpNombre" class="form-label mb-1">Operación o Factura</label>
+                            <label for="costosPartidaFiltroFacturaNombre" class="form-label mb-1">Factura / Operación por partida</label>
                             <div class="position-relative">
-                                <input type="hidden" id="costosOperacionPorPartidaFiltroOpId">
-                                <input type="text" id="costosOperacionPorPartidaFiltroOpNombre" class="form-control"
-                                    placeholder="Escribe para buscar" autocomplete="off">
-                                <div id="costosOperacionPorPartidaFiltroOpSugerencias" class="list-group"
+                                <input type="hidden" id="costosPartidaFiltroFacturaId" name="costosPartidaFiltroFacturaId">
+                                <input
+                                    type="text"
+                                    id="costosPartidaFiltroFacturaNombre"
+                                    name="costosPartidaFiltroFacturaNombre"
+                                    class="form-control"
+                                    placeholder="Escribe para buscar factura"
+                                    autocomplete="off">
+                                <div
+                                    id="costosPartidaFiltroFacturaSugerencias"
+                                    class="list-group"
                                     style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                             </div>
-                            <div class="form-text" id="costosOperacionPorPartidaFiltroOpMeta"></div>
+                            <div class="form-text" id="costosPartidaFiltroFacturaMeta"></div>
                         </div>
                     </div>
-                    <!-- Sugerencia de Ferro/Caja (opcional, filtrará por ferro si tu backend lo soporta) -->
+
+                    <!-- Caja/Ferro ligado -->
                     <div class="row flex-wrap gap-2 align-items-center mb-2">
                         <div class="w-100 w-md-auto col-md-12" style="min-width:320px;">
-                            <label for="costosOperacionPorPartidaFiltroFerroNombre" class="form-label mb-1">Caja/Ferro</label>
+                            <label for="costosPartidaFiltroFerroNombre" class="form-label mb-1">Caja/Ferro ligado</label>
                             <div class="position-relative">
-                                <input type="hidden" id="costosOperacionPorPartidaFiltroFerroId">
-                                <input type="text" id="costosOperacionPorPartidaFiltroFerroNombre" class="form-control"
-                                    placeholder="" autocomplete="off" readonly>
-                                <div id="costosOperacionPorPartidaFiltroFerroSugerencias" class="list-group"
+                                <input type="hidden" id="costosPartidaFiltroFerroId" name="costosPartidaFiltroFerroId">
+                                <input
+                                    type="text"
+                                    id="costosPartidaFiltroFerroNombre"
+                                    name="costosPartidaFiltroFerroNombre"
+                                    class="form-control"
+                                    placeholder=""
+                                    autocomplete="off"
+                                    readonly>
+                                <div
+                                    id="costosPartidaFiltroFerroSugerencias"
+                                    class="list-group"
                                     style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                             </div>
-                            <div class="form-text" id="costosOperacionPorPartidaFiltroFerroMeta"></div>
+                            <div class="form-text" id="costosPartidaFiltroFerroMeta"></div>
                         </div>
                     </div>
 
                     <!-- Configuración de vista de totales -->
                     <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
-                        <div class="d-flex flex-wrap align-items-end mb-2">
+                        <div class="d-flex flex-wrap align-items-end mb-2 gap-2">
                             <div>
-                                <label class="form-label small mb-1">Mostrar totales en</label>
-                                <select id="costosOperacionPorPartidaMonedaVista" class="form-control form-control-sm" style="width:140px;">
+                                <label class="form-label small mb-1" for="costosPartidaMonedaVista">Mostrar totales en</label>
+                                <select
+                                    id="costosPartidaMonedaVista"
+                                    name="costosPartidaMonedaVista"
+                                    class="form-select form-select-sm"
+                                    style="width:140px;">
                                     <option value="MXN">MXN (pesos)</option>
                                     <option value="USD">USD (dólares)</option>
                                 </select>
                             </div>
+
                             <div>
-                                <label class="form-label small mb-1">Tipo de cambio</label>
+                                <label class="form-label small mb-1" for="costosPartidaTipoCambio">Tipo de cambio</label>
                                 <div class="input-group input-group-sm" style="width:160px;">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="0.0001" min="0" id="costosOperacionPorPartidaTipoCambio" class="form-control mt-1"
+                                    <input
+                                        type="number"
+                                        step="0.0001"
+                                        min="0"
+                                        id="costosPartidaTipoCambio"
+                                        name="costosPartidaTipoCambio"
+                                        class="form-control"
                                         value="17.00">
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                </div> <!-- /container filtros -->
-            </div> <!-- /header -->
+                </div>
+            </div>
 
             <!-- Totales -->
-            <div class="row g-3 mb-4" id="costosOperacionPorPartidaCards">
-                <!-- 1) Operación -->
+            <div class="row g-3 mb-4" id="costosPartidaCards">
                 <div class="col-12 col-md-6">
                     <div class="bg-primary text-white p-3 rounded shadow-sm h-100">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0 text-uppercase small">Total operación</h6>
+                            <h6 class="mb-0 text-uppercase small">Total factura</h6>
                             <i data-feather="dollar-sign"></i>
                         </div>
 
-                        <div class="mt-2 h3 mb-1" id="costosOperacionPorPartidaTotalOperacion">$ 0.00</div>
-                        <small class="opacity-75 d-block mb-2">Costos registrados a la operación</small>
+                        <div class="mt-2 h3 mb-1" id="costosPartidaTotalOperacion">$ 0.00</div>
+                        <small class="opacity-75 d-block mb-2">Costos registrados a la factura</small>
 
                         <div class="d-flex justify-content-between small">
                             <span class="opacity-75">Abonos</span>
-                            <strong id="costosOperacionPorPartidaAbonosOperacion">$ 0.00</strong>
+                            <strong id="costosPartidaAbonosOperacion">$ 0.00</strong>
                         </div>
                         <div class="d-flex justify-content-between small">
                             <span class="opacity-75">Balance</span>
-                            <span><span id="costosOperacionPorPartidaBalanceOperacion" class="badge bg-light text-dark">$ 0.00</span></span>
+                            <span><span id="costosPartidaBalanceOperacion" class="badge bg-light text-dark">$ 0.00</span></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2) Total General (solo operación) -->
                 <div class="col-12 col-md-6">
                     <div class="bg-success text-white p-3 rounded shadow-sm h-100">
                         <div class="d-flex justify-content-between align-items-center">
@@ -143,48 +189,46 @@
                             <i data-feather="trending-up"></i>
                         </div>
 
-                        <div class="mt-2 h3 mb-1" id="costosOperacionPorPartidaTotalGeneral">$ 0.00</div>
-                        <small class="opacity-75 d-block mb-2">Ganancia neta </small>
+                        <div class="mt-2 h3 mb-1" id="costosPartidaTotalGeneral">$ 0.00</div>
+                        <small class="opacity-75 d-block mb-2">Ganancia neta</small>
 
                         <div class="d-flex justify-content-between small">
                             <span class="opacity-75">Abonos totales</span>
-                            <strong id="costosOperacionPorPartidaTotalAbonosGeneral">$ 0.00</strong>
+                            <strong id="costosPartidaTotalAbonosGeneral">$ 0.00</strong>
                         </div>
                         <div class="d-flex justify-content-between small">
                             <span class="opacity-75">Costos totales</span>
-                            <strong id="costosOperacionPorPartidaTotalCostosGeneral">$ 0.00</strong>
+                            <strong id="costosPartidaTotalCostosGeneral">$ 0.00</strong>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabla simplificada (solo operación) -->
+            <!-- Tabla -->
             <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle" id="tablaCostosOperacionExportar">
+                <table class="table table-sm table-hover align-middle" id="tablaCostosPartidaExportar">
                     <thead class="table-light">
                         <tr>
                             <th style="width:110px;">Fecha</th>
-                            <!-- ELIMINADO: Origen -->
-                            <!-- ELIMINADO: Contenedor -->
                             <th>Concepto</th>
                             <th class="text-end" style="width:140px;">Monto</th>
                             <th class="text-center" style="width:120px;">Estatus</th>
-                            <th class="text-center" style="width:120px;">Comentario</th>
-                            <th class=" text-center" style="width:120px;">Acciones</th>
+                            <th class="text-center" style="width:180px;">Comentario</th>
+                            <th class="text-center" style="width:120px;">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tbodyCostosOperacionCombined">
+                    <tbody id="tbodyCostosPartida">
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Selecciona una operación para ver sus costos.</td>
+                            <td colspan="6" class="text-center text-muted py-4">Selecciona una factura para ver sus costos.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="d-flex justify-content-between align-items-center">
-                <div class="text-muted small" id="costosOperacionPorPartidaMeta">Mostrando 0-0 de 0</div>
+                <div class="text-muted small" id="costosPartidaMeta">Mostrando 0-0 de 0</div>
                 <nav>
-                    <ul id="costosOperacionPorPartidaPaginacion" class="pagination pagination-sm mb-0"></ul>
+                    <ul id="costosPartidaPaginacion" class="pagination pagination-sm mb-0"></ul>
                 </nav>
             </div>
 
@@ -192,91 +236,132 @@
     </div>
 </div>
 
-<!-- Modal: Agregar / Editar Costo por Operación (sin cambios) -->
-<div class="modal fade" id="modalCostoOperacionPorPartida" tabindex="-1" aria-labelledby="modalCostoOperacionPorPartidaLabel"
-    aria-hidden="true">
+<!-- Modal: Agregar / Editar Costo -->
+<div class="modal fade" id="modalCostoPartida" tabindex="-1" aria-labelledby="modalCostoPartidaLabel" aria-hidden="true">
     <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalCostoOperacionPorPartidaLabel">
+                <h5 class="modal-title" id="modalCostoPartidaLabel">
                     <i data-feather="plus-circle" class="me-1"></i> Añadir Costo
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
-            <form id="formAgregarCostoContenedores">
+            <form id="formCostoPartida">
                 <div class="modal-body">
-                    <input type="hidden" id="row_id" name="row_id">
+                    <input type="hidden" id="costosPartidaRowId" name="row_id">
 
                     <div class="mb-3">
                         <div class="position-relative">
-                            <!-- Operación -->
-                            <label class="form-label">Operación o Factura</label>
-                            <input type="hidden" id="costosOperacionPorPartidaid" name="costosOperacionPorPartidaid">
-                            <input type="text" id="costosOperacionPorPartidaNombre" name="costosOperacionPorPartidaNombre" class="form-control"
-                                placeholder="Escribe para buscar operación..." autocomplete="off">
-                            <div id="costosSugerenciasOperaciones" class="list-group"
+                            <label for="costosPartidaFacturaNombre" class="form-label">Factura / Operación por partida</label>
+                            <input type="hidden" id="costosPartidaFacturaId" name="factura_id">
+                            <input
+                                type="text"
+                                id="costosPartidaFacturaNombre"
+                                name="costosPartidaFacturaNombre"
+                                class="form-control"
+                                placeholder="Escribe para buscar factura..."
+                                autocomplete="off">
+                            <div
+                                id="costosPartidaSugerenciasFacturas"
+                                class="list-group"
                                 style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <div class="position-relative">
-                            <!-- Contenedor físico -->
-                            <label class="form-label">Caja/Ferro</label>
-                            <input type="hidden" id="costosContenedorContenedorId" name="costosContenedorContenedorId">
-                            <input type="text" id="costosContenedorContenedorNombre" name="costosContenedorContenedorNombre"
-                                class="form-control" placeholder="Escribe para buscar contenedor..." autocomplete="off" readonly>
-                            <div id="sugerenciasCostosContenedor" class="list-group"
+                            <label for="costosPartidaFerroNombre" class="form-label">Caja/Ferro ligado</label>
+                            <input type="hidden" id="costosPartidaFerroId" name="costosPartidaFerroId">
+                            <input
+                                type="text"
+                                id="costosPartidaFerroNombre"
+                                name="costosPartidaFerroNombre"
+                                class="form-control"
+                                placeholder="Se cargará automáticamente"
+                                autocomplete="off"
+                                readonly>
+                            <div
+                                id="costosPartidaSugerenciasFerro"
+                                class="list-group"
                                 style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="costosContenedoresTipoCosto" class="form-label">Tipo de Costo</label>
-                        <select id="costosContenedoresTipoCosto" name="costosContenedoresTipoCosto" class="form-control" required>
+                        <label for="costosPartidaTipoMovimientoId" class="form-label">Tipo de Costo</label>
+                        <select
+                            id="costosPartidaTipoMovimientoId"
+                            name="tipo_movimiento_id"
+                            class="form-select"
+                            required>
                             <option value="">Seleccione un tipo</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label for="costosContenedoresMonto" class="form-label">Monto</label>
-                        <input type="number" id="costosContenedoresMonto" name="costosContenedoresMonto" class="form-control"
-                            required placeholder="Ej: 500">
+                        <label for="costosPartidaMonto" class="form-label">Monto</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            id="costosPartidaMonto"
+                            name="monto"
+                            class="form-control"
+                            required
+                            placeholder="Ej: 500.00">
                     </div>
 
                     <div class="mb-3">
-                        <label for="costosContenedoresMoneda" class="form-label">Moneda</label>
-                        <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control" readonly disabled>
+                        <label for="costosPartidaMoneda" class="form-label">Moneda</label>
+                        <select
+                            id="costosPartidaMoneda"
+                            name="costosPartidaMoneda"
+                            class="form-select"
+                            readonly
+                            disabled>
                             <option value="">Seleccione</option>
                         </select>
                     </div>
+
                     <div class="mb-3">
-                        <label for="costosContenedoresPagado" class="form-label">Estatus</label>
-                        <select id="costosContenedoresPagado" name="costosContenedoresPagado" class="form-control">
+                        <label for="costosPartidaPagado" class="form-label">Estatus</label>
+                        <select
+                            id="costosPartidaPagado"
+                            name="costosContenedoresPagado"
+                            class="form-select">
                             <option value="0">Pendiente</option>
                             <option value="1">Pagado</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label for="costosContenedoresComentarios" class="form-label">Comentarios (opcional)</label>
-                        <textarea id="costosContenedoresComentarios" name="costosContenedoresComentarios" rows="2"
+                        <label for="costosPartidaComentario" class="form-label">Comentarios (opcional)</label>
+                        <textarea
+                            id="costosPartidaComentario"
+                            name="comentario"
+                            rows="2"
                             class="form-control"></textarea>
                     </div>
                 </div>
 
-                <!-- OJO: modal-footer es HERMANO de modal-body -->
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelarCostoContenedor" data-bs-dismiss="modal">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        id="btnCancelarCostoPartida"
+                        data-bs-dismiss="modal">
                         <i data-feather="x"></i> Cancelar
                     </button>
-                    <button type="button" id="btnGuardarCostoOperacion" class="btn btn-success">
+
+                    <button
+                        type="button"
+                        id="btnGuardarCostoPartida"
+                        class="btn btn-success">
                         <i data-feather="save"></i> Guardar
                     </button>
                 </div>
             </form>
-
         </div>
     </div>
 </div>
@@ -284,7 +369,7 @@
 <script>
     feather.replace();
 </script>
-
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_costos_catalogo.js"></script>
 <script>
     function forzarMayusculas(inputId) {
         const input = document.getElementById(inputId);
@@ -298,7 +383,6 @@
         });
     }
 
-    // Uso
-    forzarMayusculas("costosOperacionPorPartidaFiltroOpNombre");
-    forzarMayusculas("costosOperacionPorPartidaNombre");
+    forzarMayusculas("costosPartidaFiltroFacturaNombre");
+    forzarMayusculas("costosPartidaFacturaNombre");
 </script>

@@ -1,62 +1,80 @@
 /* ============================================================================
-   MÓDULO: Costos por Operación (SOLO MF) - REGISTRAR/EDITAR (XHR)
-   Archivo: costos_operacion_ferro_registrar.js  (o costos_operacion_registrar.js)
+   MÓDULO: Costos por Operación por Partida / Domésticos - REGISTRAR/EDITAR (XHR)
+   Archivo sugerido: costos_partida_registrar.js
+
+   Adaptado a:
+   - Controlador: Operaciones_por_partida_costos
+   - Vista con ids: costosPartida...
+   - Eje principal: factura_id
 
    ✅ Anti-doble-guardado:
-   - Lock global window.__costosOpSaving
+   - Lock global window.__costosPartidaSaving
    - Evita doble binding con dataset.bound
-   - Soporta form id real: formAgregarCostoContenedores (y fallback formCostosOperacion)
-   - Preferencia: guardar por CLICK (tu botón es type="button")
+   - Preferencia: guardar por CLICK (botón type="button")
    ============================================================================ */
 (function () {
   "use strict";
 
+  // ------- BASE URL -------
+  const base =
+    (typeof window.base !== "undefined" && window.base) ||
+    (typeof window.base_url !== "undefined" && window.base_url) ||
+    (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
+    (typeof BASE_URL !== "undefined" && BASE_URL) ||
+    "";
+
   // ------- DOM del modal -------
-  const modalEl = document.getElementById("modalCostoOperacion");
-  const hidRowId = document.getElementById("row_id");
-  const opIdModal = document.getElementById("costosOperacionid");
-  const opNomModal = document.getElementById("costosOperacionNombre");
-  const selTipoModal = document.getElementById("costosContenedoresTipoCosto");
-  const selMonModal = document.getElementById("costosContenedoresMoneda");
-  const montoModal = document.getElementById("costosContenedoresMonto");
-  const comentModal = document.getElementById("costosContenedoresComentarios");
-  const contIdModal = document.getElementById("costosContenedorContenedorId");
-  const contNomModal = document.getElementById(
-    "costosContenedorContenedorNombre",
-  );
-  const selPagadoModal = document.getElementById("costosContenedoresPagado");
+  const modalEl = document.getElementById("modalCostoPartida");
+  const hidRowId = document.getElementById("costosPartidaRowId");
 
-  // ✅ Tu vista actual:
-  const formModal =
-    document.getElementById("formAgregarCostoContenedores") ||
-    document.getElementById("formCostosOperacion");
+  const facturaIdModal = document.getElementById("costosPartidaFacturaId");
+  const facturaNomModal = document.getElementById("costosPartidaFacturaNombre");
 
-  const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
+  const selTipoModal = document.getElementById("costosPartidaTipoMovimientoId");
+  const selMonModal = document.getElementById("costosPartidaMoneda");
+  const montoModal = document.getElementById("costosPartidaMonto");
+  const comentModal = document.getElementById("costosPartidaComentario");
+  const selPagadoModal = document.getElementById("costosPartidaPagado");
+
+  const ferroIdModal = document.getElementById("costosPartidaFerroId");
+  const ferroNomModal = document.getElementById("costosPartidaFerroNombre");
+
+  const formModal = document.getElementById("formCostoPartida");
+  const btnGuardar = document.getElementById("btnGuardarCostoPartida");
 
   if (!modalEl || !btnGuardar) {
-    // No hay modal o no hay botón: nada que hacer
     return;
   }
 
   // ------- Helpers -------
   function toast(icon, title, text) {
-    if (window.Swal) Swal.fire({ icon, title, text, confirmButtonText: "OK" });
-    else alert(`${title}${text ? `: ${text}` : ""}`);
+    if (window.Swal) {
+      Swal.fire({ icon, title, text, confirmButtonText: "OK" });
+    } else {
+      alert(`${title}${text ? `: ${text}` : ""}`);
+    }
   }
 
   function syncMonedaPorTipo() {
     if (!selTipoModal || !selMonModal) return;
+
     const opt = selTipoModal.selectedOptions?.[0];
-    const m = opt
+    const moneda = opt
       ? String(opt.getAttribute("data-moneda") || "").toUpperCase()
       : "";
-    if (m === "PESOS" || m === "DLLS") selMonModal.value = m;
+
+    if (moneda === "PESOS" || moneda === "DLLS") {
+      selMonModal.value = moneda;
+    } else {
+      selMonModal.value = "";
+    }
   }
+
   selTipoModal?.addEventListener("change", syncMonedaPorTipo);
 
   function buildPayload() {
     const rowId = parseInt(hidRowId?.value || "0", 10) || 0;
-    const opId = parseInt(opIdModal?.value || "0", 10) || 0;
+    const facturaId = parseInt(facturaIdModal?.value || "0", 10) || 0;
     const tipoId = parseInt(selTipoModal?.value || "0", 10) || 0;
 
     let montoRaw = String(montoModal?.value || "").trim();
@@ -66,14 +84,25 @@
     const comentario = String(comentModal?.value || "").trim();
     const pagado = parseInt(selPagadoModal?.value || "0", 10) === 1 ? 1 : 0;
 
-    if (opId <= 0 && rowId <= 0) return { ok: false, msg: "Falta operación." };
-    if (tipoId <= 0) return { ok: false, msg: "Selecciona un tipo/concepto." };
-    if (!Number.isFinite(monto) || monto <= 0)
+    if (facturaId <= 0 && rowId <= 0) {
+      return { ok: false, msg: "Falta factura." };
+    }
+
+    if (tipoId <= 0) {
+      return { ok: false, msg: "Selecciona un tipo/concepto." };
+    }
+
+    if (!Number.isFinite(monto) || monto <= 0) {
       return { ok: false, msg: "Ingresa un monto válido (> 0)." };
+    }
 
     const fd = new FormData();
     fd.append("row_id", String(rowId));
-    if (opId > 0) fd.append("operacion_id", String(opId));
+
+    if (facturaId > 0) {
+      fd.append("factura_id", String(facturaId));
+    }
+
     fd.append("tipo_movimiento_id", String(tipoId));
     fd.append("monto", String(monto.toFixed(2)));
     fd.append("comentario", comentario);
@@ -84,8 +113,10 @@
 
   function setBtnLoading(isLoading) {
     if (!btnGuardar) return;
-    if (!btnGuardar.dataset.oldHtml)
+
+    if (!btnGuardar.dataset.oldHtml) {
       btnGuardar.dataset.oldHtml = btnGuardar.innerHTML;
+    }
 
     if (isLoading) {
       btnGuardar.disabled = true;
@@ -98,19 +129,18 @@
   }
 
   function guardarXHR() {
-    // ✅ Lock global anti doble click / doble bind / doble submit
-    if (window.__costosOpSaving) return;
-    window.__costosOpSaving = true;
+    if (window.__costosPartidaSaving) return;
+    window.__costosPartidaSaving = true;
 
     const pkg = buildPayload();
     if (!pkg.ok) {
-      window.__costosOpSaving = false;
+      window.__costosPartidaSaving = false;
       return toast("warning", "Validación", pkg.msg);
     }
 
     setBtnLoading(true);
 
-    const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/guardar`;
+    const url = `${base}Operaciones_por_partida_costos/guardar`;
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
 
@@ -118,7 +148,7 @@
       if (xhr.readyState !== 4) return;
 
       setBtnLoading(false);
-      window.__costosOpSaving = false;
+      window.__costosPartidaSaving = false;
 
       let resp = {};
       try {
@@ -144,8 +174,8 @@
           window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
         }
 
-        if (typeof window.listarCostosOperacion === "function") {
-          window.listarCostosOperacion(1);
+        if (typeof window.listarCostosPartida === "function") {
+          window.listarCostosPartida(1);
         }
       } else if (st === "warning") {
         toast("warning", "Aviso", mg || "Revisa los datos.");
@@ -158,36 +188,29 @@
   }
 
   // ------- Enganches -------
-  // ✅ Evitar doble binding aunque el script se cargue 2 veces
   if (btnGuardar.dataset.bound === "1") return;
   btnGuardar.dataset.bound = "1";
 
-  // Preferimos CLICK (tu botón es type="button")
-  btnGuardar.addEventListener("click", (e) => {
+  btnGuardar.addEventListener("click", function (e) {
     e.preventDefault();
     guardarXHR();
   });
 
-  // Si el usuario presiona Enter dentro del form, evitamos submit normal
-  // y lo convertimos en guardar, sin duplicar (lock global lo previene).
   if (formModal) {
-    formModal.addEventListener("submit", (e) => {
+    formModal.addEventListener("submit", function (e) {
       e.preventDefault();
       guardarXHR();
     });
   }
 
-  // UX: cuando abre modal, sincroniza moneda
-  modalEl.addEventListener("shown.bs.modal", () => {
+  modalEl.addEventListener("shown.bs.modal", function () {
     syncMonedaPorTipo();
-    // liberamos lock por si el modal se reabrió tras un cierre raro
-    window.__costosOpSaving = false;
+    window.__costosPartidaSaving = false;
     setBtnLoading(false);
   });
 
-  // Al cerrar modal, reset lock por seguridad
-  modalEl.addEventListener("hidden.bs.modal", () => {
-    window.__costosOpSaving = false;
+  modalEl.addEventListener("hidden.bs.modal", function () {
+    window.__costosPartidaSaving = false;
     setBtnLoading(false);
   });
 })();
