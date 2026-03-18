@@ -1,10 +1,12 @@
 (function () {
   "use strict";
+
   const base_url =
     (typeof window.base_url !== "undefined" && window.base_url) ||
     (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
+
   const URL_REGISTRAR = base_url + "Operaciones_por_partida_envios/registrar";
 
   // =========================
@@ -27,6 +29,16 @@
   const selDestino = document.getElementById("partidas_transito_destino_id");
   const selEstatus = document.getElementById("partidas_transito_estatus");
   const txtNotas = document.getElementById("partidas_transito_nota");
+
+  // INPUT DE IMÁGENES
+  const inpImagenes =
+    document.getElementById("partidas_transito_imagenes") ||
+    document.getElementById("partidas_transito_imagenes_envio") ||
+    document.querySelector('input[name="imagenes[]"]') ||
+    document.querySelector('input[name="imagenes"]');
+
+  const IMG_MIN = 3;
+  const IMG_MAX = 5;
 
   let enviando = false;
 
@@ -53,11 +65,33 @@
     return [];
   }
 
+  function getImagenesSeleccionadas() {
+    if (
+      window.partidasTransitoListado &&
+      typeof window.partidasTransitoListado.obtenerImagenesEstado === "function"
+    ) {
+      const estado = window.partidasTransitoListado.obtenerImagenesEstado();
+
+      if (estado && Array.isArray(estado.nuevas)) {
+        return estado.nuevas
+          .map(function (img) {
+            return img && img.file ? img.file : null;
+          })
+          .filter(function (file) {
+            return !!file;
+          });
+      }
+    }
+
+    if (!inpImagenes || !inpImagenes.files) return [];
+    return Array.from(inpImagenes.files);
+  }
+
   function mostrarAlerta(tipo, mensaje) {
     if (typeof Swal !== "undefined") {
       Swal.fire({
         icon: tipo,
-        text: mensaje,
+        html: String(mensaje || "").replace(/\n/g, "<br>"),
         confirmButtonText: "Aceptar",
       });
       return;
@@ -72,7 +106,9 @@
     btnGuardar.disabled = !!bloquear;
 
     if (bloquear) {
-      btnGuardar.dataset.textoOriginal = btnGuardar.innerHTML;
+      if (!btnGuardar.dataset.textoOriginal) {
+        btnGuardar.dataset.textoOriginal = btnGuardar.innerHTML;
+      }
       btnGuardar.innerHTML =
         '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
     } else if (btnGuardar.dataset.textoOriginal) {
@@ -90,7 +126,28 @@
     instancia.hide();
   }
 
-  function validarFormulario(data, detalle) {
+  function esImagenPermitida(file) {
+    if (!file) return false;
+
+    const tiposPermitidos = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
+
+    const nombre = String(file.name || "").toLowerCase();
+    const ext = nombre.includes(".") ? nombre.split(".").pop() : "";
+
+    const extensionesPermitidas = ["jpg", "jpeg", "png", "webp"];
+
+    return (
+      tiposPermitidos.indexOf(String(file.type || "").toLowerCase()) !== -1 &&
+      extensionesPermitidas.indexOf(ext) !== -1
+    );
+  }
+
+  function validarFormulario(data, detalle, imagenes) {
     if (
       (!data.contenedor_fisico_id || data.contenedor_fisico_id <= 0) &&
       !data.numero_ferro
@@ -144,6 +201,32 @@
       return "No hay productos válidos para guardar en el envío.";
     }
 
+    if (!inpImagenes) {
+      return "No se encontró el input de imágenes del formulario.";
+    }
+
+    if (
+      !Array.isArray(imagenes) ||
+      imagenes.length < IMG_MIN ||
+      imagenes.length > IMG_MAX
+    ) {
+      return "Debes adjuntar entre " + IMG_MIN + " y " + IMG_MAX + " imágenes.";
+    }
+
+    for (let j = 0; j < imagenes.length; j++) {
+      if (!esImagenPermitida(imagenes[j])) {
+        return (
+          "La imagen #" +
+          (j + 1) +
+          " no tiene un formato permitido. Solo se aceptan JPG, JPEG, PNG y WEBP."
+        );
+      }
+
+      if (!imagenes[j].size || Number(imagenes[j].size) <= 0) {
+        return "La imagen #" + (j + 1) + " está vacía o es inválida.";
+      }
+    }
+
     return "";
   }
 
@@ -177,23 +260,9 @@
     };
   }
 
-  function enviarRegistro() {
-    if (estaEnModoEditar()) {
-      return;
-    }
-    if (enviando) return;
-
-    const payload = construirPayload();
-    const detalleActual = getDetalleActual();
-
-    const error = validarFormulario(payload, detalleActual);
-    if (error) {
-      mostrarAlerta("warning", error);
-      return;
-    }
-    console.log("PAYLOAD A ENVIAR:", payload);
-    console.log("DETALLE ACTUAL:", detalleActual);
+  function construirFormData(payload, imagenes) {
     const fd = new FormData();
+
     fd.append("contenedor_fisico_id", payload.contenedor_fisico_id);
     fd.append("numero_ferro", payload.numero_ferro);
     fd.append("destino_ciudad_id", payload.destino_ciudad_id);
@@ -202,6 +271,58 @@
     fd.append("transportista_id", payload.transportista_id);
     fd.append("notas", payload.notas);
     fd.append("detalle", JSON.stringify(payload.detalle));
+
+    imagenes.forEach(function (file) {
+      fd.append("imagenes[]", file, file.name);
+    });
+
+    return fd;
+  }
+
+  function construirMensajeError(resp) {
+    let mensaje = (resp && resp.msg) || "No fue posible registrar el envío.";
+
+    if (resp && Array.isArray(resp.errores) && resp.errores.length) {
+      mensaje += "\n\n" + resp.errores.join("\n");
+    }
+
+    if (
+      resp &&
+      Array.isArray(resp.errores_imagenes) &&
+      resp.errores_imagenes.length
+    ) {
+      mensaje += "\n\n" + resp.errores_imagenes.join("\n");
+    }
+
+    if (
+      resp &&
+      Array.isArray(resp.errores_detalle) &&
+      resp.errores_detalle.length
+    ) {
+      mensaje += "\n\n" + resp.errores_detalle.join("\n");
+    }
+
+    return mensaje;
+  }
+
+  function enviarRegistro() {
+    if (estaEnModoEditar()) {
+      return;
+    }
+
+    if (enviando) return;
+
+    const payload = construirPayload();
+    const detalleActual = getDetalleActual();
+    const imagenes = getImagenesSeleccionadas();
+
+    const error = validarFormulario(payload, detalleActual, imagenes);
+    if (error) {
+      mostrarAlerta("warning", error);
+      return;
+    }
+
+    const fd = construirFormData(payload, imagenes);
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", URL_REGISTRAR, true);
@@ -240,6 +361,10 @@
           formEl.reset();
         }
 
+        if (inpImagenes) {
+          inpImagenes.value = "";
+        }
+
         cerrarModalBootstrap();
 
         if (
@@ -252,10 +377,7 @@
         return;
       }
 
-      mostrarAlerta(
-        "error",
-        (resp && resp.msg) || "No fue posible registrar el envío.",
-      );
+      mostrarAlerta("error", construirMensajeError(resp));
     };
 
     xhr.onerror = function () {
@@ -282,6 +404,7 @@
   function bindEventos() {
     if (btnGuardar) {
       btnGuardar.addEventListener("click", function (e) {
+        e.preventDefault();
         if (estaEnModoEditar()) return;
         enviarRegistro();
       });
@@ -302,8 +425,6 @@
     }
   }
 
-  bindEventos();
-
   function normalizarEstatus(valor) {
     const v = String(valor || "")
       .trim()
@@ -317,6 +438,7 @@
 
     return "";
   }
+
   function estaEnModoEditar() {
     if (
       window.partidasTransitoListado &&
@@ -328,4 +450,6 @@
     }
     return false;
   }
+
+  bindEventos();
 })();

@@ -1,6 +1,9 @@
 <?php
 class Operaciones_por_partida_envios extends Controller
 {
+    private const IMG_MIN = 3;
+    private const IMG_MAX = 5;
+
     public function __construct()
     {
         parent::__construct();
@@ -23,7 +26,6 @@ class Operaciones_por_partida_envios extends Controller
         $data['title'] = 'Envíos por Ferro / Caja';
         $this->views->getView($this, "index", $data);
     }
-
 
     public function listar()
     {
@@ -90,7 +92,6 @@ class Operaciones_por_partida_envios extends Controller
         }
     }
 
-
     /* =========================================================
        HELPERS JSON
        ========================================================= */
@@ -111,28 +112,284 @@ class Operaciones_por_partida_envios extends Controller
     }
 
     /* =========================================================
+       HELPERS IMÁGENES
+       ========================================================= */
+
+    private function obtenerUsuarioIdSesion(): ?int
+    {
+        $candidatos = [
+            'id_usuario',
+            'usuario_id',
+            'idUser',
+            'id'
+        ];
+
+        foreach ($candidatos as $key) {
+            if (isset($_SESSION[$key]) && (int)$_SESSION[$key] > 0) {
+                return (int)$_SESSION[$key];
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizarArchivosMultiples(?array $filesField): array
+    {
+        if (
+            empty($filesField) ||
+            !isset($filesField['name']) ||
+            !is_array($filesField['name'])
+        ) {
+            return [];
+        }
+
+        $out = [];
+        $total = count($filesField['name']);
+
+        for ($i = 0; $i < $total; $i++) {
+            $error = isset($filesField['error'][$i]) ? (int)$filesField['error'][$i] : UPLOAD_ERR_NO_FILE;
+
+            if ($error === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            $out[] = [
+                'name'     => (string)($filesField['name'][$i] ?? ''),
+                'type'     => (string)($filesField['type'][$i] ?? ''),
+                'tmp_name' => (string)($filesField['tmp_name'][$i] ?? ''),
+                'error'    => $error,
+                'size'     => (int)($filesField['size'][$i] ?? 0)
+            ];
+        }
+
+        return $out;
+    }
+
+    private function validarImagenesSubidas(array $imagenes): array
+    {
+        $permitidos = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp'
+        ];
+
+        $extPermitidas = ['jpg', 'jpeg', 'png', 'webp'];
+        $errores = [];
+
+        foreach ($imagenes as $index => $img) {
+            $n = $index + 1;
+
+            if (!isset($img['error']) || (int)$img['error'] !== UPLOAD_ERR_OK) {
+                $errores[] = "Imagen #{$n}: error al subir archivo.";
+                continue;
+            }
+
+            if (empty($img['tmp_name']) || !is_uploaded_file($img['tmp_name'])) {
+                $errores[] = "Imagen #{$n}: archivo temporal inválido.";
+                continue;
+            }
+
+            $mime = $this->detectarMimeImagen($img['tmp_name'], (string)($img['type'] ?? ''));
+            $ext  = strtolower(pathinfo((string)($img['name'] ?? ''), PATHINFO_EXTENSION));
+
+            if (!in_array($mime, $permitidos, true)) {
+                $errores[] = "Imagen #{$n}: formato no permitido.";
+                continue;
+            }
+
+            if (!in_array($ext, $extPermitidas, true)) {
+                $errores[] = "Imagen #{$n}: extensión no permitida.";
+                continue;
+            }
+
+            if ((int)($img['size'] ?? 0) <= 0) {
+                $errores[] = "Imagen #{$n}: archivo vacío.";
+                continue;
+            }
+        }
+
+        return $errores;
+    }
+
+    private function detectarMimeImagen(string $tmpPath, string $fallback = ''): string
+    {
+        $mime = '';
+
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $mime = (string)finfo_file($finfo, $tmpPath);
+                finfo_close($finfo);
+            }
+        }
+
+        if ($mime === '' && function_exists('mime_content_type')) {
+            $mime = (string)@mime_content_type($tmpPath);
+        }
+
+        if ($mime === '') {
+            $mime = trim($fallback);
+        }
+
+        return strtolower($mime);
+    }
+
+    private function obtenerCarpetaImagenesRelativa(int $envioId): string
+    {
+        return 'Uploads/operaciones_partida/envios/' . $envioId . '/';
+    }
+
+    private function obtenerCarpetaImagenesAbsoluta(int $envioId): string
+    {
+        $base = defined('UPLOAD_ROOT')
+            ? rtrim(UPLOAD_ROOT, '/\\')
+            : rtrim(dirname(__DIR__, 2), '/\\');
+
+        return $base . DIRECTORY_SEPARATOR . 'Uploads'
+            . DIRECTORY_SEPARATOR . 'operaciones_partida'
+            . DIRECTORY_SEPARATOR . 'envios'
+            . DIRECTORY_SEPARATOR . $envioId
+            . DIRECTORY_SEPARATOR;
+    }
+
+    private function asegurarDirectorio(string $dir): bool
+    {
+        if (is_dir($dir)) {
+            return true;
+        }
+
+        return @mkdir($dir, 0775, true) || is_dir($dir);
+    }
+
+    private function generarNombreImagenSeguro(string $nombreOriginal, int $ordenVisual): string
+    {
+        $ext = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+        $ext = $ext !== '' ? $ext : 'jpg';
+
+        try {
+            $rand = bin2hex(random_bytes(5));
+        } catch (Throwable $e) {
+            $rand = substr(md5(uniqid((string)mt_rand(), true)), 0, 10);
+        }
+
+        return 'img_' . str_pad((string)$ordenVisual, 2, '0', STR_PAD_LEFT)
+            . '_' . date('Ymd_His')
+            . '_' . $rand
+            . '.' . $ext;
+    }
+
+    private function guardarImagenesEnvio(int $envioId, array $imagenes, ?int $subidoPor = null): array
+    {
+        $errores = [];
+        $guardadas = [];
+        $dirAbs = $this->obtenerCarpetaImagenesAbsoluta($envioId);
+        $dirRel = $this->obtenerCarpetaImagenesRelativa($envioId);
+
+        if (!$this->asegurarDirectorio($dirAbs)) {
+            return [
+                'ok'        => false,
+                'guardadas' => [],
+                'errores'   => ['No fue posible crear la carpeta de imágenes del envío.']
+            ];
+        }
+
+        $orden = $this->model->obtenerSiguienteOrdenImagen($envioId);
+
+        foreach ($imagenes as $index => $img) {
+            $mime = $this->detectarMimeImagen($img['tmp_name'], (string)($img['type'] ?? ''));
+            $nombreGenerado = $this->generarNombreImagenSeguro((string)$img['name'], $orden);
+            $rutaAbs = $dirAbs . $nombreGenerado;
+            $rutaRel = $dirRel . $nombreGenerado;
+
+            if (!@move_uploaded_file($img['tmp_name'], $rutaAbs)) {
+                $errores[] = 'No fue posible mover la imagen #' . ($index + 1) . ' al servidor.';
+                continue;
+            }
+
+            $idImagen = $this->model->registrarEnvioImagen(
+                $envioId,
+                (string)$img['name'],
+                $rutaRel,
+                $mime !== '' ? $mime : null,
+                (int)($img['size'] ?? 0),
+                $orden,
+                $subidoPor
+            );
+
+            if (!$idImagen) {
+                @unlink($rutaAbs);
+                $errores[] = 'No fue posible registrar la imagen #' . ($index + 1) . ' en la base de datos.';
+                continue;
+            }
+
+            $guardadas[] = [
+                'id_imagen'      => (int)$idImagen,
+                'nombre_archivo' => (string)$img['name'],
+                'ruta_archivo'   => $rutaRel,
+                'orden_visual'   => $orden
+            ];
+
+            $orden++;
+        }
+
+        return [
+            'ok'        => empty($errores),
+            'guardadas' => $guardadas,
+            'errores'   => $errores
+        ];
+    }
+
+    private function eliminarArchivoFisicoSiExiste(string $rutaRelativa): void
+    {
+        if ($rutaRelativa === '') {
+            return;
+        }
+
+        $base = defined('UPLOAD_ROOT')
+            ? rtrim(UPLOAD_ROOT, '/\\')
+            : rtrim(dirname(__DIR__, 2), '/\\');
+
+        $rutaRelativa = ltrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rutaRelativa), DIRECTORY_SEPARATOR);
+        $rutaAbs = $base . DIRECTORY_SEPARATOR . $rutaRelativa;
+
+        if (is_file($rutaAbs)) {
+            @unlink($rutaAbs);
+        }
+    }
+
+    private function parsearIdsImagenesEliminadas($raw): array
+    {
+        if (is_array($raw)) {
+            $ids = $raw;
+        } else {
+            $raw = trim((string)$raw);
+
+            if ($raw === '') {
+                return [];
+            }
+
+            $json = json_decode($raw, true);
+
+            if (is_array($json)) {
+                $ids = $json;
+            } else {
+                $ids = explode(',', $raw);
+            }
+        }
+
+        $ids = array_map('intval', $ids);
+        $ids = array_values(array_filter($ids, function ($id) {
+            return $id > 0;
+        }));
+
+        return array_values(array_unique($ids));
+    }
+
+    /* =========================================================
        CATÁLOGOS / BÚSQUEDAS
        ========================================================= */
 
-
-
-
-    /**
-     * GET
-     * Autocomplete de destinos (ciudades)
-     * Params:
-     * - term
-     * - limit (opcional)
-     */
-
-
-    /**
-     * GET
-     * Autocomplete de ferro / caja
-     * Params:
-     * - term
-     * - limit (opcional)
-     */
     public function sugerirFerroCaja()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -168,13 +425,6 @@ class Operaciones_por_partida_envios extends Controller
         }
     }
 
-    /**
-     * GET
-     * Buscar facturas para autocomplete
-     * Params:
-     * - term
-     * - limit (opcional)
-     */
     public function sugerirFacturas()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -215,12 +465,6 @@ class Operaciones_por_partida_envios extends Controller
         }
     }
 
-    /**
-     * GET
-     * Devuelve encabezado de factura + productos
-     * Params:
-     * - factura_id
-     */
     public function productosFactura()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -294,29 +538,6 @@ class Operaciones_por_partida_envios extends Controller
        REGISTRO
        ========================================================= */
 
-    /**
-     * POST
-     * Registra envío + detalle
-     *
-     * Espera:
-     * - contenedor_fisico_id
-     * - destino_ciudad_id
-     * - fecha_envio
-     * - estatus_envio
-     * - transportista_id
-     * - notas
-     * - detalle (JSON)
-     *
-     * detalle esperado:
-     * [
-     *   {
-     *     "factura_id": 1,
-     *     "producto_id": 10,
-     *     "cajas_enviadas": 25,
-     *     "notas_detalle": ""
-     *   }
-     * ]
-     */
     public function registrar()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -326,21 +547,37 @@ class Operaciones_por_partida_envios extends Controller
         $contenedorFisicoId = isset($_POST['contenedor_fisico_id']) ? (int)$_POST['contenedor_fisico_id'] : 0;
         $numeroFerro        = isset($_POST['numero_ferro']) ? trim((string)$_POST['numero_ferro']) : '';
 
-        $destinoCiudadId = isset($_POST['destino_ciudad_id']) && $_POST['destino_ciudad_id'] !== ''
-            ? (int)$_POST['destino_ciudad_id']
-            : null;
+        $destinoCiudadId = null;
+        if (isset($_POST['destino_ciudad_id']) && $_POST['destino_ciudad_id'] !== '') {
+            $destinoCiudadId = (int)$_POST['destino_ciudad_id'];
+        } elseif (isset($_POST['destino_id']) && $_POST['destino_id'] !== '') {
+            $destinoCiudadId = (int)$_POST['destino_id'];
+        }
 
         $fechaEnvio = isset($_POST['fecha_envio']) ? trim((string)$_POST['fecha_envio']) : '';
-        $estatusEnvio = isset($_POST['estatus_envio']) ? trim((string)$_POST['estatus_envio']) : '';
+
+        $estatusEnvio = '';
+        if (isset($_POST['estatus_envio'])) {
+            $estatusEnvio = trim((string)$_POST['estatus_envio']);
+        } elseif (isset($_POST['estatus'])) {
+            $estatusEnvio = trim((string)$_POST['estatus']);
+        }
 
         $transportistaId = isset($_POST['transportista_id']) && $_POST['transportista_id'] !== ''
             ? (int)$_POST['transportista_id']
             : null;
 
-        $notas = isset($_POST['notas']) ? trim((string)$_POST['notas']) : '';
+        $notas = '';
+        if (isset($_POST['notas'])) {
+            $notas = trim((string)$_POST['notas']);
+        } elseif (isset($_POST['nota'])) {
+            $notas = trim((string)$_POST['nota']);
+        }
 
         $detalleRaw = isset($_POST['detalle']) ? $_POST['detalle'] : '[]';
         $detalle = json_decode($detalleRaw, true);
+
+        $imagenes = $this->normalizarArchivosMultiples($_FILES['imagenes'] ?? null);
 
         if ($contenedorFisicoId <= 0 && $numeroFerro === '') {
             $this->jsonResponse([
@@ -349,14 +586,14 @@ class Operaciones_por_partida_envios extends Controller
             ], 400);
         }
 
-        if (empty($fechaEnvio)) {
+        if ($fechaEnvio === '') {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'La fecha de envío es obligatoria.'
             ], 400);
         }
 
-        if (empty($estatusEnvio)) {
+        if ($estatusEnvio === '') {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'El estatus del envío es obligatorio.'
@@ -377,8 +614,23 @@ class Operaciones_por_partida_envios extends Controller
             ], 400);
         }
 
+        if (count($imagenes) < self::IMG_MIN || count($imagenes) > self::IMG_MAX) {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'Debes adjuntar entre ' . self::IMG_MIN . ' y ' . self::IMG_MAX . ' imágenes.'
+            ], 400);
+        }
+
+        $erroresImagenes = $this->validarImagenesSubidas($imagenes);
+        if (!empty($erroresImagenes)) {
+            $this->jsonResponse([
+                'ok'      => false,
+                'msg'     => 'Hay errores en las imágenes seleccionadas.',
+                'errores' => $erroresImagenes
+            ], 400);
+        }
+
         try {
-            // Resolver o crear ferro/caja si no viene ID
             if ($contenedorFisicoId <= 0) {
                 $ferro = $this->model->obtenerOCrearFerroCaja($numeroFerro);
 
@@ -392,7 +644,54 @@ class Operaciones_por_partida_envios extends Controller
                 $contenedorFisicoId = (int)$ferro['id_fisico'];
             }
 
-            // Registrar encabezado
+            $detalleValido = [];
+            $erroresDetalle = [];
+
+            foreach ($detalle as $index => $item) {
+                $facturaId     = isset($item['factura_id']) ? (int)$item['factura_id'] : 0;
+                $productoId    = isset($item['producto_id']) ? (int)$item['producto_id'] : 0;
+                $cajasEnviadas = isset($item['cajas_enviadas']) ? (int)$item['cajas_enviadas'] : 0;
+                $notasDetalle  = isset($item['notas_detalle']) ? trim((string)$item['notas_detalle']) : '';
+
+                if ($facturaId <= 0 || $productoId <= 0 || $cajasEnviadas <= 0) {
+                    $erroresDetalle[] = 'Detalle #' . ($index + 1) . ': datos incompletos.';
+                    continue;
+                }
+
+                $producto = $this->model->obtenerProductoConDisponibilidad($productoId);
+
+                if (!$producto) {
+                    $erroresDetalle[] = 'Detalle #' . ($index + 1) . ': producto no encontrado o inactivo.';
+                    continue;
+                }
+
+                if ((int)$producto['factura_id'] !== $facturaId) {
+                    $erroresDetalle[] = 'Detalle #' . ($index + 1) . ': el producto no pertenece a la factura indicada.';
+                    continue;
+                }
+
+                $cajasRestantes = (int)($producto['cajas_restantes'] ?? 0);
+                if ($cajasEnviadas > $cajasRestantes) {
+                    $erroresDetalle[] = 'Detalle #' . ($index + 1) . ': cajas solicitadas mayores a las disponibles.';
+                    continue;
+                }
+
+                $detalleValido[] = [
+                    'factura_id'     => $facturaId,
+                    'producto_id'    => $productoId,
+                    'cajas_enviadas' => $cajasEnviadas,
+                    'notas_detalle'  => $notasDetalle
+                ];
+            }
+
+            if (empty($detalleValido)) {
+                $this->jsonResponse([
+                    'ok'      => false,
+                    'msg'     => 'No hay detalles válidos para registrar el envío.',
+                    'errores' => $erroresDetalle
+                ], 400);
+            }
+
             $envioId = $this->model->registrarEnvio(
                 $contenedorFisicoId,
                 $destinoCiudadId,
@@ -410,70 +709,62 @@ class Operaciones_por_partida_envios extends Controller
             }
 
             $insertados = 0;
-            $erroresDetalle = [];
+            $erroresDetalleSave = [];
 
-            foreach ($detalle as $index => $item) {
-                $facturaId     = isset($item['factura_id']) ? (int)$item['factura_id'] : 0;
-                $productoId    = isset($item['producto_id']) ? (int)$item['producto_id'] : 0;
-                $cajasEnviadas = isset($item['cajas_enviadas']) ? (int)$item['cajas_enviadas'] : 0;
-                $notasDetalle  = isset($item['notas_detalle']) ? trim((string)$item['notas_detalle']) : '';
-
-                if ($facturaId <= 0 || $productoId <= 0 || $cajasEnviadas <= 0) {
-                    $erroresDetalle[] = "Detalle #" . ($index + 1) . ": datos incompletos.";
-                    continue;
-                }
-
-                $producto = $this->model->obtenerProductoConDisponibilidad($productoId);
-
-                if (!$producto) {
-                    $erroresDetalle[] = "Detalle #" . ($index + 1) . ": producto no encontrado o inactivo.";
-                    continue;
-                }
-
-                if ((int)$producto['factura_id'] !== $facturaId) {
-                    $erroresDetalle[] = "Detalle #" . ($index + 1) . ": el producto no pertenece a la factura indicada.";
-                    continue;
-                }
-
-                $cajasRestantes = (int)($producto['cajas_restantes'] ?? 0);
-                if ($cajasEnviadas > $cajasRestantes) {
-                    $erroresDetalle[] = "Detalle #" . ($index + 1) . ": cajas solicitadas mayores a las disponibles.";
-                    continue;
-                }
-
+            foreach ($detalleValido as $index => $item) {
                 $okDetalle = $this->model->registrarEnvioDetalle(
                     (int)$envioId,
-                    $facturaId,
-                    $productoId,
-                    $cajasEnviadas,
-                    $notasDetalle
+                    (int)$item['factura_id'],
+                    (int)$item['producto_id'],
+                    (int)$item['cajas_enviadas'],
+                    (string)$item['notas_detalle']
                 );
 
                 if ($okDetalle) {
                     $insertados++;
                 } else {
-                    $erroresDetalle[] = "Detalle #" . ($index + 1) . ": no fue posible guardar el detalle.";
+                    $erroresDetalleSave[] = 'Detalle #' . ($index + 1) . ': no fue posible guardar el detalle.';
                 }
             }
 
             if ($insertados <= 0) {
                 $this->jsonResponse([
-                    'ok'       => false,
-                    'msg'      => 'El envío fue creado, pero no se registró ningún detalle válido.',
+                    'ok'      => false,
+                    'msg'     => 'El envío fue creado, pero no se registró ningún detalle válido.',
                     'envio_id' => (int)$envioId,
-                    'errores'  => $erroresDetalle
+                    'errores' => array_merge($erroresDetalle, $erroresDetalleSave)
+                ], 400);
+            }
+
+            $resultadoImagenes = $this->guardarImagenesEnvio(
+                (int)$envioId,
+                $imagenes,
+                $this->obtenerUsuarioIdSesion()
+            );
+
+            if (count($resultadoImagenes['guardadas']) < self::IMG_MIN) {
+                $this->jsonResponse([
+                    'ok'               => false,
+                    'msg'              => 'El envío fue registrado, pero no se logró guardar el mínimo de imágenes requerido.',
+                    'envio_id'         => (int)$envioId,
+                    'detalles_ok'      => (int)$insertados,
+                    'imagenes_ok'      => count($resultadoImagenes['guardadas']),
+                    'errores_detalle'  => array_merge($erroresDetalle, $erroresDetalleSave),
+                    'errores_imagenes' => $resultadoImagenes['errores']
                 ], 400);
             }
 
             $this->jsonResponse([
-                'ok'             => true,
-                'msg'            => 'Envío registrado correctamente.',
-                'envio_id'       => (int)$envioId,
-                'detalles_ok'    => (int)$insertados,
-                'detalles_total' => count($detalle),
-                'errores'        => $erroresDetalle
+                'ok'               => true,
+                'msg'              => 'Envío registrado correctamente.',
+                'envio_id'         => (int)$envioId,
+                'detalles_ok'      => (int)$insertados,
+                'detalles_total'   => count($detalleValido),
+                'imagenes_ok'      => count($resultadoImagenes['guardadas']),
+                'errores_detalle'  => array_merge($erroresDetalle, $erroresDetalleSave),
+                'errores_imagenes' => $resultadoImagenes['errores']
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'Error al registrar el envío.',
@@ -482,13 +773,10 @@ class Operaciones_por_partida_envios extends Controller
         }
     }
 
-    /*actualizar*/
-    /**
-     * GET
-     * Obtiene un envío por id para edición
-     * Params:
-     * - id_envio
-     */
+    /* =========================================================
+       OBTENER
+       ========================================================= */
+
     public function obtener()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -518,6 +806,10 @@ class Operaciones_por_partida_envios extends Controller
                 ? $envio['detalle']
                 : [];
 
+            $imagenes = isset($envio['imagenes']) && is_array($envio['imagenes'])
+                ? $envio['imagenes']
+                : [];
+
             $detalleOut = array_map(function ($row) {
                 return [
                     'id_envio_detalle' => (int)($row['id_envio_detalle'] ?? 0),
@@ -533,6 +825,20 @@ class Operaciones_por_partida_envios extends Controller
                 ];
             }, $detalle);
 
+            $imagenesOut = array_map(function ($row) {
+                return [
+                    'id_imagen'      => (int)($row['id_imagen'] ?? 0),
+                    'envio_id'       => (int)($row['envio_id'] ?? 0),
+                    'nombre_archivo' => (string)($row['nombre_archivo'] ?? ''),
+                    'ruta_archivo'   => (string)($row['ruta_archivo'] ?? ''),
+                    'mime_type'      => (string)($row['mime_type'] ?? ''),
+                    'tamano_bytes'   => (int)($row['tamano_bytes'] ?? 0),
+                    'orden_visual'   => (int)($row['orden_visual'] ?? 0),
+                    'subido_por'     => isset($row['subido_por']) ? (int)$row['subido_por'] : null,
+                    'fecha_subida'   => (string)($row['fecha_subida'] ?? '')
+                ];
+            }, $imagenes);
+
             $this->jsonResponse([
                 'ok'    => true,
                 'envio' => [
@@ -546,10 +852,11 @@ class Operaciones_por_partida_envios extends Controller
                     'destino'              => (string)($envio['destino'] ?? ''),
                     'estatus_envio'        => (string)($envio['estatus_envio'] ?? ''),
                     'notas'                => (string)($envio['notas'] ?? ''),
-                    'detalle'              => $detalleOut
+                    'detalle'              => $detalleOut,
+                    'imagenes'             => $imagenesOut
                 ]
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'Error al obtener el envío.',
@@ -558,15 +865,10 @@ class Operaciones_por_partida_envios extends Controller
         }
     }
 
-    /**
-     * POST
-     * Actualiza un envío (solo estatus y notas)
-     *
-     * Espera:
-     * - id_envio
-     * - estatus_envio
-     * - notas
-     */
+    /* =========================================================
+       ACTUALIZAR
+       ========================================================= */
+
     public function actualizar()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -574,8 +876,27 @@ class Operaciones_por_partida_envios extends Controller
         }
 
         $envioId = isset($_POST['id_envio']) ? (int)$_POST['id_envio'] : 0;
-        $estatusEnvio = isset($_POST['estatus_envio']) ? trim((string)$_POST['estatus_envio']) : '';
-        $notas = isset($_POST['notas']) ? trim((string)$_POST['notas']) : '';
+
+        $fechaEnvio = isset($_POST['fecha_envio'])
+            ? trim((string)$_POST['fecha_envio'])
+            : '';
+        $estatusEnvio = '';
+        if (isset($_POST['estatus_envio'])) {
+            $estatusEnvio = trim((string)$_POST['estatus_envio']);
+        } elseif (isset($_POST['estatus'])) {
+            $estatusEnvio = trim((string)$_POST['estatus']);
+        }
+
+        $notas = '';
+        if (isset($_POST['notas'])) {
+            $notas = trim((string)$_POST['notas']);
+        } elseif (isset($_POST['nota'])) {
+            $notas = trim((string)$_POST['nota']);
+        }
+
+        $imagenesEliminadasRaw = $_POST['imagenes_eliminadas'] ?? '';
+        $idsImagenesEliminar   = $this->parsearIdsImagenesEliminadas($imagenesEliminadasRaw);
+        $imagenesNuevas        = $this->normalizarArchivosMultiples($_FILES['imagenes'] ?? null);
 
         if ($envioId <= 0) {
             $this->jsonResponse([
@@ -583,11 +904,25 @@ class Operaciones_por_partida_envios extends Controller
                 'msg' => 'ID de envío inválido.'
             ], 400);
         }
-
+        if ($fechaEnvio === '') {
+            $this->jsonResponse([
+                'ok'  => false,
+                'msg' => 'La fecha de envío es obligatoria.'
+            ], 400);
+        }
         if ($estatusEnvio === '') {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'El estatus del envío es obligatorio.'
+            ], 400);
+        }
+
+        $erroresImagenes = $this->validarImagenesSubidas($imagenesNuevas);
+        if (!empty($erroresImagenes)) {
+            $this->jsonResponse([
+                'ok'      => false,
+                'msg'     => 'Hay errores en las imágenes seleccionadas.',
+                'errores' => $erroresImagenes
             ], 400);
         }
 
@@ -601,24 +936,125 @@ class Operaciones_por_partida_envios extends Controller
                 ], 404);
             }
 
-            $ok = $this->model->actualizarEnvioEditable(
-                $envioId,
-                $estatusEnvio,
-                $notas
-            );
+            $imagenesActuales = isset($envio['imagenes']) && is_array($envio['imagenes'])
+                ? $envio['imagenes']
+                : [];
 
-            if (!$ok) {
+            $mapImagenesActuales = [];
+            foreach ($imagenesActuales as $img) {
+                $idImg = (int)($img['id_imagen'] ?? 0);
+                if ($idImg > 0) {
+                    $mapImagenesActuales[$idImg] = $img;
+                }
+            }
+
+            $idsValidosEliminar = [];
+            $rutasEliminar = [];
+
+            foreach ($idsImagenesEliminar as $idImg) {
+                if (isset($mapImagenesActuales[$idImg])) {
+                    $idsValidosEliminar[] = $idImg;
+                    $rutasEliminar[] = (string)($mapImagenesActuales[$idImg]['ruta_archivo'] ?? '');
+                }
+            }
+
+            $idsValidosEliminar = array_values(array_unique($idsValidosEliminar));
+            $cantidadActual = count($imagenesActuales);
+            $cantidadEliminar = count($idsValidosEliminar);
+            $cantidadNuevas = count($imagenesNuevas);
+            $cantidadFinal = $cantidadActual - $cantidadEliminar + $cantidadNuevas;
+
+            if ($cantidadFinal < self::IMG_MIN || $cantidadFinal > self::IMG_MAX) {
                 $this->jsonResponse([
                     'ok'  => false,
-                    'msg' => 'No fue posible actualizar el envío.'
-                ], 500);
+                    'msg' => 'Después de actualizar, el envío debe conservar entre ' . self::IMG_MIN . ' y ' . self::IMG_MAX . ' imágenes.',
+                    'meta' => [
+                        'imagenes_actuales' => $cantidadActual,
+                        'imagenes_eliminar' => $cantidadEliminar,
+                        'imagenes_nuevas'   => $cantidadNuevas,
+                        'imagenes_final'    => $cantidadFinal
+                    ]
+                ], 400);
+            }
+
+            $estatusActual = (string)($envio['estatus_envio'] ?? '');
+            $notasActual   = (string)($envio['notas'] ?? '');
+            $fechaEnvioActual = (string)($envio['fecha_envio'] ?? '');
+
+            $requiereActualizarEnvio = (
+                trim($fechaEnvioActual) !== trim($fechaEnvio) ||
+                trim($estatusActual) !== trim($estatusEnvio) ||
+                trim($notasActual) !== trim($notas)
+            );
+
+            if ($requiereActualizarEnvio) {
+                $ok = $this->model->actualizarEnvioEditable(
+                    $envioId,
+                    $fechaEnvio,
+                    $estatusEnvio,
+                    $notas
+                );
+
+                if (!$ok) {
+                    $this->jsonResponse([
+                        'ok'  => false,
+                        'msg' => 'No fue posible actualizar el envío.'
+                    ], 500);
+                }
+            }
+
+            $imagenesDesactivadas = 0;
+
+            if (!empty($idsValidosEliminar)) {
+                $okDelete = $this->model->desactivarImagenesEnvio($idsValidosEliminar, $envioId);
+
+                if (!$okDelete) {
+                    $this->jsonResponse([
+                        'ok'  => false,
+                        'msg' => 'No fue posible actualizar las imágenes eliminadas.'
+                    ], 500);
+                }
+
+                $imagenesDesactivadas = count($idsValidosEliminar);
+
+                foreach ($rutasEliminar as $rutaRelativa) {
+                    $this->eliminarArchivoFisicoSiExiste((string)$rutaRelativa);
+                }
+            }
+
+            $resultadoImagenes = [
+                'guardadas' => [],
+                'errores'   => []
+            ];
+
+            if (!empty($imagenesNuevas)) {
+                $resultadoImagenes = $this->guardarImagenesEnvio(
+                    $envioId,
+                    $imagenesNuevas,
+                    $this->obtenerUsuarioIdSesion()
+                );
+            }
+
+            $conteoFinal = $this->model->contarImagenesActivasEnvio($envioId);
+
+            if ($conteoFinal < self::IMG_MIN || $conteoFinal > self::IMG_MAX) {
+                $this->jsonResponse([
+                    'ok'               => false,
+                    'msg'              => 'La actualización dejó una cantidad inválida de imágenes en el envío.',
+                    'imagenes_finales' => $conteoFinal,
+                    'errores_imagenes' => $resultadoImagenes['errores']
+                ], 400);
             }
 
             $this->jsonResponse([
-                'ok'  => true,
-                'msg' => 'Envío actualizado correctamente.'
+                'ok'                   => true,
+                'msg'                  => 'Envío actualizado correctamente.',
+                'imagenes_eliminadas'  => $imagenesDesactivadas,
+                'imagenes_agregadas'   => count($resultadoImagenes['guardadas']),
+                'imagenes_finales'     => $conteoFinal,
+                'errores_imagenes'     => $resultadoImagenes['errores']
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->jsonResponse([
                 'ok'  => false,
                 'msg' => 'Error al actualizar el envío.',

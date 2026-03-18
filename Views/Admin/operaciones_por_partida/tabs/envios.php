@@ -110,6 +110,130 @@
         border-radius: .375rem;
         appearance: none;
     }
+
+    /* =========================
+       Evidencias fotográficas
+       ========================= */
+    .partidas_transito_evidencias_box {
+        border: 1px dashed #ced4da;
+        border-radius: .5rem;
+        background: #fafbfc;
+        padding: 1rem;
+    }
+
+    .partidas_transito_evidencias_top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .75rem;
+        flex-wrap: wrap;
+    }
+
+    .partidas_transito_evidencias_counter {
+        font-size: .85rem;
+        font-weight: 600;
+        color: #1d324a;
+        background: #eef3f8;
+        border-radius: 999px;
+        padding: .35rem .7rem;
+    }
+
+    .partidas_transito_evidencias_help {
+        font-size: .82rem;
+        color: #6c757d;
+        line-height: 1.35;
+    }
+
+    .partidas_transito_preview_grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: .75rem;
+        margin-top: 1rem;
+    }
+
+    .partidas_transito_preview_item {
+        position: relative;
+        border: 1px solid #dee2e6;
+        border-radius: .5rem;
+        overflow: hidden;
+        background: #fff;
+        min-height: 130px;
+    }
+
+    .partidas_transito_preview_item img {
+        width: 100%;
+        height: 110px;
+        object-fit: cover;
+        display: block;
+        background: #f8f9fa;
+        cursor: pointer;
+    }
+
+    .partidas_transito_preview_meta {
+        padding: .4rem .5rem;
+        font-size: .74rem;
+        color: #495057;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border-top: 1px solid #f1f3f5;
+    }
+
+    .partidas_transito_preview_remove {
+        position: absolute;
+        top: .45rem;
+        right: .45rem;
+        border: 0;
+        border-radius: 999px;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(220, 53, 69, .95);
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+    }
+
+    .partidas_transito_preview_remove:hover {
+        background: rgba(187, 45, 59, 1);
+    }
+
+    .partidas_transito_empty_preview {
+        border: 1px dashed #dee2e6;
+        border-radius: .5rem;
+        padding: 1.2rem;
+        text-align: center;
+        color: #6c757d;
+        background: #fff;
+        margin-top: 1rem;
+    }
+
+    .partidas_transito_input_file_hint {
+        font-size: .78rem;
+        color: #6c757d;
+        margin-top: .4rem;
+    }
+
+    .partidas_transito_error_box {
+        display: none;
+        margin-top: .75rem;
+        font-size: .85rem;
+    }
+
+    .partidas_transito_required_note {
+        font-size: .78rem;
+        color: #6c757d;
+    }
+
+    .partidas_transito_preview_modal_img {
+        width: 100%;
+        max-height: 75vh;
+        object-fit: contain;
+        background: #f8f9fa;
+        border-radius: .5rem;
+    }
 </style>
 
 <div class="container py-4 col-md-12">
@@ -237,7 +361,7 @@
                         <span>Registrar nuevo envío</span>
                     </h5>
                     <div class="small text-white-50 mt-1">
-                        Captura encabezado del envío y agrega productos desde una factura
+                        Captura encabezado del envío, agrega productos desde una factura y carga evidencias fotográficas
                     </div>
                 </div>
 
@@ -245,7 +369,7 @@
             </div>
 
             <div class="modal-body">
-                <form id="partidas_transito_formEnvio" autocomplete="off">
+                <form id="partidas_transito_formEnvio" autocomplete="off" enctype="multipart/form-data">
 
                     <div class="row g-3">
                         <div class="col-lg-4">
@@ -255,10 +379,11 @@
                                 </div>
                                 <div class="panel-body">
                                     <input type="hidden" id="partidas_transito_id_envio" name="id_envio" value="">
+
                                     <div class="mb-3">
                                         <label for="partidas_transito_fisico_txt" class="form-label">Ferro / Caja</label>
                                         <div class="position-relative">
-                                            <input type="hidden" id="partidas_transito_fisico_id">
+                                            <input type="hidden" id="partidas_transito_fisico_id" name="contenedor_fisico_id">
                                             <input
                                                 type="text"
                                                 id="partidas_transito_fisico_txt"
@@ -273,7 +398,7 @@
 
                                     <div class="mb-3">
                                         <label for="partidas_transito_transportista_id" class="form-label">Transportista</label>
-                                        <select id="partidas_transito_transportista_id" class="form-control">
+                                        <select id="partidas_transito_transportista_id" name="transportista_id" class="form-control">
                                             <option value="">Selecciona...</option>
                                             <?php if (!empty($data['transportistas'])): ?>
                                                 <?php foreach ($data['transportistas'] as $st): ?>
@@ -287,12 +412,12 @@
 
                                     <div class="mb-3">
                                         <label for="partidas_transito_fecha_envio" class="form-label">Fecha envío</label>
-                                        <input type="date" id="partidas_transito_fecha_envio" class="form-control">
+                                        <input type="date" id="partidas_transito_fecha_envio" name="fecha_envio" class="form-control">
                                     </div>
 
                                     <div class="mb-3">
                                         <label for="partidas_transito_destino_id" class="form-label">Destino</label>
-                                        <select id="partidas_transito_destino_id" class="form-control">
+                                        <select id="partidas_transito_destino_id" name="destino_id" class="form-control">
                                             <option value="">Selecciona...</option>
                                             <?php if (!empty($data['ciudades'])): ?>
                                                 <?php foreach ($data['ciudades'] as $c): ?>
@@ -306,7 +431,7 @@
 
                                     <div class="mb-3">
                                         <label for="partidas_transito_estatus" class="form-label">Estatus</label>
-                                        <select id="partidas_transito_estatus" class="form-select">
+                                        <select id="partidas_transito_estatus" name="estatus" class="form-select">
                                             <option value="En camino" selected>En camino</option>
                                             <option value="Entregado">Entregado</option>
                                             <option value="Programado">Programado</option>
@@ -319,9 +444,55 @@
                                         <label for="partidas_transito_nota" class="form-label">Notas</label>
                                         <textarea
                                             id="partidas_transito_nota"
+                                            name="nota"
                                             class="form-control"
                                             rows="3"
                                             placeholder="Observaciones generales del envío..."></textarea>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label mb-2">Evidencias fotográficas</label>
+
+                                        <div class="partidas_transito_evidencias_box">
+                                            <div class="partidas_transito_evidencias_top">
+                                                <div>
+                                                    <div class="fw-semibold">Carga de imágenes del ferro / caja</div>
+                                                    <div class="partidas_transito_evidencias_help mt-1">
+                                                        Adjunta entre 3 y 5 imágenes del envío. Pueden ser del estado general, puertas, candado, mercancía, caja, sello u otra evidencia visual.
+                                                    </div>
+                                                </div>
+
+                                                <div class="partidas_transito_evidencias_counter">
+                                                    <span id="partidas_transito_evidenciasCount">0</span> / 5 imágenes
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-3">
+                                                <input
+                                                    type="file"
+                                                    id="partidas_transito_imagenes"
+                                                    name="imagenes[]"
+                                                    class="form-control"
+                                                    accept="image/*"
+                                                    multiple>
+                                                <div class="partidas_transito_input_file_hint">
+                                                    Formatos sugeridos: JPG, JPEG, PNG, WEBP. Se requieren mínimo 3 y máximo 5 imágenes.
+                                                </div>
+                                                <div class="partidas_transito_required_note mt-1">
+                                                    La validación final del mínimo y máximo se realizará al guardar el envío.
+                                                </div>
+                                            </div>
+
+                                            <div id="partidas_transito_errorImagenes" class="alert alert-danger partidas_transito_error_box mb-0"></div>
+
+                                            <div id="partidas_transito_previewVacio" class="partidas_transito_empty_preview">
+                                                No hay imágenes cargadas en este envío.
+                                            </div>
+
+                                            <div id="partidas_transito_previewGrid" class="partidas_transito_preview_grid d-none"></div>
+
+                                            <input type="hidden" id="partidas_transito_imagenes_eliminadas" name="imagenes_eliminadas" value="">
+                                        </div>
                                     </div>
 
                                     <div class="border rounded p-3 bg-light">
@@ -340,6 +511,11 @@
                                             <span class="partidas_transito_resumen_chip">
                                                 <i data-feather="file-text" style="width:14px;height:14px;"></i>
                                                 <span id="partidas_transito_resumenFacturas">0</span> factura(s)
+                                            </span>
+
+                                            <span class="partidas_transito_resumen_chip">
+                                                <i data-feather="image" style="width:14px;height:14px;"></i>
+                                                <span id="partidas_transito_resumenImagenes">0</span> imagen(es)
                                             </span>
                                         </div>
                                     </div>
@@ -435,6 +611,27 @@
                 </button>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- Modal opcional para ver una imagen más grande -->
+<div class="modal fade" id="modalPartidasTransitoPreviewImagen" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title mb-0">
+                    <i data-feather="image" class="me-1"></i> Vista previa de evidencia
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img
+                    id="partidas_transito_previewImagenGrande"
+                    src=""
+                    alt="Vista previa"
+                    class="partidas_transito_preview_modal_img">
+            </div>
         </div>
     </div>
 </div>

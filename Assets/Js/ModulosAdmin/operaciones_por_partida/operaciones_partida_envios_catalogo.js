@@ -11,6 +11,9 @@
   const URL_OBTENER = base_url + "Operaciones_por_partida_envios/obtener";
   const URL_ACTUALIZAR = base_url + "Operaciones_por_partida_envios/actualizar";
 
+  const IMG_MIN = 3;
+  const IMG_MAX = 5;
+
   // =========================
   // ELEMENTOS LISTADO
   // =========================
@@ -91,7 +94,9 @@
     ? modalEl.querySelector(".modal-header .small")
     : null;
 
-  // Opcionales, si existen en tu vista
+  // =========================
+  // ELEMENTOS IMÁGENES
+  // =========================
   const txtResumenProductos = document.getElementById(
     "partidas_transito_resumenProductos",
   );
@@ -100,6 +105,30 @@
   );
   const txtResumenCajas = document.getElementById(
     "partidas_transito_resumenCajas",
+  );
+  const txtResumenImagenes = document.getElementById(
+    "partidas_transito_resumenImagenes",
+  );
+
+  const inputImagenes = document.getElementById("partidas_transito_imagenes");
+  const previewGrid = document.getElementById("partidas_transito_previewGrid");
+  const previewVacio = document.getElementById(
+    "partidas_transito_previewVacio",
+  );
+  const errorImagenes = document.getElementById(
+    "partidas_transito_errorImagenes",
+  );
+  const hiddenImagenesEliminadas = document.getElementById(
+    "partidas_transito_imagenes_eliminadas",
+  );
+  const txtEvidenciasCount = document.getElementById(
+    "partidas_transito_evidenciasCount",
+  );
+  const modalPreviewImagen = document.getElementById(
+    "modalPartidasTransitoPreviewImagen",
+  );
+  const imgPreviewGrande = document.getElementById(
+    "partidas_transito_previewImagenGrande",
   );
 
   // =========================
@@ -114,6 +143,10 @@
   let detalleSeleccionado = [];
   let productosFacturaActual = [];
   let facturaActual = null;
+
+  let imagenesExistentes = [];
+  let imagenesNuevas = [];
+  let imagenesEliminadas = [];
 
   let modoFormulario = "crear"; // crear | editar
   let enviandoActualizacion = false;
@@ -162,9 +195,11 @@
     if (valor === "programado") {
       return '<span class="badge bg-secondary text-white p-2">Programado</span>';
     }
+
     if (valor === "disponible en destino") {
       return '<span class="badge bg-primary text-white p-2">Disponible en destino</span>';
     }
+
     if (valor === "cancelado") {
       return '<span class="badge bg-danger text-white p-2">Cancelado</span>';
     }
@@ -319,13 +354,64 @@
     inpFechaEnvio.value = yyyy + "-" + mm + "-" + dd;
   }
 
+  function construirUrlArchivo(ruta) {
+    const valor = String(ruta || "").trim();
+    if (!valor) return "";
+    return base_url + valor.replace(/^\/+/, "");
+  }
+
+  function bytesTexto(bytes) {
+    const b = Number(bytes || 0);
+    if (b <= 0) return "";
+    if (b < 1024) return b + " B";
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
+    return (b / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function limpiarErrorImagenes() {
+    if (!errorImagenes) return;
+    errorImagenes.style.display = "none";
+    errorImagenes.innerHTML = "";
+  }
+
+  function mostrarErrorImagenes(mensaje) {
+    if (!errorImagenes) {
+      mostrarAlerta("warning", mensaje);
+      return;
+    }
+    errorImagenes.innerHTML = escapar(mensaje);
+    errorImagenes.style.display = "block";
+  }
+
+  function contarImagenesActivasVisuales() {
+    return imagenesExistentes.length + imagenesNuevas.length;
+  }
+
+  function sincronizarHiddenImagenesEliminadas() {
+    if (!hiddenImagenesEliminadas) return;
+    hiddenImagenesEliminadas.value = JSON.stringify(imagenesEliminadas);
+  }
+
+  function abrirPreviewImagen(src) {
+    if (!imgPreviewGrande || !src) return;
+    imgPreviewGrande.src = src;
+
+    if (!modalPreviewImagen || !window.bootstrap) return;
+
+    const instancia =
+      window.bootstrap.Modal.getInstance(modalPreviewImagen) ||
+      new window.bootstrap.Modal(modalPreviewImagen);
+
+    instancia.show();
+  }
+
   // =========================
   // REQUEST LISTADO
   // =========================
   function mostrarCargando() {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" class="text-center text-muted py-4">
+        <td colspan="11" class="text-center text-muted py-4">
           Cargando envíos...
         </td>
       </tr>
@@ -335,7 +421,7 @@
   function mostrarVacio(mensaje) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" class="text-center text-muted py-4">
+        <td colspan="11" class="text-center text-muted py-4">
           ${escapar(mensaje)}
         </td>
       </tr>
@@ -400,6 +486,7 @@
     rows.forEach(function (row) {
       const productos = String(row.productos || "")
         .split(" | ")
+        .filter(Boolean)
         .map(function (item) {
           return escapar(item);
         })
@@ -536,8 +623,9 @@
     botones.forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (inpFerroId) inpFerroId.value = this.getAttribute("data-id") || "";
-        if (inpFerroTxt)
+        if (inpFerroTxt) {
           inpFerroTxt.value = this.getAttribute("data-numero") || "";
+        }
         ocultarSugerencias(boxSugFerro);
       });
     });
@@ -950,16 +1038,16 @@
       detalleSeleccionado.length === 0
     ) {
       tbodyDetalle.innerHTML = `
-      <tr>
-        <td colspan="6" class="text-center text-muted py-4">
-          ${
-            modoFormulario === "editar"
-              ? "Este envío no tiene detalle registrado."
-              : "No has agregado productos al envío."
-          }
-        </td>
-      </tr>
-    `;
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">
+            ${
+              modoFormulario === "editar"
+                ? "Este envío no tiene detalle registrado."
+                : "No has agregado productos al envío."
+            }
+          </td>
+        </tr>
+      `;
       actualizarResumenModal();
       featherRefresh();
       return;
@@ -970,6 +1058,27 @@
     detalleSeleccionado.forEach(function (item) {
       if (modoFormulario === "editar") {
         html += `
+          <tr>
+            <td>${escapar(item.factura || "—")}</td>
+            <td>${escapar(item.descripcion || "—")}</td>
+            <td>${escapar(item.upc || "—")}</td>
+            <td class="text-center fw-semibold">${Number(item.cajas_enviadas || 0)}</td>
+            <td>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                value="${escapar(item.notas_detalle || "")}"
+                readonly
+                disabled
+              >
+            </td>
+            <td class="text-center text-muted">—</td>
+          </tr>
+        `;
+        return;
+      }
+
+      html += `
         <tr>
           <td>${escapar(item.factura || "—")}</td>
           <td>${escapar(item.descripcion || "—")}</td>
@@ -978,44 +1087,23 @@
           <td>
             <input
               type="text"
-              class="form-control form-control-sm"
+              class="form-control form-control-sm partidas-transito-input-nota"
+              data-producto-id="${Number(item.producto_id || 0)}"
               value="${escapar(item.notas_detalle || "")}"
-              readonly
-              disabled
+              placeholder="Notas"
             >
           </td>
-          <td class="text-center text-muted">—</td>
+          <td class="text-center">
+            <button
+              type="button"
+              class="btn btn-outline-danger btn-sm partidas-transito-btn-eliminar-detalle"
+              data-producto-id="${Number(item.producto_id || 0)}"
+            >
+              <i data-feather="trash-2"></i>
+            </button>
+          </td>
         </tr>
       `;
-        return;
-      }
-
-      html += `
-      <tr>
-        <td>${escapar(item.factura || "—")}</td>
-        <td>${escapar(item.descripcion || "—")}</td>
-        <td>${escapar(item.upc || "—")}</td>
-        <td class="text-center fw-semibold">${Number(item.cajas_enviadas || 0)}</td>
-        <td>
-          <input
-            type="text"
-            class="form-control form-control-sm partidas-transito-input-nota"
-            data-producto-id="${Number(item.producto_id || 0)}"
-            value="${escapar(item.notas_detalle || "")}"
-            placeholder="Notas"
-          >
-        </td>
-        <td class="text-center">
-          <button
-            type="button"
-            class="btn btn-outline-danger btn-sm partidas-transito-btn-eliminar-detalle"
-            data-producto-id="${Number(item.producto_id || 0)}"
-          >
-            <i data-feather="trash-2"></i>
-          </button>
-        </td>
-      </tr>
-    `;
     });
 
     tbodyDetalle.innerHTML = html;
@@ -1047,6 +1135,234 @@
   }
 
   // =========================
+  // IMÁGENES
+  // =========================
+  function renderImagenesEnvio() {
+    if (!previewGrid || !previewVacio) {
+      actualizarResumenModal();
+      return;
+    }
+
+    const total = contarImagenesActivasVisuales();
+
+    if (txtEvidenciasCount) {
+      txtEvidenciasCount.textContent = total;
+    }
+
+    if (txtResumenImagenes) {
+      txtResumenImagenes.textContent = total;
+    }
+
+    sincronizarHiddenImagenesEliminadas();
+
+    if (total <= 0) {
+      previewGrid.innerHTML = "";
+      previewGrid.classList.add("d-none");
+      previewVacio.classList.remove("d-none");
+      actualizarResumenModal();
+      return;
+    }
+
+    let html = "";
+
+    imagenesExistentes.forEach(function (img, idx) {
+      const src = construirUrlArchivo(img.ruta_archivo);
+      html += `
+        <div class="partidas_transito_preview_item">
+          <button
+            type="button"
+            class="partidas_transito_preview_remove partidas-transito-btn-remove-img-existente"
+            data-id-imagen="${Number(img.id_imagen || 0)}"
+            title="Quitar imagen"
+          >
+            ×
+          </button>
+
+          <img
+            src="${escapar(src)}"
+            alt="${escapar(img.nombre_archivo || "Imagen")}"
+            class="partidas-transito-preview-click"
+            data-src="${escapar(src)}"
+          >
+
+          <div class="partidas_transito_preview_meta" title="${escapar(
+            img.nombre_archivo || "Imagen",
+          )}">
+            ${escapar(img.nombre_archivo || "Imagen " + (idx + 1))}
+          </div>
+        </div>
+      `;
+    });
+
+    imagenesNuevas.forEach(function (img, idx) {
+      html += `
+        <div class="partidas_transito_preview_item">
+          <button
+            type="button"
+            class="partidas_transito_preview_remove partidas-transito-btn-remove-img-nueva"
+            data-index-nueva="${idx}"
+            title="Quitar imagen"
+          >
+            ×
+          </button>
+
+          <img
+            src="${escapar(img.preview || "")}"
+            alt="${escapar(img.nombre || "Imagen nueva")}"
+            class="partidas-transito-preview-click"
+            data-src="${escapar(img.preview || "")}"
+          >
+
+          <div class="partidas_transito_preview_meta" title="${escapar(
+            img.nombre || "Imagen nueva",
+          )}">
+            ${escapar(img.nombre || "Nueva")}
+          </div>
+        </div>
+      `;
+    });
+
+    previewGrid.innerHTML = html;
+    previewGrid.classList.remove("d-none");
+    previewVacio.classList.add("d-none");
+
+    const btnsRemoveExistentes = previewGrid.querySelectorAll(
+      ".partidas-transito-btn-remove-img-existente",
+    );
+    btnsRemoveExistentes.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const idImagen = Number(this.getAttribute("data-id-imagen") || 0);
+        quitarImagenExistente(idImagen);
+      });
+    });
+
+    const btnsRemoveNuevas = previewGrid.querySelectorAll(
+      ".partidas-transito-btn-remove-img-nueva",
+    );
+    btnsRemoveNuevas.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const idx = Number(this.getAttribute("data-index-nueva") || -1);
+        quitarImagenNueva(idx);
+      });
+    });
+
+    const previewsClick = previewGrid.querySelectorAll(
+      ".partidas-transito-preview-click",
+    );
+    previewsClick.forEach(function (img) {
+      img.addEventListener("click", function () {
+        abrirPreviewImagen(this.getAttribute("data-src") || "");
+      });
+    });
+
+    actualizarResumenModal();
+  }
+
+  function manejarSeleccionImagenes(fileList) {
+    limpiarErrorImagenes();
+
+    if (!fileList || !fileList.length) return;
+
+    const archivos = Array.prototype.slice.call(fileList);
+    const totalActual = contarImagenesActivasVisuales();
+
+    if (totalActual + archivos.length > IMG_MAX) {
+      mostrarErrorImagenes(
+        "Solo puedes tener un máximo de " + IMG_MAX + " imágenes en el envío.",
+      );
+      if (inputImagenes) inputImagenes.value = "";
+      return;
+    }
+
+    const permitidos = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const errores = [];
+    const nuevasValidas = [];
+
+    archivos.forEach(function (file, idx) {
+      const mime = String(file.type || "").toLowerCase();
+
+      if (!permitidos.includes(mime)) {
+        errores.push(
+          "La imagen #" +
+            (idx + 1) +
+            " no tiene un formato permitido (JPG, JPEG, PNG, WEBP).",
+        );
+        return;
+      }
+
+      nuevasValidas.push({
+        file: file,
+        nombre: file.name || "imagen",
+        size: Number(file.size || 0),
+        preview: URL.createObjectURL(file),
+      });
+    });
+
+    if (errores.length) {
+      mostrarErrorImagenes(errores.join(" "));
+    }
+
+    if (nuevasValidas.length) {
+      imagenesNuevas = imagenesNuevas.concat(nuevasValidas);
+      renderImagenesEnvio();
+    }
+
+    if (inputImagenes) inputImagenes.value = "";
+  }
+
+  function quitarImagenExistente(idImagen) {
+    idImagen = Number(idImagen || 0);
+    if (idImagen <= 0) return;
+
+    const existe = imagenesExistentes.some(function (img) {
+      return Number(img.id_imagen) === idImagen;
+    });
+
+    if (!existe) return;
+
+    imagenesExistentes = imagenesExistentes.filter(function (img) {
+      return Number(img.id_imagen) !== idImagen;
+    });
+
+    if (!imagenesEliminadas.includes(idImagen)) {
+      imagenesEliminadas.push(idImagen);
+    }
+
+    limpiarErrorImagenes();
+    renderImagenesEnvio();
+  }
+
+  function quitarImagenNueva(index) {
+    index = Number(index);
+    if (index < 0 || index >= imagenesNuevas.length) return;
+
+    const item = imagenesNuevas[index];
+    if (item && item.preview) {
+      URL.revokeObjectURL(item.preview);
+    }
+
+    imagenesNuevas.splice(index, 1);
+    limpiarErrorImagenes();
+    renderImagenesEnvio();
+  }
+
+  function validarImagenesEdicion() {
+    const total = contarImagenesActivasVisuales();
+
+    if (total < IMG_MIN || total > IMG_MAX) {
+      return (
+        "El envío debe conservar entre " +
+        IMG_MIN +
+        " y " +
+        IMG_MAX +
+        " imágenes."
+      );
+    }
+
+    return "";
+  }
+
+  // =========================
   // RESUMEN MODAL
   // =========================
   function actualizarResumenModal() {
@@ -1062,6 +1378,7 @@
     });
 
     const totalFacturas = Object.keys(facturasUnicas).length;
+    const totalImagenes = contarImagenesActivasVisuales();
 
     if (txtResumenProductos) {
       txtResumenProductos.textContent = totalProductos;
@@ -1071,6 +1388,12 @@
     }
     if (txtResumenCajas) {
       txtResumenCajas.textContent = totalCajas;
+    }
+    if (txtResumenImagenes) {
+      txtResumenImagenes.textContent = totalImagenes;
+    }
+    if (txtEvidenciasCount) {
+      txtEvidenciasCount.textContent = totalImagenes;
     }
   }
 
@@ -1088,7 +1411,7 @@
 
     if (modalSubtitulo) {
       modalSubtitulo.textContent = esEdicion
-        ? "Solo puedes actualizar el estatus y las notas del envío"
+        ? "Puedes actualizar el estatus, las notas y las evidencias fotográficas del envío"
         : "Captura encabezado del envío y agrega productos desde una factura";
     }
 
@@ -1101,7 +1424,7 @@
 
     setDisabled(inpFerroTxt, esEdicion);
     setDisabled(selTransportista, esEdicion);
-    setDisabled(inpFechaEnvio, esEdicion);
+    //setDisabled(inpFechaEnvio, esEdicion);
     setDisabled(selDestino, esEdicion);
 
     if (inpFerroId) inpFerroId.disabled = esEdicion;
@@ -1119,6 +1442,11 @@
     if (tbodyDetalle) {
       tbodyDetalle.style.pointerEvents = esEdicion ? "none" : "";
       tbodyDetalle.style.opacity = esEdicion ? "0.65" : "";
+    }
+
+    if (inputImagenes) {
+      inputImagenes.disabled = false;
+      inputImagenes.readOnly = false;
     }
 
     ocultarSugerencias(boxSugFerro);
@@ -1139,6 +1467,7 @@
     actualizarUiModoFormulario();
     renderProductosFactura();
     renderDetalleSeleccionado();
+    renderImagenesEnvio();
     actualizarResumenModal();
   }
 
@@ -1165,6 +1494,28 @@
       };
     });
 
+    imagenesExistentes = Array.isArray(envio.imagenes)
+      ? envio.imagenes.map(function (img) {
+          return {
+            id_imagen: Number(img.id_imagen || 0),
+            envio_id: Number(img.envio_id || 0),
+            nombre_archivo: String(img.nombre_archivo || ""),
+            ruta_archivo: String(img.ruta_archivo || ""),
+            mime_type: String(img.mime_type || ""),
+            tamano_bytes: Number(img.tamano_bytes || 0),
+            orden_visual: Number(img.orden_visual || 0),
+            fecha_subida: String(img.fecha_subida || ""),
+          };
+        })
+      : [];
+
+    imagenesNuevas.forEach(function (img) {
+      if (img && img.preview) URL.revokeObjectURL(img.preview);
+    });
+
+    imagenesNuevas = [];
+    imagenesEliminadas = [];
+
     productosFacturaActual = [];
     facturaActual = null;
 
@@ -1181,7 +1532,10 @@
     if (inpBuscarFactura) inpBuscarFactura.value = "";
     if (inpFacturaProveedor) inpFacturaProveedor.value = "";
     if (inpFacturaCajas) inpFacturaCajas.value = "";
+    if (inputImagenes) inputImagenes.value = "";
+    if (hiddenImagenesEliminadas) hiddenImagenesEliminadas.value = "";
 
+    limpiarErrorImagenes();
     prepararModoEditar();
   }
 
@@ -1196,6 +1550,14 @@
     productosFacturaActual = [];
     facturaActual = null;
 
+    imagenesNuevas.forEach(function (img) {
+      if (img && img.preview) URL.revokeObjectURL(img.preview);
+    });
+
+    imagenesExistentes = [];
+    imagenesNuevas = [];
+    imagenesEliminadas = [];
+
     if (hiddenIdEnvio) hiddenIdEnvio.value = "";
     if (inpFerroTxt) inpFerroTxt.value = "";
     if (inpBuscarFactura) inpBuscarFactura.value = "";
@@ -1205,12 +1567,16 @@
     if (selDestino) selDestino.value = "";
     if (selEstatus) selEstatus.value = "En camino";
     if (txtNotas) txtNotas.value = "";
+    if (inputImagenes) inputImagenes.value = "";
+    if (hiddenImagenesEliminadas) hiddenImagenesEliminadas.value = "";
 
+    limpiarErrorImagenes();
     ocultarSugerencias(boxSugFerro);
     ocultarSugerencias(boxSugFacturas);
 
     renderProductosFactura();
     renderDetalleSeleccionado();
+    renderImagenesEnvio();
   }
 
   // =========================
@@ -1219,13 +1585,23 @@
   function validarActualizacion() {
     const idEnvio = Number(hiddenIdEnvio ? hiddenIdEnvio.value : 0);
     const estatus = String(selEstatus ? selEstatus.value : "").trim();
+    const fechaEnvio = String(inpFechaEnvio ? inpFechaEnvio.value : "").trim();
 
     if (idEnvio <= 0) {
       return "No se encontró el ID del envío.";
     }
 
+    if (!fechaEnvio) {
+      return "La fecha de envío es obligatoria.";
+    }
+
     if (!estatus) {
       return "Debes seleccionar un estatus de envío.";
+    }
+
+    const errorImagenesLocal = validarImagenesEdicion();
+    if (errorImagenesLocal) {
+      return errorImagenesLocal;
     }
 
     return "";
@@ -1281,6 +1657,8 @@
     if (modoFormulario !== "editar") return;
     if (enviandoActualizacion) return;
 
+    limpiarErrorImagenes();
+
     const error = validarActualizacion();
     if (error) {
       mostrarAlerta("warning", error);
@@ -1289,8 +1667,16 @@
 
     const fd = new FormData();
     fd.append("id_envio", hiddenIdEnvio ? hiddenIdEnvio.value : "");
+    fd.append("fecha_envio", inpFechaEnvio ? inpFechaEnvio.value : "");
     fd.append("estatus_envio", selEstatus ? selEstatus.value : "");
     fd.append("notas", txtNotas ? txtNotas.value : "");
+    fd.append("imagenes_eliminadas", JSON.stringify(imagenesEliminadas));
+
+    imagenesNuevas.forEach(function (img) {
+      if (img && img.file) {
+        fd.append("imagenes[]", img.file);
+      }
+    });
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", URL_ACTUALIZAR, true);
@@ -1323,6 +1709,10 @@
         return;
       }
 
+      if (resp && resp.errores_imagenes && resp.errores_imagenes.length) {
+        mostrarErrorImagenes(resp.errores_imagenes.join(" "));
+      }
+
       mostrarAlerta(
         "error",
         (resp && resp.msg) || "No fue posible actualizar el envío.",
@@ -1350,7 +1740,6 @@
   // EVENTOS
   // =========================
   function bindEventos() {
-    // filtros listado
     if (filtroFerro) {
       filtroFerro.addEventListener("input", function () {
         clearTimeout(timerBusqueda);
@@ -1384,7 +1773,6 @@
       btnRefrescar.addEventListener("click", cargarListado);
     }
 
-    // autocomplete ferro
     if (inpFerroTxt) {
       inpFerroTxt.addEventListener("input", function () {
         if (modoFormulario === "editar") return;
@@ -1404,7 +1792,6 @@
       });
     }
 
-    // autocomplete factura
     if (inpBuscarFactura) {
       inpBuscarFactura.addEventListener("input", function () {
         if (modoFormulario === "editar") return;
@@ -1424,7 +1811,12 @@
       });
     }
 
-    // nuevo
+    if (inputImagenes) {
+      inputImagenes.addEventListener("change", function (e) {
+        manejarSeleccionImagenes(e.target.files);
+      });
+    }
+
     document.addEventListener("click", function (e) {
       const btnNuevo = e.target.closest("[data-partidas-transito-nuevo]");
       if (btnNuevo) {
@@ -1432,7 +1824,6 @@
       }
     });
 
-    // editar
     document.addEventListener("click", function (e) {
       const btnEditar = e.target.closest("[data-partidas-transito-editar]");
       if (!btnEditar) return;
@@ -1448,7 +1839,6 @@
       abrirEditarEnvio(idEnvio);
     });
 
-    // submit del modal en edición
     if (btnGuardar) {
       btnGuardar.addEventListener("click", function () {
         if (modoFormulario === "editar") {
@@ -1477,6 +1867,14 @@
         prepararModoCrear();
       });
     }
+
+    if (modalPreviewImagen) {
+      modalPreviewImagen.addEventListener("hidden.bs.modal", function () {
+        if (imgPreviewGrande) {
+          imgPreviewGrande.src = "";
+        }
+      });
+    }
   }
 
   // =========================
@@ -1498,6 +1896,13 @@
     obtenerModoFormulario: function () {
       return modoFormulario;
     },
+    obtenerImagenesEstado: function () {
+      return {
+        existentes: imagenesExistentes.slice(),
+        nuevas: imagenesNuevas.slice(),
+        eliminadas: imagenesEliminadas.slice(),
+      };
+    },
   };
 
   // =========================
@@ -1507,6 +1912,7 @@
   bindEventos();
   renderProductosFactura();
   renderDetalleSeleccionado();
+  renderImagenesEnvio();
   cargarListado();
 
   function normalizarEstatus(valor) {
