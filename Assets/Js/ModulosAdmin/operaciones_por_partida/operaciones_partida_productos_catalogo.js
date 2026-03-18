@@ -21,30 +21,29 @@
   const inputFacturaHidden = document.getElementById("pf_invoice_id");
   const pfTbody = document.getElementById("pf_tbody");
   const pfEmpty = document.getElementById("pf_empty");
-  const pfMeta  = document.getElementById("pf_meta");
+  const pfMeta = document.getElementById("pf_meta");
   const pfBuscar = document.getElementById("pf_buscar");
 
-  const pfBadgeCount   = document.getElementById("pf_badgeCount");
-  const pfTotalCajas   = document.getElementById("pf_totalCajas");
-  const pfTotalPiezas  = document.getElementById("pf_totalPiezas");
+  const pfBadgeCount = document.getElementById("pf_badgeCount");
+  const pfTotalCajas = document.getElementById("pf_totalCajas");
+  const pfTotalPiezas = document.getElementById("pf_totalPiezas");
   const pfTotalPallets = document.getElementById("pf_totalPalletsRcv");
 
   // Labels header del modal
-  const lblId     = document.getElementById("pf_lblFactura");
+  const lblId = document.getElementById("pf_lblFactura");
   const lblVendor = document.getElementById("pf_lblProveedor");
-  const lblXdock  = document.getElementById("pf_lblXdock");
-  const lblRec    = document.getElementById("pf_lblRecibido");
-  const lblRev    = document.getElementById("pf_lblRevision");
-  const lblPal    = document.getElementById("pf_lblPalletsRcv");
+  const lblXdock = document.getElementById("pf_lblXdock");
+  const lblRec = document.getElementById("pf_lblRecibido");
+  const lblRev = document.getElementById("pf_lblRevision");
+  const lblPal = document.getElementById("pf_lblPalletsRcv");
 
-
-   // ===== Refs del modal =====
-  const tbody      = document.getElementById("pf_tbody");
-  const empty      = document.getElementById("pf_empty");
-  const tplFila    = document.getElementById("pf_tplFilaProducto");
+  // ===== Refs del modal =====
+  const tbody = document.getElementById("pf_tbody");
+  const empty = document.getElementById("pf_empty");
+  const tplFila = document.getElementById("pf_tplFilaProducto");
 
   // Si esta vista no tiene el modal, no hacemos nada
-  if (  !tbody || !tplFila) return;
+  if (!tbody || !tplFila) return;
 
   function ocultarEmpty() {
     if (!empty) return;
@@ -86,16 +85,13 @@
     mostrarEmptySiNoHayFilas();
   }
 
- 
-
   // (Opcional) Si el modal se abre sin filas, mostrar empty
-   
+
   if (modalEl) {
     modalEl.addEventListener("shown.bs.modal", function () {
       mostrarEmptySiNoHayFilas();
     });
   }
-
 
   // Guard rails
   if (!pfTbody) {
@@ -131,10 +127,23 @@
     const [y, m, d] = part.split("-");
     if (!y || !m || !d) return esc(dateStr);
 
-    const months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    const months = [
+      "ene",
+      "feb",
+      "mar",
+      "abr",
+      "may",
+      "jun",
+      "jul",
+      "ago",
+      "sep",
+      "oct",
+      "nov",
+      "dic",
+    ];
     const mm = parseInt(m, 10);
     const yy = String(y).slice(-2);
-    return `${parseInt(d, 10)}-${months[(mm - 1) || 0]}-${yy}`;
+    return `${parseInt(d, 10)}-${months[mm - 1 || 0]}-${yy}`;
   }
 
   function buildQuery(params) {
@@ -150,7 +159,7 @@
   function setLoading() {
     pfTbody.innerHTML = `
       <tr class="text-center">
-        <td colspan="10" class="py-4 text-muted">Cargando...</td>
+        <td colspan="11" class="py-4 text-muted">Cargando...</td>
       </tr>`;
     if (pfEmpty) pfEmpty.classList.add("d-none");
   }
@@ -177,12 +186,14 @@
 
     let html = "";
     rows.forEach((p) => {
-      const idDetalle = p.id ?? p.id_producto ?? p.id_detalle ?? p.detalle_id ?? "";
+      const idDetalle =
+        p.id ?? p.id_producto ?? p.id_detalle ?? p.detalle_id ?? "";
       const descripcion = p.descripcion ?? "—";
       const upc = p.upc ?? "—";
       const marca = p.marca ?? "—";
       const expiracion = p.expiracion ? fmtDateToDDMMMYY(p.expiracion) : "—";
-      const innerPack = (p.inner_pack ?? "") === null ? "" : (p.inner_pack ?? "");
+      const innerPack =
+        (p.inner_pack ?? "") === null ? "" : (p.inner_pack ?? "");
       const casePack = (p.case_pack ?? "") === null ? "" : (p.case_pack ?? "");
       const palletsRcv = p.pallets_rcv ?? 0;
       const cajas = p.cajas ?? 0;
@@ -191,8 +202,9 @@
       html += `
         <tr class="text-center"
       data-id="${esc(idDetalle)}"
-      data-expiracion="${esc((p.expiracion || "").slice(0,10))}">
+      data-expiracion="${esc((p.expiracion || "").slice(0, 10))}">
           <td class="text-start">${esc(descripcion)}</td>
+          <td>${esc(p.item ?? "—")}</td>
           <td>${esc(upc)}</td>
           <td>${esc(marca)}</td>
           <td>${esc(expiracion)}</td>
@@ -224,140 +236,143 @@
     const total = meta?.total ?? 0;
     if (pfBadgeCount) pfBadgeCount.textContent = String(total);
 
-    if (pfTotalCajas) pfTotalCajas.textContent = `Cajas: ${totals?.total_cajas ?? 0}`;
-    if (pfTotalPiezas) pfTotalPiezas.textContent = `Piezas: ${totals?.total_piezas ?? 0}`;
-    if (pfTotalPallets) pfTotalPallets.textContent = `Pallets RCV: ${totals?.total_pallets_rcv ?? 0}`;
+    if (pfTotalCajas)
+      pfTotalCajas.textContent = `Cajas: ${totals?.total_cajas ?? 0}`;
+    if (pfTotalPiezas)
+      pfTotalPiezas.textContent = `Piezas: ${totals?.total_piezas ?? 0}`;
+    if (pfTotalPallets)
+      pfTotalPallets.textContent = `Pallets RCV: ${totals?.total_pallets_rcv ?? 0}`;
 
-    const showing = (meta?.page && meta?.per_page)
-      ? Math.min(total, meta.page * meta.per_page)
-      : total;
+    const showing =
+      meta?.page && meta?.per_page
+        ? Math.min(total, meta.page * meta.per_page)
+        : total;
 
     if (pfMeta) pfMeta.textContent = `Mostrando ${showing} de ${total}`;
   }
 
   // ==========================
-// INLINE EDIT (SOLO UI)
-// Convierte un renglón en inputs y permite cancelar
-// ==========================
+  // INLINE EDIT (SOLO UI)
+  // Convierte un renglón en inputs y permite cancelar
+  // ==========================
 
-// Solo 1 fila en edición a la vez (opcional pero recomendado)
-function cancelarOtrasEdiciones(exceptTr) {
-  const editando = pfTbody.querySelectorAll('tr[data-editing="1"]');
-  editando.forEach(tr => {
-    if (tr !== exceptTr) cancelarEdicionFila(tr);
+  // Solo 1 fila en edición a la vez (opcional pero recomendado)
+  function cancelarOtrasEdiciones(exceptTr) {
+    const editando = pfTbody.querySelectorAll('tr[data-editing="1"]');
+    editando.forEach((tr) => {
+      if (tr !== exceptTr) cancelarEdicionFila(tr);
+    });
+  }
+
+  function entrarEdicionFila(tr) {
+    if (!tr) return;
+
+    // Si ya está editando, no lo vuelve a convertir
+    if (tr.dataset.editing === "1") return;
+
+    cancelarOtrasEdiciones(tr);
+
+    // Guardar snapshot para cancelar
+    tr.dataset.editing = "1";
+    tr.dataset.originalHtml = tr.innerHTML;
+
+    const tds = tr.querySelectorAll("td");
+    // Estructura esperada en tu tabla:
+    // 0 descripcion, 1 item, 2 upc, 3 marca, 4 expiracion, 5 inner, 6 case,
+    // 7 pallets_rcv, 8 cajas, 9 piezas, 10 acciones
+    if (tds.length < 10) return;
+
+    const getText = (i) => (tds[i]?.textContent || "").trim();
+
+    const descripcion = getText(0);
+    const item = getText(1);
+    const upc = getText(2);
+    const marca = getText(3);
+
+    // Para date, usa el raw si lo guardaste en data-expiracion (YYYY-MM-DD)
+    const expiracionRaw = (tr.dataset.expiracion || "").trim();
+
+    const innerPack = getText(5);
+    const casePack = getText(6);
+    const palletsRcv = getText(7);
+    const cajas = getText(8);
+    const piezas = getText(9);
+
+    tds[0].innerHTML = `<input type="text" class="form-control form-control-sm pf_descripcion" value="${esc(descripcion)}">`;
+    tds[1].innerHTML = `<input type="text" class="form-control form-control-sm pf_item" value="${esc(item)}">`;
+    tds[2].innerHTML = `<input type="text" class="form-control form-control-sm pf_upc" value="${esc(upc)}">`;
+    tds[3].innerHTML = `<input type="text" class="form-control form-control-sm pf_marca" value="${esc(marca)}">`;
+
+    tds[4].innerHTML = `<input type="date" class="form-control form-control-sm pf_expiracion" value="${esc(expiracionRaw)}">`;
+
+    tds[5].innerHTML = `<input type="text" class="form-control form-control-sm pf_inner" value="${esc(innerPack)}">`;
+    tds[6].innerHTML = `<input type="text" class="form-control form-control-sm pf_case" value="${esc(casePack)}">`;
+
+    tds[7].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_pallets_rcv" value="${esc(palletsRcv || "0")}">`;
+    tds[8].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_cajas" value="${esc(cajas || "0")}">`;
+    tds[9].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" value="${esc(piezas || "0")}">`;
+
+    // Cambiar botón Editar a Cancelar en la celda de acciones (última)
+    const btnEditar = tr.querySelector(".pf_btnEditar");
+    if (btnEditar) {
+      btnEditar.classList.remove("btn-outline-warning");
+      btnEditar.classList.add("btn-outline-secondary");
+      btnEditar.dataset.mode = "cancel"; // marcador
+      btnEditar.title = "Cancelar";
+      // Cambiar icono a X
+      btnEditar.innerHTML = `<i data-feather="x"></i>`;
+    }
+
+    if (window.feather) window.feather.replace();
+
+    const first = tr.querySelector(".pf_descripcion");
+    if (first) first.focus();
+
+    // Para que el registrador pueda hacer UPDATE
+    tr.dataset.state = "dirty"; // marca la fila como editada
+    tr.dataset.idProducto = tr.dataset.id || ""; // mapea data-id -> data-id-producto
+  }
+
+  function cancelarEdicionFila(tr) {
+    if (!tr) return;
+    if (tr.dataset.editing !== "1") return;
+
+    const snap = tr.dataset.originalHtml || "";
+    if (snap) tr.innerHTML = snap;
+
+    delete tr.dataset.editing;
+    delete tr.dataset.originalHtml;
+
+    if (window.feather) window.feather.replace();
+  }
+
+  // Delegación de evento para el botón editar/cancelar
+  pfTbody.addEventListener("click", function (e) {
+    const btn = e.target.closest(".pf_btnEditar");
+    if (!btn) return;
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    // Si está en modo cancelar o ya está editando, cancela
+    if (tr.dataset.editing === "1" || btn.dataset.mode === "cancel") {
+      cancelarEdicionFila(tr);
+      return;
+    }
+
+    // Entra en edición
+    entrarEdicionFila(tr);
   });
-}
 
-function entrarEdicionFila(tr) {
-  if (!tr) return;
+  // Marcar dirty automáticamente al cambiar cualquier input de la fila
+  pfTbody.addEventListener("input", function (ev) {
+    const el = ev.target;
+    if (!el) return;
 
-  // Si ya está editando, no lo vuelve a convertir
-  if (tr.dataset.editing === "1") return;
-
-  cancelarOtrasEdiciones(tr);
-
-  // Guardar snapshot para cancelar
-  tr.dataset.editing = "1";
-  tr.dataset.originalHtml = tr.innerHTML;
-
-  const tds = tr.querySelectorAll("td");
-  // Estructura esperada en tu tabla:
-  // 0 descripcion, 1 upc, 2 marca, 3 expiracion, 4 inner, 5 case,
-  // 6 pallets_rcv, 7 cajas, 8 piezas, 9 acciones
-  if (tds.length < 9) return;
-
-  const getText = (i) => (tds[i]?.textContent || "").trim();
-
-  const descripcion = getText(0);
-  const upc         = getText(1);
-  const marca       = getText(2);
-
-  // Para date, usa el raw si lo guardaste en data-expiracion (YYYY-MM-DD)
-  const expiracionRaw = (tr.dataset.expiracion || "").trim();
-
-  const innerPack   = getText(4);
-  const casePack    = getText(5);
-  const palletsRcv  = getText(6);
-  const cajas       = getText(7);
-  const piezas      = getText(8);
-
-tds[0].innerHTML = `<input type="text" class="form-control form-control-sm pf_descripcion" value="${esc(descripcion)}">`;
-tds[1].innerHTML = `<input type="text" class="form-control form-control-sm pf_upc" value="${esc(upc)}">`;
-tds[2].innerHTML = `<input type="text" class="form-control form-control-sm pf_marca" value="${esc(marca)}">`;
-
-tds[3].innerHTML = `<input type="date" class="form-control form-control-sm pf_expiracion" value="${esc(expiracionRaw)}">`;
-
-tds[4].innerHTML = `<input type="text" class="form-control form-control-sm pf_inner" value="${esc(innerPack)}">`;
-tds[5].innerHTML = `<input type="text" class="form-control form-control-sm pf_case" value="${esc(casePack)}">`;
-
-tds[6].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_pallets_rcv" value="${esc(palletsRcv || "0")}">`;
-tds[7].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_cajas" value="${esc(cajas || "0")}">`;
-tds[8].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" value="${esc(piezas || "0")}">`;
-
-
-
-  // Cambiar botón Editar a Cancelar en la celda de acciones (última)
-  const btnEditar = tr.querySelector(".pf_btnEditar");
-  if (btnEditar) {
-    btnEditar.classList.remove("btn-outline-warning");
-    btnEditar.classList.add("btn-outline-secondary");
-    btnEditar.dataset.mode = "cancel"; // marcador
-    btnEditar.title = "Cancelar";
-    // Cambiar icono a X
-    btnEditar.innerHTML = `<i data-feather="x"></i>`;
-  }
-
-  if (window.feather) window.feather.replace();
-
-const first = tr.querySelector(".pf_descripcion");
-if (first) first.focus();
-
-
-  // Para que el registrador pueda hacer UPDATE
-tr.dataset.state = "dirty";                 // marca la fila como editada
-tr.dataset.idProducto = tr.dataset.id || ""; // mapea data-id -> data-id-producto
-
-}
-
-function cancelarEdicionFila(tr) {
-  if (!tr) return;
-  if (tr.dataset.editing !== "1") return;
-
-  const snap = tr.dataset.originalHtml || "";
-  if (snap) tr.innerHTML = snap;
-
-  delete tr.dataset.editing;
-  delete tr.dataset.originalHtml;
-
-  if (window.feather) window.feather.replace();
-}
-
-// Delegación de evento para el botón editar/cancelar
-pfTbody.addEventListener("click", function (e) {
-  const btn = e.target.closest(".pf_btnEditar");
-  if (!btn) return;
-
-  const tr = btn.closest("tr");
-  if (!tr) return;
-
-  // Si está en modo cancelar o ya está editando, cancela
-  if (tr.dataset.editing === "1" || btn.dataset.mode === "cancel") {
-    cancelarEdicionFila(tr);
-    return;
-  }
-
-  // Entra en edición
-  entrarEdicionFila(tr);
-});
-
-
-// Marcar dirty automáticamente al cambiar cualquier input de la fila
-pfTbody.addEventListener("input", function (ev) {
-  const el = ev.target;
-  if (!el) return;
-
-  // Solo inputs del módulo
-  if (!el.classList.contains("pf_descripcion") &&
+    // Solo inputs del módulo
+    if (
+      !el.classList.contains("pf_descripcion") &&
+      !el.classList.contains("pf_item") &&
       !el.classList.contains("pf_upc") &&
       !el.classList.contains("pf_marca") &&
       !el.classList.contains("pf_expiracion") &&
@@ -365,24 +380,25 @@ pfTbody.addEventListener("input", function (ev) {
       !el.classList.contains("pf_case") &&
       !el.classList.contains("pf_pallets_rcv") &&
       !el.classList.contains("pf_cajas") &&
-      !el.classList.contains("pf_piezas")) {
-    return;
-  }
+      !el.classList.contains("pf_piezas")
+    ) {
+      return;
+    }
 
-  const tr = el.closest("tr");
-  if (!tr) return;
+    const tr = el.closest("tr");
+    if (!tr) return;
 
-  // No cambies draft, pero sí convierte existentes a dirty
-  if (tr.dataset.state !== "draft") tr.dataset.state = "dirty";
-});
-
-// Opcional: si cierran el modal, cancela cualquier edición activa
-if (modalEl) {
-  modalEl.addEventListener("hidden.bs.modal", function () {
-    const editando = pfTbody.querySelectorAll('tr[data-editing="1"]');
-    editando.forEach(tr => cancelarEdicionFila(tr));
+    // No cambies draft, pero sí convierte existentes a dirty
+    if (tr.dataset.state !== "draft") tr.dataset.state = "dirty";
   });
-}
+
+  // Opcional: si cierran el modal, cancela cualquier edición activa
+  if (modalEl) {
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      const editando = pfTbody.querySelectorAll('tr[data-editing="1"]');
+      editando.forEach((tr) => cancelarEdicionFila(tr));
+    });
+  }
 
   // ==========================
   // CARGA PRODUCTOS
@@ -407,7 +423,7 @@ if (modalEl) {
       factura_id: facturaIdActual,
       term,
       page,
-      per_page: perPage
+      per_page: perPage,
     });
 
     const url = base_url + ENDPOINT_LISTAR_PRODUCTOS + "?" + qs;
@@ -423,9 +439,14 @@ if (modalEl) {
 
       if (xhr.status >= 200 && xhr.status < 300) {
         let res;
-        try { res = JSON.parse(xhr.responseText); }
-        catch (e) {
-          console.error("[OP Partida Productos] JSON inválido:", e, xhr.responseText);
+        try {
+          res = JSON.parse(xhr.responseText);
+        } catch (e) {
+          console.error(
+            "[OP Partida Productos] JSON inválido:",
+            e,
+            xhr.responseText,
+          );
           renderEmpty();
           return;
         }
@@ -441,7 +462,11 @@ if (modalEl) {
         return;
       }
 
-      console.error("[OP Partida Productos] Error HTTP:", xhr.status, xhr.responseText);
+      console.error(
+        "[OP Partida Productos] Error HTTP:",
+        xhr.status,
+        xhr.responseText,
+      );
       renderEmpty();
     };
 
@@ -465,11 +490,16 @@ if (modalEl) {
 
       // Llenar labels del modal
       if (lblId) lblId.textContent = btnVer.getAttribute("data-invoice") || "—";
-      if (lblVendor) lblVendor.textContent = btnVer.getAttribute("data-vendor") || "—";
-      if (lblXdock) lblXdock.textContent = btnVer.getAttribute("data-xdock") || "—";
-      if (lblRec) lblRec.textContent = btnVer.getAttribute("data-recibido") || "—";
-      if (lblRev) lblRev.textContent = btnVer.getAttribute("data-revision") || "—";
-      if (lblPal) lblPal.textContent = btnVer.getAttribute("data-pallets_inv") || "—";
+      if (lblVendor)
+        lblVendor.textContent = btnVer.getAttribute("data-vendor") || "—";
+      if (lblXdock)
+        lblXdock.textContent = btnVer.getAttribute("data-xdock") || "—";
+      if (lblRec)
+        lblRec.textContent = btnVer.getAttribute("data-recibido") || "—";
+      if (lblRev)
+        lblRev.textContent = btnVer.getAttribute("data-revision") || "—";
+      if (lblPal)
+        lblPal.textContent = btnVer.getAttribute("data-pallets_inv") || "—";
 
       // Reset búsqueda y cargar
       page = 1;
@@ -523,234 +553,265 @@ if (modalEl) {
     bindModal();
   });
 
+  // ==========================
+  // Eliminar fila (renglón agregado desde template)
+  // ==========================
+  pfTbody.addEventListener("click", function (e) {
+    const btn = e.target.closest(".pf_btnEliminarFila");
+    if (!btn) return;
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    // Si había una fila "en edición" guardada, limpiamos markers
+    if (tr.dataset && tr.dataset.editing === "1") {
+      delete tr.dataset.editing;
+      delete tr.dataset.originalHtml;
+    }
+
+    tr.remove();
+
+    // Si manejas totales en el modal, recalcula aquí (opcional)
+    // calcularTotalesEnModal(); // <-- si ya tienes una función así
+  });
 
   // ==========================
-// Eliminar fila (renglón agregado desde template)
-// ==========================
-pfTbody.addEventListener("click", function (e) {
-  const btn = e.target.closest(".pf_btnEliminarFila");
-  if (!btn) return;
+  // Auto-cálculo Piezas = CasePack * Cajas
+  // Permite override manual si el usuario edita piezas
+  // ==========================
 
-  const tr = btn.closest("tr");
-  if (!tr) return;
-
-  // Si había una fila "en edición" guardada, limpiamos markers
-  if (tr.dataset && tr.dataset.editing === "1") {
-    delete tr.dataset.editing;
-    delete tr.dataset.originalHtml;
+  function toNum(v) {
+    // Acepta "12", "12.5", " 12 ", etc. Si no es número => 0
+    const n = parseFloat(
+      String(v ?? "")
+        .replace(",", ".")
+        .trim(),
+    );
+    return Number.isFinite(n) ? n : 0;
   }
 
-  tr.remove();
+  function calcularPiezasFila(tr) {
+    if (!tr) return;
 
-  // Si manejas totales en el modal, recalcula aquí (opcional)
-  // calcularTotalesEnModal(); // <-- si ya tienes una función así
-});
+    const inpCase = tr.querySelector(".pf_case");
+    const inpCajas = tr.querySelector(".pf_cajas");
+    const inpPzs = tr.querySelector(".pf_piezas"); // AJUSTA si tu clase es distinta
 
+    if (!inpCase || !inpCajas || !inpPzs) return;
 
+    const casePack = toNum(inpCase.value);
+    const cajas = toNum(inpCajas.value);
 
-// ==========================
-// Auto-cálculo Piezas = CasePack * Cajas
-// Permite override manual si el usuario edita piezas
-// ==========================
+    // Si no hay datos, no fuerces nada
+    if (casePack <= 0 || cajas <= 0) return;
 
-function toNum(v) {
-  // Acepta "12", "12.5", " 12 ", etc. Si no es número => 0
-  const n = parseFloat(String(v ?? "").replace(",", ".").trim());
-  return Number.isFinite(n) ? n : 0;
-}
+    const calculado = Math.round(casePack * cajas); // si necesitas decimales, quita Math.round
 
-function calcularPiezasFila(tr) {
-  if (!tr) return;
+    // Si el usuario ya hizo override manual, no pisar
+    if (tr.dataset.pzsManual === "1") return;
 
-  const inpCase  = tr.querySelector(".pf_case");
-  const inpCajas = tr.querySelector(".pf_cajas");
-  const inpPzs   = tr.querySelector(".pf_piezas"); // AJUSTA si tu clase es distinta
-
-  if (!inpCase || !inpCajas || !inpPzs) return;
-
-  const casePack = toNum(inpCase.value);
-  const cajas    = toNum(inpCajas.value);
-
-  // Si no hay datos, no fuerces nada
-  if (casePack <= 0 || cajas <= 0) return;
-
-  const calculado = Math.round(casePack * cajas); // si necesitas decimales, quita Math.round
-
-  // Si el usuario ya hizo override manual, no pisar
-  if (tr.dataset.pzsManual === "1") return;
-
-  inpPzs.value = String(calculado);
-  // Guardamos el último valor calculado para comparar
-  tr.dataset.pzsCalc = String(calculado);
-}
-
-function evaluarOverrideManual(tr) {
-  if (!tr) return;
-
-  const inpPzs = tr.querySelector(".pf_piezas"); // AJUSTA si tu clase es distinta
-  if (!inpPzs) return;
-
-  const val = (inpPzs.value || "").trim();
-
-  // Si el usuario deja vacío, “desbloquea” y vuelve a auto-calcular en el siguiente cambio
-  if (val === "") {
-    delete tr.dataset.pzsManual;
-    return;
+    inpPzs.value = String(calculado);
+    // Guardamos el último valor calculado para comparar
+    tr.dataset.pzsCalc = String(calculado);
   }
 
-  const actual = toNum(val);
-  const calc   = toNum(tr.dataset.pzsCalc);
+  function evaluarOverrideManual(tr) {
+    if (!tr) return;
 
-  // Si todavía no hay calc guardado, no marques manual
-  if (!Number.isFinite(calc) || calc <= 0) return;
+    const inpPzs = tr.querySelector(".pf_piezas"); // AJUSTA si tu clase es distinta
+    if (!inpPzs) return;
 
-  // Si es diferente al calculado, marcamos override manual
-  if (actual !== calc) {
-    tr.dataset.pzsManual = "1";
-  } else {
-    // Si coincide, podemos considerarlo “no manual”
-    delete tr.dataset.pzsManual;
+    const val = (inpPzs.value || "").trim();
+
+    // Si el usuario deja vacío, “desbloquea” y vuelve a auto-calcular en el siguiente cambio
+    if (val === "") {
+      delete tr.dataset.pzsManual;
+      return;
+    }
+
+    const actual = toNum(val);
+    const calc = toNum(tr.dataset.pzsCalc);
+
+    // Si todavía no hay calc guardado, no marques manual
+    if (!Number.isFinite(calc) || calc <= 0) return;
+
+    // Si es diferente al calculado, marcamos override manual
+    if (actual !== calc) {
+      tr.dataset.pzsManual = "1";
+    } else {
+      // Si coincide, podemos considerarlo “no manual”
+      delete tr.dataset.pzsManual;
+    }
   }
-}
 
-// 1) Cuando cambie CasePack o Cajas => auto-calcula piezas (si no está manual)
-pfTbody.addEventListener("input", function (e) {
-  const el = e.target;
+  // 1) Cuando cambie CasePack o Cajas => auto-calcula piezas (si no está manual)
+  pfTbody.addEventListener("input", function (e) {
+    const el = e.target;
 
-  if (!el.classList) return;
+    if (!el.classList) return;
 
-  if (el.classList.contains("pf_case") || el.classList.contains("pf_cajas")) {
-    const tr = el.closest("tr");
-    calcularPiezasFila(tr);
-  }
+    if (el.classList.contains("pf_case") || el.classList.contains("pf_cajas")) {
+      const tr = el.closest("tr");
+      calcularPiezasFila(tr);
+    }
 
-  // 2) Si el usuario escribe piezas => detectar override manual
-  if (el.classList.contains("pf_piezas")) {
-    const tr = el.closest("tr");
-    evaluarOverrideManual(tr);
-  }
-});
-
-// 3) Opcional: al salir del input piezas, reafirmar override
-pfTbody.addEventListener("blur", function (e) {
-  const el = e.target;
-  if (el?.classList?.contains("pf_piezas")) {
-    evaluarOverrideManual(el.closest("tr"));
-  }
-}, true);
-
-
-// ==========================
-// BAJA LOGICA DE PRODUCTO (estatus = 0)
-// Endpoint: Operaciones_por_partida/bajaProducto
-// ==========================
-const ENDPOINT_BAJA_PRODUCTO = "Operaciones_por_partida/bajaProducto";
-
-function swalConfirm(title, text) {
-  if (window.Swal) {
-    return Swal.fire({
-      icon: "warning",
-      title,
-      text,
-      showCancelButton: true,
-      confirmButtonText: "Sí, dar de baja",
-      cancelButtonText: "Cancelar",
-    }).then(r => !!r.isConfirmed);
-  }
-  return Promise.resolve(confirm(title + "\n" + text));
-}
-
-function swalError(title, text) {
-  if (window.Swal) return Swal.fire({ icon: "error", title, text });
-  alert(title + "\n" + text);
-}
-
-function swalSuccess(title, text) {
-  if (window.Swal) return Swal.fire({ icon: "success", title, text });
-  alert(title + "\n" + text);
-}
-
-function xhrPostFormData(url, formData) {
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url, true);
-
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
-
-      let res = null;
-      try { res = JSON.parse(xhr.responseText); } catch (_) {}
-
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve({ okHttp: true, res, raw: xhr.responseText });
-      } else {
-        resolve({ okHttp: false, res, raw: xhr.responseText, status: xhr.status });
-      }
-    };
-
-    xhr.send(formData);
+    // 2) Si el usuario escribe piezas => detectar override manual
+    if (el.classList.contains("pf_piezas")) {
+      const tr = el.closest("tr");
+      evaluarOverrideManual(tr);
+    }
   });
-}
 
-// Delegación: botón eliminar existente (viene del backend)
-pfTbody.addEventListener("click", async function (e) {
-  const btn = e.target.closest(".pf_btnEliminar");
-  if (!btn) return;
+  // 3) Opcional: al salir del input piezas, reafirmar override
+  pfTbody.addEventListener(
+    "blur",
+    function (e) {
+      const el = e.target;
+      if (el?.classList?.contains("pf_piezas")) {
+        evaluarOverrideManual(el.closest("tr"));
+      }
+    },
+    true,
+  );
 
-  const tr = btn.closest("tr");
-  if (!tr) return;
+  // ==========================
+  // BAJA LOGICA DE PRODUCTO (estatus = 0)
+  // Endpoint: Operaciones_por_partida/bajaProducto
+  // ==========================
+  const ENDPOINT_BAJA_PRODUCTO = "Operaciones_por_partida/bajaProducto";
 
-  // id del producto: en tu renderRows lo pones en data-id
-  const idProducto = parseInt(btn.getAttribute("data-id") || tr.getAttribute("data-id") || "0", 10) || 0;
-
-  // factura actual (ya la tienes en el estado del catálogo)
-  const facturaId = parseInt(String(facturaIdActual || 0), 10) || 0;
-
-  if (idProducto <= 0 || facturaId <= 0) {
-    await swalError("Parámetros inválidos", "No se pudo identificar el producto o la factura.");
-    return;
+  function swalConfirm(title, text) {
+    if (window.Swal) {
+      return Swal.fire({
+        icon: "warning",
+        title,
+        text,
+        showCancelButton: true,
+        confirmButtonText: "Sí, dar de baja",
+        cancelButtonText: "Cancelar",
+      }).then((r) => !!r.isConfirmed);
+    }
+    return Promise.resolve(confirm(title + "\n" + text));
   }
 
-  const ok = await swalConfirm("Dar de baja producto", "El producto dejará de mostrarse en la factura. ¿Deseas continuar?");
-  if (!ok) return;
-
-  const url = base_url + ENDPOINT_BAJA_PRODUCTO;
-
-  const fd = new FormData();
-  fd.append("id_producto", String(idProducto));
-  fd.append("factura_id", String(facturaId));
-
-  const resp = await xhrPostFormData(url, fd);
-
-  if (!resp.okHttp || !resp.res) {
-    await swalError("Error", "No se pudo procesar la baja (respuesta inválida del servidor).");
-    return;
+  function swalError(title, text) {
+    if (window.Swal) return Swal.fire({ icon: "error", title, text });
+    alert(title + "\n" + text);
   }
 
-  if (resp.res.ok !== true) {
-    await swalError("Error al dar de baja", String(resp.res.msg || "No se pudo dar de baja el producto."));
-    return;
+  function swalSuccess(title, text) {
+    if (window.Swal) return Swal.fire({ icon: "success", title, text });
+    alert(title + "\n" + text);
   }
 
-  // 1) Remover fila del DOM (feedback inmediato)
-  tr.remove();
+  function xhrPostFormData(url, formData) {
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
 
-  // 2) Si backend regresó totals, actualízalos (más rápido que relistar)
-  if (resp.res.totals) {
-    // Mantén el contador en base a meta.total real: lo más seguro es relistar.
-    // Pero actualizamos badges de totales aquí mismo:
-    if (pfTotalCajas)   pfTotalCajas.textContent   = `Cajas: ${resp.res.totals.total_cajas ?? 0}`;
-    if (pfTotalPiezas)  pfTotalPiezas.textContent  = `Piezas: ${resp.res.totals.total_piezas ?? 0}`;
-    if (pfTotalPallets) pfTotalPallets.textContent = `Pallets RCV: ${resp.res.totals.total_pallets_rcv ?? 0}`;
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+
+        let res = null;
+        try {
+          res = JSON.parse(xhr.responseText);
+        } catch (_) {}
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ okHttp: true, res, raw: xhr.responseText });
+        } else {
+          resolve({
+            okHttp: false,
+            res,
+            raw: xhr.responseText,
+            status: xhr.status,
+          });
+        }
+      };
+
+      xhr.send(formData);
+    });
   }
 
-  // 3) Re-listar para que badgeCount/meta queden perfectos (y filtros/term)
-  document.dispatchEvent(new CustomEvent("opPartida:productos:refresh", { detail: { facturaId } }));
+  // Delegación: botón eliminar existente (viene del backend)
+  pfTbody.addEventListener("click", async function (e) {
+    const btn = e.target.closest(".pf_btnEliminar");
+    if (!btn) return;
 
-  // 4) Refrescar facturas para actualizar "productos_count"
-  if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
+    const tr = btn.closest("tr");
+    if (!tr) return;
 
-  await swalSuccess("Listo", "Producto dado de baja correctamente.");
-});
+    // id del producto: en tu renderRows lo pones en data-id
+    const idProducto =
+      parseInt(
+        btn.getAttribute("data-id") || tr.getAttribute("data-id") || "0",
+        10,
+      ) || 0;
 
+    // factura actual (ya la tienes en el estado del catálogo)
+    const facturaId = parseInt(String(facturaIdActual || 0), 10) || 0;
+
+    if (idProducto <= 0 || facturaId <= 0) {
+      await swalError(
+        "Parámetros inválidos",
+        "No se pudo identificar el producto o la factura.",
+      );
+      return;
+    }
+
+    const ok = await swalConfirm(
+      "Dar de baja producto",
+      "El producto dejará de mostrarse en la factura. ¿Deseas continuar?",
+    );
+    if (!ok) return;
+
+    const url = base_url + ENDPOINT_BAJA_PRODUCTO;
+
+    const fd = new FormData();
+    fd.append("id_producto", String(idProducto));
+    fd.append("factura_id", String(facturaId));
+
+    const resp = await xhrPostFormData(url, fd);
+
+    if (!resp.okHttp || !resp.res) {
+      await swalError(
+        "Error",
+        "No se pudo procesar la baja (respuesta inválida del servidor).",
+      );
+      return;
+    }
+
+    if (resp.res.ok !== true) {
+      await swalError(
+        "Error al dar de baja",
+        String(resp.res.msg || "No se pudo dar de baja el producto."),
+      );
+      return;
+    }
+
+    // 1) Remover fila del DOM (feedback inmediato)
+    tr.remove();
+
+    // 2) Si backend regresó totals, actualízalos (más rápido que relistar)
+    if (resp.res.totals) {
+      // Mantén el contador en base a meta.total real: lo más seguro es relistar.
+      // Pero actualizamos badges de totales aquí mismo:
+      if (pfTotalCajas)
+        pfTotalCajas.textContent = `Cajas: ${resp.res.totals.total_cajas ?? 0}`;
+      if (pfTotalPiezas)
+        pfTotalPiezas.textContent = `Piezas: ${resp.res.totals.total_piezas ?? 0}`;
+      if (pfTotalPallets)
+        pfTotalPallets.textContent = `Pallets RCV: ${resp.res.totals.total_pallets_rcv ?? 0}`;
+    }
+
+    // 3) Re-listar para que badgeCount/meta queden perfectos (y filtros/term)
+    document.dispatchEvent(
+      new CustomEvent("opPartida:productos:refresh", { detail: { facturaId } }),
+    );
+
+    // 4) Refrescar facturas para actualizar "productos_count"
+    if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
+
+    await swalSuccess("Listo", "Producto dado de baja correctamente.");
+  });
 })();

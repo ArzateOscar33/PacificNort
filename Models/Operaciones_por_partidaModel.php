@@ -176,6 +176,7 @@ class Operaciones_por_partidaModel extends Query
                             p.id_producto,
                             p.factura_id,
                             p.descripcion,
+                            p.item,
                             p.upc,
                             p.marca,
                             p.expiracion,
@@ -220,11 +221,12 @@ class Operaciones_por_partidaModel extends Query
     public function registrarFactura(array $data): array
     {
         $bodegaId      = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
+        $clienteId     = isset($data['cliente_id']) && $data['cliente_id'] !== '' ? (int)$data['cliente_id'] : 0;
         $numeroFactura = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
         $proveedor     = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
         $revisionPasa  = !empty($data['revision_pasa']) ? 1 : 0;
         $palletsRcv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
-        $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
+        $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null;
         $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
         $creadoPor     = isset($data['creado_por']) && $data['creado_por'] !== '' ? (int)$data['creado_por'] : null;
 
@@ -232,50 +234,80 @@ class Operaciones_por_partidaModel extends Query
         if ($bodegaId <= 0) {
             return ['ok' => false, 'msg' => 'Selecciona una bodega válida.', 'id_factura' => null];
         }
+
+        if ($clienteId <= 0) {
+            return ['ok' => false, 'msg' => 'Selecciona un cliente válido.', 'id_factura' => null];
+        }
+
         if ($numeroFactura === '') {
             return ['ok' => false, 'msg' => 'El número de factura es obligatorio.', 'id_factura' => null];
         }
+
         if ($proveedor === '') {
             return ['ok' => false, 'msg' => 'El proveedor es obligatorio.', 'id_factura' => null];
         }
 
-        // (Opcional recomendado) Validar bodega activa
+        if ($palletsRcv < 0) {
+            return ['ok' => false, 'msg' => 'Pallets INV (Factura) debe ser 0 o mayor.', 'id_factura' => null];
+        }
+
+        // ===== Validar bodega activa =====
         $bodega = $this->select(
-            "SELECT id_bodega FROM bodegas WHERE id_bodega = ? AND estatus = 1 LIMIT 1",
+            "SELECT id_bodega
+         FROM bodegas
+         WHERE id_bodega = ?
+           AND estatus = 1
+         LIMIT 1",
             [$bodegaId]
         );
+
         if (!$bodega) {
             return ['ok' => false, 'msg' => 'La bodega seleccionada no existe o está inactiva.', 'id_factura' => null];
         }
 
-        // ===== Evitar duplicado por UNIQUE (bodega_id, numero_factura, proveedor) =====
+        // ===== Validar cliente activo =====
+        $cliente = $this->select(
+            "SELECT id_cliente
+         FROM clientes
+         WHERE id_cliente = ?
+           AND estatus = 1
+         LIMIT 1",
+            [$clienteId]
+        );
+
+        if (!$cliente) {
+            return ['ok' => false, 'msg' => 'El cliente seleccionado no existe o está inactivo.', 'id_factura' => null];
+        }
+
+        // ===== Evitar duplicado =====
         $dup = $this->select(
             "SELECT id_factura, estatus
-            FROM op_partida_facturas
-            WHERE bodega_id = ?
-            AND numero_factura = ?
-            AND proveedor = ?
-            LIMIT 1",
-            [$bodegaId, $numeroFactura, $proveedor]
+         FROM op_partida_facturas
+         WHERE bodega_id = ?
+           AND cliente_id = ?
+           AND numero_factura = ?
+           AND proveedor = ?
+         LIMIT 1",
+            [$bodegaId, $clienteId, $numeroFactura, $proveedor]
         );
 
         if ($dup) {
-            // Si quieres permitir “reactivar” cuando estatus=0, aquí es donde se decide.
             return [
                 'ok' => false,
-                'msg' => 'Ya existe una factura con esa bodega, número y proveedor.',
+                'msg' => 'Ya existe una factura con esa bodega, cliente, número y proveedor.',
                 'id_factura' => (int)$dup['id_factura']
             ];
         }
 
         // ===== Insert =====
         $sql = "INSERT INTO op_partida_facturas
-                (bodega_id, numero_factura, proveedor, revision_pasa, pallets_inv, fecha_recibido, notas, estatus, creado_por)
-                VALUES
-                (?, ?, ?, ?, ?, ?, ?, 1, ?)";
+            (bodega_id, cliente_id, numero_factura, proveedor, revision_pasa, pallets_inv, fecha_recibido, notas, estatus, creado_por)
+            VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
 
         $params = [
             $bodegaId,
+            $clienteId,
             $numeroFactura,
             $proveedor,
             $revisionPasa,
@@ -509,11 +541,12 @@ class Operaciones_por_partidaModel extends Query
     public function insertarProductoFactura(array $d): int
     {
         $sql = "INSERT INTO op_partida_productos
-                (factura_id, descripcion, upc, marca, expiracion, inner_pack, case_pack, pallets_rcv, cajas, piezas, estatus)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                (factura_id, descripcion, item, upc, marca, expiracion, inner_pack, case_pack, pallets_rcv, cajas, piezas, estatus)
+                VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
         $params = [
             $d["factura_id"],
             $d["descripcion"],
+            $d["item"],
             $d["upc"],
             $d["marca"],
             $d["expiracion"],
@@ -535,6 +568,7 @@ class Operaciones_por_partidaModel extends Query
                 p.id_producto,
                 p.factura_id,
                 p.descripcion,
+                p.item,
                 p.upc,
                 p.marca,
                 p.expiracion,
@@ -576,6 +610,11 @@ class Operaciones_por_partidaModel extends Query
             return ['ok' => false, 'msg' => 'El UPC es obligatorio.'];
         }
 
+        $item = trim((string)($d['item'] ?? ''));
+        if ($item === '') {
+            return ['ok' => false, 'msg' => 'El item es obligatorio.'];
+        }
+
         $inner = (int)($d['inner_pack'] ?? 0);
         $case  = (int)($d['case_pack'] ?? 0);
         $pal   = (int)($d['pallets_rcv'] ?? 0);
@@ -588,6 +627,7 @@ class Operaciones_por_partidaModel extends Query
 
         $sql = "UPDATE op_partida_productos
                 SET descripcion   = ?,
+                    item          = ?,
                     upc           = ?,
                     marca         = ?,
                     expiracion    = ?,
@@ -603,6 +643,7 @@ class Operaciones_por_partidaModel extends Query
 
         $params = [
             ($d['descripcion'] ?? null),
+            $item,
             $upc,
             ($d['marca'] ?? null),
             ($d['expiracion'] ?? null),

@@ -306,6 +306,17 @@
           <button type="button" class="btn btn-success btn-sm" id="pf_btnAgregarLinea" title="Agregar producto">
             <i data-feather="plus"></i>
           </button>
+
+          <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-outline-success" id="operaciones_partida_productos_ExportarExcel">
+              <i data-feather="file-text" class="me-1"></i> Excel
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning d-none" id="operaciones_partida_productos_ExportarPDF">
+              <i data-feather="file" class="me-1"></i> PDF
+            </button>
+          </div>
+          <!--exportar pdf y excel-->
+
         </div>
 
         <div class="table-responsive">
@@ -313,6 +324,7 @@
             <thead class="table-dark">
               <tr class="text-center">
                 <th style="min-width:300px;">Descripción</th>
+                <th style="width:120px;">Item</th>
                 <th style="width:160px;">UPC</th>
                 <th style="width:160px;">Marca</th>
                 <th style="width:160px;">Expiración</th>
@@ -340,6 +352,9 @@
             <td class="text-start">
               <input type="text" class="form-control form-control-sm pf_descripcion"
                 placeholder="Ej. LOREAL MATTE SIGNATURE LIQUID EYELINER">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm pf_item" placeholder="Item" required>
             </td>
 
             <td>
@@ -415,6 +430,7 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_catalogo.js"></script>
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_productos_registrar.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/exportar_productos.js"></script>
 <script>
   // Excel
   document.getElementById('operaciones_partida_ExportarExcel')?.addEventListener('click', () => {

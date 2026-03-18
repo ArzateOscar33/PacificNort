@@ -186,35 +186,38 @@ class Operaciones_por_partida extends Controller
                 exit;
             }
 
-            // ====== Inputs (POST) desde tu modal ======
-            // IDs/vista:
-            // - operaciones_partida_bodega (select)
-            // - operaciones_partida_factura (input)
-            // - operaciones_partida_proveedor (input)
-            // - operaciones_partida_revision (checkbox)
-            // - operaciones_partida_pallets_inv (number)
-            // - operaciones_partida_fechaRecibido (date)
-            // - operaciones_partida_notas (text)
-
+            // ====== Inputs (POST) ======
             $bodegaId      = isset($_POST['operaciones_partida_bodega']) ? (int)$_POST['operaciones_partida_bodega'] : 0;
-            $numeroFactura = isset($_POST['invoice_number']) ? trim((string)$_POST['invoice_number']) : (isset($_POST['operaciones_partida_factura']) ? trim((string)$_POST['operaciones_partida_factura']) : '');
-            $proveedor     = isset($_POST['vendor_name']) ? trim((string)$_POST['vendor_name']) : (isset($_POST['operaciones_partida_proveedor']) ? trim((string)$_POST['operaciones_partida_proveedor']) : '');
+            $clienteId     = isset($_POST['operaciones_partida_cliente']) ? (int)$_POST['operaciones_partida_cliente'] : 0;
+            $numeroFactura = isset($_POST['invoice_number'])
+                ? trim((string)$_POST['invoice_number'])
+                : (isset($_POST['operaciones_partida_factura']) ? trim((string)$_POST['operaciones_partida_factura']) : '');
+            $proveedor     = isset($_POST['vendor_name'])
+                ? trim((string)$_POST['vendor_name'])
+                : (isset($_POST['operaciones_partida_proveedor']) ? trim((string)$_POST['operaciones_partida_proveedor']) : '');
 
-            // checkbox switch: puede venir "on", "1", etc.
+            // checkbox switch
             $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
 
-            $palletsInv    = isset($_POST['pallets_inv']) ? (int)$_POST['pallets_inv'] : (isset($_POST['operaciones_partida_pallets_inv']) ? (int)$_POST['operaciones_partida_pallets_inv'] : 0);
+            $palletsInv    = isset($_POST['pallets_inv'])
+                ? (int)$_POST['pallets_inv']
+                : (isset($_POST['operaciones_partida_pallets_inv']) ? (int)$_POST['operaciones_partida_pallets_inv'] : 0);
 
-            $fechaRecibido = isset($_POST['received_date']) ? trim((string)$_POST['received_date']) : (isset($_POST['operaciones_partida_fechaRecibido']) ? trim((string)$_POST['operaciones_partida_fechaRecibido']) : '');
-            $notas         = isset($_POST['comentarios']) ? trim((string)$_POST['comentarios']) : (isset($_POST['operaciones_partida_notas']) ? trim((string)$_POST['operaciones_partida_notas']) : '');
+            $fechaRecibido = isset($_POST['received_date'])
+                ? trim((string)$_POST['received_date'])
+                : (isset($_POST['operaciones_partida_fechaRecibido']) ? trim((string)$_POST['operaciones_partida_fechaRecibido']) : '');
 
-            // ====== Sesión: id usuario (FK: usuarios.id_usuario, ON DELETE SET NULL) ======
-            // Ajusta el nombre exacto de tu sesión si difiere.
+            $notas         = isset($_POST['comentarios'])
+                ? trim((string)$_POST['comentarios'])
+                : (isset($_POST['operaciones_partida_notas']) ? trim((string)$_POST['operaciones_partida_notas']) : '');
+
+            // ====== Sesión ======
             $creadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
 
             // ====== Modelo ======
             $resp = $this->model->registrarFactura([
                 'bodega_id'      => $bodegaId,
+                'cliente_id'     => $clienteId,
                 'numero_factura' => $numeroFactura,
                 'proveedor'      => $proveedor,
                 'revision_pasa'  => $revisionPasa,
@@ -226,22 +229,22 @@ class Operaciones_por_partida extends Controller
 
             if (empty($resp) || empty($resp['ok'])) {
                 echo json_encode([
-                    'ok'        => false,
-                    'msg'       => $resp['msg'] ?? 'No se pudo registrar la factura.',
+                    'ok'         => false,
+                    'msg'        => $resp['msg'] ?? 'No se pudo registrar la factura.',
                     'id_factura' => $resp['id_factura'] ?? null
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
-            // (Opcional) traer la factura recién creada para refrescar UI
+            // Devuelve la factura recién creada
             $idFactura = (int)$resp['id_factura'];
-            $factura   = $this->model->getFacturaById($idFactura);
+            $factura   = $this->model->getFacturaByIdEditar($idFactura);
 
             echo json_encode([
-                'ok'        => true,
-                'msg'       => $resp['msg'] ?? 'Factura registrada correctamente.',
+                'ok'         => true,
+                'msg'        => $resp['msg'] ?? 'Factura registrada correctamente.',
                 'id_factura' => $idFactura,
-                'factura'   => $factura ?: null
+                'factura'    => $factura ?: null
             ], JSON_UNESCAPED_UNICODE);
             exit;
         } catch (Throwable $e) {
@@ -441,7 +444,7 @@ class Operaciones_por_partida extends Controller
         }
 
         $factura_id  = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
-
+        $item        = isset($_POST['item']) ? trim($_POST['item']) : '';
         $descripcion = isset($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
         $upc         = isset($_POST['upc']) ? trim($_POST['upc']) : '';
         $marca       = isset($_POST['marca']) ? trim($_POST['marca']) : '';
@@ -478,6 +481,10 @@ class Operaciones_por_partida extends Controller
         } else {
             $expiracion = null;
         }
+        if ($item === '') {
+            echo json_encode(["ok" => false, "msg" => "El item es obligatorio"]);
+            exit;
+        }
 
         // (Recomendado) Verificar que la factura exista y estatus=1
         $existe = $this->model->existeFacturaActiva($factura_id);
@@ -489,6 +496,7 @@ class Operaciones_por_partida extends Controller
         $id = $this->model->insertarProductoFactura([
             "factura_id"  => $factura_id,
             "descripcion" => $descripcion,
+            "item"        => $item,
             "upc"         => $upc,
             "marca"       => $marca,
             "expiracion"  => $expiracion,
@@ -559,6 +567,7 @@ class Operaciones_por_partida extends Controller
             $pallets_rcv = isset($_POST['pallets_rcv']) ? (int)$_POST['pallets_rcv'] : 0;
             $cajas       = isset($_POST['cajas']) ? (int)$_POST['cajas'] : 0;
             $piezas      = isset($_POST['piezas']) ? (int)$_POST['piezas'] : 0;
+            $item        = isset($_POST['item']) ? trim($_POST['item']) : '';
 
             if ($idProducto <= 0 || $facturaId <= 0) {
                 echo json_encode(['ok' => false, 'msg' => 'Producto o factura inválidos.'], JSON_UNESCAPED_UNICODE);
@@ -588,6 +597,7 @@ class Operaciones_por_partida extends Controller
 
             $resp = $this->model->actualizarProductoFactura($idProducto, $facturaId, [
                 'descripcion' => $descripcion,
+                'item'        => $item,
                 'upc'         => $upc,
                 'marca'       => $marca,
                 'expiracion'  => $expiracion,

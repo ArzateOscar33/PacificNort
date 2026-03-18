@@ -23,7 +23,7 @@ class Operaciones_por_partida_eventos extends Controller
 
         header_remove('X-Powered-By');
         // Solo usuarios internos
-        $this->requireRoles([1, 11, 2]);
+        $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
     }
 
     /* ======================

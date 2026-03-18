@@ -11,7 +11,7 @@ class Operaciones_por_partida_operaciones extends Controller
             exit;
         }
         // Solo sin rol cliente
-        $this->requireRoles([1, 11, 2]);
+        $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
     }
 
 
@@ -191,7 +191,7 @@ class Operaciones_por_partida_operaciones extends Controller
 
             // checkbox switch: puede venir "on", "1", etc.
             $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
-
+            $clienteId     = isset($_POST['operaciones_partida_cliente']) ? (int)$_POST['operaciones_partida_cliente'] : 0;
             $palletsInv    = isset($_POST['pallets_inv']) ? (int)$_POST['pallets_inv'] : (isset($_POST['operaciones_partida_pallets_inv']) ? (int)$_POST['operaciones_partida_pallets_inv'] : 0);
 
             $fechaRecibido = isset($_POST['received_date']) ? trim((string)$_POST['received_date']) : (isset($_POST['operaciones_partida_fechaRecibido']) ? trim((string)$_POST['operaciones_partida_fechaRecibido']) : '');
@@ -204,6 +204,7 @@ class Operaciones_por_partida_operaciones extends Controller
             // ====== Modelo ======
             $resp = $this->model->registrarFactura([
                 'bodega_id'      => $bodegaId,
+                'cliente_id'     => $clienteId,
                 'numero_factura' => $numeroFactura,
                 'proveedor'      => $proveedor,
                 'revision_pasa'  => $revisionPasa,
@@ -306,6 +307,7 @@ class Operaciones_por_partida_operaciones extends Controller
                 echo json_encode(['ok' => false, 'msg' => 'ID de factura inválido.'], JSON_UNESCAPED_UNICODE);
                 exit;
             }
+            $clienteId = isset($_POST['operaciones_partida_cliente']) ? (int)$_POST['operaciones_partida_cliente'] : 0;
 
             $bodegaId      = isset($_POST['operaciones_partida_bodega']) ? (int)$_POST['operaciones_partida_bodega'] : 0;
             $numeroFactura = isset($_POST['invoice_number']) ? trim((string)$_POST['invoice_number']) : '';
@@ -319,6 +321,7 @@ class Operaciones_por_partida_operaciones extends Controller
 
             $resp = $this->model->actualizarFactura($idFactura, [
                 'bodega_id'       => $bodegaId,
+                'cliente_id'      => $clienteId,
                 'numero_factura'  => $numeroFactura,
                 'proveedor'       => $proveedor,
                 'revision_pasa'   => $revisionPasa,
@@ -424,6 +427,7 @@ class Operaciones_por_partida_operaciones extends Controller
         }
 
         $factura_id  = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
+        $item        = isset($_POST['item']) ? trim($_POST['item']) : '';
 
         $descripcion = isset($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
         $upc         = isset($_POST['upc']) ? trim($_POST['upc']) : '';
@@ -472,6 +476,8 @@ class Operaciones_por_partida_operaciones extends Controller
         $id = $this->model->insertarProductoFactura([
             "factura_id"  => $factura_id,
             "descripcion" => $descripcion,
+            "item"        => $item,
+
             "upc"         => $upc,
             "marca"       => $marca,
             "expiracion"  => $expiracion,
@@ -529,6 +535,7 @@ class Operaciones_por_partida_operaciones extends Controller
             }
 
             $idProducto = isset($_POST['id_producto']) ? (int)$_POST['id_producto'] : 0;
+            $item       = isset($_POST['item']) ? trim((string)$_POST['item']) : '';
             $facturaId  = isset($_POST['factura_id']) ? (int)$_POST['factura_id'] : 0;
 
             $descripcion = isset($_POST['descripcion']) ? trim((string)$_POST['descripcion']) : '';
@@ -571,6 +578,7 @@ class Operaciones_por_partida_operaciones extends Controller
 
             $resp = $this->model->actualizarProductoFactura($idProducto, $facturaId, [
                 'descripcion' => $descripcion,
+                'item'        => $item,
                 'upc'         => $upc,
                 'marca'       => $marca,
                 'expiracion'  => $expiracion,
