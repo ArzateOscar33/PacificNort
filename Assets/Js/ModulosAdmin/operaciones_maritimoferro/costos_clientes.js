@@ -242,6 +242,7 @@
         if (idx === 0) {
           html += `
             <tr>
+              <td rowspan="${rowspan}">MAR/PARTIDA-DOMESTICO</td>
               <td rowspan="${rowspan}">${opLabel}</td>
               <td rowspan="${rowspan}">${conts}</td>
               <td rowspan="${rowspan}">${trans}</td>

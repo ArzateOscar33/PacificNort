@@ -32,18 +32,7 @@
       </a>
     </li>
 
-    <li class="nav-item" role="presentation">
-      <a class="nav-link"
-        id="transito-tab"
-        data-bs-toggle="tab"
-        data-bs-target="#transito"
-        type="button"
-        role="tab"
-        aria-controls="transito"
-        aria-selected="false">
-        <i data-feather="truck"></i> En Transito
-      </a>
-    </li>
+
 
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -92,12 +81,7 @@
       <?php include 'tabs/envios.php'; ?>
     </div>
 
-    <div class="tab-pane fade"
-      id="transito"
-      role="tabpanel"
-      aria-labelledby="transito-tab">
-      <?php include 'tabs/transito.php'; ?>
-    </div>
+
     <div class="tab-pane fade"
       id="eventos"
       role="tabpanel"

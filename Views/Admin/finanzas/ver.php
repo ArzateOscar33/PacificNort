@@ -20,7 +20,7 @@
             <a class="nav-link" id="costos-domesticos-tab" data-bs-toggle="tab" href="#costos_domesticos" role="tab" aria-controls="costos_domesticos" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Domésticos</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="costos-operaciones-clientes-tab" data-bs-toggle="tab" href="#costos_operacion_clientes" role="tab" aria-controls="costos_operacion_clientes" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Clientes</a>
+            <a class="nav-link" id="costos-operaciones-clientes-tab" data-bs-toggle="tab" href="#costos_operacion_clientes" role="tab" aria-controls="costos_operacion_clientes" aria-selected="false"><i data-feather="dollar-sign"></i>Costos Totales</a>
         </li>
     </ul>
 
