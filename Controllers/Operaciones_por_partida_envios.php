@@ -566,7 +566,7 @@ class Operaciones_por_partida_envios extends Controller
         $transportistaId = isset($_POST['transportista_id']) && $_POST['transportista_id'] !== ''
             ? (int)$_POST['transportista_id']
             : null;
-
+        $candado = isset($_POST['candado']) ? trim((string)$_POST['candado']) : '';
         $notas = '';
         if (isset($_POST['notas'])) {
             $notas = trim((string)$_POST['notas']);
@@ -698,6 +698,7 @@ class Operaciones_por_partida_envios extends Controller
                 $fechaEnvio,
                 $estatusEnvio,
                 $transportistaId,
+                $candado,
                 $notas
             );
 
@@ -852,6 +853,7 @@ class Operaciones_por_partida_envios extends Controller
                     'destino'              => (string)($envio['destino'] ?? ''),
                     'estatus_envio'        => (string)($envio['estatus_envio'] ?? ''),
                     'notas'                => (string)($envio['notas'] ?? ''),
+                    'candado'              => (string)($envio['candado'] ?? ''),
                     'detalle'              => $detalleOut,
                     'imagenes'             => $imagenesOut
                 ]
@@ -893,6 +895,8 @@ class Operaciones_por_partida_envios extends Controller
         } elseif (isset($_POST['nota'])) {
             $notas = trim((string)$_POST['nota']);
         }
+        $candado = isset($_POST['candado']) ? trim((string)$_POST['candado']) : '';
+
 
         $imagenesEliminadasRaw = $_POST['imagenes_eliminadas'] ?? '';
         $idsImagenesEliminar   = $this->parsearIdsImagenesEliminadas($imagenesEliminadasRaw);
@@ -980,19 +984,23 @@ class Operaciones_por_partida_envios extends Controller
             $estatusActual = (string)($envio['estatus_envio'] ?? '');
             $notasActual   = (string)($envio['notas'] ?? '');
             $fechaEnvioActual = (string)($envio['fecha_envio'] ?? '');
+            $candadoActual = (string)($envio['candado'] ?? '');
 
             $requiereActualizarEnvio = (
                 trim($fechaEnvioActual) !== trim($fechaEnvio) ||
                 trim($estatusActual) !== trim($estatusEnvio) ||
                 trim($notasActual) !== trim($notas)
+                || trim($candadoActual) !== trim($candado)
             );
 
             if ($requiereActualizarEnvio) {
                 $ok = $this->model->actualizarEnvioEditable(
                     $envioId,
-                    $fechaEnvio,
+
                     $estatusEnvio,
-                    $notas
+                    $notas,
+                    $fechaEnvio,
+                    $candado
                 );
 
                 if (!$ok) {

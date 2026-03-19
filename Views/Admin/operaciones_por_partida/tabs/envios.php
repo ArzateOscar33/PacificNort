@@ -439,6 +439,11 @@
                                             <option value="Cancelado">Cancelado</option>
                                         </select>
                                     </div>
+                                    <div class="mb-3">
+                                        <label for="partidas_transito_candado" class="form-label">Candado/Sello</label>
+                                        <input type="text" class="form-control" id="partidas_transito_candado" name="candado" placeholder="Candado/Sello...">
+                                    </div>
+
 
                                     <div class="mb-3">
                                         <label for="partidas_transito_nota" class="form-label">Notas</label>

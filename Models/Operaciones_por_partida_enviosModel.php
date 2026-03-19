@@ -311,6 +311,7 @@ class Operaciones_por_partida_enviosModel extends Query
         string $fechaEnvio,
         string $estatusEnvio,
         ?int $transportistaId,
+        string $candado = '',
         string $notas = ''
     ) {
         $sql = "INSERT INTO operaciones_partida_envios (
@@ -319,8 +320,9 @@ class Operaciones_por_partida_enviosModel extends Query
                     fecha_envio,
                     estatus_envio,
                     transportista_id,
+                    candado,
                     notas
-                ) VALUES (?, ?, ?, ?, ?, ?)";
+                ) VALUES (?, ?, ?, ?, ?,?, ?)";
 
         return $this->insertar($sql, [
             $contenedorFisicoId,
@@ -328,6 +330,7 @@ class Operaciones_por_partida_enviosModel extends Query
             $fechaEnvio,
             $estatusEnvio,
             $transportistaId,
+            $candado,
             $notas
         ]);
     }
@@ -520,6 +523,7 @@ class Operaciones_por_partida_enviosModel extends Query
         $sql = "SELECT
                 e.id_envio,
                 e.contenedor_fisico_id,
+                e.candado,
                 cf.numero_ferro AS ferro,
                 e.transportista_id,
                 COALESCE(t.nombre, '') AS transportista,
@@ -582,12 +586,14 @@ class Operaciones_por_partida_enviosModel extends Query
         int $envioId,
         string $estatusEnvio,
         string $notas = '',
-        string $fechaEnvio = ''
+        string $fechaEnvio = '',
+        string $candado = ''
     ): bool {
         $sql = "UPDATE operaciones_partida_envios
                 SET estatus_envio = ?,
                     notas = ?,
-                    fecha_envio = ?
+                    fecha_envio = ?,
+                    candado = ?
                 WHERE id_envio = ?
                   AND estatus = 1";
 
@@ -595,6 +601,7 @@ class Operaciones_por_partida_enviosModel extends Query
             trim($estatusEnvio),
             trim($notas),
             trim($fechaEnvio),
+            trim($candado),
             $envioId
         ]);
 

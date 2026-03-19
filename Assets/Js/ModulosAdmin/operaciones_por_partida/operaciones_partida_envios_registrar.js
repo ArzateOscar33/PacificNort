@@ -29,6 +29,7 @@
   const selDestino = document.getElementById("partidas_transito_destino_id");
   const selEstatus = document.getElementById("partidas_transito_estatus");
   const txtNotas = document.getElementById("partidas_transito_nota");
+  const inpCandado = document.getElementById("partidas_transito_candado");
 
   // INPUT DE IMÁGENES
   const inpImagenes =
@@ -255,6 +256,7 @@
       fecha_envio: trimValue(inpFechaEnvio),
       estatus_envio: trimValue(selEstatus),
       transportista_id: intValue(selTransportista),
+      candado: trimValue(inpCandado),
       notas: trimValue(txtNotas),
       detalle: detalle,
     };
@@ -270,6 +272,7 @@
     fd.append("estatus_envio", payload.estatus_envio);
     fd.append("transportista_id", payload.transportista_id);
     fd.append("notas", payload.notas);
+    //fd.append("candado", payload.candado);
     fd.append("detalle", JSON.stringify(payload.detalle));
 
     imagenes.forEach(function (file) {

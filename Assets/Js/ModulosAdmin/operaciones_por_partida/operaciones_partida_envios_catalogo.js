@@ -56,6 +56,7 @@
   const selDestino = document.getElementById("partidas_transito_destino_id");
   const selEstatus = document.getElementById("partidas_transito_estatus");
   const txtNotas = document.getElementById("partidas_transito_nota");
+  const candado = document.getElementById("partidas_transito_candado");
 
   // =========================
   // ELEMENTOS MODAL / CATALOGO
@@ -1527,6 +1528,7 @@
     if (selDestino) selDestino.value = envio.destino_ciudad_id || "";
     if (selEstatus) selEstatus.value = normalizarEstatus(envio.estatus_envio);
     if (txtNotas) txtNotas.value = envio.notas || "";
+    if (candado) candado.value = envio.candado || "";
 
     if (inpFacturaId) inpFacturaId.value = "";
     if (inpBuscarFactura) inpBuscarFactura.value = "";
@@ -1567,6 +1569,7 @@
     if (selDestino) selDestino.value = "";
     if (selEstatus) selEstatus.value = "En camino";
     if (txtNotas) txtNotas.value = "";
+    if (candado) candado.value = "";
     if (inputImagenes) inputImagenes.value = "";
     if (hiddenImagenesEliminadas) hiddenImagenesEliminadas.value = "";
 
@@ -1670,6 +1673,7 @@
     fd.append("fecha_envio", inpFechaEnvio ? inpFechaEnvio.value : "");
     fd.append("estatus_envio", selEstatus ? selEstatus.value : "");
     fd.append("notas", txtNotas ? txtNotas.value : "");
+    fd.append("candado", candado ? candado.value : "");
     fd.append("imagenes_eliminadas", JSON.stringify(imagenesEliminadas));
 
     imagenesNuevas.forEach(function (img) {
