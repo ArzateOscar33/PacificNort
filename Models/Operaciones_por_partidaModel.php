@@ -185,6 +185,7 @@ class Operaciones_por_partidaModel extends Query
                             p.pallets_rcv,
                             p.cajas,
                             p.piezas,
+                            p.observaciones,
                             p.creado_en,
                             p.actualizado_en
                         FROM op_partida_productos p
@@ -540,51 +541,73 @@ class Operaciones_por_partidaModel extends Query
 
     public function insertarProductoFactura(array $d): int
     {
+        $observaciones = trim((string)($d["observaciones"] ?? ""));
+        if ($observaciones === '') {
+            $observaciones = null;
+        }
+
         $sql = "INSERT INTO op_partida_productos
-                (factura_id, descripcion, item, upc, marca, expiracion, inner_pack, case_pack, pallets_rcv, cajas, piezas, estatus)
-                VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+            (
+                factura_id,
+                descripcion,
+                item,
+                upc,
+                marca,
+                expiracion,
+                inner_pack,
+                case_pack,
+                pallets_rcv,
+                cajas,
+                piezas,
+                observaciones,
+                estatus
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+
         $params = [
-            $d["factura_id"],
-            $d["descripcion"],
-            $d["item"],
-            $d["upc"],
-            $d["marca"],
-            $d["expiracion"],
-            $d["inner_pack"],
-            $d["case_pack"],
-            $d["pallets_rcv"],
-            $d["cajas"],
-            $d["piezas"]
+            (int)$d["factura_id"],
+            ($d["descripcion"] ?? null),
+            trim((string)($d["item"] ?? "")),
+            trim((string)($d["upc"] ?? "")),
+            ($d["marca"] ?? null),
+            ($d["expiracion"] ?? null),
+            (int)($d["inner_pack"] ?? 0),
+            (int)($d["case_pack"] ?? 0),
+            (int)($d["pallets_rcv"] ?? 0),
+            (int)($d["cajas"] ?? 0),
+            (int)($d["piezas"] ?? 0),
+            $observaciones
         ];
 
         $res = $this->insertar($sql, $params);
-        // Ajusta según tu Query: si insertar() retorna ID, regresa eso; si retorna bool, usa lastInsertId()
         return (int)$res;
     }
 
     public function getProductoById(int $idProducto, int $facturaId)
     {
         $sql = "SELECT
-                p.id_producto,
-                p.factura_id,
-                p.descripcion,
-                p.item,
-                p.upc,
-                p.marca,
-                p.expiracion,
-                p.inner_pack,
-                p.case_pack,
-                p.pallets_rcv,
-                p.cajas,
-                p.piezas,
-                p.estatus,
-                p.creado_en,
-                p.actualizado_en
-                FROM op_partida_productos p
-                WHERE p.id_producto = ?
-                AND p.factura_id = ?
-                AND p.estatus = 1
-                LIMIT 1";
+            p.id_producto,
+            p.factura_id,
+            p.descripcion,
+            p.item,
+            p.upc,
+            p.marca,
+            p.expiracion,
+            p.inner_pack,
+            p.case_pack,
+            p.pallets_rcv,
+            p.cajas,
+            p.piezas,
+            p.observaciones,
+            p.estatus,
+            p.creado_en,
+            p.actualizado_en
+            FROM op_partida_productos p
+            WHERE p.id_producto = ?
+            AND p.factura_id = ?
+            AND p.estatus = 1
+            LIMIT 1";
+
         return $this->select($sql, [$idProducto, $facturaId]);
     }
 
@@ -625,21 +648,27 @@ class Operaciones_por_partidaModel extends Query
             return ['ok' => false, 'msg' => 'Los campos numéricos no pueden ser negativos.'];
         }
 
+        $observaciones = trim((string)($d['observaciones'] ?? ''));
+        if ($observaciones === '') {
+            $observaciones = null;
+        }
+
         $sql = "UPDATE op_partida_productos
-                SET descripcion   = ?,
-                    item          = ?,
-                    upc           = ?,
-                    marca         = ?,
-                    expiracion    = ?,
-                    inner_pack    = ?,
-                    case_pack     = ?,
-                    pallets_rcv   = ?,
-                    cajas         = ?,
-                    piezas        = ?,
-                    actualizado_en = NOW()
-                WHERE id_producto = ?
-                AND factura_id  = ?
-                AND estatus     = 1";
+            SET descripcion    = ?,
+                item           = ?,
+                upc            = ?,
+                marca          = ?,
+                expiracion     = ?,
+                inner_pack     = ?,
+                case_pack      = ?,
+                pallets_rcv    = ?,
+                cajas          = ?,
+                piezas         = ?,
+                observaciones  = ?,
+                actualizado_en = NOW()
+            WHERE id_producto = ?
+            AND factura_id    = ?
+            AND estatus       = 1";
 
         $params = [
             ($d['descripcion'] ?? null),
@@ -652,6 +681,7 @@ class Operaciones_por_partidaModel extends Query
             $pal,
             $caj,
             $pzs,
+            $observaciones,
             $idProducto,
             $facturaId
         ];
@@ -670,9 +700,11 @@ class Operaciones_por_partidaModel extends Query
         if ($facturaId <= 0) {
             return ['ok' => false, 'msg' => 'Factura inválida.'];
         }
+
         if (!$this->existeFacturaActiva($facturaId)) {
             return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
         }
+
         if (!is_array($items) || empty($items)) {
             return ['ok' => false, 'msg' => 'No hay productos para guardar.'];
         }
@@ -682,8 +714,10 @@ class Operaciones_por_partidaModel extends Query
         $idsInsertados = [];
 
         foreach ($items as $i => $d) {
-            // Normaliza factura_id desde backend (no confíes 100% en el front)
             $d['factura_id'] = $facturaId;
+
+            // Normalización mínima del nuevo campo
+            $d['observaciones'] = trim((string)($d['observaciones'] ?? ''));
 
             $idProducto = (int)($d['id_producto'] ?? 0);
 
@@ -694,7 +728,6 @@ class Operaciones_por_partidaModel extends Query
                 }
                 $actualizados++;
             } else {
-                // Validaciones mínimas para insert
                 $upc = trim((string)($d['upc'] ?? ''));
                 if ($upc === '') {
                     return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": El UPC es obligatorio."];
@@ -704,6 +737,7 @@ class Operaciones_por_partidaModel extends Query
                 if ($newId <= 0) {
                     return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": No se pudo insertar."];
                 }
+
                 $insertados++;
                 $idsInsertados[] = $newId;
             }

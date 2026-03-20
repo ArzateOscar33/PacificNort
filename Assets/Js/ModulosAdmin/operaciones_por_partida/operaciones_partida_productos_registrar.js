@@ -169,6 +169,7 @@
     );
     tr.querySelector(".pf_cajas").value = toStr(prefill.cajas ?? "");
     tr.querySelector(".pf_piezas").value = toStr(prefill.piezas ?? "");
+    tr.querySelector(".pf_observaciones").value = toStr(prefill.observaciones);
 
     return tr;
   }
@@ -176,7 +177,7 @@
   function isEditingRow(tr) {
     // Si tiene inputs pf_* en la fila, la consideramos editable (draft o convertida)
     return !!tr.querySelector(
-      ".pf_descripcion,.pf_item, .pf_upc, .pf_marca, .pf_expiracion, .pf_inner, .pf_case, .pf_pallets_rcv, .pf_cajas, .pf_piezas",
+      ".pf_descripcion,.pf_item, .pf_upc, .pf_marca, .pf_expiracion, .pf_inner, .pf_case, .pf_pallets_rcv, .pf_cajas, .pf_piezas , .pf_observaciones",
     );
   }
 
@@ -193,6 +194,7 @@
     const pallets_rcv = toInt(tr.querySelector(".pf_pallets_rcv")?.value);
     const cajas = toInt(tr.querySelector(".pf_cajas")?.value);
     const piezas = toInt(tr.querySelector(".pf_piezas")?.value);
+    const observaciones = toStr(tr.querySelector(".pf_observaciones")?.value);
 
     return {
       descripcion,
@@ -205,6 +207,7 @@
       cajas,
       piezas,
       item,
+      observaciones,
     };
   }
 
@@ -214,6 +217,9 @@
     }
     if (row.pallets_rcv < 0 || row.cajas < 0 || row.piezas < 0) {
       return "Valores numéricos inválidos (no negativos).";
+    }
+    if (row.observaciones.length > 500) {
+      return "Las observaciones no pueden exceder 500 caracteres.";
     }
     // expiración opcional (input date ya valida)
     return "";
@@ -313,12 +319,13 @@
     const pallets_rcv = getCellText(tr, ".pf_txt_pallets_rcv");
     const cajas = getCellText(tr, ".pf_txt_cajas");
     const piezas = getCellText(tr, ".pf_txt_piezas");
+    const observaciones = getCellText(tr, ".pf_txt_observaciones");
 
     const tds = Array.from(tr.children);
 
     // Estructura de tu tabla:
-    // 0 desc,1 item,2 upc,3 marca,4 expiración,5 inner,6 case,7 pallets,8 cajas,9 piezas,10 acciones
-    if (tds.length < 11) return;
+    // 0 desc,1 item,2 upc,3 marca,4 expiración,5 inner,6 case,7 pallets,8 cajas,9 piezas,10 observaciones,11 acciones
+    if (tds.length < 12) return;
 
     replaceCellWithInput(
       tds[0],
@@ -353,9 +360,13 @@
     tds[9].querySelector("input").min = "0";
     tds[9].querySelector("input").step = "1";
 
+    tds[10].innerHTML = `
+  <textarea class="form-control form-control-sm pf_observaciones" rows="2" placeholder="Observaciones">${observaciones}</textarea>
+`;
+
     // Botones guardar/cancelar para la fila
     // Marcamos el td acciones para encontrarlo fácil (si no existía)
-    tds[10].setAttribute("data-pf-actions", "1");
+    tds[11].setAttribute("data-pf-actions", "1");
     ensureActionsButtons(tr);
 
     // Marcar dirty
@@ -410,6 +421,7 @@
         pallets_rcv: data.pallets_rcv,
         cajas: data.cajas,
         piezas: data.piezas,
+        observaciones: data.observaciones,
       };
 
       if (state === "dirty") item.id_producto = idProducto; // UPDATE

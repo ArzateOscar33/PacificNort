@@ -198,34 +198,37 @@
       const palletsRcv = p.pallets_rcv ?? 0;
       const cajas = p.cajas ?? 0;
       const piezas = p.piezas ?? 0;
+      const observaciones = p.observaciones ?? "";
 
       html += `
-        <tr class="text-center"
-      data-id="${esc(idDetalle)}"
-      data-expiracion="${esc((p.expiracion || "").slice(0, 10))}">
-          <td class="text-start">${esc(descripcion)}</td>
-          <td>${esc(p.item ?? "—")}</td>
-          <td>${esc(upc)}</td>
-          <td>${esc(marca)}</td>
-          <td>${esc(expiracion)}</td>
-          <td>${esc(innerPack)}</td>
-          <td>${esc(casePack)}</td>
-          <td>${esc(palletsRcv)}</td>
-          <td>${esc(cajas)}</td>
-          <td>${esc(piezas)}</td>
+  <tr class="text-center"
+    data-id="${esc(idDetalle)}"
+    data-expiracion="${esc((p.expiracion || "").slice(0, 10))}"
+    data-observaciones="${esc(observaciones)}">
+    <td class="text-start">${esc(descripcion)}</td>
+    <td>${esc(p.item ?? "—")}</td>
+    <td>${esc(upc)}</td>
+    <td>${esc(marca)}</td>
+    <td>${esc(expiracion)}</td>
+    <td>${esc(innerPack)}</td>
+    <td>${esc(casePack)}</td>
+    <td>${esc(palletsRcv)}</td>
+    <td>${esc(cajas)}</td>
+    <td>${esc(piezas)}</td>
+    <td class="text-start">${esc(observaciones || "")}</td>
 
-          <td>
-            <div class="btn-group btn-group-sm" role="group">
-              <button type="button" class="btn btn-outline-warning pf_btnEditar" data-id="${esc(idDetalle)}" title="Editar">
-                <i data-feather="edit"></i>
-              </button>
-              <button type="button" class="btn btn-outline-danger pf_btnEliminar" data-id="${esc(idDetalle)}" title="Eliminar">
-                <i data-feather="trash-2"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
+    <td>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-warning pf_btnEditar" data-id="${esc(idDetalle)}" title="Editar">
+          <i data-feather="edit"></i>
+        </button>
+        <button type="button" class="btn btn-outline-danger pf_btnEliminar" data-id="${esc(idDetalle)}" title="Eliminar">
+          <i data-feather="trash-2"></i>
+        </button>
+      </div>
+    </td>
+  </tr>
+`;
     });
 
     pfTbody.innerHTML = html;
@@ -279,8 +282,8 @@
     const tds = tr.querySelectorAll("td");
     // Estructura esperada en tu tabla:
     // 0 descripcion, 1 item, 2 upc, 3 marca, 4 expiracion, 5 inner, 6 case,
-    // 7 pallets_rcv, 8 cajas, 9 piezas, 10 acciones
-    if (tds.length < 10) return;
+    // 7 pallets_rcv, 8 cajas, 9 piezas, 10 observaciones, 11 acciones
+    if (tds.length < 11) return;
 
     const getText = (i) => (tds[i]?.textContent || "").trim();
 
@@ -297,6 +300,11 @@
     const palletsRcv = getText(7);
     const cajas = getText(8);
     const piezas = getText(9);
+    const observaciones = (
+      tr.dataset.observaciones ||
+      getText(10) ||
+      ""
+    ).trim();
 
     tds[0].innerHTML = `<input type="text" class="form-control form-control-sm pf_descripcion" value="${esc(descripcion)}">`;
     tds[1].innerHTML = `<input type="text" class="form-control form-control-sm pf_item" value="${esc(item)}">`;
@@ -311,6 +319,7 @@
     tds[7].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_pallets_rcv" value="${esc(palletsRcv || "0")}">`;
     tds[8].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_cajas" value="${esc(cajas || "0")}">`;
     tds[9].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" value="${esc(piezas || "0")}">`;
+    tds[10].innerHTML = `<textarea class="form-control form-control-sm pf_observaciones" rows="2">${esc(observaciones)}</textarea>`;
 
     // Cambiar botón Editar a Cancelar en la celda de acciones (última)
     const btnEditar = tr.querySelector(".pf_btnEditar");
@@ -331,6 +340,7 @@
     // Para que el registrador pueda hacer UPDATE
     tr.dataset.state = "dirty"; // marca la fila como editada
     tr.dataset.idProducto = tr.dataset.id || ""; // mapea data-id -> data-id-producto
+    tr.dataset.observaciones = observaciones;
   }
 
   function cancelarEdicionFila(tr) {
@@ -380,7 +390,8 @@
       !el.classList.contains("pf_case") &&
       !el.classList.contains("pf_pallets_rcv") &&
       !el.classList.contains("pf_cajas") &&
-      !el.classList.contains("pf_piezas")
+      !el.classList.contains("pf_piezas") &&
+      !el.classList.contains("pf_observaciones")
     ) {
       return;
     }
@@ -496,8 +507,11 @@
         lblXdock.textContent = btnVer.getAttribute("data-xdock") || "—";
       if (lblRec)
         lblRec.textContent = btnVer.getAttribute("data-recibido") || "—";
-      if (lblRev)
-        lblRev.textContent = btnVer.getAttribute("data-revision") || "—";
+      if (lblRev) {
+        const revision = btnVer.getAttribute("data-revision");
+        console.log("data-revision:", revision);
+        pintarBadgeRevision(lblRev, revision);
+      }
       if (lblPal)
         lblPal.textContent = btnVer.getAttribute("data-pallets_inv") || "—";
 
@@ -509,7 +523,48 @@
       cargarProductosFactura(facturaId);
     });
   }
+  function pintarBadgeRevision(el, val) {
+    if (!el) return;
 
+    const raw = String(val ?? "")
+      .trim()
+      .toLowerCase();
+    let n = parseInt(raw, 10);
+
+    if (Number.isNaN(n)) {
+      if (raw === "factura no revisada") n = 0;
+      else if (raw === "factura revisada") n = 1;
+      else if (raw === "envío sin revisión" || raw === "envio sin revision")
+        n = 2;
+      else if (raw === "factura no cuadrada") n = 3;
+      else n = -1;
+    }
+
+    el.className = "fw-semibold badge p-2 mb-1 mt-1";
+
+    switch (n) {
+      case 0:
+        el.classList.add("bg-secondary", "text-white");
+        el.textContent = "Factura No Revisada";
+        break;
+      case 1:
+        el.classList.add("bg-success", "text-white");
+        el.textContent = "Factura Revisada";
+        break;
+      case 2:
+        el.classList.add("bg-warning", "text-dark");
+        el.textContent = "Envío sin Revisión";
+        break;
+      case 3:
+        el.classList.add("bg-danger", "text-white");
+        el.textContent = "Factura No Cuadrada";
+        break;
+      default:
+        el.classList.add("bg-light", "text-dark", "border");
+        el.textContent = "Sin estatus";
+        break;
+    }
+  }
   // ==========================
   // BUSCADOR MODAL + LIMPIEZA
   // ==========================

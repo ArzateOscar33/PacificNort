@@ -77,7 +77,7 @@
             <tr class="text-center">
               <th style="width:120px;">ID</th>
               <th style="width:150px;">Bodega</th>
-              <th style="width:220px;">Revisión</th>
+              <th style="width:220px;">Estatus Factura</th>
               <th style="width:160px;">Número de factura</th>
               <th style="width:160px;">Cliente</th>
               <th style="min-width:220px;">Pallets INV</th>
@@ -269,21 +269,31 @@
 
       <div class="modal-header bg-dark text-white">
         <div class="d-flex flex-column">
-          <h5 class="modal-title d-flex align-items-center gap-2 mb-0">
+          <h5 class="modal-title d-flex align-items-end gap-2 mb-0">
             <i data-feather="list"></i>
             <span>Productos de Factura</span>
             <span class="badge bg-light text-dark" id="pf_badgeCount">0</span>
           </h5>
 
-          <div class="small text-white-50 mt-1">
+          <div class="col-md-12 text-white-50 mt-1 mb-1 m-2 " style="border:1px solid red;">
             <span class="me-2">Factura: <span class="fw-semibold text-white" id="pf_lblFactura">—</span></span>
             <span class="me-2"> Proveedor: <span class="fw-semibold text-white" id="pf_lblProveedor">—</span></span>
-            <span class="me-2"> Bodega: <span class="fw-semibold text-white" id="pf_lblXdock">—</span></span>
-            <span class="me-2"> Recibido: <span class="fw-semibold text-white" id="pf_lblRecibido">—</span></span>
-            <span class="me-2"> Revisión: <span class="fw-semibold text-white" id="pf_lblRevision">—</span></span>
+            <div class="row">
+              <span class="me-2"> Bodega: <span class="fw-semibold text-white" id="pf_lblXdock">—</span></span>
+              <span class="me-2"> Recibido: <span class="fw-semibold text-white" id="pf_lblRecibido">—</span></span>
+            </div>
             <span class="me-2"> Pallets INV (Factura): <span class="fw-semibold text-white"
                 id="pf_lblPalletsRcv">—</span></span>
 
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+
+              <span class="me-2 p-2">
+                Revisión:
+                <span class="fw-semibold badge p-3 mb-1 mt-1" id="pf_lblRevision">—</span>
+              </span>
+            </div>
           </div>
 
         </div>
@@ -338,8 +348,8 @@
                 <th style="width:120px;">Pallets RCV</th>
                 <th style="width:120px;"># Cajas</th>
                 <th style="width:120px;"># Piezas</th>
-                <th style="width:140px;">Imagenes</th>
                 <th style="width:140px;">Observaciones</th>
+                <!--<th style="width:140px;">Imagenes</th>-->
                 <th style="width:140px;">Acciones</th>
               </tr>
             </thead>
@@ -399,7 +409,7 @@
               <input type="file" class="form-control form-control-sm pf_imagenes" placeholder="Opcional">
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm pf_observaciones" placeholder="Opcional">
+              <input type="text" class="form-control form-control-sm pf_observaciones">
             </td>
             <td>
               <div class="btn-group btn-group-sm" role="group">

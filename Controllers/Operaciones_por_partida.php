@@ -473,6 +473,7 @@ class Operaciones_por_partida extends Controller
         $pallets_rcv = isset($_POST['pallets_rcv']) ? (int)$_POST['pallets_rcv'] : 0;
         $cajas       = isset($_POST['cajas']) ? (int)$_POST['cajas'] : 0;
         $piezas      = isset($_POST['piezas']) ? (int)$_POST['piezas'] : 0;
+        $observaciones = isset($_POST['observaciones']) ? trim((string)$_POST['observaciones']) : '';
 
         // Validaciones mínimas (en tu tabla: upc es NOT NULL)
         if ($factura_id <= 0) {
@@ -521,7 +522,8 @@ class Operaciones_por_partida extends Controller
             "case_pack"   => $case_pack,
             "pallets_rcv" => $pallets_rcv,
             "cajas"       => $cajas,
-            "piezas"      => $piezas
+            "piezas"      => $piezas,
+            "observaciones" => $observaciones
         ]);
 
         if ($id > 0) {
@@ -585,6 +587,7 @@ class Operaciones_por_partida extends Controller
             $cajas       = isset($_POST['cajas']) ? (int)$_POST['cajas'] : 0;
             $piezas      = isset($_POST['piezas']) ? (int)$_POST['piezas'] : 0;
             $item        = isset($_POST['item']) ? trim($_POST['item']) : '';
+            $observaciones = isset($_POST['observaciones']) ? trim((string)$_POST['observaciones']) : '';
 
             if ($idProducto <= 0 || $facturaId <= 0) {
                 echo json_encode(['ok' => false, 'msg' => 'Producto o factura inválidos.'], JSON_UNESCAPED_UNICODE);
@@ -622,7 +625,8 @@ class Operaciones_por_partida extends Controller
                 'case_pack'   => $case_pack,
                 'pallets_rcv' => $pallets_rcv,
                 'cajas'       => $cajas,
-                'piezas'      => $piezas
+                'piezas'      => $piezas,
+                'observaciones' => $observaciones
             ]);
 
             echo json_encode($resp, JSON_UNESCAPED_UNICODE);
@@ -660,7 +664,12 @@ class Operaciones_por_partida extends Controller
                 echo json_encode(['ok' => false, 'msg' => 'Formato de items inválido (JSON).'], JSON_UNESCAPED_UNICODE);
                 exit;
             }
-
+            foreach ($items as &$it) {
+                $it['observaciones'] = isset($it['observaciones'])
+                    ? trim((string)$it['observaciones'])
+                    : '';
+            }
+            unset($it);
             // Aquí delegas toda la lógica (insert vs update) al MODEL
             $resp = $this->model->guardarProductosFactura($facturaId, $items);
 
