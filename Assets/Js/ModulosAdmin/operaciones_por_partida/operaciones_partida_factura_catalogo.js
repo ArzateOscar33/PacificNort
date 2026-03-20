@@ -104,11 +104,36 @@
   }
 
   function badgeRevision(val) {
-    const s = String(val ?? "").toLowerCase();
-    const ok = s === "1" || s === "si" || s === "sí" || s === "true";
-    return ok
-      ? `<span class="badge bg-success text-white">Sí</span>`
-      : `<span class="badge bg-secondary text-white">No</span>`;
+    const n = parseInt(String(val ?? "0"), 10);
+
+    switch (n) {
+      case 0:
+        return `<span class="badge bg-secondary text-white">Factura No Revisada</span>`;
+      case 1:
+        return `<span class="badge bg-success text-white">Factura Revisada</span>`;
+      case 2:
+        return `<span class="badge bg-warning text-dark">Envío sin Revisión</span>`;
+      case 3:
+        return `<span class="badge bg-danger text-white">Factura No Cuadrada</span>`;
+      default:
+        return `<span class="badge bg-light text-dark border">Sin estatus</span>`;
+    }
+  }
+  function revisionLabel(val) {
+    const n = parseInt(String(val ?? "0"), 10);
+
+    switch (n) {
+      case 0:
+        return "Factura No Revisada";
+      case 1:
+        return "Factura Revisada";
+      case 2:
+        return "Envío sin Revisión";
+      case 3:
+        return "Factura No Cuadrada";
+      default:
+        return "Sin estatus";
+    }
   }
 
   // ==========================
@@ -129,7 +154,7 @@
     rows.forEach((r) => {
       const idFactura = r.id_factura ?? "";
       const bodega = r.bodega_nombre ?? "—";
-      const revision = r.revision_pasa ?? "";
+      const revision = r.revision_estatus ?? 0;
       const numeroFactura = r.numero_factura ?? "—";
       const pallets = r.pallets_inv ?? 0;
       const proveedor = r.proveedor ?? "—";
@@ -162,7 +187,7 @@
                 data-cliente="${esc(cliente)}"
                 data-xdock="${esc(bodega)}"
                 data-recibido="${esc(fechaRec)}"
-                data-revision="${esc(String(revision).toUpperCase())}"
+                data-revision="${esc(revisionLabel(revision))}"
                 data-pallets_inv="${esc(pallets)}"
                 title="Ver productos">
                 <i data-feather="list"></i>

@@ -70,7 +70,7 @@ class Operaciones_por_partidaModel extends Query
                     f.id_factura,
                     f.numero_factura,
                     f.proveedor,
-                    f.revision_pasa,
+                    f.revision_estatus,
                     f.pallets_inv,
                     f.fecha_recibido,
                     f.notas,
@@ -224,7 +224,7 @@ class Operaciones_por_partidaModel extends Query
         $clienteId     = isset($data['cliente_id']) && $data['cliente_id'] !== '' ? (int)$data['cliente_id'] : 0;
         $numeroFactura = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
         $proveedor     = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
-        $revisionPasa  = !empty($data['revision_pasa']) ? 1 : 0;
+        $revisionEstatus = isset($data['revision_estatus']) ? (int)$data['revision_estatus'] : 0;
         $palletsRcv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
         $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null;
         $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
@@ -301,7 +301,7 @@ class Operaciones_por_partidaModel extends Query
 
         // ===== Insert =====
         $sql = "INSERT INTO op_partida_facturas
-            (bodega_id, cliente_id, numero_factura, proveedor, revision_pasa, pallets_inv, fecha_recibido, notas, estatus, creado_por)
+            (bodega_id, cliente_id, numero_factura, proveedor, revision_estatus, pallets_inv, fecha_recibido, notas, estatus, creado_por)
             VALUES
             (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
 
@@ -310,7 +310,7 @@ class Operaciones_por_partidaModel extends Query
             $clienteId,
             $numeroFactura,
             $proveedor,
-            $revisionPasa,
+            $revisionEstatus,
             $palletsRcv,
             ($fechaRecibido === '' ? null : $fechaRecibido),
             ($notas === '' ? null : $notas),
@@ -337,7 +337,7 @@ class Operaciones_por_partidaModel extends Query
                 c.nombre AS cliente_nombre,
                 f.numero_factura,
                 f.proveedor,
-                f.revision_pasa,
+                f.revision_estatus,
                 f.pallets_inv,
                 DATE_FORMAT(f.fecha_recibido, '%Y-%m-%d') AS fecha_recibido,
                 f.notas,
@@ -362,7 +362,7 @@ class Operaciones_por_partidaModel extends Query
         $clienteId      = isset($data['cliente_id']) && $data['cliente_id'] !== '' ? (int)$data['cliente_id'] : 0;
         $numeroFactura  = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
         $proveedor      = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
-        $revisionPasa   = !empty($data['revision_pasa']) ? 1 : 0;
+        $revisionEstatus = isset($data['revision_estatus']) ? (int)$data['revision_estatus'] : 0;
         $palletsInv     = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
         $fechaRecibido  = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
         $notas          = isset($data['notas']) ? trim((string)$data['notas']) : null;
@@ -457,7 +457,7 @@ class Operaciones_por_partidaModel extends Query
                 cliente_id = ?,
                 numero_factura = ?,
                 proveedor = ?,
-                revision_pasa = ?,
+                revision_estatus = ?,
                 pallets_inv = ?,
                 fecha_recibido = ?,
                 notas = ?,
@@ -470,7 +470,7 @@ class Operaciones_por_partidaModel extends Query
             $clienteId,
             $numeroFactura,
             $proveedor,
-            $revisionPasa,
+            $revisionEstatus,
             $palletsInv,
             ($fechaRecibido === '' ? null : $fechaRecibido),
             ($notas === '' ? null : $notas),

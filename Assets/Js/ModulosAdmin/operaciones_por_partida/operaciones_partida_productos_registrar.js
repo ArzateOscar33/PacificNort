@@ -164,9 +164,11 @@
     tr.querySelector(".pf_expiracion").value = toStr(prefill.expiracion);
     tr.querySelector(".pf_inner").value = toStr(prefill.inner_pack);
     tr.querySelector(".pf_case").value = toStr(prefill.case_pack);
-    tr.querySelector(".pf_pallets_rcv").value = toStr(prefill.pallets_rcv ?? 0);
-    tr.querySelector(".pf_cajas").value = toStr(prefill.cajas ?? 0);
-    tr.querySelector(".pf_piezas").value = toStr(prefill.piezas ?? 0);
+    tr.querySelector(".pf_pallets_rcv").value = toStr(
+      prefill.pallets_rcv ?? "",
+    );
+    tr.querySelector(".pf_cajas").value = toStr(prefill.cajas ?? "");
+    tr.querySelector(".pf_piezas").value = toStr(prefill.piezas ?? "");
 
     return tr;
   }

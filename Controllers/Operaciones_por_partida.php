@@ -11,7 +11,8 @@ class Operaciones_por_partida extends Controller
             exit;
         }
         // Solo sin rol cliente
-        $this->requireRoles([1, 11, 2, 15]);
+        $this->requireRoles([1, 11, 2]);
+        //$this->requireRoles([1, 11, 2,15]);
     }
 
     public function index()
@@ -196,8 +197,9 @@ class Operaciones_por_partida extends Controller
                 ? trim((string)$_POST['vendor_name'])
                 : (isset($_POST['operaciones_partida_proveedor']) ? trim((string)$_POST['operaciones_partida_proveedor']) : '');
 
-            // checkbox switch
-            $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
+            $revisionEstatus = isset($_POST['operaciones_partida_revision_select'])
+                ? (int)$_POST['operaciones_partida_revision_select']
+                : 0;
 
             $palletsInv    = isset($_POST['pallets_inv'])
                 ? (int)$_POST['pallets_inv']
@@ -210,7 +212,13 @@ class Operaciones_por_partida extends Controller
             $notas         = isset($_POST['comentarios'])
                 ? trim((string)$_POST['comentarios'])
                 : (isset($_POST['operaciones_partida_notas']) ? trim((string)$_POST['operaciones_partida_notas']) : '');
-
+            if (!in_array($revisionEstatus, [0, 1, 2, 3], true)) {
+                echo json_encode([
+                    'ok' => false,
+                    'msg' => 'Estatus de revisión inválido.'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
             // ====== Sesión ======
             $creadoPor = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
 
@@ -220,7 +228,7 @@ class Operaciones_por_partida extends Controller
                 'cliente_id'     => $clienteId,
                 'numero_factura' => $numeroFactura,
                 'proveedor'      => $proveedor,
-                'revision_pasa'  => $revisionPasa,
+                'revision_estatus' => $revisionEstatus,
                 'pallets_inv'    => $palletsInv,
                 'fecha_recibido' => $fechaRecibido,
                 'notas'          => $notas,
@@ -331,7 +339,16 @@ class Operaciones_por_partida extends Controller
             $clienteId     = isset($_POST['operaciones_partida_cliente']) ? (int)$_POST['operaciones_partida_cliente'] : 0;
             $numeroFactura = isset($_POST['invoice_number']) ? trim((string)$_POST['invoice_number']) : '';
             $proveedor     = isset($_POST['vendor_name']) ? trim((string)$_POST['vendor_name']) : '';
-            $revisionPasa  = isset($_POST['revision_pasa']) ? 1 : 0;
+            $revisionEstatus = isset($_POST['operaciones_partida_revision_select'])
+                ? (int)$_POST['operaciones_partida_revision_select']
+                : 0;
+            if (!in_array($revisionEstatus, [0, 1, 2, 3], true)) {
+                echo json_encode([
+                    'ok' => false,
+                    'msg' => 'Estatus de revisión inválido.'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
             $palletsInv    = isset($_POST['pallets_inv']) ? (int)$_POST['pallets_inv'] : 0;
             $fechaRecibido = isset($_POST['received_date']) ? trim((string)$_POST['received_date']) : '';
             $notas         = isset($_POST['comentarios']) ? trim((string)$_POST['comentarios']) : '';
@@ -343,7 +360,7 @@ class Operaciones_por_partida extends Controller
                 'cliente_id'      => $clienteId,
                 'numero_factura'  => $numeroFactura,
                 'proveedor'       => $proveedor,
-                'revision_pasa'   => $revisionPasa,
+                'revision_estatus' => $revisionEstatus,
                 'pallets_inv'     => $palletsInv,
                 'fecha_recibido'  => $fechaRecibido,
                 'notas'           => $notas,

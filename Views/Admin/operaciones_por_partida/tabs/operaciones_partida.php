@@ -1,6 +1,7 @@
 <style>
-  .modal-xxl-wide {
-    max-width: min(1600px, calc(100vw - 2rem));
+  .modal-dialog.modal-xxl-wide {
+    --bs-modal-width: 80vw;
+    max-width: 80vw;
   }
 </style>
 
@@ -141,7 +142,7 @@
 
 <!-- ===================== MODAL: SOLO ENCABEZADO DE FACTURA ===================== -->
 <div class="modal fade" id="modalOperacionesPartida" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-xxl-wide">
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
 
       <div class="modal-header bg-dark text-white">
@@ -191,14 +192,18 @@
               </select>
             </div>
 
-
             <div class="col-md-2">
-              <label class="form-label d-block">Revisión</label>
-              <div class="form-check form-switch mt-1">
-                <input class="form-check-input" type="checkbox" id="operaciones_partida_revision" name="revision_pasa">
-                <label class="form-check-label" for="operaciones_partida_revision">Sí</label>
-              </div>
+              <label class="form-label d-block">Estatus</label>
+              <select name="operaciones_partida_revision_select" id="operaciones_partida_revision_select" class="form-select">
+                <option value="">Selecciona Revisión</option>
+                <option value="0">Factura No Revisada</option>
+                <option value="1">Factura Revisada</option>
+                <option value="2">Envio sin Revision</option>
+                <option value="3">Factura No Cuadrada</option>
+
+              </select>
             </div>
+
 
             <div class="col-md-2">
               <label class="form-label">Pallets INV (Factura)</label>
@@ -333,6 +338,8 @@
                 <th style="width:120px;">Pallets RCV</th>
                 <th style="width:120px;"># Cajas</th>
                 <th style="width:120px;"># Piezas</th>
+                <th style="width:140px;">Imagenes</th>
+                <th style="width:140px;">Observaciones</th>
                 <th style="width:140px;">Acciones</th>
               </tr>
             </thead>
@@ -388,7 +395,12 @@
             <td>
               <input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" placeholder="0">
             </td>
-
+            <td>
+              <input type="file" class="form-control form-control-sm pf_imagenes" placeholder="Opcional">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm pf_observaciones" placeholder="Opcional">
+            </td>
             <td>
               <div class="btn-group btn-group-sm" role="group">
 

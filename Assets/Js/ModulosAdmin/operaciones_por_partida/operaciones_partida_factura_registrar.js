@@ -29,7 +29,9 @@
 
   const selBodega = document.getElementById("operaciones_partida_bodega");
   const selCliente = document.getElementById("operaciones_partida_cliente");
-  const chkRevision = document.getElementById("operaciones_partida_revision");
+  const selRevision = document.getElementById(
+    "operaciones_partida_revision_select",
+  );
   const inpPallets = document.getElementById("operaciones_partida_pallets_inv");
   const inpFactura = document.getElementById("operaciones_partida_factura");
   const inpProveedor = document.getElementById("operaciones_partida_proveedor");
@@ -99,6 +101,10 @@
     const proveedor = inpProveedor
       ? String(inpProveedor.value || "").trim()
       : "";
+    const revisionEstatus = selRevision
+      ? String(selRevision.value || "").trim()
+      : "";
+    if (revisionEstatus === "") return "Selecciona un estatus de revisión.";
 
     if (!bodegaId) return "Selecciona una bodega.";
     if (!clienteId) return "Selecciona un cliente.";
@@ -125,7 +131,7 @@
     // limpiar hidden id y form
     if (inpIdFacturaHidden) inpIdFacturaHidden.value = "";
     if (formFactura) formFactura.reset();
-
+    if (selRevision) selRevision.value = "";
     // título
     const titulo = document.getElementById("operaciones_partida_tituloModal");
     if (titulo) titulo.textContent = "Nueva Factura";
@@ -198,9 +204,7 @@
 
       if (inpNotas) inpNotas.value = f.notas ? String(f.notas) : "";
 
-      if (chkRevision)
-        chkRevision.checked =
-          String(f.revision_pasa) === "1" || f.revision_pasa === 1;
+      if (selRevision) selRevision.value = String(f.revision_estatus ?? 0);
 
       setModoEditar();
       abrirModalFactura();
@@ -233,10 +237,8 @@
 
     const fd = new FormData(formFactura);
 
-    // checkbox: si no está checked, no viaja => controlador lo interpreta como 0
-    if (chkRevision) {
-      if (chkRevision.checked) fd.set("revision_pasa", "1");
-      else fd.delete("revision_pasa");
+    if (selRevision) {
+      fd.set("operaciones_partida_revision_select", selRevision.value || "0");
     }
 
     // asegurar bodega con name esperado
