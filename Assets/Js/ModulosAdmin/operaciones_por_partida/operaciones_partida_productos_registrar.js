@@ -512,14 +512,28 @@
   // ==========================
 
   // Agregar fila draft
-  btnAgregarLinea.addEventListener("click", function () {
+  btnAgregarLinea.addEventListener("click", async function () {
     const facturaId = getFacturaId();
     if (facturaId <= 0) {
-      swalError(
-        "Factura inválida",
-        "Abre la factura primero (no hay factura_id en el modal).",
-      );
+      swalError("Factura inválida", "Abre la factura primero.");
       return;
+    }
+
+    // ← NUEVO: alerta si es "Envío sin Revisión"
+    if (window.opPartidaEsEnvioSinRevision) {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Factura sin revisión",
+        html: `Esta factura tiene estatus <strong>"Envío sin Revisión"</strong>.<br>
+             Los productos se registrarán como <strong>cantidad dummy (1)</strong> 
+             ya que no se revisó el contenido real.`,
+        showCancelButton: true,
+        confirmButtonText: "Entendido, agregar igual",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#ffc107",
+        cancelButtonColor: "#6c757d",
+      });
+      if (!result.isConfirmed) return;
     }
 
     const tr = createDraftRow();

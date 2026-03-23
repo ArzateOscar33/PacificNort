@@ -275,7 +275,7 @@
             <span class="badge bg-light text-dark" id="pf_badgeCount">0</span>
           </h5>
 
-          <div class="col-md-12 text-white-50 mt-1 mb-1 m-2 " style="border:1px solid red;">
+          <div class="col-md-12 text-white-50 mt-1 mb-1 m-2 ">
             <span class="me-2">Factura: <span class="fw-semibold text-white" id="pf_lblFactura">—</span></span>
             <span class="me-2"> Proveedor: <span class="fw-semibold text-white" id="pf_lblProveedor">—</span></span>
             <div class="row">
@@ -405,9 +405,9 @@
             <td>
               <input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" placeholder="0">
             </td>
-            <td>
+            <!-- <td>
               <input type="file" class="form-control form-control-sm pf_imagenes" placeholder="Opcional">
-            </td>
+            </td> -->
             <td>
               <input type="text" class="form-control form-control-sm pf_observaciones">
             </td>

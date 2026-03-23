@@ -12,7 +12,7 @@
     "";
 
   const ENDPOINT_LISTAR_PRODUCTOS = "Operaciones_por_partida/listarProductos";
-
+  let facturaEsEnvioSinRevision = false;
   // ==========================
   // REFS MODAL PRODUCTOS
   // ==========================
@@ -490,6 +490,9 @@
     cargarProductosFactura(facturaId);
   };
 
+  Object.defineProperty(window, "opPartidaEsEnvioSinRevision", {
+    get: () => facturaEsEnvioSinRevision,
+  });
   // ==========================
   // CLICK EN "VER PRODUCTOS" (VIENE DESDE FACTURAS)
   // ==========================
@@ -509,8 +512,15 @@
         lblRec.textContent = btnVer.getAttribute("data-recibido") || "—";
       if (lblRev) {
         const revision = btnVer.getAttribute("data-revision");
-        console.log("data-revision:", revision);
         pintarBadgeRevision(lblRev, revision);
+
+        // ← NUEVO: guardar si es "Envío sin Revisión" (valor 2)
+        const rawRev = String(revision ?? "").trim();
+        const numRev = parseInt(rawRev, 10);
+        facturaEsEnvioSinRevision = !isNaN(numRev)
+          ? numRev === 2
+          : rawRev.toLowerCase() === "envio sin revision" ||
+            rawRev.toLowerCase() === "envío sin revisión";
       }
       if (lblPal)
         lblPal.textContent = btnVer.getAttribute("data-pallets_inv") || "—";
@@ -581,6 +591,7 @@
 
     if (modalEl) {
       modalEl.addEventListener("hidden.bs.modal", function () {
+        facturaEsEnvioSinRevision = false;
         if (pfBuscar) pfBuscar.value = "";
         facturaIdActual = 0;
         page = 1;

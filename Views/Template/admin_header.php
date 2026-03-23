@@ -319,6 +319,7 @@
                                             class="sidebar-link"><i data-feather="dollar-sign"></i><span
                                                 class="hide-menu">Finanzas </span></a></li>
                                 <?php endif; ?>
+                            </ul>
 
                         </li>
 

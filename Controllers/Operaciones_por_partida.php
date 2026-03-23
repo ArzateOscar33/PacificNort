@@ -11,8 +11,8 @@ class Operaciones_por_partida extends Controller
             exit;
         }
         // Solo sin rol cliente
-        $this->requireRoles([1, 11, 2]);
-        //$this->requireRoles([1, 11, 2,15]);
+        //$this->requireRoles([1, 11, 2]);
+        $this->requireRoles([1, 11, 2, 15]);
     }
 
     public function index()
