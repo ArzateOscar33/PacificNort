@@ -107,6 +107,15 @@
                             <?php endif; ?>
                         </select>
                     </div>
+                    <div class="col-12 col-md-2">
+                        <label class="form-label mb-1">Categoria</label>
+                        <select id="origenTipo_cc" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="MARITIMO-FERRO">Marítimo-Ferro</option>
+                            <option value="PARTIDA/DOMESTICO">Partida / Doméstico</option>
+                        </select>
+                    </div>
+
 
 
                     <!-- Estatus pago -->
@@ -193,19 +202,19 @@
                 <table class="table table-sm table-hover align-middle mb-0 table-bordered" id="costosCliente_table">
                     <thead class="table-light">
                         <tr class="text-nowrap">
-                            <th style="min-width:120px;">Origen Operacion</th>
-                            <th style="min-width:120px;">Operación</th>
-                            <th style="min-width:140px;">Contenedor</th>
-                            <th style="min-width:160px;">Transportista</th>
-                            <th style="min-width:160px;">Broker</th>
-                            <th style="min-width:120px;">Estatus</th>
-                            <th style="min-width:140px;">Cita Puerto</th>
-                            <th style="min-width:90px;" class="text-center">ISF</th>
-
-                            <th style="min-width:220px;">Categoria</th>
-                            <th style="min-width:220px;">Concepto</th>
-                            <th style="min-width:120px;" class="text-end">Monto</th>
-                            <th style="min-width:110px;" class="text-center">Pagado</th>
+                            <th>Origen</th>
+                            <th>Referencia</th>
+                            <th>Contenedor</th>
+                            <th>Ferro/Caja</th>
+                            <th>Transportista</th>
+                            <th>Broker</th>
+                            <th>Estatus</th>
+                            <th>Cita Puerto</th>
+                            <th>ISF</th>
+                            <th>Categoría</th>
+                            <th>Concepto</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Pagado</th>
                         </tr>
                     </thead>
 
@@ -213,7 +222,7 @@
 
                         <!-- Placeholder vacío -->
                         <tr>
-                            <td colspan="11" class="text-center text-muted py-5">
+                            <td colspan="13" class="text-center text-muted py-5">
                                 <i data-feather="inbox"></i>
                                 <div class="mt-2">Sin datos. Aplica filtros y presiona “Buscar”.</div>
                             </td>
@@ -293,6 +302,6 @@
         </div>
     </div>
 </div>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_clientes.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/finanzas.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/exportarCostosClientes.js"></script>

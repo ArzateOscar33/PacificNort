@@ -193,7 +193,6 @@
                 <table class="table table-sm table-hover align-middle mb-0 table-bordered" id="costosCliente_table">
                     <thead class="table-light">
                         <tr class="text-nowrap">
-                            <th style="min-width:120px;">Operación</th>
                             <th style="min-width:140px;">Contenedor</th>
                             <th style="min-width:160px;">Transportista</th>
                             <th style="min-width:160px;">Broker</th>
