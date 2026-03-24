@@ -848,227 +848,180 @@ class Operaciones_por_partidaModel extends Query
         return ($rows === false || empty($rows)) ? [] : $rows;
     }
 
+// ============================================================
+// FOTOS DE PRODUCTOS
+// ============================================================
 
-    //rutas
-    /*
-public function sugerirFacturas(string $term, int $limit = 10): array
-{
-    $term  = trim((string)$term);
-    $limit = (int)$limit;
-    if ($limit < 1)  $limit = 10;
-    if ($limit > 25) $limit = 25;
+    /**
+     * Obtiene las fotos de un producto (máx 3), ordenadas por posición.
+     */
+    public function getFotosByProducto(int $productoId): array
+    {
+        $sql = "SELECT
+                id_foto,
+                producto_id,
+                factura_id,
+                orden,
+                nombre_archivo,
+                ruta_archivo,
+                mime_type,
+                tamano_bytes,
+                creado_en
+            FROM op_partida_producto_fotos
+            WHERE producto_id = ?
+              AND estatus = 1
+            ORDER BY orden ASC";
 
-    // Si no hay term, no regreses “todo” (evita carga y UX rara)
-    if ($term === '') return [];
-
-    $like = '%' . $term . '%';
-
-    // Nota: LIMIT no se puede bindear en MySQL con PDO en muchos setups,
-    // por eso se fuerza a int arriba y se inyecta como número seguro.
-    $sql = "SELECT
-                f.id_factura,
-                f.numero_factura,
-                f.proveedor,
-                b.nombre AS bodega_nombre
-            FROM op_partida_facturas f
-            INNER JOIN bodegas b ON b.id_bodega = f.bodega_id
-            WHERE f.estatus = 1
-              AND (
-                f.numero_factura LIKE ?
-                OR IFNULL(f.proveedor,'') LIKE ?
-              )
-            ORDER BY f.id_factura DESC
-            LIMIT $limit";
-
-    $rows = $this->selectAll($sql, [$like, $like]);
-    return ($rows === false) ? [] : $rows;
-}
-public function listarProductosRutas(int $facturaId, string $term = ''): array
-{
-    $facturaId = (int)$facturaId;
-    $term      = trim($term);
-
-    $where  = " WHERE p.estatus = 1 AND p.factura_id = ? ";
-    $params = [$facturaId];
-
-    if ($term !== '') {
-        $where .= " AND (
-            p.descripcion LIKE ?
-            OR IFNULL(p.upc,'') LIKE ?
-            OR IFNULL(p.marca,'') LIKE ?
-        ) ";
-        $like = '%' . $term . '%';
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
+        $rows = $this->selectAll($sql, [$productoId]);
+        return is_array($rows) ? $rows : [];
     }
 
-    // IMPORTANTE:
-    // Ajusta nombres de columnas de envíos según tu BD final:
-    // - e.cajas_enviadas
-    // - e.estatus
-    // - e.producto_id
-    // - e.factura_id
-    $sql = "SELECT
-                p.id_producto,
-                p.factura_id,
-                p.descripcion,
-                p.upc,
-                p.marca,
-                p.cajas AS cajas_total,
-                COALESCE(SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END), 0) AS cajas_enviadas,
-                (p.cajas - COALESCE(SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END), 0)) AS cajas_restantes
-            FROM op_partida_productos p
-            LEFT JOIN op_partida_envios e
-              ON e.factura_id  = p.factura_id
-             AND e.producto_id = p.id_producto
-            $where
-            GROUP BY
-                p.id_producto, p.factura_id, p.descripcion, p.upc, p.marca, p.cajas
-            ORDER BY p.id_producto DESC";
+    /**
+     * Obtiene todas las fotos de todos los productos de una factura.
+     * Útil para cargarlas todas en una sola query al abrir el modal.
+     */
+    public function getFotosByFactura(int $facturaId): array
+    {
+        $sql = "SELECT
+                f.id_foto,
+                f.producto_id,
+                f.factura_id,
+                f.orden,
+                f.nombre_archivo,
+                f.ruta_archivo,
+                f.mime_type,
+                f.tamano_bytes,
+                f.creado_en
+            FROM op_partida_producto_fotos f
+            WHERE f.factura_id = ?
+              AND f.estatus = 1
+            ORDER BY f.producto_id ASC, f.orden ASC";
 
-    $rows = $this->selectAll($sql, $params);
-    return ($rows === false) ? [] : $rows;
-}
+        $rows = $this->selectAll($sql, [$facturaId]);
+        return is_array($rows) ? $rows : [];
+    }
 
-public function listarEnviosProducto(int $facturaId, int $productoId): array
-{
-    $facturaId  = (int)$facturaId;
-    $productoId = (int)$productoId;
+    /**
+     * Inserta o reemplaza una foto en una posición (orden 1, 2 o 3).
+     * Si ya existe foto en esa posición para ese producto, la sobreescribe en BD.
+     * El archivo físico anterior debe borrarse desde el controlador antes de llamar esto.
+     * Retorna el id_foto insertado o 0 si falla.
+     */
+    public function upsertFotoProducto(array $d): int
+    {
+        $productoId   = (int)($d['producto_id']    ?? 0);
+        $facturaId    = (int)($d['factura_id']      ?? 0);
+        $orden        = (int)($d['orden']           ?? 1);
+        $nombreArch   = trim((string)($d['nombre_archivo'] ?? ''));
+        $rutaArch     = trim((string)($d['ruta_archivo']   ?? ''));
+        $mimeType     = trim((string)($d['mime_type']      ?? ''));
+        $tamano       = (int)($d['tamano_bytes']    ?? 0);
+        $subidoPor    = isset($d['subido_por']) && $d['subido_por'] !== '' ? (int)$d['subido_por'] : null;
 
-    // Ajusta nombres reales:
-    // e.destino (o ciudad_destino_id)
-    // e.fecha_envio
-    // e.caja_ferro (o id_fisico si ya decidiste guardar eso)
-    // e.notas
-    $sql = "SELECT
-                e.id_envio,
-                e.factura_id,
-                e.producto_id,
-                e.destino,
-                e.fecha_envio,
-                e.caja_ferro,
-                e.cajas_enviadas,
-                e.notas,
-                e.estatus,
-                e.creado_en
-            FROM op_partida_envios e
-            WHERE e.factura_id = ?
-              AND e.producto_id = ?
-            ORDER BY e.fecha_envio DESC, e.id_envio DESC";
+        if ($productoId <= 0 || $facturaId <= 0 || $orden < 1 || $orden > 3 || $rutaArch === '') {
+            return 0;
+        }
 
-    $rows = $this->selectAll($sql, [$facturaId, $productoId]);
-    return ($rows === false) ? [] : $rows;
-}
-public function resumenEnviosProducto(int $facturaId, int $productoId): array
-{
-    $facturaId  = (int)$facturaId;
-    $productoId = (int)$productoId;
+        // INSERT ... ON DUPLICATE KEY UPDATE aprovecha el UNIQUE KEY (producto_id, orden)
+        $sql = "INSERT INTO op_partida_producto_fotos
+                (producto_id, factura_id, orden, nombre_archivo, ruta_archivo, mime_type, tamano_bytes, subido_por, estatus)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE
+                nombre_archivo = VALUES(nombre_archivo),
+                ruta_archivo   = VALUES(ruta_archivo),
+                mime_type      = VALUES(mime_type),
+                tamano_bytes   = VALUES(tamano_bytes),
+                subido_por     = VALUES(subido_por),
+                estatus        = 1
+              ";
 
-    $sql = "SELECT
-                e.destino,
-                SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END) AS cajas_enviadas
-            FROM op_partida_envios e
-            WHERE e.factura_id = ?
-              AND e.producto_id = ?
-            GROUP BY e.destino
-            ORDER BY e.destino ASC";
+        $params = [
+            $productoId,
+            $facturaId,
+            $orden,
+            $nombreArch,
+            $rutaArch,
+            ($mimeType !== '' ? $mimeType : null),
+            ($tamano > 0 ? $tamano : null),
+            $subidoPor
+        ];
 
-    $rows = $this->selectAll($sql, [$facturaId, $productoId]);
-    return ($rows === false) ? [] : $rows;
-}
-public function getCajasRestantesProducto(int $facturaId, int $productoId): int
-{
-    $facturaId  = (int)$facturaId;
-    $productoId = (int)$productoId;
+        $id = $this->insertar($sql, $params);
+        return (int)$id;
+    }
 
-    $sql = "SELECT
-                (p.cajas - COALESCE(SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END), 0)) AS restantes
-            FROM op_partida_productos p
-            LEFT JOIN op_partida_envios e
-              ON e.factura_id = p.factura_id
-             AND e.producto_id = p.id_producto
-            WHERE p.factura_id = ?
-              AND p.id_producto = ?
-              AND p.estatus = 1
-            GROUP BY p.cajas
+    /**
+     * Obtiene una foto por su ID (para validar antes de eliminar).
+     */
+    public function getFotoById(int $idFoto): ?array
+    {
+        $sql = "SELECT
+                id_foto,
+                producto_id,
+                factura_id,
+                orden,
+                nombre_archivo,
+                ruta_archivo,
+                estatus
+            FROM op_partida_producto_fotos
+            WHERE id_foto = ?
             LIMIT 1";
 
-    $row = $this->select($sql, [$facturaId, $productoId]);
-    return (int)($row['restantes'] ?? 0);
-}
-
-// ===== RUTAS: CIUDADES =====
-public function listarCiudadesActivas(): array
-{
-    // AJUSTA: nombre de tabla/campos según tu BD real
-    $sql = "SELECT
-                c.id_ciudad,
-                c.nombre
-            FROM ciudades c
-            WHERE c.estatus = 1
-            ORDER BY c.nombre ASC";
-
-    $rows = $this->selectAll($sql);
-    return ($rows === false || empty($rows)) ? [] : $rows;
-}
-
-
-// ===== RUTAS: SUGERIR CAJA / FERRO =====
-public function sugerirCajaFerro(string $term, int $limit = 10): array
-{
-    $term  = trim((string)$term);
-    $limit = (int)$limit;
-
-    if ($limit < 1) $limit = 10;
-    if ($limit > 25) $limit = 25;
-    if ($term === '' || mb_strlen($term) < 2) return [];
-
-    $like = '%' . $term . '%';
-
-    // ==========================
-    // AJUSTA ESTOS SELECTS A TU BD REAL
-    // ==========================
-
-    // (1) CAJAS
-    // Ejemplo supuestos: tabla cajas_fisicas (id_caja, folio, estatus)
-    $sqlCajas = "SELECT
-                    c.id_caja AS id,
-                    'CAJA'    AS tipo,
-                    c.folio   AS texto
-                 FROM cajas_fisicas c
-                 WHERE c.estatus = 1
-                   AND c.folio LIKE ?
-                 ORDER BY c.id_caja DESC
-                 LIMIT $limit";
-
-    $cajas = $this->selectAll($sqlCajas, [$like]);
-    if ($cajas === false) $cajas = [];
-
-    // (2) FERROS
-    // Ejemplo supuestos: tabla ferros (id_ferro, folio, estatus)
-    $sqlFerros = "SELECT
-                    f.id_ferro AS id,
-                    'FERRO'    AS tipo,
-                    f.folio    AS texto
-                  FROM ferros f
-                  WHERE f.estatus = 1
-                    AND f.folio LIKE ?
-                  ORDER BY f.id_ferro DESC
-                  LIMIT $limit";
-
-    $ferros = $this->selectAll($sqlFerros, [$like]);
-    if ($ferros === false) $ferros = [];
-
-    // Mezcla (prioriza coincidencias, luego por id)
-    $rows = array_merge($cajas, $ferros);
-
-    // Opcional: recortar a limit global
-    if (count($rows) > $limit) {
-        $rows = array_slice($rows, 0, $limit);
+        $row = $this->select($sql, [$idFoto]);
+        return $row ?: null;
     }
 
-    return $rows;
-}
-*/
+    /**
+     * Elimina físicamente el registro de la foto en BD (hard delete).
+     * El archivo físico se borra desde el controlador.
+     */
+    public function eliminarFotoProducto(int $idFoto): bool
+    {
+        if ($idFoto <= 0) return false;
+
+        $ok = $this->save(
+            "DELETE FROM op_partida_producto_fotos
+         WHERE id_foto = ?",
+            [$idFoto]
+        );
+
+        return (bool)$ok;
+    }
+
+    /**
+     * Modifica listarProductos para incluir las fotos de cada producto.
+     * Llama al método existente y luego adjunta las fotos por producto_id.
+     * 
+     * NOTA: Este método REEMPLAZA la llamada a listarProductos en el controlador,
+     * o puedes llamar a listarProductos y luego a este para enriquecer el resultado.
+     */
+    public function listarProductosConFotos(int $facturaId, array $filters = []): array
+    {
+        // Reutiliza el método existente
+        $result = $this->listarProductos($facturaId, $filters);
+
+        if (empty($result['rows'])) {
+            return $result;
+        }
+
+        // Obtener todas las fotos de la factura en una sola query
+        $todasLasFotos = $this->getFotosByFactura($facturaId);
+
+        // Indexar fotos por producto_id para asignación rápida
+        $fotosPorProducto = [];
+        foreach ($todasLasFotos as $foto) {
+            $pid = (int)$foto['producto_id'];
+            $fotosPorProducto[$pid][] = $foto;
+        }
+
+        // Adjuntar fotos a cada producto
+        foreach ($result['rows'] as &$row) {
+            $pid = (int)$row['id_producto'];
+            $row['fotos'] = $fotosPorProducto[$pid] ?? [];
+        }
+        unset($row);
+
+        return $result;
+    }
 }

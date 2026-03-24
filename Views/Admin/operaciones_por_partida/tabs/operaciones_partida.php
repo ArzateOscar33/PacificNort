@@ -349,7 +349,7 @@
                 <th style="width:120px;"># Cajas</th>
                 <th style="width:120px;"># Piezas</th>
                 <th style="width:140px;">Observaciones</th>
-                <!--<th style="width:140px;">Imagenes</th>-->
+                <th style="width:140px;">Imagenes</th>
                 <th style="width:140px;">Acciones</th>
               </tr>
             </thead>
@@ -405,9 +405,9 @@
             <td>
               <input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" placeholder="0">
             </td>
-            <!-- <td>
-              <input type="file" class="form-control form-control-sm pf_imagenes" placeholder="Opcional">
-            </td> -->
+            <td>
+              <small class="text-muted fst-italic">Guarda primero</small>
+            </td>
             <td>
               <input type="text" class="form-control form-control-sm pf_observaciones">
             </td>
@@ -444,8 +444,111 @@
 
     </div>
   </div>
-</div>
 
+
+</div>
+<!-- ===================== MINI-MODAL: FOTOS DE PRODUCTO ===================== -->
+<div class="modal fade" id="modalFotosProducto" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header bg-dark text-white">
+        <h6 class="modal-title d-flex align-items-center gap-2 mb-0">
+          <i data-feather="image"></i>
+          <span>Fotos del Producto</span>
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Info del producto -->
+        <p class="text-muted small mb-3">
+          <span id="fotoModal_lblDescripcion"></span>
+        </p>
+
+        <!-- Inputs ocultos de contexto -->
+        <input type="hidden" id="fotoModal_productoId" value="">
+        <input type="hidden" id="fotoModal_facturaId" value="">
+
+        <!-- Las 3 posiciones de foto -->
+        <div class="row g-3" id="fotoModal_slots">
+
+          <!-- SLOT 1 -->
+          <div class="col-md-4 text-center" id="fotoSlot_1">
+            <div class="border rounded p-2 position-relative" style="min-height:180px;">
+              <span class="badge bg-secondary mb-2">Foto 1</span>
+              <div id="fotoPreview_1" class="mb-2">
+                <i data-feather="image" style="width:48px;height:48px;color:#ccc;"></i>
+              </div>
+              <div id="fotoBtns_1">
+                <label class="btn btn-outline-primary btn-sm w-100 mb-1" title="Subir foto 1">
+                  <i data-feather="upload"></i> Subir
+                  <input type="file" class="d-none fotoInput" data-orden="1" accept="image/jpeg,image/png,image/webp">
+                </label>
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 d-none fotoEliminarBtn"
+                  data-orden="1" data-id-foto="">
+                  <i data-feather="trash-2"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLOT 2 -->
+          <div class="col-md-4 text-center" id="fotoSlot_2">
+            <div class="border rounded p-2 position-relative" style="min-height:180px;">
+              <span class="badge bg-secondary mb-2">Foto 2</span>
+              <div id="fotoPreview_2" class="mb-2">
+                <i data-feather="image" style="width:48px;height:48px;color:#ccc;"></i>
+              </div>
+              <div id="fotoBtns_2">
+                <label class="btn btn-outline-primary btn-sm w-100 mb-1" title="Subir foto 2">
+                  <i data-feather="upload"></i> Subir
+                  <input type="file" class="d-none fotoInput" data-orden="2" accept="image/jpeg,image/png,image/webp">
+                </label>
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 d-none fotoEliminarBtn"
+                  data-orden="2" data-id-foto="">
+                  <i data-feather="trash-2"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLOT 3 -->
+          <div class="col-md-4 text-center" id="fotoSlot_3">
+            <div class="border rounded p-2 position-relative" style="min-height:180px;">
+              <span class="badge bg-secondary mb-2">Foto 3</span>
+              <div id="fotoPreview_3" class="mb-2">
+                <i data-feather="image" style="width:48px;height:48px;color:#ccc;"></i>
+              </div>
+              <div id="fotoBtns_3">
+                <label class="btn btn-outline-primary btn-sm w-100 mb-1" title="Subir foto 3">
+                  <i data-feather="upload"></i> Subir
+                  <input type="file" class="d-none fotoInput" data-orden="3" accept="image/jpeg,image/png,image/webp">
+                </label>
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 d-none fotoEliminarBtn"
+                  data-orden="3" data-id-foto="">
+                  <i data-feather="trash-2"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /row slots -->
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i data-feather="x-circle" class="me-1"></i> Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- /MINI-MODAL FOTOS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_factura_catalogo.js"></script>
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_factura_registrar.js"></script>

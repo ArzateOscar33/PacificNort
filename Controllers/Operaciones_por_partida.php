@@ -103,7 +103,6 @@ class Operaciones_por_partida extends Controller
         header('Content-Type: application/json; charset=utf-8');
 
         try {
-            // ===== Inputs (GET) =====
             $facturaId = isset($_GET['factura_id']) ? (int)$_GET['factura_id'] : 0;
             $term      = isset($_GET['term']) ? trim($_GET['term']) : '';
 
@@ -112,10 +111,10 @@ class Operaciones_por_partida extends Controller
 
             if ($facturaId <= 0) {
                 echo json_encode([
-                    'ok'   => false,
-                    'msg'  => 'Factura inválida.',
-                    'data' => [],
-                    'meta' => ['total' => 0, 'page' => 1, 'per_page' => 50, 'total_pages' => 0],
+                    'ok'     => false,
+                    'msg'    => 'Factura inválida.',
+                    'data'   => [],
+                    'meta'   => ['total' => 0, 'page' => 1, 'per_page' => 50, 'total_pages' => 0],
                     'totals' => ['total_cajas' => 0, 'total_piezas' => 0, 'total_pallets_inv' => 0]
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
@@ -124,12 +123,11 @@ class Operaciones_por_partida extends Controller
             if ($page < 1) $page = 1;
             if ($perPage < 1) $perPage = 50;
 
-            // Limitar per_page (modal)
             $allowed = [10, 25, 50, 100, 200];
             if (!in_array($perPage, $allowed, true)) $perPage = 50;
 
-            // ===== Modelo =====
-            $result = $this->model->listarProductos($facturaId, [
+            // ✅ ÚNICO CAMBIO: listarProductos → listarProductosConFotos
+            $result = $this->model->listarProductosConFotos($facturaId, [
                 'term'     => $term,
                 'page'     => $page,
                 'per_page' => $perPage
@@ -138,8 +136,8 @@ class Operaciones_por_partida extends Controller
             $rows   = $result['rows'] ?? [];
             $total  = (int)($result['total'] ?? 0);
             $totals = $result['totals'] ?? [
-                'total_cajas' => 0,
-                'total_piezas' => 0,
+                'total_cajas'       => 0,
+                'total_piezas'      => 0,
                 'total_pallets_rcv' => 0
             ];
 
@@ -162,12 +160,11 @@ class Operaciones_por_partida extends Controller
             ], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
             error_log("Operaciones_por_partida/listarProductos ERROR: " . $e->getMessage());
-
             echo json_encode([
-                'ok'   => false,
-                'msg'  => 'Ocurrió un error al listar productos.',
-                'data' => [],
-                'meta' => ['total' => 0, 'page' => 1, 'per_page' => 50, 'total_pages' => 0],
+                'ok'     => false,
+                'msg'    => 'Ocurrió un error al listar productos.',
+                'data'   => [],
+                'meta'   => ['total' => 0, 'page' => 1, 'per_page' => 50, 'total_pages' => 0],
                 'totals' => ['total_cajas' => 0, 'total_piezas' => 0, 'total_pallets_rcv' => 0]
             ], JSON_UNESCAPED_UNICODE);
         }
@@ -1172,196 +1169,234 @@ class Operaciones_por_partida extends Controller
             exit;
         }
     }
+    public function subirFotoProducto()
+    {
+        header('Content-Type: application/json; charset=utf-8');
 
-
-
-    //RUTAS
-    /*
- // ===================== RUTAS: SUGERENCIAS FACTURAS =====================
-public function sugerirFacturasRutas()
-{
-    header('Content-Type: application/json; charset=utf-8');
-
-    try {
-        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-
-        if ($limit < 1) $limit = 10;
-        if ($limit > 25) $limit = 25;
-
-        // Buen patrón UX: mínimo 2 chars
-        if ($term === '' || mb_strlen($term) < 2) {
-            echo json_encode(['ok' => true, 'data' => []], JSON_UNESCAPED_UNICODE);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok' => false, 'msg' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        $rows = $this->model->sugerirFacturas($term, $limit);
+        try {
+            $productoId = isset($_POST['producto_id']) ? (int)$_POST['producto_id'] : 0;
+            $facturaId  = isset($_POST['factura_id'])  ? (int)$_POST['factura_id']  : 0;
+            $orden      = isset($_POST['orden'])        ? (int)$_POST['orden']        : 0;
 
-        echo json_encode([
-            'ok'   => true,
-            'data' => $rows ?: []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+            // Validaciones básicas
+            if ($productoId <= 0 || $facturaId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'Producto o factura inválidos.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
 
-    } catch (Throwable $e) {
-        error_log("Operaciones_por_partida/sugerirFacturasRutas ERROR: " . $e->getMessage());
-        echo json_encode([
-            'ok'   => false,
-            'msg'  => 'Ocurrió un error al buscar facturas.',
-            'data' => []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-}
+            if ($orden < 1 || $orden > 3) {
+                echo json_encode(['ok' => false, 'msg' => 'La posición de la foto debe ser 1, 2 o 3.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
 
+            if (!isset($_FILES['foto']) || $_FILES['foto']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['ok' => false, 'msg' => 'No se recibió ninguna foto o hubo un error en la subida.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
 
-// ===================== RUTAS: LISTAR PRODUCTOS (TABLA) =====================
-public function listarProductosRutas()
-{
-    header('Content-Type: application/json; charset=utf-8');
+            // Validar que el producto exista y pertenezca a la factura
+            $prod = $this->model->getProductoById($productoId, $facturaId);
+            if (!$prod) {
+                echo json_encode(['ok' => false, 'msg' => 'El producto no existe o no pertenece a la factura.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
 
-    try {
-        $facturaId = isset($_GET['factura_id']) ? (int)$_GET['factura_id'] : 0;
-        $term      = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
+            $file     = $_FILES['foto'];
+            $origName = (string)$file['name'];
+            $tmpPath  = (string)$file['tmp_name'];
+            $size     = (int)$file['size'];
 
-        if ($facturaId <= 0) {
+            // Validar extensión
+            $ext      = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            $allowed  = ['jpg', 'jpeg', 'png', 'webp'];
+            if (!in_array($ext, $allowed, true)) {
+                echo json_encode(['ok' => false, 'msg' => 'Solo se permiten imágenes JPG, PNG o WEBP.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Validar tamaño (5MB máx)
+            $maxBytes = 5 * 1024 * 1024;
+            if ($size <= 0 || $size > $maxBytes) {
+                echo json_encode(['ok' => false, 'msg' => 'La imagen no debe superar 5MB.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            if (!is_uploaded_file($tmpPath)) {
+                echo json_encode(['ok' => false, 'msg' => 'Archivo temporal inválido.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // MIME real
+            $mime = function_exists('mime_content_type')
+                ? (mime_content_type($tmpPath) ?: 'image/jpeg')
+                : 'image/jpeg';
+
+            // Construir ruta destino
+            $root    = $this->getProjectRootPath();
+            $baseDir = $root . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR
+                . 'operaciones_partida' . DIRECTORY_SEPARATOR . 'fotos'
+                . DIRECTORY_SEPARATOR . $facturaId
+                . DIRECTORY_SEPARATOR . $productoId;
+
+            if (!is_dir($baseDir) && !@mkdir($baseDir, 0775, true)) {
+                echo json_encode(['ok' => false, 'msg' => 'No se pudo crear el directorio de destino.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Nombre final con UUID para evitar colisiones
+            $uuid     = bin2hex(random_bytes(8));
+            $fileName = $uuid . '_foto' . $orden . '.' . $ext;
+            $destAbs  = $baseDir . DIRECTORY_SEPARATOR . $fileName;
+            $rutaRel  = 'uploads/operaciones_partida/fotos/' . $facturaId . '/' . $productoId . '/' . $fileName;
+
+            // Si ya hay foto en esa posición, borrar el archivo físico anterior
+            $fotoExistente = $this->model->getFotosByProducto($productoId);
+            foreach ($fotoExistente as $fe) {
+                if ((int)$fe['orden'] === $orden) {
+                    $absAnterior = $root . DIRECTORY_SEPARATOR
+                        . str_replace('/', DIRECTORY_SEPARATOR, $fe['ruta_archivo']);
+                    if (file_exists($absAnterior)) {
+                        @unlink($absAnterior);
+                    }
+                    break;
+                }
+            }
+
+            // Mover archivo
+            if (!move_uploaded_file($tmpPath, $destAbs)) {
+                echo json_encode(['ok' => false, 'msg' => 'No se pudo guardar la imagen.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Guardar en BD (upsert por producto_id + orden)
+            $userId = $_SESSION['id_usuario'] ?? null;
+
+            $idFoto = $this->model->upsertFotoProducto([
+                'producto_id'    => $productoId,
+                'factura_id'     => $facturaId,
+                'orden'          => $orden,
+                'nombre_archivo' => $origName,
+                'ruta_archivo'   => $rutaRel,
+                'mime_type'      => $mime,
+                'tamano_bytes'   => $size,
+                'subido_por'     => $userId
+            ]);
+
+            if ($idFoto <= 0) {
+                // Si BD falla, limpiar archivo físico
+                @unlink($destAbs);
+                echo json_encode(['ok' => false, 'msg' => 'No se pudo registrar la foto en la base de datos.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
             echo json_encode([
-                'ok'   => false,
-                'msg'  => 'Factura inválida.',
-                'data' => []
+                'ok'          => true,
+                'msg'         => 'Foto subida correctamente.',
+                'id_foto'     => $idFoto,
+                'orden'       => $orden,
+                'ruta_archivo' => $rutaRel,
+                'nombre_archivo' => $origName
             ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            error_log("Operaciones_por_partida/subirFotoProducto ERROR: " . $e->getMessage());
+            echo json_encode(['ok' => false, 'msg' => 'Ocurrió un error al subir la foto.'], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+    public function eliminarFotoProducto()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['ok' => false, 'msg' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        // Validación suave: factura exista/activa (evita consultas raras)
-        if (!$this->model->existeFacturaActiva($facturaId)) {
+        try {
+            $idFoto = isset($_POST['id_foto']) ? (int)$_POST['id_foto'] : 0;
+
+            if ($idFoto <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'ID de foto inválido.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Buscar foto en BD para obtener la ruta
+            $foto = $this->model->getFotoById($idFoto);
+            if (!$foto) {
+                echo json_encode(['ok' => false, 'msg' => 'Foto no encontrada.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Seguridad: verificar que la ruta sea del directorio esperado
+            $rutaRel = str_replace('\\', '/', (string)($foto['ruta_archivo'] ?? ''));
+            if (strpos($rutaRel, 'uploads/operaciones_partida/fotos/') !== 0) {
+                echo json_encode(['ok' => false, 'msg' => 'Ruta no permitida.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Borrar archivo físico
+            $root    = $this->getProjectRootPath();
+            $absFile = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rutaRel);
+
+            if (file_exists($absFile)) {
+                @unlink($absFile);
+            }
+
+            // Borrar registro de BD
+            $ok = $this->model->eliminarFotoProducto($idFoto);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'msg' => 'No se pudo eliminar el registro en la base de datos.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
             echo json_encode([
-                'ok'   => false,
-                'msg'  => 'La factura no existe o está inactiva.',
-                'data' => []
+                'ok'         => true,
+                'msg'        => 'Foto eliminada correctamente.',
+                'id_foto'    => $idFoto,
+                'producto_id' => (int)$foto['producto_id'],
+                'orden'      => (int)$foto['orden']
             ], JSON_UNESCAPED_UNICODE);
-            exit;
+        } catch (Throwable $e) {
+            error_log("Operaciones_por_partida/eliminarFotoProducto ERROR: " . $e->getMessage());
+            echo json_encode(['ok' => false, 'msg' => 'Ocurrió un error al eliminar la foto.'], JSON_UNESCAPED_UNICODE);
         }
-
-        $rows = $this->model->listarProductosRutas($facturaId, $term);
-
-        echo json_encode([
-            'ok'   => true,
-            'data' => $rows ?: []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-
-    } catch (Throwable $e) {
-        error_log("Operaciones_por_partida/listarProductosRutas ERROR: " . $e->getMessage());
-        echo json_encode([
-            'ok'   => false,
-            'msg'  => 'Ocurrió un error al listar productos de rutas.',
-            'data' => []
-        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
-}
-// ===================== RUTAS: LISTAR ENVIOS DE UN PRODUCTO =====================
-public function listarEnviosProductoRutas()
-{
-    header('Content-Type: application/json; charset=utf-8');
+    public function getFotosProducto()
+    {
+        header('Content-Type: application/json; charset=utf-8');
 
-    try {
-        $facturaId  = isset($_GET['factura_id']) ? (int)$_GET['factura_id'] : 0;
-        $productoId = isset($_GET['producto_id']) ? (int)$_GET['producto_id'] : 0;
+        try {
+            $productoId = isset($_GET['producto_id']) ? (int)$_GET['producto_id'] : 0;
+            $facturaId  = isset($_GET['factura_id'])  ? (int)$_GET['factura_id']  : 0;
 
-        if ($facturaId <= 0 || $productoId <= 0) {
+            if ($productoId <= 0 || $facturaId <= 0) {
+                echo json_encode(['ok' => false, 'msg' => 'Parámetros inválidos.', 'fotos' => []], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Validar que el producto pertenezca a la factura
+            $prod = $this->model->getProductoById($productoId, $facturaId);
+            if (!$prod) {
+                echo json_encode(['ok' => false, 'msg' => 'Producto no encontrado.', 'fotos' => []], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $fotos = $this->model->getFotosByProducto($productoId);
+
             echo json_encode([
-                'ok'   => false,
-                'msg'  => 'Parámetros inválidos.',
-                'data' => []
+                'ok'    => true,
+                'fotos' => $fotos
             ], JSON_UNESCAPED_UNICODE);
-            exit;
+        } catch (Throwable $e) {
+            error_log("Operaciones_por_partida/getFotosProducto ERROR: " . $e->getMessage());
+            echo json_encode(['ok' => false, 'msg' => 'Ocurrió un error al obtener las fotos.', 'fotos' => []], JSON_UNESCAPED_UNICODE);
         }
-
-        // Puedes devolver detalle o resumen. Para UI compacta:
-        // $rows = $this->model->resumenEnviosProducto($facturaId, $productoId);
-
-        $rows = $this->model->listarEnviosProducto($facturaId, $productoId);
-
-        echo json_encode([
-            'ok'   => true,
-            'data' => $rows ?: []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-
-    } catch (Throwable $e) {
-        error_log("Operaciones_por_partida/listarEnviosProductoRutas ERROR: " . $e->getMessage());
-        echo json_encode([
-            'ok'   => false,
-            'msg'  => 'Ocurrió un error al listar envíos del producto.',
-            'data' => []
-        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
-}
-
-
-// ==== RUTAS: LISTAR CIUDADES (DESTINOS) ====
-public function listarCiudadesRutas()
-{
-    header('Content-Type: application/json; charset=utf-8');
-
-    try {
-        $rows = $this->model->listarCiudadesActivas();
-
-        echo json_encode([
-            'ok'   => true,
-            'data' => $rows ?: []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-
-    } catch (Throwable $e) {
-        error_log("Operaciones_por_partida/listarCiudadesRutas ERROR: " . $e->getMessage());
-        echo json_encode([
-            'ok'   => false,
-            'msg'  => 'Ocurrió un error al listar ciudades.',
-            'data' => []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-}
-
-// ==== RUTAS: SUGERIR CAJA/FERRO (contenedores_fisicos) ====
-public function sugerirFerroCajaRutas()
-{
-    header('Content-Type: application/json; charset=utf-8');
-
-    try {
-        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-
-        if ($limit < 1) $limit = 10;
-        if ($limit > 25) $limit = 25;
-
-        if ($term === '' || mb_strlen($term) < 2) {
-            echo json_encode(['ok' => true, 'data' => []], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-
-        $rows = $this->model->sugerirFisicos($term, $limit);
-
-        echo json_encode([
-            'ok'   => true,
-            'data' => $rows ?: []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-
-    } catch (Throwable $e) {
-        error_log("Operaciones_por_partida/sugerirFerroCajaRutas ERROR: " . $e->getMessage());
-        echo json_encode([
-            'ok'   => false,
-            'msg'  => 'Ocurrió un error al buscar Caja/Ferro.',
-            'data' => []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-}
-
-*/
 }

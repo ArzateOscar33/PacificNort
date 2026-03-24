@@ -200,11 +200,15 @@
       const piezas = p.piezas ?? 0;
       const observaciones = p.observaciones ?? "";
 
+      const fotosJson = JSON.stringify(p.fotos || []).replace(/'/g, "&#039;");
+      const fotosCount = (p.fotos || []).length;
+
       html += `
-  <tr class="text-center"
+    <tr class="text-center"
     data-id="${esc(idDetalle)}"
     data-expiracion="${esc((p.expiracion || "").slice(0, 10))}"
-    data-observaciones="${esc(observaciones)}">
+    data-observaciones="${esc(observaciones)}"
+    data-fotos='${fotosJson}'>
     <td class="text-start">${esc(descripcion)}</td>
     <td>${esc(p.item ?? "—")}</td>
     <td>${esc(upc)}</td>
@@ -216,9 +220,22 @@
     <td>${esc(cajas)}</td>
     <td>${esc(piezas)}</td>
     <td class="text-start">${esc(observaciones || "")}</td>
+<td class="pf_celdaFotos">
+      ${
+        fotosCount > 0
+          ? `<span class="badge bg-info text-dark">${fotosCount} foto${fotosCount > 1 ? "s" : ""}</span>`
+          : `<span class="text-muted small">Sin fotos</span>`
+      }
+    </td>
 
     <td>
       <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-info pf_btnFotos"
+          data-id="${esc(idDetalle)}"
+          data-descripcion="${esc(descripcion)}"
+          title="Ver/subir fotos">
+          <i data-feather="camera"></i>
+        </button>
         <button type="button" class="btn btn-outline-warning pf_btnEditar" data-id="${esc(idDetalle)}" title="Editar">
           <i data-feather="edit"></i>
         </button>
@@ -227,6 +244,7 @@
         </button>
       </div>
     </td>
+   
   </tr>
 `;
     });
@@ -880,4 +898,248 @@
 
     await swalSuccess("Listo", "Producto dado de baja correctamente.");
   });
+  // ==========================
+  // FOTOS DE PRODUCTO
+  // ==========================
+  const ENDPOINT_SUBIR_FOTO = "Operaciones_por_partida/subirFotoProducto";
+  const ENDPOINT_ELIMINAR_FOTO = "Operaciones_por_partida/eliminarFotoProducto";
+
+  const fotoModalEl = document.getElementById("modalFotosProducto");
+  const fotoProductoId = document.getElementById("fotoModal_productoId");
+  const fotoFacturaId = document.getElementById("fotoModal_facturaId");
+  const fotoLblDesc = document.getElementById("fotoModal_lblDescripcion");
+
+  // Instancia Bootstrap del mini-modal
+  let fotoModalInst = null;
+  if (fotoModalEl) {
+    fotoModalInst = new bootstrap.Modal(fotoModalEl);
+  }
+
+  // Renderiza los 3 slots con los datos de fotos que vienen del backend
+  function renderFotoSlots(fotos) {
+    for (let orden = 1; orden <= 3; orden++) {
+      const foto = (fotos || []).find((f) => parseInt(f.orden, 10) === orden);
+      const preview = document.getElementById("fotoPreview_" + orden);
+      const btnEliminar = document.querySelector(
+        `.fotoEliminarBtn[data-orden="${orden}"]`,
+      );
+      const inputFile = document.querySelector(
+        `.fotoInput[data-orden="${orden}"]`,
+      );
+
+      if (!preview) continue;
+
+      if (foto && foto.ruta_archivo) {
+        // Mostrar imagen
+        preview.innerHTML = `
+        <a href="${base_url}${esc(foto.ruta_archivo)}" target="_blank">
+          <img src="${base_url}${esc(foto.ruta_archivo)}"
+               alt="Foto ${orden}"
+               class="img-fluid rounded"
+               style="max-height:130px;object-fit:contain;">
+        </a>`;
+
+        // Mostrar botón eliminar con el id_foto
+        if (btnEliminar) {
+          btnEliminar.dataset.idFoto = foto.id_foto;
+          btnEliminar.classList.remove("d-none");
+        }
+        // Resetear input file por si venía con algo
+        if (inputFile) inputFile.value = "";
+      } else {
+        // Sin foto: ícono placeholder
+        preview.innerHTML = `<i data-feather="image" style="width:48px;height:48px;color:#ccc;"></i>`;
+        if (btnEliminar) {
+          btnEliminar.classList.add("d-none");
+          btnEliminar.dataset.idFoto = "";
+        }
+      }
+    }
+    if (window.feather) feather.replace();
+  }
+
+  // Abre el mini-modal cargando los datos del producto
+  function abrirModalFotos(productoId, facturaId, descripcion, fotos) {
+    if (!fotoModalInst) return;
+
+    if (fotoProductoId) fotoProductoId.value = String(productoId);
+    if (fotoFacturaId) fotoFacturaId.value = String(facturaId);
+    if (fotoLblDesc) fotoLblDesc.textContent = descripcion || "";
+
+    renderFotoSlots(fotos);
+    fotoModalInst.show();
+  }
+
+  // Click en botón "Ver fotos" dentro del tbody
+  pfTbody.addEventListener("click", function (e) {
+    const btn = e.target.closest(".pf_btnFotos");
+    if (!btn) return;
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    const productoId = parseInt(btn.dataset.id || tr.dataset.id || "0", 10);
+    const descripcion = btn.dataset.descripcion || "";
+
+    // Las fotos ya vienen en el JSON del listar, guardadas en el tr como JSON
+    let fotos = [];
+    try {
+      fotos = JSON.parse(tr.dataset.fotos || "[]");
+    } catch (_) {}
+
+    abrirModalFotos(productoId, facturaIdActual, descripcion, fotos);
+  });
+
+  // Subir foto al seleccionar archivo
+  if (fotoModalEl) {
+    fotoModalEl.addEventListener("change", async function (e) {
+      const input = e.target.closest(".fotoInput");
+      if (!input || !input.files || !input.files[0]) return;
+
+      const orden = parseInt(input.dataset.orden, 10);
+      const productoId = parseInt(fotoProductoId?.value || "0", 10);
+      const facturaId = parseInt(fotoFacturaId?.value || "0", 10);
+
+      if (orden < 1 || orden > 3 || productoId <= 0 || facturaId <= 0) {
+        await swalError("Error", "Datos de contexto inválidos.");
+        return;
+      }
+
+      const file = input.files[0];
+
+      // Preview local inmediato
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const preview = document.getElementById("fotoPreview_" + orden);
+        if (preview) {
+          preview.innerHTML = `<img src="${ev.target.result}"
+          class="img-fluid rounded" style="max-height:130px;object-fit:contain;">`;
+        }
+      };
+      reader.readAsDataURL(file);
+
+      // Subir al servidor
+      const fd = new FormData();
+      fd.append("producto_id", String(productoId));
+      fd.append("factura_id", String(facturaId));
+      fd.append("orden", String(orden));
+      fd.append("foto", file);
+
+      const url = base_url + ENDPOINT_SUBIR_FOTO;
+      const resp = await xhrPostFormData(url, fd);
+
+      if (!resp.okHttp || !resp.res || resp.res.ok !== true) {
+        await swalError(
+          "Error al subir",
+          resp.res?.msg || "No se pudo subir la foto.",
+        );
+        // Revertir preview
+        const preview = document.getElementById("fotoPreview_" + orden);
+        if (preview)
+          preview.innerHTML = `<i data-feather="image" style="width:48px;height:48px;color:#ccc;"></i>`;
+        if (window.feather) feather.replace();
+        return;
+      }
+
+      // Actualizar botón eliminar con el nuevo id_foto
+      const btnEliminar = document.querySelector(
+        `.fotoEliminarBtn[data-orden="${orden}"]`,
+      );
+      if (btnEliminar) {
+        btnEliminar.dataset.idFoto = resp.res.id_foto;
+        btnEliminar.classList.remove("d-none");
+      }
+
+      // Actualizar el data-fotos del tr correspondiente para que el modal
+      // refleje el estado actual si se vuelve a abrir
+      const tr = pfTbody.querySelector(`tr[data-id="${productoId}"]`);
+      if (tr) {
+        let fotos = [];
+        try {
+          fotos = JSON.parse(tr.dataset.fotos || "[]");
+        } catch (_) {}
+        // Quitar foto anterior en esa posición si existía
+        fotos = fotos.filter((f) => parseInt(f.orden, 10) !== orden);
+        fotos.push({
+          id_foto: resp.res.id_foto,
+          orden: orden,
+          ruta_archivo: resp.res.ruta_archivo,
+          nombre_archivo: resp.res.nombre_archivo,
+        });
+        tr.dataset.fotos = JSON.stringify(fotos);
+
+        // Actualizar badge de fotos en la celda
+        actualizarBadgeFotos(tr, fotos);
+      }
+
+      if (window.feather) feather.replace();
+    });
+  }
+
+  // Eliminar foto
+  if (fotoModalEl) {
+    fotoModalEl.addEventListener("click", async function (e) {
+      const btn = e.target.closest(".fotoEliminarBtn");
+      if (!btn) return;
+
+      const idFoto = parseInt(btn.dataset.idFoto || "0", 10);
+      const orden = parseInt(btn.dataset.orden || "0", 10);
+      const productoId = parseInt(fotoProductoId?.value || "0", 10);
+
+      if (idFoto <= 0) return;
+
+      const ok = await swalConfirm(
+        "Eliminar foto",
+        "¿Deseas eliminar esta foto?",
+      );
+      if (!ok) return;
+
+      const fd = new FormData();
+      fd.append("id_foto", String(idFoto));
+
+      const url = base_url + ENDPOINT_ELIMINAR_FOTO;
+      const resp = await xhrPostFormData(url, fd);
+
+      if (!resp.okHttp || !resp.res || resp.res.ok !== true) {
+        await swalError(
+          "Error",
+          resp.res?.msg || "No se pudo eliminar la foto.",
+        );
+        return;
+      }
+
+      // Limpiar slot
+      const preview = document.getElementById("fotoPreview_" + orden);
+      if (preview) {
+        preview.innerHTML = `<i data-feather="image" style="width:48px;height:48px;color:#ccc;"></i>`;
+      }
+      btn.classList.add("d-none");
+      btn.dataset.idFoto = "";
+
+      // Actualizar data-fotos del tr
+      const tr = pfTbody.querySelector(`tr[data-id="${productoId}"]`);
+      if (tr) {
+        let fotos = [];
+        try {
+          fotos = JSON.parse(tr.dataset.fotos || "[]");
+        } catch (_) {}
+        fotos = fotos.filter((f) => parseInt(f.orden, 10) !== orden);
+        tr.dataset.fotos = JSON.stringify(fotos);
+        actualizarBadgeFotos(tr, fotos);
+      }
+
+      if (window.feather) feather.replace();
+    });
+  }
+
+  // Actualiza el badge de fotos en la celda del renglón
+  function actualizarBadgeFotos(tr, fotos) {
+    const celda = tr.querySelector(".pf_celdaFotos");
+    if (!celda) return;
+    const count = (fotos || []).length;
+    celda.innerHTML =
+      count > 0
+        ? `<span class="badge bg-info text-dark">${count} foto${count > 1 ? "s" : ""}</span>`
+        : `<span class="text-muted small">Sin fotos</span>`;
+  }
 })();
