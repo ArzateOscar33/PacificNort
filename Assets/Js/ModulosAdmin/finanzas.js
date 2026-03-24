@@ -1,9 +1,10 @@
 /* ============================================================
    MÓDULO: Finanzas - LISTAR (XHR)
-   Archivo: costos_clientes.js
-   Ahora trabaja por renglón de costo unificado:
-   - MARITIMO-FERRO
-   - PARTIDA/DOMESTICO
+   Archivo: finanzas.js
+   Vista corregida para listar como el módulo bueno:
+   - columnas de operación con rowspan
+   - solo renglones reales de detalle
+   - sin filas artificiales de resumen por categoría
    ============================================================ */
 (function () {
   "use strict";
@@ -30,11 +31,8 @@
   const termInput = document.getElementById("costosCliente_term");
   const perPageSel = document.getElementById("costosCliente_perPage");
   const btnLimpiar = document.getElementById("costosCliente_btnLimpiar");
-
-  // NUEVO: filtro por origen
   const origenSel = document.getElementById("origenTipo_cc");
 
-  // Moneda vista + tipo de cambio
   const monedaVistaSel = document.getElementById("costosClienteMonedaVista");
   const tipoCambioInp = document.getElementById("costosClienteTipoCambio");
 
@@ -61,7 +59,6 @@
 
   let state = { page: 1, loading: false };
 
-  // AJUSTA ESTO A TU THEAD NUEVO
   // Origen | Referencia | Contenedor | Ferro/Caja | Transportista |
   // Broker | Estatus | Cita Puerto | ISF | Categoría | Concepto |
   // Monto | Pagado
@@ -87,7 +84,7 @@
   };
 
   const fmtDate = (s) => {
-    if (!s || s === "No aplica") return "No aplica";
+    if (!s || s === "No aplica") return "—";
     return String(s).slice(0, 10);
   };
 
@@ -118,6 +115,7 @@
         </td>
       </tr>
     `;
+
     if (window.feather) feather.replace();
   }
 
@@ -132,14 +130,10 @@
 
     if (fechaInicio?.value) qs.set("fecha_inicio", fechaInicio.value);
     if (fechaFin?.value) qs.set("fecha_fin", fechaFin.value);
-
     if (brokerSel?.value) qs.set("brokerId_cc", brokerSel.value);
-    if (transportistaSel?.value) {
+    if (transportistaSel?.value)
       qs.set("transportistaId_cc", transportistaSel.value);
-    }
-
     if (categoriaSel?.value) qs.set("categoriaId_cc", categoriaSel.value);
-
     if (origenSel?.value) qs.set("origenTipo_cc", origenSel.value);
 
     if (estatusPagoSel?.value !== "") {
@@ -153,16 +147,14 @@
   }
 
   // =========================
-  // CONVERSIÓN DE MONEDA
+  // MONEDA
   // =========================
   function normMoneda(m) {
     const x = String(m || "")
       .trim()
       .toUpperCase();
-
     if (x === "DLLS" || x === "USD" || x === "DLS") return "USD";
     if (x === "MXN" || x === "PESOS" || x === "MX") return "MXN";
-
     return "MXN";
   }
 
@@ -234,7 +226,6 @@
     if (!txt) return "—";
 
     const low = txt.toLowerCase();
-
     let cls = "bg-secondary text-white";
 
     if (
@@ -255,12 +246,52 @@
     } else if (
       low.includes("puerto") ||
       low.includes("proceso") ||
-      low.includes("activo")
+      low.includes("activo") ||
+      low.includes("disponible")
     ) {
       cls = "bg-primary text-white";
     }
 
     return `<span class="badge ${cls}">${esc(txt)}</span>`;
+  }
+
+  // =========================
+  // NORMALIZAR DETALLES
+  // Convierte la estructura anidada del backend
+  // en renglones planos reales para la tabla
+  // =========================
+  function flattenDetalles(op) {
+    const out = [];
+    const categorias = Array.isArray(op?.categorias) ? op.categorias : [];
+
+    categorias.forEach((cat) => {
+      const nombreCategoria = cat?.categoria || "Sin categoría";
+      const conceptos = Array.isArray(cat?.conceptos) ? cat.conceptos : [];
+
+      conceptos.forEach((c) => {
+        out.push({
+          categoria: nombreCategoria,
+          concepto: c?.concepto || "—",
+          comentario: c?.comentario || "",
+          monto: Number(c?.monto || 0),
+          pagado: Number(c?.pagado || 0),
+          moneda: c?.moneda || cat?.moneda || op?.moneda || "MXN",
+        });
+      });
+    });
+
+    if (!out.length) {
+      out.push({
+        categoria: "Sin categoría",
+        concepto: "—",
+        comentario: "",
+        monto: 0,
+        pagado: 0,
+        moneda: op?.moneda || "MXN",
+      });
+    }
+
+    return out;
   }
 
   // =========================
@@ -279,46 +310,59 @@
 
     let html = "";
 
-    rows.forEach((r) => {
-      const origen = badgeOrigen(r.origen_tipo);
-      const referencia = r.referencia ? esc(r.referencia) : "—";
-      const contenedor = r.contenedor ? esc(r.contenedor) : "—";
-      const ferroCaja = r.ferro_caja ? esc(r.ferro_caja) : "—";
-      const transportista = r.transportista ? esc(r.transportista) : "—";
-      const broker = r.broker ? esc(r.broker) : "—";
-      const estatus = badgeEstatus(r.estatus_operacion);
-      const citaPuerto = fmtDate(r.cita_puerto);
-      const isf = badgeIsf(r.isf);
-      const categoria = r.categoria ? esc(r.categoria) : "—";
-      const concepto = r.concepto ? esc(r.concepto) : "—";
+    rows.forEach((op) => {
+      const detalles = flattenDetalles(op);
+      const rowspan = detalles.length;
 
-      const montoConv = convertAmount(r.monto, r.moneda, monedaVista, tc);
-      const montoTxt = `${monedaVista} $${money(montoConv)}`;
+      const origen = badgeOrigen(op.origen_tipo);
+      const referencia = op.referencia ? esc(op.referencia) : "—";
+      const cliente = op.cliente ? esc(op.cliente) : "";
+      const contenedor = op.contenedor ? esc(op.contenedor) : "—";
+      const ferroCaja = op.ferro_caja ? esc(op.ferro_caja) : "—";
+      const transportista = op.transportista ? esc(op.transportista) : "—";
+      const broker = op.broker ? esc(op.broker) : "—";
+      const estatus = badgeEstatus(op.estatus_operacion);
+      const citaPuerto = fmtDate(op.cita_puerto);
+      const isf = badgeIsf(op.isf);
 
-      html += `
-        <tr>
-          <td>${origen}</td>
-          <td>
-            <div class="fw-semibold">${referencia}</div>
-            ${
-              r.cliente
-                ? `<small class="text-muted">${esc(r.cliente)}</small>`
-                : ""
-            }
-          </td>
-          <td>${contenedor}</td>
-          <td>${ferroCaja}</td>
-          <td>${transportista}</td>
-          <td>${broker}</td>
-          <td>${estatus}</td>
-          <td>${esc(citaPuerto)}</td>
-          <td class="text-center">${isf}</td>
-          <td>${categoria}</td>
-          <td>${concepto}</td>
-          <td class="text-end fw-semibold">${montoTxt}</td>
-          <td class="text-center">${badgePagado(r.pagado)}</td>
-        </tr>
-      `;
+      const referenciaLabel = cliente
+        ? `<div class="d-flex flex-column">
+             <span class="fw-semibold">${referencia}</span>
+             <small class="text-muted">${cliente}</small>
+           </div>`
+        : referencia;
+
+      detalles.forEach((d, idx) => {
+        const montoConv = convertAmount(d.monto, d.moneda, monedaVista, tc);
+
+        html += `<tr ${idx === 0 ? 'class="finanzas-op-start"' : ""}>`;
+
+        if (idx === 0) {
+          html += `
+            <td rowspan="${rowspan}" class="align-top">${origen}</td>
+            <td rowspan="${rowspan}" class="align-top">${referenciaLabel}</td>
+            <td rowspan="${rowspan}" class="align-top">${contenedor}</td>
+            <td rowspan="${rowspan}" class="align-top">${ferroCaja}</td>
+            <td rowspan="${rowspan}" class="align-top">${transportista}</td>
+            <td rowspan="${rowspan}" class="align-top">${broker}</td>
+            <td rowspan="${rowspan}" class="align-top">${estatus}</td>
+            <td rowspan="${rowspan}" class="align-top">${esc(citaPuerto)}</td>
+            <td rowspan="${rowspan}" class="align-top text-center">${isf}</td>
+          `;
+        }
+
+        html += `
+  <td class="align-top">${esc(d.categoria)}</td>
+  <td class="align-top">
+    <div>${esc(d.concepto)}</div>
+   <!-- ${d.comentario ? `<small class="text-muted">${esc(d.comentario)}</small>` : ""}-->
+  </td>
+  <td class="text-end align-top">$${money(montoConv)}</td>
+  <td class="text-center align-top">${badgePagado(d.pagado)}</td>
+`;
+
+        html += `</tr>`;
+      });
     });
 
     tbody.innerHTML = html;
@@ -329,7 +373,7 @@
   // META
   // =========================
   function renderMeta(meta) {
-    const totalRows = Number(meta?.total_rows || 0);
+    const totalRows = Number(meta?.total_rows || meta?.total_ops || 0);
     const conceptos = Number(meta?.total_conceptos || 0);
 
     const pend = meta?.pendientes || {};
@@ -349,14 +393,12 @@
     const totalPend = sumConvert(pend);
     const totalPag = sumConvert(pag);
 
-    if (metaOps) metaOps.textContent = `Registros: ${totalRows}`;
+    if (metaOps) metaOps.textContent = `Operaciones: ${totalRows}`;
     if (metaConceptos) metaConceptos.textContent = `Conceptos: ${conceptos}`;
-    if (metaPend) {
+    if (metaPend)
       metaPend.textContent = `Pendientes: ${monedaVista} $${money(totalPend)}`;
-    }
-    if (metaPag) {
+    if (metaPag)
       metaPag.textContent = `Pagados: ${monedaVista} $${money(totalPag)}`;
-    }
   }
 
   // =========================
@@ -369,10 +411,7 @@
     const tp = Number(totalPages || 1);
     const pp = Number(perPageSel?.value || 25);
 
-    let showing = totalRows;
-    if (pp < 10000000) {
-      showing = Math.min(totalRows, p * pp);
-    }
+    const showing = pp >= 10000000 ? totalRows : Math.min(totalRows, p * pp);
 
     pagInfo.textContent = `Mostrando ${showing} de ${totalRows}`;
 
@@ -455,7 +494,6 @@
   // =========================
   function hookChange(el) {
     if (!el) return;
-    console.log("finanzas.js cargado");
     el.addEventListener("change", () => listar(1));
   }
 
@@ -498,7 +536,6 @@
       if (termInput) termInput.value = "";
       if (perPageSel) perPageSel.value = "25";
       if (origenSel) origenSel.value = "";
-
       if (monedaVistaSel) monedaVistaSel.value = "MXN";
       if (tipoCambioInp) tipoCambioInp.value = "17.00";
 
@@ -512,14 +549,10 @@
       if (!a) return;
 
       e.preventDefault();
-
       const p = Number(a.getAttribute("data-cc-page") || 1);
       listar(p);
     });
   }
 
-  // =========================
-  // CARGA INICIAL
-  // =========================
   listar(1);
 })();

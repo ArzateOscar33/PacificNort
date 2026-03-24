@@ -490,67 +490,67 @@ class FinanzasModel extends Query
         // COUNT MARITIMO
         // =========================
         $sqlCountMar = "SELECT COUNT(*) AS total_rows
-                    FROM operaciones o
-                    LEFT JOIN clientes cl
-                        ON cl.id_cliente = o.cliente_id
-                    LEFT JOIN estatus e
-                        ON e.id_estatus = o.estatus_id
-                    LEFT JOIN transportistas tr
-                        ON tr.id_transportista = o.transportista_id
-                    INNER JOIN costos_operacion co
-                        ON co.operacion_id = o.id_operacion
-                    INNER JOIN tipos_movimiento tm
-                        ON tm.id_tipo_movimiento = co.tipo_movimiento_id
-                        LEFT JOIN subtipos_operacion st
-    ON st.id_subtipo = o.subtipo_operacion_id
-                    LEFT JOIN (
-                        SELECT
-                            ob.operacion_id,
-                            MAX(ob.broker_id) AS broker_id
-                        FROM operacion_brokers ob
-                        GROUP BY ob.operacion_id
-                    ) bro
-                        ON bro.operacion_id = o.id_operacion
-                    {$wMar['sql']}";
+                FROM operaciones o
+                LEFT JOIN clientes cl
+                    ON cl.id_cliente = o.cliente_id
+                LEFT JOIN estatus e
+                    ON e.id_estatus = o.estatus_id
+                LEFT JOIN transportistas tr
+                    ON tr.id_transportista = o.transportista_id
+                INNER JOIN costos_operacion co
+                    ON co.operacion_id = o.id_operacion
+                INNER JOIN tipos_movimiento tm
+                    ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+                LEFT JOIN subtipos_operacion st
+                    ON st.id_subtipo = o.subtipo_operacion_id
+                LEFT JOIN (
+                    SELECT
+                        ob.operacion_id,
+                        MAX(ob.broker_id) AS broker_id
+                    FROM operacion_brokers ob
+                    GROUP BY ob.operacion_id
+                ) bro
+                    ON bro.operacion_id = o.id_operacion
+                {$wMar['sql']}";
 
         // =========================
-        // COUNT PARTIDA (CORREGIDO)
+        // COUNT PARTIDA
         // =========================
         $sqlCountPar = "SELECT COUNT(*) AS total_rows
-                    FROM costos_operacion_partida cop
-                    INNER JOIN op_partida_facturas f
-                        ON f.id_factura = cop.factura_id
-                    LEFT JOIN clientes cl
-                        ON cl.id_cliente = f.cliente_id
-                    LEFT JOIN contenedores_fisicos cf
-                        ON cf.id_fisico = cop.contenedor_fisico_id
-                    INNER JOIN tipos_movimiento tm
-                        ON tm.id_tipo_movimiento = cop.tipo_movimiento_id
-                    LEFT JOIN (
-                        SELECT
-                            d.factura_id,
-                            e.contenedor_fisico_id,
-                            MAX(e.transportista_id) AS transportista_id,
-                            GROUP_CONCAT(
-                                DISTINCT COALESCE(t.nombre, 'Sin transportista')
-                                ORDER BY t.nombre SEPARATOR ', '
-                            ) AS transportistas,
-                            GROUP_CONCAT(
-                                DISTINCT COALESCE(e.estatus_envio, 'Sin estatus')
-                                ORDER BY e.estatus_envio SEPARATOR ', '
-                            ) AS estatuses
-                        FROM operaciones_partida_envio_detalle d
-                        INNER JOIN operaciones_partida_envios e
-                            ON e.id_envio = d.envio_id
-                           AND e.estatus = 1
-                        LEFT JOIN transportistas t
-                            ON t.id_transportista = e.transportista_id
-                        WHERE d.estatus = 1
-                        GROUP BY d.factura_id, e.contenedor_fisico_id
-                    ) env
-                        ON env.factura_id = cop.factura_id
-                       AND env.contenedor_fisico_id = cop.contenedor_fisico_id
-                    {$wPar['sql']}";
+                FROM costos_operacion_partida cop
+                INNER JOIN op_partida_facturas f
+                    ON f.id_factura = cop.factura_id
+                LEFT JOIN clientes cl
+                    ON cl.id_cliente = f.cliente_id
+                LEFT JOIN contenedores_fisicos cf
+                    ON cf.id_fisico = cop.contenedor_fisico_id
+                INNER JOIN tipos_movimiento tm
+                    ON tm.id_tipo_movimiento = cop.tipo_movimiento_id
+                LEFT JOIN (
+                    SELECT
+                        d.factura_id,
+                        e.contenedor_fisico_id,
+                        MAX(e.transportista_id) AS transportista_id,
+                        GROUP_CONCAT(
+                            DISTINCT COALESCE(t.nombre, 'Sin transportista')
+                            ORDER BY t.nombre SEPARATOR ', '
+                        ) AS transportistas,
+                        GROUP_CONCAT(
+                            DISTINCT COALESCE(e.estatus_envio, 'Sin estatus')
+                            ORDER BY e.estatus_envio SEPARATOR ', '
+                        ) AS estatuses
+                    FROM operaciones_partida_envio_detalle d
+                    INNER JOIN operaciones_partida_envios e
+                        ON e.id_envio = d.envio_id
+                       AND e.estatus = 1
+                    LEFT JOIN transportistas t
+                        ON t.id_transportista = e.transportista_id
+                    WHERE d.estatus = 1
+                    GROUP BY d.factura_id, e.contenedor_fisico_id
+                ) env
+                    ON env.factura_id = cop.factura_id
+                   AND env.contenedor_fisico_id = cop.contenedor_fisico_id
+                {$wPar['sql']}";
 
         $cntMar = $this->selectAll($sqlCountMar, $wMar['args']) ?: [];
         $cntPar = $this->selectAll($sqlCountPar, $wPar['args']) ?: [];
@@ -581,14 +581,20 @@ class FinanzasModel extends Query
         // =========================
         $sqlDataMar = $this->sqlMaritimo() . $wMar['sql'];
         $sqlDataPar = $this->sqlPartida()  . $wPar['sql'];
+
         $rowsMar = $this->selectAll($sqlDataMar, $wMar['args']);
         if ($rowsMar === false) {
             throw new Exception('Falló sqlDataMar');
         }
-        $rowsPar = $this->selectAll($sqlDataPar, $wPar['args']) ?: [];
 
-        $all = array_merge($rowsMar, $rowsPar);
+        $rowsPar = $this->selectAll($sqlDataPar, $wPar['args']);
+        if ($rowsPar === false) {
+            throw new Exception('Falló sqlDataPar');
+        }
 
+        $all = array_merge($rowsMar ?: [], $rowsPar ?: []);
+
+        // Orden base de renglones
         usort($all, function ($a, $b) {
             $fd = strcmp((string)($b['fecha_base'] ?? ''), (string)($a['fecha_base'] ?? ''));
             if ($fd !== 0) return $fd;
@@ -599,8 +605,19 @@ class FinanzasModel extends Query
             return (int)($b['costo_id'] ?? 0) - (int)($a['costo_id'] ?? 0);
         });
 
-        $rows = $isAll ? $all : array_slice($all, $offset, $perPage);
+        // =========================
+        // AGRUPAR POR OPERACION + CATEGORIA
+        // =========================
+        $grouped = $this->agruparCostosPorOperacionYCategoria($all);
 
+        $totalGroups = count($grouped);
+
+        // Paginación por operación padre
+        $rows = $isAll ? $grouped : array_slice($grouped, $offset, $perPage);
+
+        // =========================
+        // META (sobre universo completo)
+        // =========================
         $pend           = [];
         $pag            = [];
         $totalConceptos = 0;
@@ -626,13 +643,13 @@ class FinanzasModel extends Query
 
         return [
             'rows'        => $rows,
-            'total'       => $totalRows,
+            'total'       => $totalGroups,
             'page'        => $page,
             'per_page'    => $perPage,
-            'total_pages' => $isAll ? 1 : max(1, (int)ceil($totalRows / $perPage)),
+            'total_pages' => $isAll ? 1 : max(1, (int)ceil($totalGroups / $perPage)),
             'meta'        => [
-                'total_rows'      => $totalRows,
-                'total_ops'       => $totalRows,
+                'total_rows'      => $totalGroups,
+                'total_ops'       => $totalGroups,
                 'total_conceptos' => $totalConceptos,
                 'pendientes'      => $pend,
                 'pagados'         => $pag,
@@ -687,5 +704,122 @@ WHERE st.tipo_operacion_id = 11
         $tests['test4_valor']      = $r4[0]['total_rows'] ?? 'NO_KEY';
 
         return $tests;
+    }
+
+    private function agruparCostosPorOperacionYCategoria(array $rows): array
+    {
+        $groups = [];
+
+        foreach ($rows as $r) {
+            $groupKey = (string)($r['origen_tipo'] ?? '') . '|' . (string)($r['origen_id'] ?? 0);
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'group_key'         => $groupKey,
+                    'origen_tipo'       => (string)($r['origen_tipo'] ?? ''),
+                    'origen_orden'      => (int)($r['origen_orden'] ?? 0),
+                    'origen_id'         => (int)($r['origen_id'] ?? 0),
+                    'referencia'        => (string)($r['referencia'] ?? ''),
+                    'cliente_id'        => (int)($r['id_cliente'] ?? 0),
+                    'cliente'           => (string)($r['cliente'] ?? 'Sin cliente'),
+                    'contenedor'        => (string)($r['contenedor'] ?? 'No aplica'),
+                    'ferro_caja'        => (string)($r['ferro_caja'] ?? 'No aplica'),
+                    'transportista'     => (string)($r['transportista'] ?? 'No aplica'),
+                    'broker'            => (string)($r['broker'] ?? 'No aplica'),
+                    'estatus_operacion' => (string)($r['estatus_operacion'] ?? 'Sin estatus'),
+                    'cita_puerto'       => (string)($r['cita_puerto'] ?? 'No aplica'),
+                    'isf'               => (string)($r['isf'] ?? 'No'),
+                    'fecha_base'        => (string)($r['fecha_base'] ?? ''),
+                    'total'             => 0.0,
+                    'pendiente'         => 0.0,
+                    'pagado_total'      => 0.0,
+                    'categorias'        => [],
+                ];
+            }
+
+            $catId   = (int)($r['categoria_id'] ?? 0);
+            $catName = trim((string)($r['categoria'] ?? ''));
+            if ($catName === '') {
+                $catName = 'Sin categoría';
+            }
+
+            $catKey = (string)$catId . '|' . $catName;
+
+            if (!isset($groups[$groupKey]['categorias'][$catKey])) {
+                $groups[$groupKey]['categorias'][$catKey] = [
+                    'categoria_id' => $catId,
+                    'categoria'    => $catName,
+                    'total'        => 0.0,
+                    'pendiente'    => 0.0,
+                    'pagado_total' => 0.0,
+                    'conceptos'    => [],
+                ];
+            }
+
+            $monto  = (float)($r['monto'] ?? 0);
+            $pagado = (int)($r['pagado'] ?? 0);
+
+            $concepto = [
+                'registro_id'         => (string)($r['registro_id'] ?? ''),
+                'costo_id'            => (int)($r['costo_id'] ?? 0),
+                'tipo_movimiento_id'  => (int)($r['tipo_movimiento_id'] ?? 0),
+                'concepto'            => (string)($r['concepto'] ?? ''),
+                'moneda'              => (string)($r['moneda'] ?? ''),
+                'monto'               => $monto,
+                'pagado'              => $pagado,
+                'comentario'          => (string)($r['comentario'] ?? ''),
+                'fecha_base'          => (string)($r['fecha_base'] ?? ''),
+            ];
+
+            $groups[$groupKey]['categorias'][$catKey]['conceptos'][] = $concepto;
+            $groups[$groupKey]['categorias'][$catKey]['total'] += $monto;
+            $groups[$groupKey]['total'] += $monto;
+
+            if ($pagado === 1) {
+                $groups[$groupKey]['categorias'][$catKey]['pagado_total'] += $monto;
+                $groups[$groupKey]['pagado_total'] += $monto;
+            } else {
+                $groups[$groupKey]['categorias'][$catKey]['pendiente'] += $monto;
+                $groups[$groupKey]['pendiente'] += $monto;
+            }
+        }
+
+        // Ordenar conceptos dentro de cada categoría
+        foreach ($groups as &$g) {
+            foreach ($g['categorias'] as &$cat) {
+                usort($cat['conceptos'], function ($a, $b) {
+                    return (int)($b['costo_id'] ?? 0) - (int)($a['costo_id'] ?? 0);
+                });
+            }
+            unset($cat);
+
+            // Convertir categorías asociativas a arreglo normal
+            $g['categorias'] = array_values($g['categorias']);
+
+            // Ordenar categorías por nombre
+            usort($g['categorias'], function ($a, $b) {
+                return strcmp(
+                    mb_strtolower((string)($a['categoria'] ?? ''), 'UTF-8'),
+                    mb_strtolower((string)($b['categoria'] ?? ''), 'UTF-8')
+                );
+            });
+        }
+        unset($g);
+
+        // Convertir grupos asociativos a arreglo normal
+        $groups = array_values($groups);
+
+        // Orden final por fecha_base DESC, origen_orden ASC, origen_id DESC
+        usort($groups, function ($a, $b) {
+            $fd = strcmp((string)($b['fecha_base'] ?? ''), (string)($a['fecha_base'] ?? ''));
+            if ($fd !== 0) return $fd;
+
+            $od = (int)($a['origen_orden'] ?? 0) - (int)($b['origen_orden'] ?? 0);
+            if ($od !== 0) return $od;
+
+            return (int)($b['origen_id'] ?? 0) - (int)($a['origen_id'] ?? 0);
+        });
+
+        return $groups;
     }
 }

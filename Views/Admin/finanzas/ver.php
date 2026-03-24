@@ -1,4 +1,10 @@
 <?php include 'Views/Template/admin_header.php'; ?>
+<style>
+    td,
+    th {
+        text-transform: uppercase;
+    }
+</style>
 <script>
     window.BASE_URL = "<?php echo BASE_URL; ?>";
 </script>
