@@ -120,36 +120,8 @@
 <body>
 
   <!-- NAV SUPERIOR (REEMPLAZA SIDEBAR) -->
-  <header class="pn-topnav" id="pnTopnav">
-    <div class="container-fluid py-2">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-
-        <!-- Brand -->
-        <a class="pn-brand" href="#" id="pnBrand">
-          <span class="kpi-icon"><i data-feather="anchor"></i></span>
-          <span>
-            <span class="fw-bold d-block" style="line-height:1.05;">PacificNort Suite</span>
-            <span class="small pn-muted-inv">Portal Cliente</span>
-          </span>
-        </a>
-
-        <!-- Acciones / Usuario -->
-        <div class="d-flex flex-wrap align-items-center gap-2" id="pnUserActions">
-
-          <div class="text-end me-1" id="pnUserInfo">
-            <div class="fw-semibold" style="line-height:1.1;" id="lblClienteTop">Cliente:<?php echo $data['nombre_cliente']; ?></div>
-            <div class="small pn-muted-inv" id="lblUsuarioTop">Usuario:<?php echo $data['nombre_usuario']; ?></div>
-          </div>
-
-          <a class="btn btn-outline-light btn-sm" href="<?php echo BASE_URL; ?>admin/salir">
-            <i data-feather="log-out" class="me-1"></i> Cerrar sesión
-          </a>
-
-        </div>
-
-      </div>
-    </div>
-  </header>
+  <?php include 'Views/PortalClientes/header.php';
+  ?>
 
   <!-- CONTENIDO -->
   <main class="pn-content" id="pnContent">

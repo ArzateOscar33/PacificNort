@@ -259,7 +259,7 @@ class Operaciones_por_partida_enviosModel extends Query
                 f.proveedor,
                 f.bodega_id,
                 b.nombre AS bodega,
-                f.revision_pasa,
+                
                 f.pallets_inv,
                 f.fecha_recibido,
                 f.notas,
@@ -288,7 +288,7 @@ class Operaciones_por_partida_enviosModel extends Query
                 f.proveedor,
                 f.bodega_id,
                 b.nombre,
-                f.revision_pasa,
+                 
                 f.pallets_inv,
                 f.fecha_recibido,
                 f.notas

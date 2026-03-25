@@ -97,6 +97,18 @@ class PortalClientes extends Controller
         $this->views->getView('PortalClientes', 'index', $data);
     }
 
+    public function op_partidas()
+    {
+        $data['title'] = 'Operaciones por Partidas';
+        $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
+
+        $data['title'] = 'Portal Cliente';
+        $data['nombre_cliente'] = $this->model->getNombreCliente();
+        $data['nombre_usuario'] = $this->model->getNombreUsuario();
+        $data['estatus_op'] = $this->model->getEstatusOp();
+        $this->views->getView('PortalClientes', 'op_partidas', $data);
+    }
+
     public function verificarEstado()
     {
         header('Content-Type: application/json; charset=utf-8');

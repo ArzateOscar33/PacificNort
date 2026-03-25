@@ -109,7 +109,7 @@
                     </div>
                     <div class="col-12 col-md-2">
                         <label class="form-label mb-1">Categoria</label>
-                        <select id="origenTipo_cc" class="form-select">
+                        <select id="origenTipo_cc" class="form-control">
                             <option value="">Todos</option>
                             <option value="MARITIMO-FERRO">Marítimo-Ferro</option>
                             <option value="PARTIDA/DOMESTICO">Partida / Doméstico</option>
