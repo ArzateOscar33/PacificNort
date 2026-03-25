@@ -294,7 +294,37 @@
       </tr>
     `;
   }
+  function obtenerBadgeEstatus(estatus) {
+    const valor = String(estatus || "")
+      .trim()
+      .toLowerCase();
 
+    if (valor === "en camino") {
+      return '<span class="badge bg-warning text-dark p-2">En camino</span>';
+    }
+
+    if (valor === "entregado") {
+      return '<span class="badge bg-success text-white p-2">Entregado</span>';
+    }
+
+    if (valor === "programado") {
+      return '<span class="badge bg-secondary text-white p-2">Programado</span>';
+    }
+
+    if (valor === "disponible en destino") {
+      return '<span class="badge bg-primary text-white p-2">Disponible en destino</span>';
+    }
+
+    if (valor === "cancelado") {
+      return '<span class="badge bg-danger text-white p-2">Cancelado</span>';
+    }
+
+    return (
+      '<span class="badge bg-light text-dark border">' +
+      (estatus || "—") +
+      "</span>"
+    );
+  }
   function renderRows(rows) {
     if (!tbody) return;
 
@@ -347,7 +377,7 @@
             <td>${escapeHtml(transportista)}</td>
             <td>${escapeHtml(fechaEnvio)}</td>
             <td>${escapeHtml(destino)}</td>
-            <td>${renderStatusBadge(estatusEnvio)}</td>
+            <td>${obtenerBadgeEstatus(estatusEnvio)}</td>
             <td>${escapeHtml(String(productosEnviados))}</td>
             <td>${escapeHtml(String(cajasEnviadas))}</td>
             <td>
@@ -403,7 +433,7 @@
 
     html += `
       <li class="page-item ${page <= 1 ? "disabled" : ""}">
-        <button class="page-link js-page" data-page="${page - 1}" type="button">Anterior</button>
+        <button class="page-link js-page" data-page="${page - 1}" type="button">«</button>
       </li>
     `;
 
@@ -423,7 +453,7 @@
 
     html += `
       <li class="page-item ${page >= totalPages ? "disabled" : ""}">
-        <button class="page-link js-page" data-page="${page + 1}" type="button">Siguiente</button>
+        <button class="page-link js-page" data-page="${page + 1}" type="button">»</button>
       </li>
     `;
 
@@ -667,7 +697,7 @@
     me_facturasWrap.innerHTML = facturas
       .map(function (f) {
         const txt = `${val(f.numero_factura, "--")} · ${num(f.cajas)} cajas`;
-        return `<span class="factura-chip">${escapeHtml(txt)}</span>`;
+        return `<span class="factura-chip p-4 badge  bg-success text-white fs-6">${escapeHtml(txt)}</span>`; //AQUI
       })
       .join("");
   }

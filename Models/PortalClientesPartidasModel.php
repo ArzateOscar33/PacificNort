@@ -70,7 +70,20 @@ class PortalClientesPartidasModel extends Query
 
         return $this->selectAll($sql) ?: [];
     }
+    //    // =========================================================
+    //HELPER
+    //    // =========================================================
+    private function normalizarRutaPublica(?string $ruta): string
+    {
+        $ruta = trim((string)$ruta);
+        if ($ruta === '') return '';
 
+        if (preg_match('#^https?://#i', $ruta)) {
+            return $ruta;
+        }
+
+        return BASE_URL . ltrim($ruta, '/');
+    }
     // =========================================================
     // KPI DEL MÓDULO OPERACIONES POR PARTIDA (PORTAL)
     // =========================================================
@@ -462,8 +475,14 @@ class PortalClientesPartidasModel extends Query
                 WHERE pf.factura_id = ?
                   AND f.cliente_id = ?
                 ORDER BY pf.producto_id ASC, pf.orden ASC, pf.id_foto ASC";
+        $rows = $this->selectAll($sql, [$facturaId, $clienteId]) ?: [];
 
-        return $this->selectAll($sql, [$facturaId, $clienteId]) ?: [];
+        foreach ($rows as &$row) {
+            $row['ruta_archivo'] = $this->normalizarRutaPublica($row['ruta_archivo'] ?? '');
+        }
+        unset($row);
+
+        return $rows;
     }
 
     // =========================================================
@@ -612,7 +631,14 @@ class PortalClientesPartidasModel extends Query
                     ei.orden_visual
                 ORDER BY ei.orden_visual ASC, ei.id_imagen ASC";
 
-        return $this->selectAll($sql, [$envioId, $clienteId]) ?: [];
+        $rows = $this->selectAll($sql, [$envioId, $clienteId]) ?: [];
+
+        foreach ($rows as &$row) {
+            $row['ruta_archivo'] = $this->normalizarRutaPublica($row['ruta_archivo'] ?? '');
+        }
+        unset($row);
+
+        return $rows;
     }
 
     // =========================================================
@@ -644,7 +670,13 @@ class PortalClientesPartidasModel extends Query
                   AND pf.factura_id = ?
                   AND f.cliente_id = ?
                 ORDER BY pf.orden ASC, pf.id_foto ASC";
+        $rows = $this->selectAll($sql, [$productoId, $facturaId, $clienteId]) ?: [];
 
-        return $this->selectAll($sql, [$productoId, $facturaId, $clienteId]) ?: [];
+        foreach ($rows as &$row) {
+            $row['ruta_archivo'] = $this->normalizarRutaPublica($row['ruta_archivo'] ?? '');
+        }
+        unset($row);
+
+        return $rows;
     }
 }
