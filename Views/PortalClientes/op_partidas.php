@@ -10,6 +10,9 @@
     <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
 
     <style>
+        /* =========================
+       BASE
+       ========================= */
         .table-responsive {
             overflow-x: auto;
             max-width: 100%;
@@ -21,11 +24,10 @@
             text-transform: uppercase;
         }
 
-        .pn-kpi-soft {
-            border: 1px solid #eef1f4;
-            border-radius: 1rem;
-            background: linear-gradient(180deg, #fff 0%, #fbfcfd 100%);
-        }
+
+        /* =========================
+       EMPTY STATE
+       ========================= */
 
         .pn-empty {
             border: 1px dashed #ced4da;
@@ -35,6 +37,10 @@
             color: #6c757d;
             background: #fcfcfd;
         }
+
+        /* =========================
+       META INFO
+       ========================= */
 
         .pn-meta-label {
             font-size: .74rem;
@@ -49,6 +55,10 @@
             color: #212529;
             word-break: break-word;
         }
+
+        /* =========================
+       THUMBS (IMÁGENES)
+       ========================= */
 
         .pn-thumb-grid {
             display: grid;
@@ -86,6 +96,10 @@
             text-align: center;
             border-top: 1px solid #f1f3f5;
         }
+
+        /* =========================
+       BADGES ESTATUS
+       ========================= */
 
         .pn-badge-status {
             font-size: .74rem;
@@ -127,6 +141,10 @@
             color: #495057;
         }
 
+        /* =========================
+       MODALES
+       ========================= */
+
         .modal-xxl-wide {
             max-width: min(1680px, calc(100vw - 2rem));
         }
@@ -138,6 +156,7 @@
         /* =========================
        TABLA PRINCIPAL
        ========================= */
+
         #tblOpsPartida {
             table-layout: auto;
             border-collapse: separate;
@@ -165,6 +184,7 @@
             background-color: #f7faff;
         }
 
+        /* Columnas controladas */
         #tblOpsPartida td:nth-child(1),
         #tblOpsPartida td:nth-child(2),
         #tblOpsPartida td:nth-child(4),
@@ -189,6 +209,10 @@
             white-space: nowrap;
             min-width: 280px;
         }
+
+        /* =========================
+       UI EXTRAS
+       ========================= */
 
         .btn-icon-text {
             display: inline-flex;
@@ -217,6 +241,7 @@
         }
     </style>
 </head>
+
 
 <body>
 
@@ -249,14 +274,16 @@
         <div class="container-fluid py-4" id="pnContainer">
 
             <!-- KPI -->
-            <div class="row g-3 mb-3" id="kpiRowPartida">
+            <div class="row g-3 mb-3" id="kpiRow">
 
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="kpi-card p-3 pn-kpi-soft" id="kpiCardFacturas">
+                    <div class="kpi-card p-3 pn-kpi-pro kpi-mar-agua" id="kpiCardFacturas" role="button" tabindex="0">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="min-w-0">
                                 <div class="pn-muted small text-truncate">Facturas</div>
-                                <div class="h4 mb-0" id="kpiPartidaFacturas">0</div>
+                                <div class="h4 mb-0" id="kpiPartidaFacturas">
+                                    <?php echo (int)($data['kpis']['facturas'] ?? 0); ?>
+                                </div>
                                 <div class="small pn-muted text-truncate">Facturas visibles del cliente</div>
                             </div>
                             <div class="kpi-icon pn-kpi-ic">
@@ -267,11 +294,13 @@
                 </div>
 
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="kpi-card p-3 pn-kpi-soft" id="kpiCardFerros">
+                    <div class="kpi-card p-3 pn-kpi-pro kpi-ter-camino" id="kpiCardFerros" role="button" tabindex="0">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="min-w-0">
                                 <div class="pn-muted small text-truncate">Ferros / cajas</div>
-                                <div class="h4 mb-0" id="kpiPartidaFerros">0</div>
+                                <div class="h4 mb-0" id="kpiPartidaFerros">
+                                    <?php echo (int)($data['kpis']['ferros'] ?? 0); ?>
+                                </div>
                                 <div class="small pn-muted text-truncate">Envíos vinculados</div>
                             </div>
                             <div class="kpi-icon pn-kpi-ic">
@@ -282,11 +311,13 @@
                 </div>
 
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="kpi-card p-3 pn-kpi-soft" id="kpiCardProductos">
+                    <div class="kpi-card p-3 pn-kpi-pro kpi-mar-puerto" id="kpiCardProductos" role="button" tabindex="0">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="min-w-0">
                                 <div class="pn-muted small text-truncate">Productos</div>
-                                <div class="h4 mb-0" id="kpiPartidaProductos">0</div>
+                                <div class="h4 mb-0" id="kpiPartidaProductos">
+                                    <?php echo (int)($data['kpis']['productos'] ?? 0); ?>
+                                </div>
                                 <div class="small pn-muted text-truncate">Productos registrados</div>
                             </div>
                             <div class="kpi-icon pn-kpi-ic">
@@ -297,11 +328,13 @@
                 </div>
 
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="kpi-card p-3 pn-kpi-soft" id="kpiCardCajas">
+                    <div class="kpi-card p-3 pn-kpi-pro kpi-entregadas" id="kpiCardCajas" role="button" tabindex="0">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="min-w-0">
                                 <div class="pn-muted small text-truncate">Cajas enviadas</div>
-                                <div class="h4 mb-0" id="kpiPartidaCajas">0</div>
+                                <div class="h4 mb-0" id="kpiPartidaCajas">
+                                    <?php echo (int)($data['kpis']['cajas'] ?? 0); ?>
+                                </div>
                                 <div class="small pn-muted text-truncate">Total del detalle de envíos</div>
                             </div>
                             <div class="kpi-icon pn-kpi-ic">
@@ -318,7 +351,7 @@
                 <div class="card-body">
                     <div class="row g-3 align-items-end">
 
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-2">
                             <label class="form-label" for="partidaSearch">Buscar factura</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i data-feather="search"></i></span>
@@ -375,19 +408,19 @@
                                 <?php endif; ?>
                             </select>
                         </div>
+                        <div class="d-flex align-items-end justify-content-end ">
+                            <div class="col-12 col-md-1 d-grid ">
+                                <button class="btn btn-dark" type="button" id="btnPartidaFiltrar">
+                                    <i data-feather="filter" class="me-1"></i> Filtrar
+                                </button>
+                            </div>
 
-                        <div class="col-12 col-md-2 d-grid">
-                            <button class="btn btn-dark" type="button" id="btnPartidaFiltrar">
-                                <i data-feather="filter" class="me-1"></i> Filtrar
-                            </button>
+                            <div class="col-12 col-md-1 d-grid ">
+                                <button class="btn btn-outline-secondary" type="button" id="btnPartidaLimpiar">
+                                    <i data-feather="x-circle" class="me-1"></i> Limpiar
+                                </button>
+                            </div>
                         </div>
-
-                        <div class="col-12 col-md-2 d-grid">
-                            <button class="btn btn-outline-secondary" type="button" id="btnPartidaLimpiar">
-                                <i data-feather="x-circle" class="me-1"></i> Limpiar
-                            </button>
-                        </div>
-
                     </div>
 
                     <hr class="my-3">

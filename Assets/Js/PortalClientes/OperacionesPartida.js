@@ -810,14 +810,26 @@
     });
   }
 
+  let searchDebounceTimer = null;
+
+  function reloadFromFilters() {
+    state.page = 1;
+    loadListado();
+  }
+
+  function debounceReload(delay) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(function () {
+      reloadFromFilters();
+    }, delay || 350);
+  }
   // =========================================================
   // EVENTS
   // =========================================================
   function bindEvents() {
     if (btnFiltrar) {
       btnFiltrar.addEventListener("click", function () {
-        state.page = 1;
-        loadListado();
+        reloadFromFilters();
       });
     }
 
@@ -845,11 +857,16 @@
     }
 
     if (inputSearch) {
+      inputSearch.addEventListener("input", function () {
+        debounceReload(400);
+      });
+    }
+    if (inputSearch) {
       inputSearch.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           e.preventDefault();
-          state.page = 1;
-          loadListado();
+          clearTimeout(searchDebounceTimer);
+          reloadFromFilters();
         }
       });
     }
@@ -888,6 +905,25 @@
           if (envioId > 0) openEnvio(envioId);
         }
       });
+    }
+    if (selEstatus) {
+      selEstatus.addEventListener("change", reloadFromFilters);
+    }
+
+    if (selDestino) {
+      selDestino.addEventListener("change", reloadFromFilters);
+    }
+
+    if (inpFechaIni) {
+      inpFechaIni.addEventListener("change", reloadFromFilters);
+    }
+
+    if (inpFechaFin) {
+      inpFechaFin.addEventListener("change", reloadFromFilters);
+    }
+
+    if (selTransportista) {
+      selTransportista.addEventListener("change", reloadFromFilters);
     }
   }
 
