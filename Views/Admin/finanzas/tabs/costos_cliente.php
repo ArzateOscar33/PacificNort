@@ -12,7 +12,12 @@
                 </div>
 
             </div>
+            <div class="d-flex gap-2 justify-content-end align-items-center col-md-12">
+                <button class="btn btn-outline-secondary" id="costosCliente_btnLimpiar">
+                    <i data-feather="x-circle"></i> Limpiar Filtros
+                </button>
 
+            </div>
             <!-- Filtros -->
             <div class="row g-2 align-items-end mb-3">
 
@@ -32,7 +37,7 @@
 
                 </div> -->
 
-                <div class="col-12 col-md-4 position-relative">
+                <div class="col-12 col-md-2 position-relative">
                     <label class="form-label mb-1">Cliente</label>
                     <select id="clienteId_cc" name="clienteId_cc" class="form-control">
                         <option value="" selected>Todos</option>
@@ -47,20 +52,15 @@
                 </div>
 
                 <!-- Rango fechas -->
-                <div class="col-12 col-md-2">
+                <div class="col-12 col-md-1">
                     <label class="form-label mb-1">Fecha inicio</label>
                     <input type="date" class="form-control" id="costosCliente_fechaInicio">
                 </div>
-                <div class="col-12 col-md-2">
+                <div class="col-12 col-md-1">
                     <label class="form-label mb-1">Fecha fin</label>
                     <input type="date" class="form-control" id="costosCliente_fechaFin">
                 </div>
-                <div class="d-flex gap-2 justify-content-end align-items-center col-md-4">
-                    <button class="btn btn-outline-secondary" id="costosCliente_btnLimpiar">
-                        <i data-feather="x-circle"></i> Limpiar Filtros
-                    </button>
 
-                </div>
                 <div class="col-12 col-md-12 row">
                     <!-- Broker -->
                     <div class="col-12 col-md-2">
@@ -109,7 +109,7 @@
 
                     <!-- Transportista -->
                     <div class="col-12 col-md-2">
-                        <label class="form-label mb-1">Categoria</label>
+                        <label class="form-label mb-1">Categoria Costos</label>
                         <select id="categoriaId_cc" name="categoriaId_cc" class="form-control">
                             <option value="">Seleccione...</option>
                             <?php if (!empty($data['categoriasCostos'])): ?>
@@ -121,8 +121,8 @@
                             <?php endif; ?>
                         </select>
                     </div>
-                    <div class="col-12 col-md-2">
-                        <label class="form-label mb-1">Categoria</label>
+                    <div class="col-12 col-md-1">
+                        <label class="form-label mb-1">Origen</label>
                         <select id="origenTipo_cc" class="form-control">
                             <option value="">Todos</option>
                             <option value="MARITIMO-FERRO">Marítimo-Ferro</option>
@@ -133,7 +133,7 @@
 
 
                     <!-- Estatus pago -->
-                    <div class="col-12 col-md-2">
+                    <div class="col-12 col-md-1">
                         <label class="form-label mb-1">Estatus</label>
                         <select class="form-control" id="costosCliente_estatusPago">
                             <option value="">Todos</option>
@@ -152,7 +152,7 @@
                         </div>
                     </div>
                     <!-- Per page -->
-                    <div class=" col-md-2">
+                    <div class=" col-md-1">
                         <label class="form-label mb-1">Mostrar</label>
                         <select class="form-control" id="costosCliente_perPage">
                             <option value="10">10</option>
