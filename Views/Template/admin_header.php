@@ -6,9 +6,9 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <link rel="manifest" href="<?php echo BASE_URL; ?>/favicon/manifest.json">
+    <link rel="manifest" href="<?php echo BASE_URL; ?>favicon/manifest.json">
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="<?php echo BASE_URL; ?>/favicon/ms-icon-144x144.png">
+    <meta name="msapplication-TileImage" content="<?php echo BASE_URL; ?>favicon/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
     <title><?php echo $data['title']; ?></title>
     <!-- Custom CSS -->
@@ -19,7 +19,7 @@
     <!-- <script src="https://unpkg.com/feather-icons"></script>  -->
     <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/feather.min.js"></script>
 
-    <link href="<?php echo BASE_URL; ?>/dist/css/style.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>dist/css/style.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 
@@ -29,7 +29,58 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> -->
 
     <style>
+        @media (min-width: 768px) {
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar {
+                transition: width .25s ease;
+            }
 
+            #main-wrapper[data-sidebartype="mini-sidebar"] .page-wrapper {
+                transition: margin-left .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .sidebar-nav #sidebarnav .sidebar-item .sidebar-link {
+                align-items: center;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar:hover {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .sidebar-nav #sidebarnav .sidebar-item .sidebar-link i,
+            #main-wrapper[data-sidebartype="mini-sidebar"] .sidebar-nav #sidebarnav .sidebar-item .sidebar-link .feather-icon {
+                min-width: 20px;
+                min-height: 20px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar {
+                width: 65px;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .page-wrapper {
+                margin-left: 65px !important;
+                transition: margin-left .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .topbar .top-navbar .navbar-header {
+                width: 65px !important;
+                transition: width .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .topbar .top-navbar .navbar-collapse {
+                margin-left: 65px !important;
+                transition: margin-left .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar:hover {
+                width: 260px !important;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar:hover~.page-wrapper {
+                margin-left: 260px !important;
+            }
+        }
     </style>
 </head>
 
@@ -41,7 +92,7 @@
             <div class="lds-pos"></div>
         </div>
     </div>
-    <div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    <div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="mini-sidebar"
         data-sidebar-position="fixed" data-header-position="fixed" data-boxed-layout="full">
 
         <header class="topbar" data-navbarbg="skin6">
