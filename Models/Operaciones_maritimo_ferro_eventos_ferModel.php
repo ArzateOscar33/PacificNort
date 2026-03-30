@@ -180,8 +180,9 @@ class Operaciones_maritimo_ferro_eventos_ferModel extends Query
     $where[] = "cf.estatus = 1";
 
     // Excluir Cancelado/Finalizada tanto en marítima como en FO
-    $where[] = "o.estatus_id NOT IN (13, 7)";
-    $where[] = "of.estatus_id NOT IN (13, 7)";
+    //NOTA EXCLUIR SOLO LOS CANCELADOS 
+    $where[] = "o.estatus_id NOT IN (13)";
+    $where[] = "of.estatus_id NOT IN (13)";
 
     // Filtro por operación id (marítima)
     if (!empty($opId) && $opId > 0) {
