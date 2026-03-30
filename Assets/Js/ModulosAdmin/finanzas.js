@@ -1,10 +1,6 @@
 /* ============================================================
    MÓDULO: Finanzas - LISTAR (XHR)
    Archivo: finanzas.js
-   Vista corregida para listar como el módulo bueno:
-   - columnas de operación con rowspan
-   - solo renglones reales de detalle
-   - sin filas artificiales de resumen por categoría
    ============================================================ */
 (function () {
   "use strict";
@@ -32,6 +28,9 @@
   const perPageSel = document.getElementById("costosCliente_perPage");
   const btnLimpiar = document.getElementById("costosCliente_btnLimpiar");
   const origenSel = document.getElementById("origenTipo_cc");
+  const transportistaFerroSel = document.getElementById(
+    "transportistaFerroId_cc",
+  );
 
   const monedaVistaSel = document.getElementById("costosClienteMonedaVista");
   const tipoCambioInp = document.getElementById("costosClienteTipoCambio");
@@ -60,9 +59,9 @@
   let state = { page: 1, loading: false };
 
   // Origen | Referencia | Contenedor | Ferro/Caja | Transportista |
-  // Broker | Estatus | Cita Puerto | ISF | Categoría | Concepto |
-  // Monto | Pagado
-  const COLS = 13;
+  // Transportista Ferro/Caja | Broker | Estatus | Cita Puerto | ISF |
+  // Categoría | Concepto | Monto | Pagado
+  const COLS = 14;
 
   // =========================
   // HELPERS
@@ -87,6 +86,27 @@
     if (!s || s === "No aplica") return "—";
     return String(s).slice(0, 10);
   };
+
+  const cleanText = (v) => {
+    const txt = String(v ?? "").trim();
+    if (
+      txt === "" ||
+      txt === "-" ||
+      txt.toLowerCase() === "null" ||
+      txt.toLowerCase() === "undefined"
+    ) {
+      return "";
+    }
+    return txt;
+  };
+
+  function firstNonEmpty(...vals) {
+    for (const v of vals) {
+      const txt = cleanText(v);
+      if (txt !== "") return txt;
+    }
+    return "";
+  }
 
   function xhrGet(url, cb) {
     const xhr = new XMLHttpRequest();
@@ -138,6 +158,10 @@
 
     if (estatusPagoSel?.value !== "") {
       qs.set("costosCliente_estatusPago", estatusPagoSel.value);
+    }
+
+    if (transportistaFerroSel?.value) {
+      qs.set("transportistaFerroId_cc", transportistaFerroSel.value);
     }
 
     const t = (termInput?.value || "").trim();
@@ -257,8 +281,6 @@
 
   // =========================
   // NORMALIZAR DETALLES
-  // Convierte la estructura anidada del backend
-  // en renglones planos reales para la tabla
   // =========================
   function flattenDetalles(op) {
     const out = [];
@@ -294,6 +316,45 @@
     return out;
   }
 
+  // Busca transportista ferro aunque venga con otra llave o dentro de categorías/conceptos
+  function resolveTransportistaFerro(op) {
+    let val = firstNonEmpty(
+      op?.transportista_ferro,
+      op?.transportistas_ferro,
+      op?.transportistaFerro,
+      op?.transportista_ferro_caja,
+      op?.transportistas_ferro_caja,
+    );
+
+    if (val) return val;
+
+    const categorias = Array.isArray(op?.categorias) ? op.categorias : [];
+    for (const cat of categorias) {
+      val = firstNonEmpty(
+        cat?.transportista_ferro,
+        cat?.transportistas_ferro,
+        cat?.transportistaFerro,
+        cat?.transportista_ferro_caja,
+        cat?.transportistas_ferro_caja,
+      );
+      if (val) return val;
+
+      const conceptos = Array.isArray(cat?.conceptos) ? cat.conceptos : [];
+      for (const c of conceptos) {
+        val = firstNonEmpty(
+          c?.transportista_ferro,
+          c?.transportistas_ferro,
+          c?.transportistaFerro,
+          c?.transportista_ferro_caja,
+          c?.transportistas_ferro_caja,
+        );
+        if (val) return val;
+      }
+    }
+
+    return "";
+  }
+
   // =========================
   // TABLA
   // =========================
@@ -325,6 +386,11 @@
       const citaPuerto = fmtDate(op.cita_puerto);
       const isf = badgeIsf(op.isf);
 
+      const transportistaFerroRaw = resolveTransportistaFerro(op);
+      const transportistaFerro = transportistaFerroRaw
+        ? esc(transportistaFerroRaw)
+        : "—";
+
       const referenciaLabel = cliente
         ? `<div class="d-flex flex-column">
              <span class="fw-semibold">${referencia}</span>
@@ -344,6 +410,7 @@
             <td rowspan="${rowspan}" class="align-top">${contenedor}</td>
             <td rowspan="${rowspan}" class="align-top">${ferroCaja}</td>
             <td rowspan="${rowspan}" class="align-top">${transportista}</td>
+            <td rowspan="${rowspan}" class="align-top">${transportistaFerro}</td>
             <td rowspan="${rowspan}" class="align-top">${broker}</td>
             <td rowspan="${rowspan}" class="align-top">${estatus}</td>
             <td rowspan="${rowspan}" class="align-top">${esc(citaPuerto)}</td>
@@ -352,14 +419,13 @@
         }
 
         html += `
-  <td class="align-top">${esc(d.categoria)}</td>
-  <td class="align-top">
-    <div>${esc(d.concepto)}</div>
-   <!-- ${d.comentario ? `<small class="text-muted">${esc(d.comentario)}</small>` : ""}-->
-  </td>
-  <td class="text-end align-top">$${money(montoConv)}</td>
-  <td class="text-center align-top">${badgePagado(d.pagado)}</td>
-`;
+          <td class="align-top">${esc(d.categoria)}</td>
+          <td class="align-top">
+            <div>${esc(d.concepto)}</div>
+          </td>
+          <td class="text-end align-top">$${money(montoConv)}</td>
+          <td class="text-center align-top">${badgePagado(d.pagado)}</td>
+        `;
 
         html += `</tr>`;
       });
@@ -395,10 +461,12 @@
 
     if (metaOps) metaOps.textContent = `Operaciones: ${totalRows}`;
     if (metaConceptos) metaConceptos.textContent = `Conceptos: ${conceptos}`;
-    if (metaPend)
+    if (metaPend) {
       metaPend.textContent = `Pendientes: ${monedaVista} $${money(totalPend)}`;
-    if (metaPag)
+    }
+    if (metaPag) {
       metaPag.textContent = `Pagados: ${monedaVista} $${money(totalPag)}`;
+    }
   }
 
   // =========================
@@ -507,6 +575,7 @@
   hookChange(perPageSel);
   hookChange(origenSel);
   hookChange(monedaVistaSel);
+  hookChange(transportistaFerroSel);
 
   let tmr = null;
 
@@ -536,6 +605,7 @@
       if (termInput) termInput.value = "";
       if (perPageSel) perPageSel.value = "25";
       if (origenSel) origenSel.value = "";
+      if (transportistaFerroSel) transportistaFerroSel.value = "";
       if (monedaVistaSel) monedaVistaSel.value = "MXN";
       if (tipoCambioInp) tipoCambioInp.value = "17.00";
 

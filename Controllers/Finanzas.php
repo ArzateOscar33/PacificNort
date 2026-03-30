@@ -91,12 +91,35 @@ class Finanzas extends Controller
                 $brokerId = (int)$_GET['brokerId_cc'];
             }
 
-            // Transportista
-            $transportistaId = 0;
-            if (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
-                $transportistaId = (int)$_GET['transportista_id'];
+            // =====================================================
+            // Transportista marítimo
+            // Compatibilidad:
+            // - transportista_maritimo_id
+            // - transportista_id (legacy)
+            // - transportistaId_cc (legacy)
+            // =====================================================
+            $transportistaMaritimoId = 0;
+            if (isset($_GET['transportista_maritimo_id']) && $_GET['transportista_maritimo_id'] !== '') {
+                $transportistaMaritimoId = (int)$_GET['transportista_maritimo_id'];
+            } elseif (isset($_GET['transportistaMaritimoId_cc']) && $_GET['transportistaMaritimoId_cc'] !== '') {
+                $transportistaMaritimoId = (int)$_GET['transportistaMaritimoId_cc'];
+            } elseif (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
+                $transportistaMaritimoId = (int)$_GET['transportista_id'];
             } elseif (isset($_GET['transportistaId_cc']) && $_GET['transportistaId_cc'] !== '') {
-                $transportistaId = (int)$_GET['transportistaId_cc'];
+                $transportistaMaritimoId = (int)$_GET['transportistaId_cc'];
+            }
+
+            // =====================================================
+            // Transportista ferro/caja
+            // Nuevos params:
+            // - transportista_ferro_id
+            // - transportistaFerroId_cc
+            // =====================================================
+            $transportistaFerroId = 0;
+            if (isset($_GET['transportista_ferro_id']) && $_GET['transportista_ferro_id'] !== '') {
+                $transportistaFerroId = (int)$_GET['transportista_ferro_id'];
+            } elseif (isset($_GET['transportistaFerroId_cc']) && $_GET['transportistaFerroId_cc'] !== '') {
+                $transportistaFerroId = (int)$_GET['transportistaFerroId_cc'];
             }
 
             // Categoría
@@ -128,15 +151,22 @@ class Finanzas extends Controller
             $term = trim((string)($_GET['term'] ?? ($_GET['costosCliente_term'] ?? '')));
 
             $filters = [
-                'cliente_id'       => $clienteId,
-                'fecha_inicio'     => $fechaInicio,
-                'fecha_fin'        => $fechaFin,
-                'broker_id'        => $brokerId,
-                'transportista_id' => $transportistaId,
-                'categoria_id'     => $categoriaId,
-                'origen_tipo'      => $origenTipo,
-                'pagado'           => $pagado,
-                'term'             => $term,
+                'cliente_id'                => $clienteId,
+                'fecha_inicio'              => $fechaInicio,
+                'fecha_fin'                 => $fechaFin,
+                'broker_id'                 => $brokerId,
+
+                // nuevos
+                'transportista_maritimo_id' => $transportistaMaritimoId,
+                'transportista_ferro_id'    => $transportistaFerroId,
+
+                // legacy por compatibilidad
+                'transportista_id'          => $transportistaMaritimoId,
+
+                'categoria_id'              => $categoriaId,
+                'origen_tipo'               => $origenTipo,
+                'pagado'                    => $pagado,
+                'term'                      => $term,
             ];
 
             $res = $this->model->listarPaginado($filters, $page, $perPage);

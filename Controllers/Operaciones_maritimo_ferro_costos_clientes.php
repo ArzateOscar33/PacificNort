@@ -52,22 +52,44 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
                 $brokerId = (int)$_GET['brokerId_cc'];
             }
 
-            // Transportista
-            $transportistaId = 0;
-            if (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
-                $transportistaId = (int)$_GET['transportista_id'];
+            // =====================================================
+            // Transportista marítimo
+            // Compatibilidad:
+            // - transportista_maritimo_id
+            // - transportista_id (legacy)
+            // - transportistaId_cc (legacy)
+            // =====================================================
+            $transportistaMaritimoId = 0;
+            if (isset($_GET['transportista_maritimo_id']) && $_GET['transportista_maritimo_id'] !== '') {
+                $transportistaMaritimoId = (int)$_GET['transportista_maritimo_id'];
+            } elseif (isset($_GET['transportistaMaritimoId_cc']) && $_GET['transportistaMaritimoId_cc'] !== '') {
+                $transportistaMaritimoId = (int)$_GET['transportistaMaritimoId_cc'];
+            } elseif (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
+                $transportistaMaritimoId = (int)$_GET['transportista_id'];
             } elseif (isset($_GET['transportistaId_cc']) && $_GET['transportistaId_cc'] !== '') {
-                $transportistaId = (int)$_GET['transportistaId_cc'];
+                $transportistaMaritimoId = (int)$_GET['transportistaId_cc'];
             }
 
-            // ✅ NUEVO: Categoría
+            // =====================================================
+            // Transportista ferro/caja
+            // Nuevos params:
+            // - transportista_ferro_id
+            // - transportistaFerroId_cc
+            // =====================================================
+            $transportistaFerroId = 0;
+            if (isset($_GET['transportista_ferro_id']) && $_GET['transportista_ferro_id'] !== '') {
+                $transportistaFerroId = (int)$_GET['transportista_ferro_id'];
+            } elseif (isset($_GET['transportistaFerroId_cc']) && $_GET['transportistaFerroId_cc'] !== '') {
+                $transportistaFerroId = (int)$_GET['transportistaFerroId_cc'];
+            }
+
+            // Categoría
             $categoriaId = 0;
             if (isset($_GET['categoria_id']) && $_GET['categoria_id'] !== '') {
                 $categoriaId = (int)$_GET['categoria_id'];
             } elseif (isset($_GET['categoriaId_cc']) && $_GET['categoriaId_cc'] !== '') {
                 $categoriaId = (int)$_GET['categoriaId_cc'];
             } elseif (isset($_GET['categoria']) && $_GET['categoria'] !== '') {
-                // por si tu JS manda "categoria" directo
                 $categoriaId = (int)$_GET['categoria'];
             }
 
@@ -82,16 +104,21 @@ class Operaciones_maritimo_ferro_costos_clientes extends Controller
             $term = $_GET['term'] ?? ($_GET['costosCliente_term'] ?? '');
 
             $filters = [
-                'cliente_id'       => $clienteId,
-                'fecha_inicio'     => $fechaInicio,
-                'fecha_fin'        => $fechaFin,
-                'broker_id'        => $brokerId,
-                'transportista_id' => $transportistaId,
-                'pagado'           => $pagado,
-                'term'             => $term,
+                'cliente_id'               => $clienteId,
+                'fecha_inicio'             => $fechaInicio,
+                'fecha_fin'                => $fechaFin,
+                'broker_id'                => $brokerId,
 
-                // ✅ NUEVO
-                'categoria_id'     => $categoriaId,
+                // nuevo
+                'transportista_maritimo_id' => $transportistaMaritimoId,
+                'transportista_ferro_id'    => $transportistaFerroId,
+
+                // legacy por compatibilidad con partes viejas
+                'transportista_id'         => $transportistaMaritimoId,
+
+                'pagado'                   => $pagado,
+                'term'                     => $term,
+                'categoria_id'             => $categoriaId,
             ];
 
             $res = $this->model->listarPaginado($filters, $page, $perPage);

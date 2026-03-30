@@ -64,29 +64,17 @@ class FinanzasModel extends Query
         return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $date);
     }
 
-    // ================================================================
-    //  CONSTRUCCIÓN DE WHERE POR FUENTE
-    //  Cada fuente tiene sus propios alias de columna, así que
-    //  construimos el WHERE directamente sobre las tablas reales,
-    //  sin necesidad de un derived table wrapper.
-    // ================================================================
-
-    /**
-     * Construye las cláusulas WHERE y args para la fuente MARITIMO-FERRO.
-     * Retorna ['sql' => string, 'args' => array]
-     */
     private function buildWhereMaritimo(array $filters): array
     {
         $where = " WHERE st.tipo_operacion_id = 11
-             AND co.estatus = 1
-             AND tm.estatus = 1
-             AND LOWER(tm.tipo) = 'gasto' ";
+         AND co.estatus = 1
+         AND tm.estatus = 1
+         AND LOWER(tm.tipo) = 'gasto' ";
         $args = [];
 
         // Origen: si el filtro pide solo PARTIDA, excluir esta fuente
         $origenTipo = $this->normalizeOrigen($filters['origen_tipo'] ?? '');
         if ($origenTipo === 'PARTIDA/DOMESTICO') {
-            // No traer nada de esta fuente
             $where .= " AND 1 = 0 ";
             return ['sql' => $where, 'args' => $args];
         }
@@ -119,11 +107,41 @@ class FinanzasModel extends Query
             $args[] = $brokerId;
         }
 
-        // Transportista
-        $transportistaId = (int)($filters['transportista_id'] ?? 0);
-        if ($transportistaId > 0) {
+        // =====================================================
+        // Transportista marítimo (operación principal)
+        // Compatibilidad:
+        // - transportista_maritimo_id
+        // - transportista_id (legacy)
+        // =====================================================
+        $transportistaMaritimoId = 0;
+        if (isset($filters['transportista_maritimo_id'])) {
+            $transportistaMaritimoId = (int)$filters['transportista_maritimo_id'];
+        } elseif (isset($filters['transportista_id'])) {
+            $transportistaMaritimoId = (int)$filters['transportista_id'];
+        }
+
+        if ($transportistaMaritimoId > 0) {
             $where .= " AND o.transportista_id = ? ";
-            $args[] = $transportistaId;
+            $args[] = $transportistaMaritimoId;
+        }
+
+        // =====================================================
+        // Transportista ferro/caja
+        // =====================================================
+        $transportistaFerroId = (int)($filters['transportista_ferro_id'] ?? 0);
+        if ($transportistaFerroId > 0) {
+            $where .= " AND EXISTS (
+            SELECT 1
+            FROM contenedores_maritimos_operacion cmoF
+            INNER JOIN contenedor_maritimo_ferro cmfF
+                ON cmfF.cont_maritimo_operacion_id = cmoF.id
+               AND cmfF.estatus = 1
+            INNER JOIN operaciones_ferroviarias ofF
+                ON ofF.id_operacion_ferro = cmfF.operacion_ferro_id
+            WHERE cmoF.operacion_id = o.id_operacion
+              AND ofF.transportista_id = ?
+        ) ";
+            $args[] = $transportistaFerroId;
         }
 
         // Pagado
@@ -140,13 +158,72 @@ class FinanzasModel extends Query
             $args[] = $categoriaId;
         }
 
-        // Búsqueda libre
-        [$termWhere, $termArgs] = $this->buildTermWhere(
-            $filters['term'] ?? '',
-            ['o.numero_operacion', 'cl.nombre', 'tm.nombre', 'co.comentario']
-        );
-        $where .= $termWhere;
-        $args   = array_merge($args, $termArgs);
+        // =====================================================
+        // Búsqueda libre:
+        // - operación
+        // - cliente
+        // - concepto
+        // - comentario
+        // - contenedor marítimo
+        // - ferro/caja
+        // - transportista ferro/caja
+        // =====================================================
+        $raw = trim((string)($filters['term'] ?? ''));
+        if ($raw !== '') {
+            $terms = array_values(array_filter(array_map(
+                fn($t) => mb_strtolower(trim($t), 'UTF-8'),
+                explode(',', $raw)
+            ), fn($t) => $t !== ''));
+            $terms = array_slice($terms, 0, 5);
+
+            foreach ($terms as $t) {
+                $needle = '%' . $t . '%';
+
+                $where .= " AND (
+                LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
+                OR LOWER(COALESCE(cl.nombre, '')) LIKE ?
+                OR LOWER(COALESCE(tm.nombre, '')) LIKE ?
+                OR LOWER(COALESCE(co.comentario, '')) LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedores_maritimos_operacion cmo2
+                    INNER JOIN contenedores_maritimos cm2
+                        ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+                    WHERE cmo2.operacion_id = o.id_operacion
+                      AND LOWER(COALESCE(cm2.numero_contenedor, '')) LIKE ?
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM contenedores_maritimos_operacion cmo3
+                    INNER JOIN contenedor_maritimo_ferro cmf3
+                        ON cmf3.cont_maritimo_operacion_id = cmo3.id
+                       AND cmf3.estatus = 1
+                    INNER JOIN contenedores_fisicos cf3
+                        ON cf3.id_fisico = cmf3.contenedor_fisico_id
+                    LEFT JOIN operaciones_ferroviarias of3
+                        ON of3.id_operacion_ferro = cmf3.operacion_ferro_id
+                    LEFT JOIN transportistas tf3
+                        ON tf3.id_transportista = of3.transportista_id
+                    WHERE cmo3.operacion_id = o.id_operacion
+                      AND (
+                          LOWER(COALESCE(cf3.numero_ferro, '')) LIKE ?
+                          OR LOWER(COALESCE(tf3.nombre, '')) LIKE ?
+                      )
+                )
+            ) ";
+
+                array_push(
+                    $args,
+                    $needle, // o.numero_operacion
+                    $needle, // cl.nombre
+                    $needle, // tm.nombre
+                    $needle, // co.comentario
+                    $needle, // contenedor marítimo
+                    $needle, // ferro/caja
+                    $needle  // transportista ferro
+                );
+            }
+        }
 
         return ['sql' => $where, 'args' => $args];
     }
@@ -304,97 +381,111 @@ class FinanzasModel extends Query
     private function sqlMaritimo(): string
     {
         return "
-    SELECT
-        CONCAT('MAR-', co.id_costo_operacion)                         AS registro_id,
-        'MARITIMO-FERRO'                                              AS origen_tipo,
-        1                                                             AS origen_orden,
-        o.id_operacion                                                AS origen_id,
-        co.id_costo_operacion                                         AS costo_id,
-        COALESCE(co.fecha_creacion, o.eta)                            AS fecha_base,
-        o.numero_operacion                                            AS referencia,
-        cl.id_cliente,
-        COALESCE(cl.nombre, 'Sin cliente')                            AS cliente,
-        COALESCE(cont.contenedores, 'No aplica')                      AS contenedor,
-        COALESCE(fer.ferros, 'No aplica')                             AS ferro_caja,
-        o.transportista_id,
-        COALESCE(tr.nombre, 'No aplica')                              AS transportista,
-        bro.broker_id,
-        COALESCE(bro.brokers, 'No aplica')                            AS broker,
-        COALESCE(e.nombre, 'Sin estatus')                             AS estatus_operacion,
-        COALESCE(DATE_FORMAT(o.cita_puerto, '%Y-%m-%d'), 'No aplica') AS cita_puerto,
-        CASE
-            WHEN COALESCE(o.isf, 0) = 1 THEN 'Sí'
-            ELSE 'No'
-        END                                                           AS isf,
-        tm.categoria_id,
-        COALESCE(tmc.nombre, '')                                      AS categoria,
-        tm.id_tipo_movimiento                                         AS tipo_movimiento_id,
-        tm.nombre                                                     AS concepto,
-        tm.moneda,
-        COALESCE(co.monto, 0)                                         AS monto,
-        COALESCE(co.Pagado, 0)                                        AS pagado,
-        COALESCE(co.comentario, '')                                   AS comentario
+SELECT
+    CONCAT('MAR-', co.id_costo_operacion)                         AS registro_id,
+    'MARITIMO-FERRO'                                              AS origen_tipo,
+    1                                                             AS origen_orden,
+    o.id_operacion                                                AS origen_id,
+    co.id_costo_operacion                                         AS costo_id,
+    COALESCE(co.fecha_creacion, o.eta)                            AS fecha_base,
+    o.numero_operacion                                            AS referencia,
+    cl.id_cliente,
+    COALESCE(cl.nombre, 'Sin cliente')                            AS cliente,
+    COALESCE(cont.contenedores, 'No aplica')                      AS contenedor,
+    COALESCE(fer.ferros, 'No aplica')                             AS ferro_caja,
 
-    FROM operaciones o
-    LEFT JOIN subtipos_operacion st
-        ON st.id_subtipo = o.subtipo_operacion_id
-    LEFT JOIN clientes cl
-        ON cl.id_cliente = o.cliente_id
-    LEFT JOIN estatus e
-        ON e.id_estatus = o.estatus_id
-    LEFT JOIN transportistas tr
-        ON tr.id_transportista = o.transportista_id
-    INNER JOIN costos_operacion co
-        ON co.operacion_id = o.id_operacion
-    INNER JOIN tipos_movimiento tm
-        ON tm.id_tipo_movimiento = co.tipo_movimiento_id
-    LEFT JOIN tipos_movimiento_categorias tmc
-        ON tmc.id_categoria = tm.categoria_id
-       AND tmc.estatus = 1
-    LEFT JOIN (
-        SELECT
-            cmo.operacion_id,
-            GROUP_CONCAT(
-                DISTINCT cm.numero_contenedor
-                ORDER BY cm.numero_contenedor SEPARATOR ', '
-            ) AS contenedores
-        FROM contenedores_maritimos_operacion cmo
-        INNER JOIN contenedores_maritimos cm
-            ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
-        GROUP BY cmo.operacion_id
-    ) cont
-        ON cont.operacion_id = o.id_operacion
-    LEFT JOIN (
-        SELECT
-            cmo.operacion_id,
-            GROUP_CONCAT(
-                DISTINCT cf.numero_ferro
-                ORDER BY cf.numero_ferro SEPARATOR ', '
-            ) AS ferros
-        FROM contenedores_maritimos_operacion cmo
-        INNER JOIN contenedor_maritimo_ferro cmf
-            ON cmf.cont_maritimo_operacion_id = cmo.id
-           AND cmf.estatus = 1
-        INNER JOIN contenedores_fisicos cf
-            ON cf.id_fisico = cmf.contenedor_fisico_id
-        GROUP BY cmo.operacion_id
-    ) fer
-        ON fer.operacion_id = o.id_operacion
-    LEFT JOIN (
-        SELECT
-            ob.operacion_id,
-            MAX(ob.broker_id) AS broker_id,
-            GROUP_CONCAT(
-                DISTINCT b.nombre
-                ORDER BY b.nombre SEPARATOR ', '
-            ) AS brokers
-        FROM operacion_brokers ob
-        INNER JOIN brokers b
-            ON b.id_broker = ob.broker_id
-        GROUP BY ob.operacion_id
-    ) bro
-        ON bro.operacion_id = o.id_operacion
-    ";
+    o.transportista_id,
+    COALESCE(tr.nombre, 'No aplica')                              AS transportista,
+
+    COALESCE(fer.transportista_ferro_id, 0)                       AS transportista_ferro_id,
+    COALESCE(fer.transportistas_ferro, 'No aplica')               AS transportista_ferro,
+
+    bro.broker_id,
+    COALESCE(bro.brokers, 'No aplica')                            AS broker,
+    COALESCE(e.nombre, 'Sin estatus')                             AS estatus_operacion,
+    COALESCE(DATE_FORMAT(o.cita_puerto, '%Y-%m-%d'), 'No aplica') AS cita_puerto,
+    CASE
+        WHEN COALESCE(o.isf, 0) = 1 THEN 'Sí'
+        ELSE 'No'
+    END                                                           AS isf,
+    tm.categoria_id,
+    COALESCE(tmc.nombre, '')                                      AS categoria,
+    tm.id_tipo_movimiento                                         AS tipo_movimiento_id,
+    tm.nombre                                                     AS concepto,
+    tm.moneda,
+    COALESCE(co.monto, 0)                                         AS monto,
+    COALESCE(co.Pagado, 0)                                        AS pagado,
+    COALESCE(co.comentario, '')                                   AS comentario
+
+FROM operaciones o
+LEFT JOIN subtipos_operacion st
+    ON st.id_subtipo = o.subtipo_operacion_id
+LEFT JOIN clientes cl
+    ON cl.id_cliente = o.cliente_id
+LEFT JOIN estatus e
+    ON e.id_estatus = o.estatus_id
+LEFT JOIN transportistas tr
+    ON tr.id_transportista = o.transportista_id
+INNER JOIN costos_operacion co
+    ON co.operacion_id = o.id_operacion
+INNER JOIN tipos_movimiento tm
+    ON tm.id_tipo_movimiento = co.tipo_movimiento_id
+LEFT JOIN tipos_movimiento_categorias tmc
+    ON tmc.id_categoria = tm.categoria_id
+   AND tmc.estatus = 1
+LEFT JOIN (
+    SELECT
+        cmo.operacion_id,
+        GROUP_CONCAT(
+            DISTINCT cm.numero_contenedor
+            ORDER BY cm.numero_contenedor SEPARATOR ', '
+        ) AS contenedores
+    FROM contenedores_maritimos_operacion cmo
+    INNER JOIN contenedores_maritimos cm
+        ON cm.id_contenedor_maritimo = cmo.contenedor_maritimo_id
+    GROUP BY cmo.operacion_id
+) cont
+    ON cont.operacion_id = o.id_operacion
+LEFT JOIN (
+    SELECT
+        cmo.operacion_id,
+        MAX(ofe.transportista_id) AS transportista_ferro_id,
+        GROUP_CONCAT(
+            DISTINCT cf.numero_ferro
+            ORDER BY cf.numero_ferro SEPARATOR ', '
+        ) AS ferros,
+        GROUP_CONCAT(
+            DISTINCT COALESCE(tf.nombre, 'Sin transportista')
+            ORDER BY tf.nombre SEPARATOR ', '
+        ) AS transportistas_ferro
+    FROM contenedores_maritimos_operacion cmo
+    INNER JOIN contenedor_maritimo_ferro cmf
+        ON cmf.cont_maritimo_operacion_id = cmo.id
+       AND cmf.estatus = 1
+    INNER JOIN contenedores_fisicos cf
+        ON cf.id_fisico = cmf.contenedor_fisico_id
+    LEFT JOIN operaciones_ferroviarias ofe
+        ON ofe.id_operacion_ferro = cmf.operacion_ferro_id
+    LEFT JOIN transportistas tf
+        ON tf.id_transportista = ofe.transportista_id
+    GROUP BY cmo.operacion_id
+) fer
+    ON fer.operacion_id = o.id_operacion
+LEFT JOIN (
+    SELECT
+        ob.operacion_id,
+        MAX(ob.broker_id) AS broker_id,
+        GROUP_CONCAT(
+            DISTINCT b.nombre
+            ORDER BY b.nombre SEPARATOR ', '
+        ) AS brokers
+    FROM operacion_brokers ob
+    INNER JOIN brokers b
+        ON b.id_broker = ob.broker_id
+    GROUP BY ob.operacion_id
+) bro
+    ON bro.operacion_id = o.id_operacion
+";
     }
 
     private function sqlPartida(): string
@@ -414,6 +505,8 @@ class FinanzasModel extends Query
         COALESCE(cf.numero_ferro, 'No aplica')                        AS ferro_caja,
         env.transportista_id,
         COALESCE(env.transportistas, 'No aplica')                     AS transportista,
+        NULL                                                          AS transportista_ferro_id,
+        'No aplica'                                                   AS transportista_ferro,
         NULL                                                          AS broker_id,
         'No aplica'                                                   AS broker,
         COALESCE(env.estatuses, 'Sin envío')                          AS estatus_operacion,
@@ -443,7 +536,6 @@ class FinanzasModel extends Query
     LEFT JOIN (
         SELECT
             d.factura_id,
-            e.contenedor_fisico_id,
             MAX(e.transportista_id) AS transportista_id,
             GROUP_CONCAT(
                 DISTINCT COALESCE(t.nombre, 'Sin transportista')
@@ -460,13 +552,11 @@ class FinanzasModel extends Query
         LEFT JOIN transportistas t
             ON t.id_transportista = e.transportista_id
         WHERE d.estatus = 1
-        GROUP BY d.factura_id, e.contenedor_fisico_id
+        GROUP BY d.factura_id       -- ← solo por factura, SIN contenedor_fisico_id
     ) env
-        ON env.factura_id = cop.factura_id
-       AND env.contenedor_fisico_id = cop.contenedor_fisico_id
+        ON env.factura_id = cop.factura_id   -- ← solo por factura
     ";
     }
-
     // ================================================================
     //  LISTAR PAGINADO
     //  Ejecuta las dos fuentes por separado y combina en PHP.
@@ -546,7 +636,7 @@ class FinanzasModel extends Query
                     LEFT JOIN transportistas t
                         ON t.id_transportista = e.transportista_id
                     WHERE d.estatus = 1
-                    GROUP BY d.factura_id, e.contenedor_fisico_id
+                    GROUP BY d.factura_id
                 ) env
                     ON env.factura_id = cop.factura_id
                    AND env.contenedor_fisico_id = cop.contenedor_fisico_id
@@ -724,7 +814,8 @@ WHERE st.tipo_operacion_id = 11
                     'cliente'           => (string)($r['cliente'] ?? 'Sin cliente'),
                     'contenedor'        => (string)($r['contenedor'] ?? 'No aplica'),
                     'ferro_caja'        => (string)($r['ferro_caja'] ?? 'No aplica'),
-                    'transportista'     => (string)($r['transportista'] ?? 'No aplica'),
+                    'transportista_ferro_id' => (int)($r['transportista_ferro_id'] ?? 0),
+                    'transportista_ferro'    => (string)($r['transportista_ferro'] ?? 'No aplica'),
                     'broker'            => (string)($r['broker'] ?? 'No aplica'),
                     'estatus_operacion' => (string)($r['estatus_operacion'] ?? 'Sin estatus'),
                     'cita_puerto'       => (string)($r['cita_puerto'] ?? 'No aplica'),

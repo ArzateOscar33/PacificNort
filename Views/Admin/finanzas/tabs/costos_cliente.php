@@ -5,7 +5,7 @@
             <!-- Encabezado -->
             <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-3">
                 <div>
-                    <h3 class="mb-1">Costos por Cliente</h3>
+                    <h3 class="mb-1">Costos por Totales</h3>
                     <small class="text-muted">
                         Consulta todos los costos por operación de un cliente específico .
                     </small>
@@ -82,6 +82,20 @@
                     <div class="col-12 col-md-2">
                         <label class="form-label mb-1">Transportista</label>
                         <select id="transportistaId_cc" name="transportistaId_cc" class="form-control">
+                            <option value="">Seleccione...</option>
+                            <?php if (!empty($data['transportistas'])): ?>
+                                <?php foreach ($data['transportistas'] as $t): ?>
+                                    <option value="<?= (int)$t['id_transportista']; ?>">
+                                        <?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <!-- Transportista Ferro/Caja -->
+                    <div class="col-12 col-md-2">
+                        <label class="form-label mb-1">Transp. Ferro/Caja</label>
+                        <select id="transportistaFerroId_cc" class="form-control">
                             <option value="">Seleccione...</option>
                             <?php if (!empty($data['transportistas'])): ?>
                                 <?php foreach ($data['transportistas'] as $t): ?>
@@ -207,6 +221,7 @@
                             <th>Contenedor</th>
                             <th>Ferro/Caja</th>
                             <th>Transportista</th>
+                            <th>Transportista Ferro/Caja</th>
                             <th>Broker</th>
                             <th>Estatus</th>
                             <th>Cita Puerto</th>

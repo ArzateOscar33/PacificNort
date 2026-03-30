@@ -10,7 +10,9 @@
     (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
+
   console.log("BASE_URL:", base);
+
   const api =
     base + "Operaciones_maritimo_ferro_costos_clientes/listarPaginado";
 
@@ -21,9 +23,16 @@
   const fechaFin = document.getElementById("costosCliente_fechaFin");
 
   const brokerSel = document.getElementById("brokerId_cc");
+
+  // Transportista marítimo
   const transportistaSel = document.getElementById("transportistaId_cc");
 
-  // Categoría (select)
+  // NUEVO: Transportista ferro/caja
+  const transportistaFerroSel = document.getElementById(
+    "transportistaFerroId_cc",
+  );
+
+  // Categoría
   const categoriaSel = document.getElementById("categoriaId_cc");
 
   const estatusPagoSel = document.getElementById("costosCliente_estatusPago");
@@ -32,7 +41,7 @@
 
   const btnLimpiar = document.getElementById("costosCliente_btnLimpiar");
 
-  // ✅ Moneda vista + tipo de cambio
+  // ---- Moneda vista + tipo de cambio ----
   const monedaVistaSel = document.getElementById("costosClienteMonedaVista");
   const tipoCambioInp = document.getElementById("costosClienteTipoCambio");
 
@@ -53,9 +62,8 @@
 
   let state = { page: 1, loading: false };
 
-  // ✅ Ajusta esto al # real de columnas en tu <thead>
-  // Quitaste "Moneda", normalmente quedan 11.
-  const COLS = 11;
+  // Ahora la tabla tiene 13 columnas
+  const COLS = 13;
 
   // ---------------- helpers ----------------
   const esc = (s) =>
@@ -81,27 +89,34 @@
 
   function buildQuery(page) {
     const qs = new URLSearchParams();
+
     qs.set("page", String(page));
     qs.set("per_page", perPageSel?.value || "25");
 
-    // "" => Todos
-    qs.set(
-      "clienteId_cc",
-      clienteSel && clienteSel.value !== null ? clienteSel.value : "",
-    );
+    // Cliente
+    qs.set("clienteId_cc", clienteSel?.value ?? "");
 
     if (fechaInicio?.value) qs.set("fecha_inicio", fechaInicio.value);
     if (fechaFin?.value) qs.set("fecha_fin", fechaFin.value);
 
     if (brokerSel?.value) qs.set("brokerId_cc", brokerSel.value);
-    if (transportistaSel?.value)
+
+    // Transportista marítimo
+    if (transportistaSel?.value) {
       qs.set("transportistaId_cc", transportistaSel.value);
+    }
+
+    // NUEVO: Transportista ferro/caja
+    if (transportistaFerroSel?.value) {
+      qs.set("transportistaFerroId_cc", transportistaFerroSel.value);
+    }
 
     // Categoría
     if (categoriaSel?.value) qs.set("categoriaId_cc", categoriaSel.value);
 
-    if (estatusPagoSel?.value !== "")
+    if (estatusPagoSel?.value !== "") {
       qs.set("costosCliente_estatusPago", estatusPagoSel.value);
+    }
 
     const t = (termInput?.value || "").trim();
     if (t) qs.set("costosCliente_term", t);
@@ -114,9 +129,10 @@
     const x = String(m || "")
       .trim()
       .toUpperCase();
+
     if (x === "DLLS" || x === "USD" || x === "DLS") return "USD";
     if (x === "MXN" || x === "PESOS" || x === "MX") return "MXN";
-    // fallback
+
     return "MXN";
   }
 
@@ -129,7 +145,6 @@
     return normMoneda(monedaVistaSel?.value || "MXN");
   }
 
-  // Convierte monto monedaOrigen -> monedaDestino (vista)
   function convertAmount(amt, monedaOrigen, monedaDestino, tc) {
     const src = normMoneda(monedaOrigen);
     const dst = normMoneda(monedaDestino);
@@ -138,20 +153,25 @@
     if (src === dst) return n;
     if (src === "USD" && dst === "MXN") return n * tc;
     if (src === "MXN" && dst === "USD") return n / tc;
+
     return n;
   }
 
   function xhrGet(url, cb) {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
+
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
+
       let json = null;
       try {
         json = JSON.parse(xhr.responseText);
       } catch (e) {}
+
       cb(json, xhr.status);
     };
+
     xhr.send();
   }
 
@@ -162,17 +182,21 @@
           <i data-feather="inbox"></i>
           <div class="mt-2">${esc(msg || "Sin datos.")}</div>
         </td>
-      </tr>`;
+      </tr>
+    `;
+
     if (window.feather) feather.replace();
   }
 
   function groupByOperacion(rows) {
     const map = new Map();
+
     rows.forEach((r) => {
       const k = String(r.id_operacion);
       if (!map.has(k)) map.set(k, []);
       map.get(k).push(r);
     });
+
     return Array.from(map.entries()).map(([id, items]) => ({
       id_operacion: Number(id),
       items,
@@ -217,17 +241,23 @@
 
       const brokers = first.brokers ? esc(first.brokers) : "—";
       const conts = first.contenedores ? esc(first.contenedores) : "—";
-      const trans = first.transportista ? esc(first.transportista) : "—";
+      const ferros = first.ferros_cajas ? esc(first.ferros_cajas) : "—";
+      const transMar = first.transportista ? esc(first.transportista) : "—";
+      const transFerro = first.transportistas_ferro
+        ? esc(first.transportistas_ferro)
+        : "—";
 
       const opLabel = (() => {
         const op = first.numero_operacion ? esc(first.numero_operacion) : "—";
         const cli = (first.cliente || "").trim();
+
         if (isTodos && cli) {
           return `<div class="d-flex flex-column">
                     <span class="fw-semibold">${op}</span>
                     <small class="text-muted">${esc(cli)}</small>
                   </div>`;
         }
+
         return op;
       })();
 
@@ -235,7 +265,6 @@
         const categoria = (r.categoria || "").trim() ? esc(r.categoria) : "—";
         const concepto = r.concepto ? esc(r.concepto) : "—";
 
-        // ✅ monto convertido por renglón
         const montoConv = convertAmount(r.monto, r.moneda, monedaVista, tc);
         const montoTxt = money(montoConv);
 
@@ -244,7 +273,9 @@
             <tr>
               <td rowspan="${rowspan}">${opLabel}</td>
               <td rowspan="${rowspan}">${conts}</td>
-              <td rowspan="${rowspan}">${trans}</td>
+              <td rowspan="${rowspan}">${ferros}</td>
+              <td rowspan="${rowspan}">${transMar}</td>
+              <td rowspan="${rowspan}">${transFerro}</td>
               <td rowspan="${rowspan}">${brokers}</td>
               <td rowspan="${rowspan}">${estatus}</td>
               <td rowspan="${rowspan}">${fmtDate(first.cita_puerto)}</td>
@@ -294,10 +325,12 @@
     const totalPend = sumConvert(pend);
     const totalPag = sumConvert(pag);
 
-    metaOps.textContent = `Ops: ${ops}`;
-    metaConceptos.textContent = `Conceptos: ${conceptos}`;
-    metaPend.textContent = `Pendientes: ${monedaVista} $${money(totalPend)}`;
-    metaPag.textContent = `Pagados: ${monedaVista} $${money(totalPag)}`;
+    if (metaOps) metaOps.textContent = `Ops: ${ops}`;
+    if (metaConceptos) metaConceptos.textContent = `Conceptos: ${conceptos}`;
+    if (metaPend)
+      metaPend.textContent = `Pendientes: ${monedaVista} $${money(totalPend)}`;
+    if (metaPag)
+      metaPag.textContent = `Pagados: ${monedaVista} $${money(totalPag)}`;
   }
 
   function renderPagination(page, totalPages, totalOps) {
@@ -307,7 +340,9 @@
     const pp = Number(perPageSel?.value || 25);
     const showing = pp >= 10000000 ? totalOps : Math.min(totalOps, p * pp);
 
-    pagInfo.textContent = `Mostrando ${showing} de ${totalOps}`;
+    if (pagInfo) pagInfo.textContent = `Mostrando ${showing} de ${totalOps}`;
+
+    if (!pagUl) return;
 
     if (tp <= 1) {
       pagUl.innerHTML = "";
@@ -320,10 +355,12 @@
         disabled ? "disabled" : "",
         active ? "active" : "",
       ].join(" ");
+
       return `
         <li class="${cls}">
           <a class="page-link" href="#" data-cc-page="${targetPage}">${label}</a>
-        </li>`;
+        </li>
+      `;
     };
 
     let html = "";
@@ -352,15 +389,18 @@
 
       if (!json || json.status !== "success") {
         renderEmpty(json?.msg || "No se pudo listar.");
+
         renderMeta({
           total_ops: 0,
           total_conceptos: 0,
           pendientes: {},
           pagados: {},
         });
+
         console.log("Error al listar:", json);
-        pagUl.innerHTML = "";
-        pagInfo.textContent = "Mostrando 0 de 0";
+
+        if (pagUl) pagUl.innerHTML = "";
+        if (pagInfo) pagInfo.textContent = "Mostrando 0 de 0";
         return;
       }
 
@@ -387,14 +427,14 @@
   hookChange(fechaFin);
   hookChange(brokerSel);
   hookChange(transportistaSel);
+  hookChange(transportistaFerroSel);
   hookChange(categoriaSel);
   hookChange(estatusPagoSel);
   hookChange(perPageSel);
-
-  // ✅ Al cambiar moneda/tipo cambio, recalculamos
   hookChange(monedaVistaSel);
 
   let tmr = null;
+
   if (termInput) {
     termInput.addEventListener("input", () => {
       clearTimeout(tmr);
@@ -416,12 +456,12 @@
       if (fechaFin) fechaFin.value = "";
       if (brokerSel) brokerSel.value = "";
       if (transportistaSel) transportistaSel.value = "";
+      if (transportistaFerroSel) transportistaFerroSel.value = "";
       if (categoriaSel) categoriaSel.value = "";
       if (estatusPagoSel) estatusPagoSel.value = "";
       if (termInput) termInput.value = "";
       if (perPageSel) perPageSel.value = "25";
 
-      // ✅ reset moneda vista/tc (si existen)
       if (monedaVistaSel) monedaVistaSel.value = "MXN";
       if (tipoCambioInp) tipoCambioInp.value = "17.00";
 
@@ -433,7 +473,9 @@
     pagUl.addEventListener("click", (e) => {
       const a = e.target.closest("[data-cc-page]");
       if (!a) return;
+
       e.preventDefault();
+
       const p = Number(a.getAttribute("data-cc-page") || 1);
       listar(p);
     });
