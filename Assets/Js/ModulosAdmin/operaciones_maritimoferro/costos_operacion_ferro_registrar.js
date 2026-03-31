@@ -1,16 +1,19 @@
 /* ============================================================================
-   MÓDULO: Costos por Operación por Partida / Domésticos - REGISTRAR/EDITAR (XHR)
-   Archivo sugerido: costos_partida_registrar.js
+   MÓDULO: Costos por Operación MF - REGISTRAR / EDITAR (XHR)
+   Archivo sugerido: costos_operacion_ferro_registrar.js
 
-   Adaptado a:
-   - Controlador: Operaciones_por_partida_costos
-   - Vista con ids: costosPartida...
-   - Eje principal: factura_id
+   Compatible con:
+   - Catálogo: Costos por Operación (SOLO MF)
+   - Controlador: Operaciones_maritimo_ferro_costos_Contenedor
+   - Modal: #modalCostoOperacion
 
-   ✅ Anti-doble-guardado:
-   - Lock global window.__costosPartidaSaving
-   - Evita doble binding con dataset.bound
-   - Preferencia: guardar por CLICK (botón type="button")
+   Espera:
+   - row_id
+   - operacion_id
+   - tipo_movimiento_id
+   - monto
+   - comentario
+   - costosContenedoresPagado
    ============================================================================ */
 (function () {
   "use strict";
@@ -23,24 +26,26 @@
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
 
-  // ------- DOM del modal -------
-  const modalEl = document.getElementById("modalCostoPartida");
-  const hidRowId = document.getElementById("costosPartidaRowId");
+  // ------- DOM del modal MF -------
+  const modalEl = document.getElementById("modalCostoOperacion");
+  const hidRowId = document.getElementById("row_id");
 
-  const facturaIdModal = document.getElementById("costosPartidaFacturaId");
-  const facturaNomModal = document.getElementById("costosPartidaFacturaNombre");
+  const operacionIdModal = document.getElementById("costosOperacionid");
+  const operacionNomModal = document.getElementById("costosOperacionNombre");
 
-  const selTipoModal = document.getElementById("costosPartidaTipoMovimientoId");
-  const selMonModal = document.getElementById("costosPartidaMoneda");
-  const montoModal = document.getElementById("costosPartidaMonto");
-  const comentModal = document.getElementById("costosPartidaComentario");
-  const selPagadoModal = document.getElementById("costosPartidaPagado");
+  const selTipoModal = document.getElementById("costosContenedoresTipoCosto");
+  const selMonModal = document.getElementById("costosContenedoresMoneda");
+  const montoModal = document.getElementById("costosContenedoresMonto");
+  const comentModal = document.getElementById("costosContenedoresComentarios");
+  const selPagadoModal = document.getElementById("costosContenedoresPagado");
 
-  const ferroIdModal = document.getElementById("costosPartidaFerroId");
-  const ferroNomModal = document.getElementById("costosPartidaFerroNombre");
+  const contIdModal = document.getElementById("costosContenedorContenedorId");
+  const contNomModal = document.getElementById(
+    "costosContenedorContenedorNombre",
+  );
 
-  const formModal = document.getElementById("formCostoPartida");
-  const btnGuardar = document.getElementById("btnGuardarCostoPartida");
+  const formModal = document.getElementById("formCostoOperacion");
+  const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
 
   if (!modalEl || !btnGuardar) {
     return;
@@ -49,7 +54,12 @@
   // ------- Helpers -------
   function toast(icon, title, text) {
     if (window.Swal) {
-      Swal.fire({ icon, title, text, confirmButtonText: "OK" });
+      Swal.fire({
+        icon,
+        title,
+        text,
+        confirmButtonText: "OK",
+      });
     } else {
       alert(`${title}${text ? `: ${text}` : ""}`);
     }
@@ -74,7 +84,7 @@
 
   function buildPayload() {
     const rowId = parseInt(hidRowId?.value || "0", 10) || 0;
-    const facturaId = parseInt(facturaIdModal?.value || "0", 10) || 0;
+    const operacionId = parseInt(operacionIdModal?.value || "0", 10) || 0;
     const tipoId = parseInt(selTipoModal?.value || "0", 10) || 0;
 
     let montoRaw = String(montoModal?.value || "").trim();
@@ -84,12 +94,12 @@
     const comentario = String(comentModal?.value || "").trim();
     const pagado = parseInt(selPagadoModal?.value || "0", 10) === 1 ? 1 : 0;
 
-    if (facturaId <= 0 && rowId <= 0) {
-      return { ok: false, msg: "Falta factura." };
+    if (operacionId <= 0 && rowId <= 0) {
+      return { ok: false, msg: "Falta operación." };
     }
 
     if (tipoId <= 0) {
-      return { ok: false, msg: "Selecciona un tipo/concepto." };
+      return { ok: false, msg: "Selecciona un tipo de movimiento." };
     }
 
     if (!Number.isFinite(monto) || monto <= 0) {
@@ -99,8 +109,8 @@
     const fd = new FormData();
     fd.append("row_id", String(rowId));
 
-    if (facturaId > 0) {
-      fd.append("factura_id", String(facturaId));
+    if (operacionId > 0) {
+      fd.append("operacion_id", String(operacionId));
     }
 
     fd.append("tipo_movimiento_id", String(tipoId));
@@ -128,19 +138,36 @@
     }
   }
 
+  function cerrarModal() {
+    if (modalEl && window.bootstrap) {
+      window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    }
+  }
+
+  function refrescarListado() {
+    if (typeof window.listarCostosOperacion === "function") {
+      window.listarCostosOperacion(1);
+    }
+  }
+
+  function limpiarEstadoGuardado() {
+    window.__costosOperacionSaving = false;
+    setBtnLoading(false);
+  }
+
   function guardarXHR() {
-    if (window.__costosPartidaSaving) return;
-    window.__costosPartidaSaving = true;
+    if (window.__costosOperacionSaving) return;
+    window.__costosOperacionSaving = true;
 
     const pkg = buildPayload();
     if (!pkg.ok) {
-      window.__costosPartidaSaving = false;
+      window.__costosOperacionSaving = false;
       return toast("warning", "Validación", pkg.msg);
     }
 
     setBtnLoading(true);
 
-    const url = `${base}Operaciones_por_partida_costos/guardar`;
+    const url = `${base}Operaciones_maritimo_ferro_costos_Contenedor/guardar`;
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
 
@@ -148,7 +175,7 @@
       if (xhr.readyState !== 4) return;
 
       setBtnLoading(false);
-      window.__costosPartidaSaving = false;
+      window.__costosOperacionSaving = false;
 
       let resp = {};
       try {
@@ -170,18 +197,19 @@
 
         if (hidRowId) hidRowId.value = "";
 
-        if (modalEl && window.bootstrap) {
-          window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-        }
-
-        if (typeof window.listarCostosPartida === "function") {
-          window.listarCostosPartida(1);
-        }
+        cerrarModal();
+        refrescarListado();
       } else if (st === "warning") {
         toast("warning", "Aviso", mg || "Revisa los datos.");
       } else {
         toast("error", "No se pudo guardar", mg || "Intenta de nuevo.");
       }
+    };
+
+    xhr.onerror = function () {
+      setBtnLoading(false);
+      window.__costosOperacionSaving = false;
+      toast("error", "Error de red", "No se pudo conectar con el servidor.");
     };
 
     xhr.send(pkg.data);
@@ -205,12 +233,12 @@
 
   modalEl.addEventListener("shown.bs.modal", function () {
     syncMonedaPorTipo();
-    window.__costosPartidaSaving = false;
+    window.__costosOperacionSaving = false;
     setBtnLoading(false);
   });
 
   modalEl.addEventListener("hidden.bs.modal", function () {
-    window.__costosPartidaSaving = false;
+    window.__costosOperacionSaving = false;
     setBtnLoading(false);
   });
 })();

@@ -40,12 +40,12 @@
         icon,
         title,
         text,
-        timer: icon === "success" ? 1800 : undefined,
-        showConfirmButton: icon !== "success",
+        confirmButtonText: "OK",
       });
-      return;
+    } else {
+      alert(`${title}${text ? `: ${text}` : ""}`);
     }
-    alert((title ? title + ": " : "") + (text || ""));
+    //alert((title ? title + ": " : "") + (text || ""));
   }
 
   function setEnabled(el, enabled) {
