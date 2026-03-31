@@ -51,7 +51,7 @@ class Operaciones_por_partida extends Controller
             if ($perPage < 1) $perPage = 10;
 
             // Limitar per_page a opciones típicas
-            $allowed = [10, 25, 50, 100];
+            $allowed = [10, 25, 50, 100, 200, 500, 1000000];
             if (!in_array($perPage, $allowed, true)) $perPage = 10;
 
             // ====== Modelo ======

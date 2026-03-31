@@ -78,12 +78,54 @@ class Operaciones_por_partidaModel extends Query
                     b.nombre AS bodega_nombre,
                     f.cliente_id,
                     c.nombre AS cliente_nombre,
+
+                    -- cuántos productos tiene la factura
                     (
                         SELECT COUNT(*)
                         FROM op_partida_productos p
                         WHERE p.factura_id = f.id_factura
                           AND p.estatus = 1
-                    ) AS productos_count
+                    ) AS productos_count,
+
+                    -- cajas totales de la factura
+                    (
+                        SELECT COALESCE(SUM(p.cajas), 0)
+                        FROM op_partida_productos p
+                        WHERE p.factura_id = f.id_factura
+                          AND p.estatus = 1
+                    ) AS cajas_totales,
+
+                    -- cajas ya enviadas de la factura
+                    (
+                        SELECT COALESCE(SUM(d.cajas_enviadas), 0)
+                        FROM operaciones_partida_envio_detalle d
+                        INNER JOIN operaciones_partida_envios e
+                            ON e.id_envio = d.envio_id
+                        WHERE d.factura_id = f.id_factura
+                          AND d.estatus = 1
+                          AND e.estatus = 1
+                    ) AS cajas_enviadas,
+
+                    -- cajas restantes
+                    (
+                        (
+                            SELECT COALESCE(SUM(p.cajas), 0)
+                            FROM op_partida_productos p
+                            WHERE p.factura_id = f.id_factura
+                              AND p.estatus = 1
+                        )
+                        -
+                        (
+                            SELECT COALESCE(SUM(d.cajas_enviadas), 0)
+                            FROM operaciones_partida_envio_detalle d
+                            INNER JOIN operaciones_partida_envios e
+                                ON e.id_envio = d.envio_id
+                            WHERE d.factura_id = f.id_factura
+                              AND d.estatus = 1
+                              AND e.estatus = 1
+                        )
+                    ) AS cajas_restantes
+
                 FROM op_partida_facturas f
                 LEFT JOIN bodegas b
                     ON b.id_bodega = f.bodega_id
@@ -99,6 +141,15 @@ class Operaciones_por_partidaModel extends Query
         if ($rows === false) {
             $rows = [];
         }
+
+        // Normalizar negativos por seguridad
+        foreach ($rows as &$row) {
+            $row['productos_count']  = (int)($row['productos_count'] ?? 0);
+            $row['cajas_totales']    = (int)($row['cajas_totales'] ?? 0);
+            $row['cajas_enviadas']   = (int)($row['cajas_enviadas'] ?? 0);
+            $row['cajas_restantes']  = max(0, (int)($row['cajas_restantes'] ?? 0));
+        }
+        unset($row);
 
         return [
             'rows'  => $rows,

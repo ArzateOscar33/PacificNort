@@ -65,6 +65,9 @@
             <option value="25">25</option>
             <option value="50">50</option>
             <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+            <option value="1000000">Todos</option>
           </select>
           <span class="small text-muted">por página</span>
         </div>
@@ -80,10 +83,13 @@
               <th style="width:220px;">Estatus Factura</th>
               <th style="width:160px;">Número de factura</th>
               <th style="width:160px;">Cliente</th>
-              <th style="min-width:220px;">Pallets INV</th>
+              <th style="min-width:220px;">Pallets Factura</th>
               <th style="min-width:220px;">Proveedor</th>
               <th style="width:160px;">Fecha recibido</th>
               <th style="width:140px;"># Productos</th>
+              <th style="min-width:220px;">Cajas Totales</th>
+              <th style="min-width:220px;">Cajas Enviadas</th>
+              <th style="min-width:220px;">Cajas Restantes en Bodega</th>
               <th style="width:150px;">Acciones</th>
             </tr>
           </thead>
@@ -206,7 +212,7 @@
 
 
             <div class="col-md-2">
-              <label class="form-label">Pallets INV (Factura)</label>
+              <label class="form-label">Pallets (Factura)</label>
               <input type="number" min="0" step="1" id="operaciones_partida_pallets_inv" name="pallets_inv"
                 class="form-control" placeholder="0">
             </div>
@@ -282,7 +288,7 @@
               <span class="me-2"> Bodega: <span class="fw-semibold text-white" id="pf_lblXdock">—</span></span>
               <span class="me-2"> Recibido: <span class="fw-semibold text-white" id="pf_lblRecibido">—</span></span>
             </div>
-            <span class="me-2"> Pallets INV (Factura): <span class="fw-semibold text-white"
+            <span class="me-2"> Pallets (Factura): <span class="fw-semibold text-white"
                 id="pf_lblPalletsRcv">—</span></span>
 
           </div>

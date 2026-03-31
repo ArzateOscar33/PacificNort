@@ -457,26 +457,28 @@
                 <div class="card-body px-4 pb-4">
                     <div class="table-responsive">
                         <table class="table table-spacious align-middle mb-0" id="tblOpsPartida">
-                            <thead>
+                            <thead class="text-center">
                                 <tr>
                                     <th>No. Factura</th>
                                     <th>Pallets Factura</th>
-                                    <th>Proveedor</th>
+                                    <th style="width:400px;">Proveedor</th>
                                     <th>Fecha recibido</th>
                                     <th>Productos</th>
                                     <th>Caja / Ferro</th>
-                                    <th>Transportista</th>
+                                    <!-- <th>Transportista</th> -->
                                     <th>Fecha envío</th>
                                     <th>Destino</th>
                                     <th>Estatus del ferro</th>
                                     <th>Productos enviados</th>
-                                    <th>Cajas</th>
+                                    <th>Cajas totales</th>
+                                    <th>Cajas Enviadas</th>
+                                    <th>Cajas Restantes</th>
                                     <th>Notas / Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="tbOpsPartida">
+                            <tbody id="tbOpsPartida" class="text-center text-muted">
                                 <tr>
-                                    <td colspan="13">
+                                    <td colspan="12">
                                         <div class="pn-empty my-2">
                                             <div class="fw-semibold mb-1">Sin información cargada</div>
                                             <div>Conecta aquí tu endpoint para listar las operaciones por partida del cliente.</div>

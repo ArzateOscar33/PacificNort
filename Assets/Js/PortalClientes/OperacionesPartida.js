@@ -271,7 +271,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="13">
+        <td colspan="12">
           <div class="pn-empty my-2">
             <div class="fw-semibold mb-1">Cargando información</div>
             <div>Espera un momento...</div>
@@ -285,7 +285,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="13">
+        <td colspan="12">
           <div class="pn-empty my-2">
             <div class="fw-semibold mb-1">Sin resultados</div>
             <div>${escapeHtml(message || "No se encontró información para mostrar.")}</div>
@@ -354,6 +354,8 @@
 
         const productosEnviados = num(row.productos_enviados);
         const cajasEnviadas = num(row.cajas_enviadas);
+        const cajasRestantes = num(row.cajas_restantes_factura);
+        const cajasTotalesFactura = num(row.cajas_totales_factura);
         const notasDetalle = row.notas_detalle_resumen || "";
         const totalFotosMercancia = num(row.total_fotos_mercancia);
         const totalImagenesEnvio = num(row.total_imagenes_envio);
@@ -374,12 +376,14 @@
               </button>
             </td>
             <td>${escapeHtml(numeroFerro)}</td>
-            <td>${escapeHtml(transportista)}</td>
+            <!--<td>${escapeHtml(transportista)}</td>-->
             <td>${escapeHtml(fechaEnvio)}</td>
             <td>${escapeHtml(destino)}</td>
             <td>${obtenerBadgeEstatus(estatusEnvio)}</td>
             <td>${escapeHtml(String(productosEnviados))}</td>
+            <td>${escapeHtml(String(cajasTotalesFactura))}</td>
             <td>${escapeHtml(String(cajasEnviadas))}</td>
+            <td>${escapeHtml(String(cajasRestantes))}</td>
             <td>
               <div class="d-flex flex-wrap gap-2 mb-2">
                  
@@ -518,7 +522,7 @@
     if (mf_tbodyProductos) {
       mf_tbodyProductos.innerHTML = `
         <tr>
-          <td colspan="11" class="text-center text-muted py-4">
+          <td colspan="12" class="text-center text-muted py-4">
             Cargando productos...
           </td>
         </tr>
@@ -540,7 +544,7 @@
     if (!Array.isArray(productos) || !productos.length) {
       mf_tbodyProductos.innerHTML = `
         <tr>
-          <td colspan="11" class="text-center text-muted py-4">
+          <td colspan="12" class="text-center text-muted py-4">
             Sin productos para mostrar.
           </td>
         </tr>
@@ -614,7 +618,7 @@
         if (mf_tbodyProductos) {
           mf_tbodyProductos.innerHTML = `
             <tr>
-              <td colspan="11" class="text-center text-danger py-4">
+              <td colspan="12" class="text-center text-danger py-4">
                 No fue posible cargar la factura.
               </td>
             </tr>

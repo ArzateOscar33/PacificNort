@@ -911,8 +911,27 @@ WHERE st.tipo_operacion_id = 11
         // Convertir grupos asociativos a arreglo normal
         $groups = array_values($groups);
 
-        // Orden final por fecha_base DESC, origen_orden ASC, origen_id DESC
         usort($groups, function ($a, $b) {
+
+            // 1. Si ambos son MARITIMO-FERRO → ordenar por número de operación real DESC
+            if (
+                ($a['origen_tipo'] ?? '') === 'MARITIMO-FERRO' &&
+                ($b['origen_tipo'] ?? '') === 'MARITIMO-FERRO'
+            ) {
+                $numA = (int) preg_replace('/\D+/', '', (string)($a['referencia'] ?? '0'));
+                $numB = (int) preg_replace('/\D+/', '', (string)($b['referencia'] ?? '0'));
+
+                if ($numA !== $numB) {
+                    return $numB - $numA; // más reciente primero
+                }
+                //mas reciente primero
+                return strcmp(
+                    (string)($b['referencia'] ?? ''),
+                    (string)($a['referencia'] ?? '')
+                );
+            }
+
+            // 2. Orden original para todo lo demás
             $fd = strcmp((string)($b['fecha_base'] ?? ''), (string)($a['fecha_base'] ?? ''));
             if ($fd !== 0) return $fd;
 

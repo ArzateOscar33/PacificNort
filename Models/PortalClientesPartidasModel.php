@@ -259,116 +259,149 @@ class PortalClientesPartidasModel extends Query
         // LISTADO
         // -----------------------------------------------------
         $sql = "SELECT
-                    f.id_factura,
-                    f.numero_factura,
-                    f.pallets_inv,
-                    f.proveedor,
-                    f.fecha_recibido,
-                    f.notas AS notas_factura,
-                    f.revision_estatus,
+            f.id_factura,
+            f.numero_factura,
+            f.pallets_inv,
+            f.proveedor,
+            f.fecha_recibido,
+            f.notas AS notas_factura,
+            f.revision_estatus,
 
-                    e.id_envio,
-                    e.fecha_envio,
-                    e.estatus_envio,
-                    e.notas AS notas_envio,
-                    e.candado,
+            e.id_envio,
+            e.fecha_envio,
+            e.estatus_envio,
+            e.notas AS notas_envio,
+            e.candado,
 
-                    cf.id_fisico AS contenedor_fisico_id,
-                    cf.numero_ferro,
+            cf.id_fisico AS contenedor_fisico_id,
+            cf.numero_ferro,
 
-                    t.id_transportista,
-                    t.nombre AS transportista_nombre,
+            t.id_transportista,
+            t.nombre AS transportista_nombre,
 
-                    c.id_ciudad,
-                    c.nombre_ciudad AS destino_nombre,
+            c.id_ciudad,
+            c.nombre_ciudad AS destino_nombre,
 
-                    /* total productos de la factura */
-                    (
-                        SELECT COUNT(*)
-                        FROM op_partida_productos p0
-                        WHERE p0.factura_id = f.id_factura
-                    ) AS total_productos_factura,
+            /* total productos de la factura */
+            (
+                SELECT COUNT(*)
+                FROM op_partida_productos p0
+                WHERE p0.factura_id = f.id_factura
+            ) AS total_productos_factura,
 
-                    /* total fotos de mercancía de la factura */
-                    (
-                        SELECT COUNT(*)
-                        FROM op_partida_producto_fotos pf0
-                        WHERE pf0.factura_id = f.id_factura
-                    ) AS total_fotos_mercancia,
+            /* cajas totales de la factura */
+            (
+                SELECT COALESCE(SUM(p0.cajas), 0)
+                FROM op_partida_productos p0
+                WHERE p0.factura_id = f.id_factura
+            ) AS cajas_totales_factura,
 
-                    /* total imágenes del envío */
-                    (
-                        SELECT COUNT(*)
-                        FROM operaciones_partida_envio_imagenes ei0
-                        WHERE ei0.envio_id = e.id_envio
-                    ) AS total_imagenes_envio,
+            /* cajas restantes reales de la factura */
+            (
+                (
+                    SELECT COALESCE(SUM(p1.cajas), 0)
+                    FROM op_partida_productos p1
+                    WHERE p1.factura_id = f.id_factura
+                )
+                -
+                (
+                    SELECT COALESCE(SUM(d1.cajas_enviadas), 0)
+                    FROM operaciones_partida_envio_detalle d1
+                    INNER JOIN operaciones_partida_envios e1
+                        ON e1.id_envio = d1.envio_id
+                       AND e1.estatus = 1
+                    WHERE d1.factura_id = f.id_factura
+                      AND d1.estatus = 1
+                )
+            ) AS cajas_restantes_factura,
 
-                    /* productos enviados en ese envío para esa factura */
-                    COUNT(DISTINCT d.producto_id) AS productos_enviados,
+            /* total fotos de mercancía de la factura */
+            (
+                SELECT COUNT(*)
+                FROM op_partida_producto_fotos pf0
+                WHERE pf0.factura_id = f.id_factura
+            ) AS total_fotos_mercancia,
 
-                    /* cajas enviadas en ese envío para esa factura */
-                    COALESCE(SUM(d.cajas_enviadas), 0) AS cajas_enviadas,
+            /* total imágenes del envío */
+            (
+                SELECT COUNT(*)
+                FROM operaciones_partida_envio_imagenes ei0
+                WHERE ei0.envio_id = e.id_envio
+            ) AS total_imagenes_envio,
 
-                    /* resumen de productos enviados */
-                    GROUP_CONCAT(
-                        DISTINCT CONCAT(
-                            p.descripcion,
-                            ' (', d.cajas_enviadas, ' cajas)'
-                        )
-                        ORDER BY p.descripcion ASC
-                        SEPARATOR ' | '
-                    ) AS productos_enviados_resumen,
+            /* productos enviados en ese envío para esa factura */
+            COUNT(DISTINCT d.producto_id) AS productos_enviados,
 
-                    /* notas del detalle */
-                    GROUP_CONCAT(
-                        DISTINCT NULLIF(TRIM(d.notas_detalle), '')
-                        SEPARATOR ' | '
-                    ) AS notas_detalle_resumen
+            /* cajas enviadas en ese envío para esa factura */
+            COALESCE(SUM(d.cajas_enviadas), 0) AS cajas_enviadas,
 
-                FROM op_partida_facturas f
-                LEFT JOIN operaciones_partida_envio_detalle d
-                       ON d.factura_id = f.id_factura
-                      AND d.estatus = 1
-                LEFT JOIN operaciones_partida_envios e
-                       ON e.id_envio = d.envio_id
-                      AND e.estatus = 1
-                LEFT JOIN op_partida_productos p
-                       ON p.id_producto = d.producto_id
-                LEFT JOIN contenedores_fisicos cf
-                       ON cf.id_fisico = e.contenedor_fisico_id
-                LEFT JOIN transportistas t
-                       ON t.id_transportista = e.transportista_id
-                LEFT JOIN ciudades c
-                       ON c.id_ciudad = e.destino_ciudad_id
-                WHERE {$whereSql}
-                GROUP BY
-                    f.id_factura,
-                    f.numero_factura,
-                    f.pallets_inv,
-                    f.proveedor,
-                    f.fecha_recibido,
-                    f.notas,
-                    f.revision_estatus,
-                    e.id_envio,
-                    e.fecha_envio,
-                    e.estatus_envio,
-                    e.notas,
-                    e.candado,
-                    cf.id_fisico,
-                    cf.numero_ferro,
-                    t.id_transportista,
-                    t.nombre,
-                    c.id_ciudad,
-                    c.nombre_ciudad
-                ORDER BY
-                    COALESCE(e.fecha_envio, f.fecha_recibido) DESC,
-                    f.id_factura DESC";
+            /* resumen de productos enviados */
+            GROUP_CONCAT(
+                DISTINCT CONCAT(
+                    p.descripcion,
+                    ' (', d.cajas_enviadas, ' cajas)'
+                )
+                ORDER BY p.descripcion ASC
+                SEPARATOR ' | '
+            ) AS productos_enviados_resumen,
+
+            /* notas del detalle */
+            GROUP_CONCAT(
+                DISTINCT NULLIF(TRIM(d.notas_detalle), '')
+                SEPARATOR ' | '
+            ) AS notas_detalle_resumen
+
+        FROM op_partida_facturas f
+        LEFT JOIN operaciones_partida_envio_detalle d
+               ON d.factura_id = f.id_factura
+              AND d.estatus = 1
+        LEFT JOIN operaciones_partida_envios e
+               ON e.id_envio = d.envio_id
+              AND e.estatus = 1
+        LEFT JOIN op_partida_productos p
+               ON p.id_producto = d.producto_id
+        LEFT JOIN contenedores_fisicos cf
+               ON cf.id_fisico = e.contenedor_fisico_id
+        LEFT JOIN transportistas t
+               ON t.id_transportista = e.transportista_id
+        LEFT JOIN ciudades c
+               ON c.id_ciudad = e.destino_ciudad_id
+        WHERE {$whereSql}
+        GROUP BY
+            f.id_factura,
+            f.numero_factura,
+            f.pallets_inv,
+            f.proveedor,
+            f.fecha_recibido,
+            f.notas,
+            f.revision_estatus,
+            e.id_envio,
+            e.fecha_envio,
+            e.estatus_envio,
+            e.notas,
+            e.candado,
+            cf.id_fisico,
+            cf.numero_ferro,
+            t.id_transportista,
+            t.nombre,
+            c.id_ciudad,
+            c.nombre_ciudad
+        ORDER BY
+            COALESCE(e.fecha_envio, f.fecha_recibido) DESC,
+            f.id_factura DESC";
 
         if (!$isAll) {
             $sql .= " LIMIT {$offset}, {$perPage}";
         }
 
         $rows = $this->selectAll($sql, $params) ?: [];
+
+        foreach ($rows as &$row) {
+            $row['cajas_totales_factura'] = (int)($row['cajas_totales_factura'] ?? 0);
+            $row['cajas_enviadas'] = (int)($row['cajas_enviadas'] ?? 0);
+            $row['cajas_restantes_factura'] = max(0, (int)($row['cajas_restantes_factura'] ?? 0));
+        }
+        unset($row);
 
         return [
             'rows'     => $rows,

@@ -99,7 +99,7 @@
   function setLoading() {
     tbody.innerHTML = `
       <tr class="text-center">
-        <td colspan="10" class="py-4 text-muted">Cargando...</td>
+        <td colspan="13" class="py-4 text-muted">Cargando...</td>
       </tr>`;
   }
 
@@ -142,9 +142,9 @@
   function renderRows(rows) {
     if (!rows || rows.length === 0) {
       tbody.innerHTML = `
-        <tr class="text-center">
-          <td colspan="10" class="py-4 text-muted">Sin resultados.</td>
-        </tr>`;
+      <tr class="text-center">
+        <td colspan="13" class="py-4 text-muted">Sin resultados.</td>
+      </tr>`;
       if (window.feather) window.feather.replace();
       return;
     }
@@ -162,54 +162,61 @@
       const productosCount = r.productos_count ?? 0;
       const cliente = r.cliente_nombre ?? "—";
 
+      const cajasTotales = parseInt(r.cajas_totales ?? 0, 10);
+      const cajasEnviadas = parseInt(r.cajas_enviadas ?? 0, 10);
+      const cajasRestantes = parseInt(r.cajas_restantes ?? 0, 10);
+
       const idPretty = `FAC-${String(idFactura).padStart(5, "0")}`;
 
       html += `
-        <tr class="text-center">
-          <td class="fw-semibold">${esc(idPretty)}</td>
-          <td>${esc(bodega)}</td>
-          <td>${badgeRevision(revision)}</td>
-          <td>${esc(numeroFactura)}</td>
-          <td>${esc(cliente)}</td>
-          <td>${esc(pallets)}</td>
-          <td class="text-start">${esc(proveedor)}</td>
-          <td>${esc(fechaRec)}</td>
-          <td><span class="badge bg-light text-dark border">${esc(productosCount)}</span></td>
+      <tr class="text-center">
+        <td class="fw-semibold">${esc(idPretty)}</td>
+        <td>${esc(bodega)}</td>
+        <td>${badgeRevision(revision)}</td>
+        <td>${esc(numeroFactura)}</td>
+        <td>${esc(cliente)}</td>
+        <td>${esc(pallets)}</td>
+        <td class="text-start">${esc(proveedor)}</td>
+        <td>${esc(fechaRec)}</td>
+        <td><span class="badge bg-light text-dark border">${esc(productosCount)}</span></td>
+        <td><span class="badge bg-primary text-white pd-2">${esc(cajasTotales)}</span></td>
+        <td><span class="badge bg-info text-white">${esc(cajasEnviadas)}</span></td>
+        <td><span class="badge bg-warning text-dark">${esc(cajasRestantes)}</span></td>
 
-          <td class="text-end">
-            <div class="btn-group btn-group-sm" role="group" aria-label="Acciones">
-              <button type="button"
-                class="btn btn-outline-primary btn-sm btnVerProductosFactura"
-                data-bs-toggle="modal"
-                data-bs-target="#modalProductosFactura"
-                data-invoice="${esc(idFactura)}"
-                data-vendor="${esc(proveedor)}"
-                data-cliente="${esc(cliente)}"
-                data-xdock="${esc(bodega)}"
-                data-recibido="${esc(fechaRec)}"
-                data-revision="${esc(revisionLabel(revision))}"
-                data-pallets_inv="${esc(pallets)}"
-                title="Ver productos">
-                <i data-feather="list"></i>
-              </button>
+        <td class="text-end">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Acciones">
+            <button type="button"
+              class="btn btn-outline-primary btn-sm btnVerProductosFactura"
+              data-bs-toggle="modal"
+              data-bs-target="#modalProductosFactura"
+              data-invoice="${esc(idFactura)}"
+              data-vendor="${esc(proveedor)}"
+              data-cliente="${esc(cliente)}"
+              data-xdock="${esc(bodega)}"
+              data-recibido="${esc(fechaRec)}"
+              data-revision="${esc(revisionLabel(revision))}"
+              data-pallets_inv="${esc(pallets)}"
+              title="Ver productos">
+              <i data-feather="list"></i>
+            </button>
 
-              <button type="button"
-                class="btn btn-outline-warning btnEditarFactura"
-                data-id="${esc(idFactura)}"
-                title="Editar encabezado">
-                <i data-feather="edit"></i>
-              </button>
+            <button type="button"
+              class="btn btn-outline-warning btnEditarFactura"
+              data-id="${esc(idFactura)}"
+              title="Editar encabezado">
+              <i data-feather="edit"></i>
+            </button>
 
-              <button type="button"
-                class="btn btn-outline-danger btnEliminarFactura"
-                data-id="${esc(idFactura)}"
-                title="Eliminar">
-                <i data-feather="trash-2"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
+            <button type="button"
+              class="btn btn-outline-danger btnEliminarFactura"
+              data-id="${esc(idFactura)}"
+              title="Eliminar">
+              <i data-feather="trash-2"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
     });
 
     tbody.innerHTML = html;
