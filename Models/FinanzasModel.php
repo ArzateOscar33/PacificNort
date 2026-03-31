@@ -271,11 +271,11 @@ class FinanzasModel extends Query
             $args[] = $ff;
         }
 
-        // Transportista (ahora sí ligado por factura + contenedor_fisico_id)
-        $transportistaId = (int)($filters['transportista_id'] ?? 0);
-        if ($transportistaId > 0) {
+        // En PARTIDA/DOMESTICO el filtro aplicable es el de caja/ferro
+        $transportistaFerroId = (int)($filters['transportista_ferro_id'] ?? 0);
+        if ($transportistaFerroId > 0) {
             $where .= " AND env.transportista_id = ? ";
-            $args[] = $transportistaId;
+            $args[] = $transportistaFerroId;
         }
 
         // Pagado
@@ -503,10 +503,13 @@ LEFT JOIN (
         COALESCE(cl.nombre, 'Sin cliente')                            AS cliente,
         'No aplica'                                                   AS contenedor,
         COALESCE(cf.numero_ferro, 'No aplica')                        AS ferro_caja,
-        env.transportista_id,
+
+        env.transportista_id                                          AS transportista_id,
         COALESCE(env.transportistas, 'No aplica')                     AS transportista,
-        NULL                                                          AS transportista_ferro_id,
-        'No aplica'                                                   AS transportista_ferro,
+
+        env.transportista_id                                          AS transportista_ferro_id,
+        COALESCE(env.transportistas, 'No aplica')                     AS transportista_ferro,
+
         NULL                                                          AS broker_id,
         'No aplica'                                                   AS broker,
         COALESCE(env.estatuses, 'Sin envío')                          AS estatus_operacion,
@@ -536,6 +539,7 @@ LEFT JOIN (
     LEFT JOIN (
         SELECT
             d.factura_id,
+            e.contenedor_fisico_id,
             MAX(e.transportista_id) AS transportista_id,
             GROUP_CONCAT(
                 DISTINCT COALESCE(t.nombre, 'Sin transportista')
@@ -552,9 +556,10 @@ LEFT JOIN (
         LEFT JOIN transportistas t
             ON t.id_transportista = e.transportista_id
         WHERE d.estatus = 1
-        GROUP BY d.factura_id       -- ← solo por factura, SIN contenedor_fisico_id
+        GROUP BY d.factura_id, e.contenedor_fisico_id
     ) env
-        ON env.factura_id = cop.factura_id   -- ← solo por factura
+        ON env.factura_id = cop.factura_id
+       AND env.contenedor_fisico_id = cop.contenedor_fisico_id
     ";
     }
     // ================================================================
@@ -805,26 +810,32 @@ WHERE st.tipo_operacion_id = 11
 
             if (!isset($groups[$groupKey])) {
                 $groups[$groupKey] = [
-                    'group_key'         => $groupKey,
-                    'origen_tipo'       => (string)($r['origen_tipo'] ?? ''),
-                    'origen_orden'      => (int)($r['origen_orden'] ?? 0),
-                    'origen_id'         => (int)($r['origen_id'] ?? 0),
-                    'referencia'        => (string)($r['referencia'] ?? ''),
-                    'cliente_id'        => (int)($r['id_cliente'] ?? 0),
-                    'cliente'           => (string)($r['cliente'] ?? 'Sin cliente'),
-                    'contenedor'        => (string)($r['contenedor'] ?? 'No aplica'),
-                    'ferro_caja'        => (string)($r['ferro_caja'] ?? 'No aplica'),
+                    'group_key'              => $groupKey,
+                    'origen_tipo'            => (string)($r['origen_tipo'] ?? ''),
+                    'origen_orden'           => (int)($r['origen_orden'] ?? 0),
+                    'origen_id'              => (int)($r['origen_id'] ?? 0),
+                    'referencia'             => (string)($r['referencia'] ?? ''),
+                    'cliente_id'             => (int)($r['id_cliente'] ?? 0),
+                    'cliente'                => (string)($r['cliente'] ?? 'Sin cliente'),
+                    'contenedor'             => (string)($r['contenedor'] ?? 'No aplica'),
+                    'ferro_caja'             => (string)($r['ferro_caja'] ?? 'No aplica'),
+
+                    'transportista_id'       => (int)($r['transportista_id'] ?? 0),
+                    'transportista'          => (string)($r['transportista'] ?? 'No aplica'),
+
                     'transportista_ferro_id' => (int)($r['transportista_ferro_id'] ?? 0),
                     'transportista_ferro'    => (string)($r['transportista_ferro'] ?? 'No aplica'),
-                    'broker'            => (string)($r['broker'] ?? 'No aplica'),
-                    'estatus_operacion' => (string)($r['estatus_operacion'] ?? 'Sin estatus'),
-                    'cita_puerto'       => (string)($r['cita_puerto'] ?? 'No aplica'),
-                    'isf'               => (string)($r['isf'] ?? 'No'),
-                    'fecha_base'        => (string)($r['fecha_base'] ?? ''),
-                    'total'             => 0.0,
-                    'pendiente'         => 0.0,
-                    'pagado_total'      => 0.0,
-                    'categorias'        => [],
+
+                    'broker_id'              => isset($r['broker_id']) ? (int)$r['broker_id'] : null,
+                    'broker'                 => (string)($r['broker'] ?? 'No aplica'),
+                    'estatus_operacion'      => (string)($r['estatus_operacion'] ?? 'Sin estatus'),
+                    'cita_puerto'            => (string)($r['cita_puerto'] ?? 'No aplica'),
+                    'isf'                    => (string)($r['isf'] ?? 'No'),
+                    'fecha_base'             => (string)($r['fecha_base'] ?? ''),
+                    'total'                  => 0.0,
+                    'pendiente'              => 0.0,
+                    'pagado_total'           => 0.0,
+                    'categorias'             => [],
                 ];
             }
 

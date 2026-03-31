@@ -365,7 +365,6 @@
                 <th>Destino</th>
                 <th>Fecha salida</th>
                 <th>Ubicacion Actual</th>
-                <th> Transportista Caja/Ferro</th>
 
 
                 <th class="text-end">Acciones</th>

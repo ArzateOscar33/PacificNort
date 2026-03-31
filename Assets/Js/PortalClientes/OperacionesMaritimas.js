@@ -339,7 +339,7 @@
       const peso = r.peso_total ?? "";
       const medida = r.medida ?? "";
       const mercancia = r.mercancia ?? "";
-      const transportista = r.transportista ?? "";
+      //const transportista = r.transportista ?? "";
       const brokers = r.brokers ?? "";
       const cita = r.cita_puerto ?? "";
 
@@ -363,7 +363,7 @@
         <td>${asig.destinos}</td>
         <td>${asig.fechas}</td>
         <td>${asig.ubicaciones}</td>
-        <td>${asig.transportistas}</td>
+       <!-- <td>${asig.transportistas}</td> -->
 
         <td class="text-end">
           <div class="btn-group btn-group-sm" role="group">
