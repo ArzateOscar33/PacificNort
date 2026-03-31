@@ -1,6 +1,9 @@
 <?php
+
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida extends Controller
 {
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -13,6 +16,7 @@ class Operaciones_por_partida extends Controller
         // Solo sin rol cliente
         //$this->requireRoles([1, 11, 2]);
         $this->requireRoles([1, 11, 2, 15]);
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
     }
 
     public function index()
@@ -26,6 +30,29 @@ class Operaciones_por_partida extends Controller
         // Si en tu vista el filtro de bodegas se llena con PHP:
         // $data['bodegas'] = $this->model->getBodegasActivas();  (opcional, después)
         $this->views->getView('admin/Operaciones_por_partida', "ver", $data);
+    }
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
+
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA] ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -244,6 +271,19 @@ class Operaciones_por_partida extends Controller
             // Devuelve la factura recién creada
             $idFactura = (int)$resp['id_factura'];
             $factura   = $this->model->getFacturaByIdEditar($idFactura);
+            //registra en bitacora
+            $this->registrarBitacoraPartida(
+                'op_partida_facturas',
+                'crear',
+                'op_partida_facturas',
+                $idFactura,
+                $this->bitacoraOpPartida->desc('factura', 'creada', [
+                    'factura_id' => $idFactura,
+                    'numero_factura' => $numeroFactura,
+                    'cliente_id' => $clienteId,
+                    'bodega_id' => $bodegaId
+                ])
+            );
 
             echo json_encode([
                 'ok'         => true,
@@ -375,6 +415,20 @@ class Operaciones_por_partida extends Controller
             // Devuelve la factura actualizada
             $factura = $this->model->getFacturaByIdEditar($idFactura);
 
+            //registra en bitacora
+            $this->registrarBitacoraPartida(
+                'op_partida_facturas',
+                'actualizacion',
+                'op_partida_facturas',
+                $idFactura,
+                $this->bitacoraOpPartida->desc('factura', 'actualizada', [
+                    'factura_id' => $idFactura,
+                    'numero_factura' => $numeroFactura,
+                    'cliente_id' => $clienteId,
+                    'bodega_id' => $bodegaId
+                ])
+            );
+
             echo json_encode([
                 'ok' => true,
                 'msg' => $resp['msg'] ?? 'Factura actualizada correctamente.',
@@ -429,7 +483,16 @@ class Operaciones_por_partida extends Controller
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
-
+            //registra en bitacora
+            $this->registrarBitacoraPartida(
+                'op_partida_facturas',
+                'baja_logica',
+                'op_partida_facturas',
+                $idFactura,
+                $this->bitacoraOpPartida->desc('factura', 'eliminada', [
+                    'factura_id' => $idFactura
+                ])
+            );
             echo json_encode([
                 'ok'  => true,
                 'msg' => $resp['msg'] ?? 'Factura dada de baja correctamente.',
@@ -524,6 +587,20 @@ class Operaciones_por_partida extends Controller
         ]);
 
         if ($id > 0) {
+
+            $this->registrarBitacoraPartida(
+                'op_partida_productos',
+                'crear',
+                'op_partida_productos',
+                $id,
+                $this->bitacoraOpPartida->desc('producto', 'creado', [
+                    'producto_id' => $id,
+                    'factura_id' => $factura_id,
+                    'upc' => $upc,
+                    'item' => $item
+                ])
+            );
+
             echo json_encode(["ok" => true, "msg" => "Producto registrado", "id" => $id]);
         } else {
             echo json_encode(["ok" => false, "msg" => "No se pudo registrar el producto"]);
@@ -625,6 +702,20 @@ class Operaciones_por_partida extends Controller
                 'piezas'      => $piezas,
                 'observaciones' => $observaciones
             ]);
+            if (!empty($resp['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_productos',
+                    'actualizacion',
+                    'op_partida_productos',
+                    $idProducto,
+                    $this->bitacoraOpPartida->desc('producto', 'actualizado', [
+                        'producto_id' => $idProducto,
+                        'factura_id' => $facturaId,
+                        'upc' => $upc,
+                        'item' => $item
+                    ])
+                );
+            }
 
             echo json_encode($resp, JSON_UNESCAPED_UNICODE);
             exit;
@@ -670,6 +761,20 @@ class Operaciones_por_partida extends Controller
             // Aquí delegas toda la lógica (insert vs update) al MODEL
             $resp = $this->model->guardarProductosFactura($facturaId, $items);
 
+            //registra en bitacora
+            if (!empty($resp['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_productos',
+                    'actualizacion',
+                    'op_partida_productos',
+                    $facturaId,
+                    $this->bitacoraOpPartida->desc('productos', 'guardados', [
+                        'factura_id' => $facturaId,
+                        'insertados' => $resp['insertados'] ?? 0,
+                        'actualizados' => $resp['actualizados'] ?? 0
+                    ])
+                );
+            }
             echo json_encode($resp, JSON_UNESCAPED_UNICODE);
             exit;
         } catch (Throwable $e) {
@@ -700,6 +805,17 @@ class Operaciones_por_partida extends Controller
 
             // (Opcional) devolver totales ya actualizados para refrescar UI sin relistar
             if (!empty($resp['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_productos',
+                    'baja_logica',
+                    'op_partida_productos',
+                    $idProducto,
+                    $this->bitacoraOpPartida->desc('producto', 'eliminado', [
+                        'producto_id' => $idProducto,
+                        'factura_id' => $facturaId
+                    ])
+                );
+
                 $resp['totals'] = $this->model->getTotalesProductosFactura($facturaId);
             }
 
@@ -1036,7 +1152,17 @@ class Operaciones_por_partida extends Controller
                 ]);
                 return;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_documentos',
+                'crear',
+                'op_partida_documentos',
+                $factura_id,
+                $this->bitacoraOpPartida->desc('documentos', 'subidos', [
+                    'factura_id' => $factura_id,
+                    'insertados' => $insertados,
+                    'fallidos' => $fallidos
+                ])
+            );
             echo json_encode([
                 'status'     => 'success',
                 'msg'        => 'Documento(s) subido(s) correctamente',
@@ -1154,7 +1280,17 @@ class Operaciones_por_partida extends Controller
                     }
                 }
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_documentos',
+                'baja_logica',
+                'op_partida_documentos',
+                $idDocumento,
+                $this->bitacoraOpPartida->desc('documento', 'eliminado', [
+                    'documento_id' => $idDocumento,
+                    'factura_id' => (int)($doc['factura_id'] ?? 0),
+                    'nombre_archivo' => (string)($doc['nombre_archivo'] ?? '')
+                ])
+            );
             echo json_encode([
                 'status'        => 'success',
                 'msg'           => 'Documento eliminado correctamente.',
@@ -1293,7 +1429,18 @@ class Operaciones_por_partida extends Controller
                 echo json_encode(['ok' => false, 'msg' => 'No se pudo registrar la foto en la base de datos.'], JSON_UNESCAPED_UNICODE);
                 exit;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_evidencias',
+                'subir_imagen',
+                'op_partida_producto_fotos',
+                $idFoto,
+                $this->bitacoraOpPartida->desc('foto_producto', 'subida', [
+                    'foto_id' => $idFoto,
+                    'producto_id' => $productoId,
+                    'factura_id' => $facturaId,
+                    'orden' => $orden
+                ])
+            );
             echo json_encode([
                 'ok'          => true,
                 'msg'         => 'Foto subida correctamente.',
@@ -1353,7 +1500,18 @@ class Operaciones_por_partida extends Controller
                 echo json_encode(['ok' => false, 'msg' => 'No se pudo eliminar el registro en la base de datos.'], JSON_UNESCAPED_UNICODE);
                 exit;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_evidencias',
+                'eliminar_imagen',
+                'op_partida_producto_fotos',
+                $idFoto,
+                $this->bitacoraOpPartida->desc('foto_producto', 'eliminada', [
+                    'foto_id' => $idFoto,
+                    'producto_id' => (int)$foto['producto_id'],
+                    'factura_id' => (int)$foto['factura_id'],
+                    'orden' => (int)$foto['orden']
+                ])
+            );
             echo json_encode([
                 'ok'         => true,
                 'msg'        => 'Foto eliminada correctamente.',

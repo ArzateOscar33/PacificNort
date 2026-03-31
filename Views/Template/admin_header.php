@@ -373,16 +373,24 @@
                             </ul>
 
                         </li>
+                        <!-- Auditoria -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="book"></i>
+                                <span class="hide-menu">Auditoria</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>bitacora" class="sidebar-link"><i data-feather="clipboard"></i><span
+                                            class="hide-menu">Bitacora Operaciones</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>BitacoraOpPartida" class="sidebar-link"><i data-feather="book-open"></i><span
+                                            class="hide-menu">Bitacora Operaciones Por Partida</span></a></li>
+                            </ul>
+                        </li>
 
-                        <!-- AUDITORÍA -->
-                        <?php if ($_SESSION['rol_usuario'] == 1): ?>
-                            <li class="sidebar-item">
-                                <a class="sidebar-link" href="<?= BASE_URL ?>bitacora">
-                                    <i data-feather="clipboard" class="feather-icon"></i>
-                                    <span class="hide-menu">Bitácora</span>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                    </ul>
+                    </li>
+
+
 
                     </ul>
                 </nav>

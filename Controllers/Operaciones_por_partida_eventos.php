@@ -1,4 +1,5 @@
 <?php
+require_once "Models/BitacoraOpPartidaModel.php";
 require_once "Models/OperacionesLogModel.php";
 
 class Operaciones_por_partida_eventos extends Controller
@@ -6,6 +7,7 @@ class Operaciones_por_partida_eventos extends Controller
     /** @var OperacionesLogModel */
     private $opLog;
 
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -20,12 +22,35 @@ class Operaciones_por_partida_eventos extends Controller
         }
 
         $this->opLog = new OperacionesLogModel();
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
 
         header_remove('X-Powered-By');
         // Solo usuarios internos
         $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
     }
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
 
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA EVENTOS] ' . $e->getMessage());
+            return false;
+        }
+    }
     /* ======================
        VISTA
        ====================== */
@@ -310,8 +335,19 @@ class Operaciones_por_partida_eventos extends Controller
                 'tipo_evt'  => $evento['tipo_evento_id'],
                 'fecha'     => $evento['fecha']
             ]);
-
-            //$this->logOp($evento['operacion_ferro_id'], 'creacion', $desc);
+            $this->registrarBitacoraPartida(
+                'op_partida_eventos',
+                'crear',
+                'operaciones_partida_eventos',
+                (int)$id,
+                $this->bitacoraOpPartida->desc('evento', 'creado', [
+                    'id_evento' => (int)$id,
+                    'envio_id' => (int)$evento['operacion_ferro_id'],
+                    'contenedor_fisico_id' => (int)$evento['contenedor_fisico_id'],
+                    'tipo_evento_id' => (int)$evento['tipo_evento_id'],
+                    'fecha' => (string)$evento['fecha']
+                ])
+            );
 
             echo json_encode([
                 'status' => 'success',
@@ -399,8 +435,20 @@ class Operaciones_por_partida_eventos extends Controller
                     'fecha'     => $evento['fecha']
                 ]);
 
-                $this->logOp($evento['operacion_ferro_id'], 'actualizacion', $desc);
-
+                // $this->logOp($evento['operacion_ferro_id'], 'actualizacion', $desc);
+                $this->registrarBitacoraPartida(
+                    'op_partida_eventos',
+                    'actualizacion',
+                    'operaciones_partida_eventos',
+                    (int)$evento['id_evento'],
+                    $this->bitacoraOpPartida->desc('evento', 'actualizado', [
+                        'id_evento' => (int)$evento['id_evento'],
+                        'envio_id' => (int)$evento['operacion_ferro_id'],
+                        'contenedor_fisico_id' => (int)$evento['contenedor_fisico_id'],
+                        'tipo_evento_id' => (int)$evento['tipo_evento_id'],
+                        'fecha' => (string)$evento['fecha']
+                    ])
+                );
                 echo json_encode([
                     'status' => 'success',
                     'msg'    => 'Evento actualizado'
@@ -435,7 +483,17 @@ class Operaciones_por_partida_eventos extends Controller
 
         try {
             $ok = $this->model->eliminar($id);
-
+            if ($ok) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_eventos',
+                    'baja_logica',
+                    'operaciones_partida_eventos',
+                    (int)$id,
+                    $this->bitacoraOpPartida->desc('evento', 'eliminado', [
+                        'id_evento' => (int)$id
+                    ])
+                );
+            }
             echo json_encode([
                 'status' => $ok ? 'success' : 'error',
                 'msg'    => $ok ? 'Evento eliminado' : 'No se pudo eliminar'

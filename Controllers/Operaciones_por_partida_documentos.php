@@ -1,6 +1,8 @@
 <?php
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida_documentos extends Controller
 {
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -12,9 +14,32 @@ class Operaciones_por_partida_documentos extends Controller
         }
         // Solo sin rol cliente
         $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
     }
 
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
 
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA DOCUMENTOS] ' . $e->getMessage());
+            return false;
+        }
+    }
 
     //DOCS
     public function sugerirFacturasDocs()
@@ -339,7 +364,19 @@ class Operaciones_por_partida_documentos extends Controller
                 ]);
                 return;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_documentos',
+                'crear',
+                'op_partida_documentos',
+                $factura_id,
+                $this->bitacoraOpPartida->desc('documentos', 'subidos', [
+                    'factura_id' => $factura_id,
+                    'tipo_documento_id' => $tipo_doc_id,
+                    'insertados' => $insertados,
+                    'fallidos' => $fallidos,
+                    'factura' => $numFactura
+                ])
+            );
             echo json_encode([
                 'status'     => 'success',
                 'msg'        => 'Documento(s) subido(s) correctamente',
@@ -442,7 +479,18 @@ class Operaciones_por_partida_documentos extends Controller
                 echo json_encode(['status' => 'error', 'msg' => 'No se pudo eliminar el registro en BD.'], JSON_UNESCAPED_UNICODE);
                 exit;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_documentos',
+                'baja_logica',
+                'op_partida_documentos',
+                $idDocumento,
+                $this->bitacoraOpPartida->desc('documento', 'eliminado', [
+                    'documento_id' => $idDocumento,
+                    'factura_id' => (int)($doc['factura_id'] ?? 0),
+                    'tipo_documento_id' => (int)($doc['tipo_documento_id'] ?? 0),
+                    'nombre_archivo' => (string)($doc['nombre_archivo'] ?? '')
+                ])
+            );
             // 6) Si ya no hay archivos en la carpeta de la factura, eliminar carpeta
             //    Carpeta = dirname del archivo
             $folderAbs = dirname($absFile);

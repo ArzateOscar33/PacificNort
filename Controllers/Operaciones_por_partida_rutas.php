@@ -1,6 +1,8 @@
 <?php
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida_rutas extends Controller
 {
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -12,8 +14,31 @@ class Operaciones_por_partida_rutas extends Controller
         }
         // Solo sin rol cliente
         $this->requireRoles([1, 11, 2]);
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
     }
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
 
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA RUTAS] ' . $e->getMessage());
+            return false;
+        }
+    }
     // ===================== RUTAS: SUGERENCIAS FACTURAS =====================
     public function sugerirFacturasRutas()
     {
@@ -272,6 +297,19 @@ class Operaciones_por_partida_rutas extends Controller
             }
 
             $res = $this->model->guardarEnviosProductoUpsert($facturaId, $productoId, $norm);
+            if (!empty($res['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_rutas',
+                    'actualizacion',
+                    'operaciones_partida_envios',
+                    $productoId,
+                    $this->bitacoraOpPartida->desc('rutas_envio', 'guardadas', [
+                        'factura_id' => $facturaId,
+                        'producto_id' => $productoId,
+                        'envios_procesados' => count($norm)
+                    ])
+                );
+            }
             echo json_encode($res, JSON_UNESCAPED_UNICODE);
             exit;
         } catch (Throwable $e) {
@@ -301,6 +339,19 @@ class Operaciones_por_partida_rutas extends Controller
             $productoId = (int)($p['producto_id'] ?? 0);
 
             $res = $this->model->bajaEnvio($envioId, $facturaId, $productoId);
+            if (!empty($res['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_rutas',
+                    'baja_logica',
+                    'operaciones_partida_envios',
+                    $envioId,
+                    $this->bitacoraOpPartida->desc('ruta_envio', 'eliminada', [
+                        'envio_id' => $envioId,
+                        'factura_id' => $facturaId,
+                        'producto_id' => $productoId
+                    ])
+                );
+            }
             echo json_encode($res, JSON_UNESCAPED_UNICODE);
             exit;
         } catch (Throwable $e) {

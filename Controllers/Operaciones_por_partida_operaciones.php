@@ -1,6 +1,8 @@
 <?php
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida_operaciones extends Controller
 {
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -12,10 +14,33 @@ class Operaciones_por_partida_operaciones extends Controller
         }
         // Solo sin rol cliente
         $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
     }
 
 
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
 
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA OPERACIONES] ' . $e->getMessage());
+            return false;
+        }
+    }
     /**
      * Endpoint JSON para listar facturas
      * URL ejemplo:
@@ -226,7 +251,18 @@ class Operaciones_por_partida_operaciones extends Controller
             // (Opcional) traer la factura recién creada para refrescar UI
             $idFactura = (int)$resp['id_factura'];
             $factura   = $this->model->getFacturaById($idFactura);
-
+            $this->registrarBitacoraPartida(
+                'op_partida_facturas',
+                'crear',
+                'op_partida_facturas',
+                $idFactura,
+                $this->bitacoraOpPartida->desc('factura', 'creada', [
+                    'factura_id' => $idFactura,
+                    'numero_factura' => $numeroFactura,
+                    'cliente_id' => $clienteId,
+                    'bodega_id' => $bodegaId
+                ])
+            );
             echo json_encode([
                 'ok'        => true,
                 'msg'       => $resp['msg'] ?? 'Factura registrada correctamente.',
@@ -341,7 +377,18 @@ class Operaciones_por_partida_operaciones extends Controller
 
             // Opcional: devolver factura actualizada para refrescar tabla sin recargar
             $factura = $this->model->getFacturaById($idFactura);
-
+            $this->registrarBitacoraPartida(
+                'op_partida_facturas',
+                'actualizacion',
+                'op_partida_facturas',
+                $idFactura,
+                $this->bitacoraOpPartida->desc('factura', 'actualizada', [
+                    'factura_id' => $idFactura,
+                    'numero_factura' => $numeroFactura,
+                    'cliente_id' => $clienteId,
+                    'bodega_id' => $bodegaId
+                ])
+            );
             echo json_encode([
                 'ok' => true,
                 'msg' => $resp['msg'] ?? 'Factura actualizada correctamente.',
@@ -396,7 +443,15 @@ class Operaciones_por_partida_operaciones extends Controller
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_facturas',
+                'baja_logica',
+                'op_partida_facturas',
+                $idFactura,
+                $this->bitacoraOpPartida->desc('factura', 'eliminada', [
+                    'factura_id' => $idFactura
+                ])
+            );
             echo json_encode([
                 'ok'  => true,
                 'msg' => $resp['msg'] ?? 'Factura dada de baja correctamente.',
@@ -489,6 +544,18 @@ class Operaciones_por_partida_operaciones extends Controller
         ]);
 
         if ($id > 0) {
+            $this->registrarBitacoraPartida(
+                'op_partida_productos',
+                'crear',
+                'op_partida_productos',
+                $id,
+                $this->bitacoraOpPartida->desc('producto', 'creado', [
+                    'producto_id' => $id,
+                    'factura_id' => $factura_id,
+                    'upc' => $upc,
+                    'item' => $item
+                ])
+            );
             echo json_encode(["ok" => true, "msg" => "Producto registrado", "id" => $id]);
         } else {
             echo json_encode(["ok" => false, "msg" => "No se pudo registrar el producto"]);
@@ -588,7 +655,20 @@ class Operaciones_por_partida_operaciones extends Controller
                 'cajas'       => $cajas,
                 'piezas'      => $piezas
             ]);
-
+            if (!empty($resp['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_productos',
+                    'actualizacion',
+                    'op_partida_productos',
+                    $idProducto,
+                    $this->bitacoraOpPartida->desc('producto', 'actualizado', [
+                        'producto_id' => $idProducto,
+                        'factura_id' => $facturaId,
+                        'upc' => $upc,
+                        'item' => $item
+                    ])
+                );
+            }
             echo json_encode($resp, JSON_UNESCAPED_UNICODE);
             exit;
         } catch (Throwable $e) {
@@ -627,7 +707,19 @@ class Operaciones_por_partida_operaciones extends Controller
 
             // Aquí delegas toda la lógica (insert vs update) al MODEL
             $resp = $this->model->guardarProductosFactura($facturaId, $items);
-
+            if (!empty($resp['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_productos',
+                    'actualizacion',
+                    'op_partida_productos',
+                    $facturaId,
+                    $this->bitacoraOpPartida->desc('productos', 'guardados', [
+                        'factura_id' => $facturaId,
+                        'insertados' => $resp['insertados'] ?? 0,
+                        'actualizados' => $resp['actualizados'] ?? 0
+                    ])
+                );
+            }
             echo json_encode($resp, JSON_UNESCAPED_UNICODE);
             exit;
         } catch (Throwable $e) {
@@ -658,6 +750,16 @@ class Operaciones_por_partida_operaciones extends Controller
 
             // (Opcional) devolver totales ya actualizados para refrescar UI sin relistar
             if (!empty($resp['ok'])) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_productos',
+                    'baja_logica',
+                    'op_partida_productos',
+                    $idProducto,
+                    $this->bitacoraOpPartida->desc('producto', 'eliminado', [
+                        'producto_id' => $idProducto,
+                        'factura_id' => $facturaId
+                    ])
+                );
                 $resp['totals'] = $this->model->getTotalesProductosFactura($facturaId);
             }
 

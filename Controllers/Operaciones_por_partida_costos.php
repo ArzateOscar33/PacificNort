@@ -1,7 +1,8 @@
 <?php
-
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida_costos extends Controller
 {
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -12,8 +13,31 @@ class Operaciones_por_partida_costos extends Controller
 
         // Solo usuarios internos, no cliente
         $this->requireRoles([1, 11, 2]);
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
     }
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
 
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA COSTOS] ' . $e->getMessage());
+            return false;
+        }
+    }
     /**
      * GET /Operaciones_por_partida_costos/listarPaginado
      * Query:
@@ -353,7 +377,20 @@ class Operaciones_por_partida_costos extends Controller
                     ], JSON_UNESCAPED_UNICODE);
                     return;
                 }
-
+                $this->registrarBitacoraPartida(
+                    'op_partida_costos',
+                    'actualizacion',
+                    'costos_operacion_partida',
+                    $rowId,
+                    $this->bitacoraOpPartida->desc('costo', 'actualizado', [
+                        'costo_id' => $rowId,
+                        'factura_id' => $facturaIdEdit,
+                        'contenedor_fisico_id' => $contenedorFisicoId,
+                        'tipo_movimiento_id' => $tipoId,
+                        'monto' => $monto,
+                        'pagado' => $pagado
+                    ])
+                );
                 echo json_encode([
                     'status'  => 'success',
                     'message' => 'Actualizado',
@@ -414,6 +451,7 @@ class Operaciones_por_partida_costos extends Controller
                 'pagado'               => $pagado,
             ]);
 
+
             if ($newId <= 0) {
                 echo json_encode([
                     'status'  => 'error',
@@ -421,7 +459,20 @@ class Operaciones_por_partida_costos extends Controller
                 ], JSON_UNESCAPED_UNICODE);
                 return;
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_costos',
+                'crear',
+                'costos_operacion_partida',
+                $newId,
+                $this->bitacoraOpPartida->desc('costo', 'creado', [
+                    'costo_id' => $newId,
+                    'factura_id' => $facturaId,
+                    'contenedor_fisico_id' => $contenedorFisicoId,
+                    'tipo_movimiento_id' => $tipoId,
+                    'monto' => $monto,
+                    'pagado' => $pagado
+                ])
+            );
             echo json_encode([
                 'status'  => 'success',
                 'message' => 'Creado',
@@ -504,7 +555,21 @@ class Operaciones_por_partida_costos extends Controller
             }
 
             $ok = $this->model->desactivarCostoOperacionCombinado($id);
-
+            if ($ok) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_costos',
+                    'baja_logica',
+                    'costos_operacion_partida',
+                    $id,
+                    $this->bitacoraOpPartida->desc('costo', 'eliminado', [
+                        'costo_id' => $id,
+                        'factura_id' => (int)($row['factura_id'] ?? 0),
+                        'contenedor_fisico_id' => (int)($row['contenedor_fisico_id'] ?? 0),
+                        'tipo_movimiento_id' => (int)($row['tipo_movimiento_id'] ?? 0),
+                        'monto' => (float)($row['monto'] ?? 0)
+                    ])
+                );
+            }
             echo json_encode(
                 $ok
                     ? ['status' => 'success', 'message' => 'Desactivado']
@@ -548,7 +613,21 @@ class Operaciones_por_partida_costos extends Controller
             }
 
             $ok = $this->model->reactivarCostoOperacionCombinado($id);
-
+            if ($ok) {
+                $this->registrarBitacoraPartida(
+                    'op_partida_costos',
+                    'reactivacion',
+                    'costos_operacion_partida',
+                    $id,
+                    $this->bitacoraOpPartida->desc('costo', 'reactivado', [
+                        'costo_id' => $id,
+                        'factura_id' => (int)($row['factura_id'] ?? 0),
+                        'contenedor_fisico_id' => (int)($row['contenedor_fisico_id'] ?? 0),
+                        'tipo_movimiento_id' => (int)($row['tipo_movimiento_id'] ?? 0),
+                        'monto' => (float)($row['monto'] ?? 0)
+                    ])
+                );
+            }
             echo json_encode(
                 $ok
                     ? ['status' => 'success', 'message' => 'Reactivado']

@@ -1,9 +1,10 @@
 <?php
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida_envios extends Controller
 {
     private const IMG_MIN = 3;
     private const IMG_MAX = 5;
-
+    protected $bitacoraOpPartida;
     public function __construct()
     {
         parent::__construct();
@@ -16,8 +17,32 @@ class Operaciones_por_partida_envios extends Controller
 
         // Solo usuarios internos
         $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
     }
 
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
+
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA ENVIOS] ' . $e->getMessage());
+            return false;
+        }
+    }
     /* =========================================================
        VISTA
        ========================================================= */
@@ -754,7 +779,21 @@ class Operaciones_por_partida_envios extends Controller
                     'errores_imagenes' => $resultadoImagenes['errores']
                 ], 400);
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_envios',
+                'crear',
+                'operaciones_partida_envios',
+                (int)$envioId,
+                $this->bitacoraOpPartida->desc('envio', 'creado', [
+                    'envio_id' => (int)$envioId,
+                    'contenedor_fisico_id' => (int)$contenedorFisicoId,
+                    'transportista_id' => (int)$transportistaId,
+                    'fecha_envio' => $fechaEnvio,
+                    'estatus_envio' => $estatusEnvio,
+                    'detalles_ok' => (int)$insertados,
+                    'imagenes_ok' => count($resultadoImagenes['guardadas'])
+                ])
+            );
             $this->jsonResponse([
                 'ok'               => true,
                 'msg'              => 'Envío registrado correctamente.',
@@ -1053,7 +1092,20 @@ class Operaciones_por_partida_envios extends Controller
                     'errores_imagenes' => $resultadoImagenes['errores']
                 ], 400);
             }
-
+            $this->registrarBitacoraPartida(
+                'op_partida_envios',
+                'actualizacion',
+                'operaciones_partida_envios',
+                (int)$envioId,
+                $this->bitacoraOpPartida->desc('envio', 'actualizado', [
+                    'envio_id' => (int)$envioId,
+                    'fecha_envio' => $fechaEnvio,
+                    'estatus_envio' => $estatusEnvio,
+                    'imagenes_eliminadas' => (int)$imagenesDesactivadas,
+                    'imagenes_agregadas' => count($resultadoImagenes['guardadas']),
+                    'imagenes_finales' => (int)$conteoFinal
+                ])
+            );
             $this->jsonResponse([
                 'ok'                   => true,
                 'msg'                  => 'Envío actualizado correctamente.',
