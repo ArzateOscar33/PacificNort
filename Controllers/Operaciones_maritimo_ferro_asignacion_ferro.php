@@ -115,4 +115,37 @@ class Operaciones_maritimo_ferro_asignacion_ferro extends Controller
             echo json_encode(['status' => 'error', 'msg' => 'Error interno'], JSON_UNESCAPED_UNICODE);
         }
     }
+
+    public function obtenerResumenBultosOperacion()
+    {
+        try {
+            $operacionId = isset($_POST['operacion_id'])
+                ? (int)$_POST['operacion_id']
+                : (int)($_GET['operacion_id'] ?? 0);
+
+            if ($operacionId <= 0) {
+                echo json_encode([
+                    'status' => 'error',
+                    'msg' => 'operacion_id requerido',
+                    'data' => null
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $r = $this->model->obtenerResumenBultosOperacion($operacionId);
+
+            echo json_encode([
+                'status' => !empty($r['ok']) ? 'success' : 'error',
+                'msg'    => $r['msg'] ?? '',
+                'data'   => $r
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            error_log("obtenerResumenBultosOperacion error: " . $e->getMessage());
+            echo json_encode([
+                'status' => 'error',
+                'msg' => 'Error interno',
+                'data' => null
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
 }

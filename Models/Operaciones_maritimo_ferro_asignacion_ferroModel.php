@@ -662,4 +662,47 @@ class Operaciones_maritimo_ferro_asignacion_ferroModel extends Query
         $row = $this->select($sql, [$operacionId]);
         return ($row && !empty($row['numero_ferro'])) ? $row : null;
     }
+
+    public function obtenerResumenBultosOperacion(int $operacionId): array
+    {
+        $cmo = $this->obtenerCMOUnicoPorOperacion($operacionId);
+
+        if (!$cmo || empty($cmo['id'])) {
+            return [
+                'ok' => false,
+                'msg' => 'La operación no tiene contenedor marítimo asignado.',
+                'operacion_id' => $operacionId,
+                'cmo_id' => 0,
+                'bultos_totales' => 0,
+                'bultos_asignados' => 0,
+                'bultos_restantes' => 0,
+            ];
+        }
+
+        $cmoId = (int)$cmo['id'];
+        $bultosTotales = (int)($cmo['bultos'] ?? 0);
+
+        $row = $this->select(
+            "SELECT COALESCE(SUM(cmf.bultos_asignados), 0) AS asignados
+         FROM contenedor_maritimo_ferro cmf
+         INNER JOIN contenedores_maritimos_operacion cmo
+            ON cmo.id = cmf.cont_maritimo_operacion_id
+         WHERE cmo.operacion_id = ?
+           AND cmf.estatus = 1",
+            [$operacionId]
+        );
+
+        $bultosAsignados = (int)($row['asignados'] ?? 0);
+        $bultosRestantes = max(0, $bultosTotales - $bultosAsignados);
+
+        return [
+            'ok' => true,
+            'msg' => 'Resumen obtenido correctamente.',
+            'operacion_id' => $operacionId,
+            'cmo_id' => $cmoId,
+            'bultos_totales' => $bultosTotales,
+            'bultos_asignados' => $bultosAsignados,
+            'bultos_restantes' => $bultosRestantes,
+        ];
+    }
 }

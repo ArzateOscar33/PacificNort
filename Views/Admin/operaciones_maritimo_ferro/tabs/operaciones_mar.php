@@ -682,7 +682,13 @@
           <i data-feather="truck"></i>
           <span>Asignar Caja/Ferro</span>
           <span class="badge bg-light text-dark ms-2" id="asigFerro_badgeCodigo">—</span>
+
+
         </h5>
+        <div class="d-flex align-items-center gap-2 ms-3">
+          <label class="mb-0 small">Bultos restantes:</label>
+          <span class="badge bg-primary" id="bultosRestantesOperacion">—</span>
+        </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 

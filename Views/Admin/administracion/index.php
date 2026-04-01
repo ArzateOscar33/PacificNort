@@ -219,7 +219,7 @@
         </div>
         <i data-feather="clock" class="kpi-icon"></i>
       </div>
-      <div class="small subtle mt-2">Ventana configurable</div>
+      <div class="small subtle mt-2">Contenedores próximos a arribar</div>
     </div>
 
   </div>

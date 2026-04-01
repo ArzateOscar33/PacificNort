@@ -16,7 +16,9 @@
   const EP_REGISTRAR =
     BASE_URL +
     "Operaciones_maritimo_ferro_asignacion_ferro/registrarVinculacion";
-
+  const EP_RESUMEN_BULTOS =
+    BASE_URL +
+    "Operaciones_maritimo_ferro_asignacion_ferro/obtenerResumenBultosOperacion";
   // === Refs modal (IDs reales de tu HTML) ===
   const modalEl = document.getElementById("modalAsignarFerroCaja");
   if (!modalEl) return;
@@ -49,7 +51,13 @@
 
   const btnVincular = document.getElementById("asigFerro_btnVincular");
   const btnLimpiar = document.getElementById("asigFerro_btnLimpiar");
+  const elBultosRestantesOperacion = document.getElementById(
+    "bultosRestantesOperacion",
+  );
 
+  let currentBultosRestantes = 0;
+  let currentBultosTotales = 0;
+  let currentBultosAsignados = 0;
   let currentOperacionId = 0;
   let currentOperacionCodigo = "";
 
@@ -189,6 +197,81 @@
   function renderEmptyRight(msg) {
     if (!tbOpsEnFerro) return;
     tbOpsEnFerro.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">${msg || "Selecciona un Ferro/Caja de la lista izquierda."}</td></tr>`;
+  }
+
+  function setBultosRestantesBadge(restantes, asignados, totales) {
+    if (!elBultosRestantesOperacion) return;
+
+    const r = Number(restantes || 0);
+    const a = Number(asignados || 0);
+    const t = Number(totales || 0);
+    currentBultosRestantes = r;
+    currentBultosAsignados = a;
+    currentBultosTotales = t;
+
+    elBultosRestantesOperacion.textContent = `${r}`;
+
+    elBultosRestantesOperacion.classList.remove(
+      "bg-primary",
+      "bg-success",
+      "bg-warning",
+      "bg-danger",
+    );
+
+    if (r <= 0) {
+      elBultosRestantesOperacion.classList.add("bg-danger");
+    } else if (r < t) {
+      elBultosRestantesOperacion.classList.add("bg-warning");
+    } else {
+      elBultosRestantesOperacion.classList.add("bg-primary");
+    }
+
+    elBultosRestantesOperacion.title = `Totales: ${t} | Asignados: ${a} | Restantes: ${r}`;
+  }
+
+  function resetBultosRestantesBadge() {
+    currentBultosRestantes = 0;
+    currentBultosTotales = 0;
+    currentBultosAsignados = 0;
+
+    if (!elBultosRestantesOperacion) return;
+    elBultosRestantesOperacion.textContent = "—";
+    elBultosRestantesOperacion.classList.remove(
+      "bg-success",
+      "bg-warning",
+      "bg-danger",
+    );
+    elBultosRestantesOperacion.classList.add("bg-primary");
+    elBultosRestantesOperacion.removeAttribute("title");
+  }
+  function cargarResumenBultosOperacion(operacionId) {
+    if (!operacionId) {
+      resetBultosRestantesBadge();
+      return;
+    }
+
+    const url =
+      EP_RESUMEN_BULTOS + "?operacion_id=" + encodeURIComponent(operacionId);
+
+    xhrGET(url, (status, res, raw) => {
+      if (status !== 200 || !res) {
+        console.error("obtenerResumenBultosOperacion error:", raw);
+        resetBultosRestantesBadge();
+        return;
+      }
+
+      if (res.status !== "success" || !res.data) {
+        resetBultosRestantesBadge();
+        return;
+      }
+
+      const data = res.data || {};
+      setBultosRestantesBadge(
+        data.bultos_restantes || 0,
+        data.bultos_asignados || 0,
+        data.bultos_totales || 0,
+      );
+    });
   }
 
   function limpiarFormulario() {
@@ -366,8 +449,8 @@
       selDestino?.focus();
       return;
     }
-    if (!Number.isFinite(bultos) || bultos < 0) {
-      Swal?.fire("Dato inválido", "Bultos debe ser 0 o mayor.", "warning");
+    if (!Number.isFinite(bultos) || bultos <= 0) {
+      Swal?.fire("Dato inválido", "Bultos debe ser mayor a 0.", "warning");
       inpBultos?.focus();
       return;
     }
@@ -395,7 +478,15 @@
     fd.append("fecha_salida", fechaSalida);
     fd.append("fecha_carga", fechaCarga);
     fd.append("notas", notas);
-
+    if (!editState.isEdit && bultos > currentBultosRestantes) {
+      Swal?.fire(
+        "Bultos insuficientes",
+        `Solo quedan ${currentBultosRestantes} bultos restantes para esta operación.`,
+        "warning",
+      );
+      inpBultos?.focus();
+      return;
+    }
     btnVincular && (btnVincular.disabled = true);
 
     xhrPOST(EP_REGISTRAR, fd, (status, res, raw) => {
@@ -417,6 +508,7 @@
 
         exitEditMode();
         limpiarFormulario();
+        cargarResumenBultosOperacion(currentOperacionId);
         cargarFerrosDeOperacion(currentOperacionId);
 
         // o si prefieres un evento genérico:
@@ -448,6 +540,8 @@
 
     exitEditMode();
     limpiarFormulario();
+    resetBultosRestantesBadge();
+    cargarResumenBultosOperacion(currentOperacionId);
     cargarFerrosDeOperacion(currentOperacionId);
   });
 
