@@ -438,6 +438,7 @@
     if (v === "programado") return "Programado";
     if (v === "disponible en destino") return "Disponible en destino";
     if (v === "cancelado") return "Cancelado";
+    if (v === "detenido") return "Detenido";
 
     return "";
   }

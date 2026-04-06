@@ -137,8 +137,13 @@
         }
 
         .pn-badge-status.is-default {
-            background: #e9ecef;
-            color: #495057;
+            background: #e70505;
+            color: #ffffff;
+        }
+
+        .pn-badge-status.is-detenido {
+            background: #e70505;
+            color: #ffffff;
         }
 
         /* =========================

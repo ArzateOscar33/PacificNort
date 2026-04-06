@@ -147,6 +147,8 @@
         return "is-destino";
       case "CANCELADO":
         return "is-cancelado";
+      case "DETENIDO":
+        return "is-detenido";
       default:
         return "is-default";
     }
@@ -316,7 +318,10 @@
     }
 
     if (valor === "cancelado") {
-      return '<span class="badge bg-danger text-white p-2">Cancelado</span>';
+      return '<span class="badge bg-dark text-white p-2">Cancelado</span>';
+    }
+    if (valor === "detenido") {
+      return '<span class="badge bg-danger text-white p-2">Detenido</span>';
     }
 
     return (

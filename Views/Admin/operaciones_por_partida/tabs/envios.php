@@ -291,6 +291,7 @@
                         <option value="Programado">Programado</option>
                         <option value="Disponible en destino">Disponible en Destino</option>
                         <option value="Cancelado">Cancelado</option>
+                        <option value="Detenido">Detenido</option>
                     </select>
                 </div>
 
@@ -437,6 +438,7 @@
                                             <option value="Programado">Programado</option>
                                             <option value="Disponible en destino">Disponible en Destino</option>
                                             <option value="Cancelado">Cancelado</option>
+                                            <option value="Detenido">Detenido</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">

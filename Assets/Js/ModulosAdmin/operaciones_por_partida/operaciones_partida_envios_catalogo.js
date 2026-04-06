@@ -202,7 +202,10 @@
     }
 
     if (valor === "cancelado") {
-      return '<span class="badge bg-danger text-white p-2">Cancelado</span>';
+      return '<span class="badge bg-dark text-white p-2">Cancelado</span>';
+    }
+    if (valor === "detenido") {
+      return '<span class="badge bg-danger text-white p-2">Detenido</span>';
     }
 
     return (
@@ -1929,6 +1932,7 @@
     if (v === "programado") return "Programado";
     if (v === "disponible en destino") return "Disponible en destino";
     if (v === "cancelado") return "Cancelado";
+    if (v === "detenido") return "Detenido";
 
     return "";
   }
