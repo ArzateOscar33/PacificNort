@@ -654,6 +654,7 @@ class PortalClientesPartidasModel extends Query
                        AND f.estatus = 1
                 WHERE ei.envio_id = ?
                   AND f.cliente_id = ?
+                  AND ei.estatus = 1
                 GROUP BY
                     ei.id_imagen,
                     ei.envio_id,

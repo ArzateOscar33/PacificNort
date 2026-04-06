@@ -386,6 +386,28 @@
                                             class="hide-menu">Bitacora Operaciones Por Partida</span></a></li>
                             </ul>
                         </li>
+                        <!-- REPORTAR ERRORES -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="alert-octagon"></i>
+                                <span class="hide-menu">Errores</span>
+                            </a>
+                            <!-- USUARIO -->
+                            <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2 || $_SESSION['rol_usuario'] == 11 || $_SESSION['rol_usuario'] == 15): ?>
+                                <ul aria-expanded="false" class="collapse first-level">
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>ErroresUsuario/index" class="sidebar-link"><i data-feather="alert-circle"></i><span
+                                                class="hide-menu">Reportar Errores</span></a></li>
+                                <?php endif; ?>
+                                <!-- ADMINISTRADOR -->
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>ErroresAdmin/index" class="sidebar-link"><i data-feather="alert-triangle"></i><span
+                                                class="hide-menu">Solucionar Errores</span></a></li>
+
+                                </ul>
+                            <?php endif; ?>
+
+
+                        </li>
 
                     </ul>
                     </li>
