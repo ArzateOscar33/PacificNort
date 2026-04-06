@@ -78,7 +78,7 @@
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">Listado de Reportes</h5>
-            <span class="badge bg-primary" id="totalReportesErrores">0 reportes</span>
+            <span class="badge bg-primary text-white p-2" id="totalReportesErrores">0 reportes</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
