@@ -187,8 +187,7 @@
           <div class="btn-group btn-group-sm" role="group" aria-label="Acciones">
             <button type="button"
               class="btn btn-outline-primary btn-sm btnVerProductosFactura"
-              data-bs-toggle="modal"
-              data-bs-target="#modalProductosFactura"
+       
               data-invoice="${esc(idFactura)}"
               data-vendor="${esc(proveedor)}"
               data-cliente="${esc(cliente)}"

@@ -78,25 +78,18 @@
     alert(title + "\n" + text);
   }
 
+  // ✅ DESPUÉS
   function closeModal() {
     try {
       const inst =
-        bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        bootstrap.Modal.getInstance(modalEl) ||
+        bootstrap.Modal.getOrCreateInstance(modalEl);
+
       inst.hide();
-    } catch (_) {}
-
-    // Limpieza forzada por si el backdrop se queda pegado
-    modalEl.classList.remove("show");
-    modalEl.setAttribute("aria-hidden", "true");
-    modalEl.style.display = "none";
-
-    document.body.classList.remove("modal-open");
-    document.body.style.removeProperty("overflow");
-    document.body.style.removeProperty("padding-right");
-
-    document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+    } catch (e) {
+      console.error("Error al cerrar modalProductosFactura:", e);
+    }
   }
-
   function xhrPostForm(url, formData) {
     return new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
@@ -507,23 +500,30 @@
       return;
     }
 
+    // ✅ ASÍ debe quedar el final de guardarCambiosBatch()
     const ins = toInt(resp.res.insertados);
     const upd = toInt(resp.res.actualizados);
 
-    await swalSuccess(
-      "Guardado",
-      `Cambios aplicados. Insertados: ${ins}, Actualizados: ${upd}.`,
-    );
+    // 1. Primero cerrar el modal (limpieza inmediata)
+    closeModal();
 
-    // Notificar a tu catálogo que recargue productos
+    // 2. Luego disparar eventos de recarga
     document.dispatchEvent(
       new CustomEvent(EVT_REFRESH, { detail: { facturaId } }),
     );
-
-    // Opcional: refrescar facturas (para actualizar #productos)
     if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
 
-    closeModal();
+    // 3. Al final mostrar Swal (ya sin modal abierto)
+    setTimeout(function () {
+      swalSuccess(
+        "Guardado",
+        "Cambios aplicados. Insertados: " +
+          ins +
+          ", Actualizados: " +
+          upd +
+          ".",
+      );
+    }, 350);
   }
 
   // ==========================
@@ -616,9 +616,21 @@
       return;
     }
   });
-
+  // ✅ Solo dejar esto
+  modalEl.addEventListener("shown.bs.modal", function () {
+    updateMetaUI();
+  });
+  /*
   // Cuando se abre/cierra modal, actualizar meta UI
   modalEl.addEventListener("shown.bs.modal", function () {
     updateMetaUI();
   });
+  modalEl.addEventListener("hidden.bs.modal", function () {
+    if (!document.querySelector(".modal.show")) {
+      document.body.classList.remove("modal-open");
+      document.body.style.removeProperty("overflow");
+      document.body.style.removeProperty("padding-right");
+      document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+    }
+  });*/
 })();

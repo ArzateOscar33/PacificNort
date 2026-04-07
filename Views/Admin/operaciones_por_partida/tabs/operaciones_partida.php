@@ -308,7 +308,7 @@
           <span class="badge bg-success text-white" id="pf_totalCajas">Cajas: 0</span>
           <span class="badge bg-primary text-white" id="pf_totalPiezas">Piezas: 0</span>
           <span class="badge bg-secondary text-white" id="pf_totalPalletsRcv">Pallets RCV: 0</span>
-          <span class="badge bg-dark text-white" id="pf_totalCajasRestantes">Pallets RCV: 0</span>
+          <span class="badge bg-light text-dark" id="pf_totalCajasRestantes">Pallets RCV: 0</span>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -463,7 +463,7 @@
 
 </div>
 <!-- ===================== MINI-MODAL: FOTOS DE PRODUCTO ===================== -->
-<div class="modal fade" id="modalFotosProducto" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+<div class="modal fade" id="modalFotosProducto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
 

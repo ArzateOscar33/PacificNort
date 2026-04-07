@@ -435,14 +435,6 @@
     if (tr.dataset.state !== "draft") tr.dataset.state = "dirty";
   });
 
-  // Opcional: si cierran el modal, cancela cualquier edición activa
-  if (modalEl) {
-    modalEl.addEventListener("hidden.bs.modal", function () {
-      const editando = pfTbody.querySelectorAll('tr[data-editing="1"]');
-      editando.forEach((tr) => cancelarEdicionFila(tr));
-    });
-  }
-
   // ==========================
   // CARGA PRODUCTOS
   // ==========================
@@ -563,6 +555,8 @@
 
       const facturaId = btnVer.getAttribute("data-invoice") || "0";
       cargarProductosFactura(facturaId);
+      const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+      inst.show();
     });
   }
   function pintarBadgeRevision(el, val) {
@@ -621,12 +615,27 @@
       });
     }
 
+    // ✅ DESPUÉS
     if (modalEl) {
       modalEl.addEventListener("hidden.bs.modal", function () {
         facturaEsEnvioSinRevision = false;
         if (pfBuscar) pfBuscar.value = "";
         facturaIdActual = 0;
         page = 1;
+
+        const editando = pfTbody.querySelectorAll('tr[data-editing="1"]');
+        editando.forEach((tr) => cancelarEdicionFila(tr));
+
+        try {
+          const fotoAbierta = document.getElementById("modalFotosProducto");
+          const fotoInst = fotoAbierta
+            ? bootstrap.Modal.getInstance(fotoAbierta)
+            : null;
+          if (fotoInst) fotoInst.hide();
+        } catch (e) {
+          console.warn("No se pudo cerrar modalFotosProducto:", e);
+        }
+
         renderEmpty();
       });
     }
