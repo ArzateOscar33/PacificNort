@@ -83,9 +83,18 @@
       const inst =
         bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
       inst.hide();
-    } catch (_) {
-      modalEl.classList.remove("show");
-    }
+    } catch (_) {}
+
+    // Limpieza forzada por si el backdrop se queda pegado
+    modalEl.classList.remove("show");
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.style.display = "none";
+
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("padding-right");
+
+    document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
   }
 
   function xhrPostForm(url, formData) {
@@ -210,7 +219,17 @@
       observaciones,
     };
   }
+  function syncDraftCajasRestantes(tr) {
+    if (!tr) return;
+    if (tr.dataset.state !== "draft") return;
 
+    const inpCajas = tr.querySelector(".pf_cajas");
+    const inpRestantes = tr.querySelector(".pf_cajas_restantes");
+    if (!inpCajas || !inpRestantes) return;
+
+    const cajas = toInt(inpCajas.value);
+    inpRestantes.value = String(cajas);
+  }
   function validarRow(row) {
     if (!row.descripcion || !row.upc || !row.marca || !row.item) {
       return "Descripción, UPC, Marca e Item son obligatorios.";
@@ -541,7 +560,15 @@
     featherRefresh();
     updateMetaUI();
   });
+  pfTbody.addEventListener("input", function (ev) {
+    const el = ev.target;
+    if (!el) return;
 
+    if (el.classList.contains("pf_cajas")) {
+      const tr = el.closest("tr");
+      syncDraftCajasRestantes(tr);
+    }
+  });
   // Guardar batch
   btnGuardar.addEventListener("click", function () {
     guardarCambiosBatch();

@@ -142,7 +142,13 @@ class Operaciones_por_partida extends Controller
                     'msg'    => 'Factura inválida.',
                     'data'   => [],
                     'meta'   => ['total' => 0, 'page' => 1, 'per_page' => 50, 'total_pages' => 0],
-                    'totals' => ['total_cajas' => 0, 'total_piezas' => 0, 'total_pallets_inv' => 0]
+                    'totals' => [
+                        'total_cajas' => 0,
+                        'total_piezas' => 0,
+                        'total_pallets_rcv' => 0,
+                        'total_cajas_enviadas' => 0,
+                        'total_cajas_restantes' => 0
+                    ]
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
@@ -153,7 +159,6 @@ class Operaciones_por_partida extends Controller
             $allowed = [10, 25, 50, 100, 200];
             if (!in_array($perPage, $allowed, true)) $perPage = 50;
 
-            // ✅ ÚNICO CAMBIO: listarProductos → listarProductosConFotos
             $result = $this->model->listarProductosConFotos($facturaId, [
                 'term'     => $term,
                 'page'     => $page,
@@ -163,26 +168,30 @@ class Operaciones_por_partida extends Controller
             $rows   = $result['rows'] ?? [];
             $total  = (int)($result['total'] ?? 0);
             $totals = $result['totals'] ?? [
-                'total_cajas'       => 0,
-                'total_piezas'      => 0,
-                'total_pallets_rcv' => 0
+                'total_cajas'           => 0,
+                'total_piezas'          => 0,
+                'total_pallets_rcv'     => 0,
+                'total_cajas_enviadas'  => 0,
+                'total_cajas_restantes' => 0
             ];
 
             $totalPages = $perPage > 0 ? (int)ceil($total / $perPage) : 0;
 
             echo json_encode([
-                'ok'     => true,
-                'data'   => $rows,
-                'meta'   => [
+                'ok'   => true,
+                'data' => $rows,
+                'meta' => [
                     'total'       => $total,
                     'page'        => $page,
                     'per_page'    => $perPage,
                     'total_pages' => $totalPages
                 ],
                 'totals' => [
-                    'total_cajas'       => (int)($totals['total_cajas'] ?? 0),
-                    'total_piezas'      => (int)($totals['total_piezas'] ?? 0),
-                    'total_pallets_rcv' => (int)($totals['total_pallets_rcv'] ?? 0),
+                    'total_cajas'           => (int)($totals['total_cajas'] ?? 0),
+                    'total_piezas'          => (int)($totals['total_piezas'] ?? 0),
+                    'total_pallets_rcv'     => (int)($totals['total_pallets_rcv'] ?? 0),
+                    'total_cajas_enviadas'  => (int)($totals['total_cajas_enviadas'] ?? 0),
+                    'total_cajas_restantes' => (int)($totals['total_cajas_restantes'] ?? 0),
                 ]
             ], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
@@ -192,7 +201,13 @@ class Operaciones_por_partida extends Controller
                 'msg'    => 'Ocurrió un error al listar productos.',
                 'data'   => [],
                 'meta'   => ['total' => 0, 'page' => 1, 'per_page' => 50, 'total_pages' => 0],
-                'totals' => ['total_cajas' => 0, 'total_piezas' => 0, 'total_pallets_rcv' => 0]
+                'totals' => [
+                    'total_cajas' => 0,
+                    'total_piezas' => 0,
+                    'total_pallets_rcv' => 0,
+                    'total_cajas_enviadas' => 0,
+                    'total_cajas_restantes' => 0
+                ]
             ], JSON_UNESCAPED_UNICODE);
         }
         exit;

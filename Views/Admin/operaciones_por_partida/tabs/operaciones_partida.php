@@ -308,6 +308,7 @@
           <span class="badge bg-success text-white" id="pf_totalCajas">Cajas: 0</span>
           <span class="badge bg-primary text-white" id="pf_totalPiezas">Piezas: 0</span>
           <span class="badge bg-secondary text-white" id="pf_totalPalletsRcv">Pallets RCV: 0</span>
+          <span class="badge bg-dark text-white" id="pf_totalCajasRestantes">Pallets RCV: 0</span>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -353,6 +354,7 @@
                 <th style="width:120px;">Case</th>
                 <th style="width:120px;">Pallets RCV</th>
                 <th style="width:120px;"># Cajas</th>
+                <th style="width:120px;"># Restantes</th>
                 <th style="width:120px;"># Piezas</th>
                 <th style="width:140px;">Observaciones</th>
                 <th style="width:140px;">Imagenes</th>
@@ -407,19 +409,26 @@
             <td>
               <input type="number" min="0" step="1" class="form-control form-control-sm pf_cajas" placeholder="0">
             </td>
+            <td>
+              <input type="number" min="0" step="1"
+                class="form-control form-control-sm pf_cajas_restantes"
+                placeholder="0" readonly tabindex="-1">
+            </td>
 
             <td>
               <input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" placeholder="0">
             </td>
+
+            <td>
+              <input type="text" class="form-control form-control-sm pf_observaciones" placeholder="Opcional">
+            </td>
+
             <td>
               <small class="text-muted fst-italic">Guarda primero</small>
             </td>
-            <td>
-              <input type="text" class="form-control form-control-sm pf_observaciones">
-            </td>
+
             <td>
               <div class="btn-group btn-group-sm" role="group">
-
                 <button type="button" class="btn btn-outline-danger pf_btnEliminarFila" title="Eliminar producto">
                   <i data-feather="trash-2"></i>
                 </button>

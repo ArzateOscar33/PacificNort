@@ -28,6 +28,9 @@
   const pfTotalCajas = document.getElementById("pf_totalCajas");
   const pfTotalPiezas = document.getElementById("pf_totalPiezas");
   const pfTotalPallets = document.getElementById("pf_totalPalletsRcv");
+  const pfTotalCajasRestantes = document.getElementById(
+    "pf_totalCajasRestantes",
+  );
 
   // Labels header del modal
   const lblId = document.getElementById("pf_lblFactura");
@@ -159,7 +162,7 @@
   function setLoading() {
     pfTbody.innerHTML = `
       <tr class="text-center">
-        <td colspan="11" class="py-4 text-muted">Cargando...</td>
+        <td colspan="14" class="py-4 text-muted">Cargando...</td>
       </tr>`;
     if (pfEmpty) pfEmpty.classList.add("d-none");
   }
@@ -172,6 +175,8 @@
     if (pfTotalCajas) pfTotalCajas.textContent = "Cajas: 0";
     if (pfTotalPiezas) pfTotalPiezas.textContent = "Piezas: 0";
     if (pfTotalPallets) pfTotalPallets.textContent = "Pallets RCV: 0";
+    if (pfTotalCajasRestantes)
+      pfTotalCajasRestantes.textContent = "Cajas restantes: 0";
     if (pfMeta) pfMeta.textContent = "Mostrando 0 de 0";
   }
 
@@ -197,6 +202,7 @@
       const casePack = (p.case_pack ?? "") === null ? "" : (p.case_pack ?? "");
       const palletsRcv = p.pallets_rcv ?? 0;
       const cajas = p.cajas ?? 0;
+      const cajasRestantes = p.cajas_restantes ?? 0;
       const piezas = p.piezas ?? 0;
       const observaciones = p.observaciones ?? "";
 
@@ -218,6 +224,7 @@
     <td>${esc(casePack)}</td>
     <td>${esc(palletsRcv)}</td>
     <td>${esc(cajas)}</td>
+    <td>${esc(cajasRestantes)}</td>
     <td>${esc(piezas)}</td>
     <td class="text-start">${esc(observaciones || "")}</td>
 <td class="pf_celdaFotos">
@@ -263,6 +270,8 @@
       pfTotalPiezas.textContent = `Piezas: ${totals?.total_piezas ?? 0}`;
     if (pfTotalPallets)
       pfTotalPallets.textContent = `Pallets RCV: ${totals?.total_pallets_rcv ?? 0}`;
+    if (pfTotalCajasRestantes)
+      pfTotalCajasRestantes.textContent = `Cajas restantes: ${totals?.total_cajas_restantes ?? 0}`;
 
     const showing =
       meta?.page && meta?.per_page
@@ -300,8 +309,8 @@
     const tds = tr.querySelectorAll("td");
     // Estructura esperada en tu tabla:
     // 0 descripcion, 1 item, 2 upc, 3 marca, 4 expiracion, 5 inner, 6 case,
-    // 7 pallets_rcv, 8 cajas, 9 piezas, 10 observaciones, 11 acciones
-    if (tds.length < 11) return;
+    // 7 pallets_rcv, 8 cajas, 9 cajas restantes, 10 piezas, 11 observaciones, 12 acciones
+    if (tds.length < 13) return;
 
     const getText = (i) => (tds[i]?.textContent || "").trim();
 
@@ -317,10 +326,11 @@
     const casePack = getText(6);
     const palletsRcv = getText(7);
     const cajas = getText(8);
-    const piezas = getText(9);
+    // const cajasRestantes = getText(9); // solo visual, no editable
+    const piezas = getText(10);
     const observaciones = (
       tr.dataset.observaciones ||
-      getText(10) ||
+      getText(11) ||
       ""
     ).trim();
 
@@ -336,8 +346,12 @@
 
     tds[7].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_pallets_rcv" value="${esc(palletsRcv || "0")}">`;
     tds[8].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_cajas" value="${esc(cajas || "0")}">`;
-    tds[9].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" value="${esc(piezas || "0")}">`;
-    tds[10].innerHTML = `<textarea class="form-control form-control-sm pf_observaciones" rows="2">${esc(observaciones)}</textarea>`;
+
+    // Columna solo informativa, no editable
+    tds[9].innerHTML = `<span class="fw-semibold text-primary">${esc(tr.children[9]?.textContent?.trim() || "0")}</span>`;
+
+    tds[10].innerHTML = `<input type="number" min="0" step="1" class="form-control form-control-sm pf_piezas" value="${esc(piezas || "0")}">`;
+    tds[11].innerHTML = `<textarea class="form-control form-control-sm pf_observaciones" rows="2">${esc(observaciones)}</textarea>`;
 
     // Cambiar botón Editar a Cancelar en la celda de acciones (última)
     const btnEditar = tr.querySelector(".pf_btnEditar");

@@ -208,45 +208,94 @@ class Operaciones_por_partidaModel extends Query
 
         // ===== Totales para badges del modal =====
         $sqlSums = "SELECT
-                        COALESCE(SUM(p.cajas), 0)       AS total_cajas,
-                        COALESCE(SUM(p.piezas), 0)      AS total_piezas,
-                        COALESCE(SUM(p.pallets_rcv), 0) AS total_pallets_rcv
-                    FROM op_partida_productos p
-                    $where";
+                COALESCE(SUM(p.cajas), 0) AS total_cajas,
+                COALESCE(SUM(p.piezas), 0) AS total_piezas,
+                COALESCE(SUM(p.pallets_rcv), 0) AS total_pallets_rcv,
+                COALESCE(SUM(COALESCE(pe.cajas_enviadas, 0)), 0) AS total_cajas_enviadas,
+                COALESCE(SUM(
+                    CASE
+                        WHEN (p.cajas - COALESCE(pe.cajas_enviadas, 0)) < 0 THEN 0
+                        ELSE (p.cajas - COALESCE(pe.cajas_enviadas, 0))
+                    END
+                ), 0) AS total_cajas_restantes
+            FROM op_partida_productos p
+            LEFT JOIN (
+                SELECT
+                    d.producto_id,
+                    d.factura_id,
+                    SUM(d.cajas_enviadas) AS cajas_enviadas
+                FROM operaciones_partida_envio_detalle d
+                INNER JOIN operaciones_partida_envios e
+                    ON e.id_envio = d.envio_id
+                WHERE d.estatus = 1
+                  AND e.estatus = 1
+                GROUP BY d.producto_id, d.factura_id
+            ) pe
+                ON pe.producto_id = p.id_producto
+               AND pe.factura_id = p.factura_id
+            $where";
         $rowSums = $this->select($sqlSums, $params);
 
         $totals = [
-            'total_cajas'       => (int)($rowSums['total_cajas'] ?? 0),
-            'total_piezas'      => (int)($rowSums['total_piezas'] ?? 0),
-            'total_pallets_rcv' => (int)($rowSums['total_pallets_rcv'] ?? 0),
+            'total_cajas'           => (int)($rowSums['total_cajas'] ?? 0),
+            'total_piezas'          => (int)($rowSums['total_piezas'] ?? 0),
+            'total_pallets_rcv'     => (int)($rowSums['total_pallets_rcv'] ?? 0),
+            'total_cajas_enviadas'  => (int)($rowSums['total_cajas_enviadas'] ?? 0),
+            'total_cajas_restantes' => (int)($rowSums['total_cajas_restantes'] ?? 0),
         ];
 
 
         // ===== Rows =====
         $sqlRows = "SELECT
-                            p.id_producto,
-                            p.factura_id,
-                            p.descripcion,
-                            p.item,
-                            p.upc,
-                            p.marca,
-                            p.expiracion,
-                            p.inner_pack,
-                            p.case_pack,
-                            p.pallets_rcv,
-                            p.cajas,
-                            p.piezas,
-                            p.observaciones,
-                            p.creado_en,
-                            p.actualizado_en
-                        FROM op_partida_productos p
-                        $where
-                        ORDER BY p.id_producto DESC
-                        LIMIT $perPage OFFSET $offset";
+                p.id_producto,
+                p.factura_id,
+                p.descripcion,
+                p.item,
+                p.upc,
+                p.marca,
+                p.expiracion,
+                p.inner_pack,
+                p.case_pack,
+                p.pallets_rcv,
+                p.cajas,
+                p.piezas,
+                p.observaciones,
+                p.creado_en,
+                p.actualizado_en,
+                COALESCE(pe.cajas_enviadas, 0) AS cajas_enviadas,
+                CASE
+                    WHEN (p.cajas - COALESCE(pe.cajas_enviadas, 0)) < 0 THEN 0
+                    ELSE (p.cajas - COALESCE(pe.cajas_enviadas, 0))
+                END AS cajas_restantes
+            FROM op_partida_productos p
+            LEFT JOIN (
+                SELECT
+                    d.producto_id,
+                    d.factura_id,
+                    SUM(d.cajas_enviadas) AS cajas_enviadas
+                FROM operaciones_partida_envio_detalle d
+                INNER JOIN operaciones_partida_envios e
+                    ON e.id_envio = d.envio_id
+                WHERE d.estatus = 1
+                  AND e.estatus = 1
+                GROUP BY d.producto_id, d.factura_id
+            ) pe
+                ON pe.producto_id = p.id_producto
+               AND pe.factura_id = p.factura_id
+            $where
+            ORDER BY p.id_producto DESC
+            LIMIT $perPage OFFSET $offset";
 
         $rows = $this->selectAll($sqlRows, $params);
         if ($rows === false) $rows = [];
-
+        foreach ($rows as &$row) {
+            $row['cajas']           = (int)($row['cajas'] ?? 0);
+            $row['piezas']          = (int)($row['piezas'] ?? 0);
+            $row['pallets_rcv']     = (int)($row['pallets_rcv'] ?? 0);
+            $row['cajas_enviadas']  = (int)($row['cajas_enviadas'] ?? 0);
+            $row['cajas_restantes'] = max(0, (int)($row['cajas_restantes'] ?? 0));
+        }
+        unset($row);
         return [
             'rows'   => $rows,
             'total'  => $total,
