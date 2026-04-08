@@ -23,7 +23,7 @@ define('BASE_URL', $protocolo . $host . $carpetaProyecto);
 // ======================================================
 const HOST = "localhost";
 const USER = "root";
-const PASS = "";
+const PASS = "@Osc4r4rz4t3";
 const DB = "p_nort";
 const CHARSET = "charset=utf8";
 

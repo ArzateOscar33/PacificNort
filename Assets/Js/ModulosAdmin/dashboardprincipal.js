@@ -599,40 +599,42 @@ function nfForCurrency(curr) {
 function cargarCostosMensuales(months = 12) {
   const currency = selCostosMoneda?.value === "USD" ? "USD" : "MXN";
   let fx = parseFloat(inputCostosFx?.value);
-  if (!isFinite(fx) || fx <= 0) fx = 17; // fallback por si dejan vacío
+  if (!isFinite(fx) || fx <= 0) fx = 17;
 
   const url =
     base_url +
-    `Dashboard/costos_mensuales?months=${months}&currency=${encodeURIComponent(currency)}&fx=${encodeURIComponent(fx)}`;
+    `Dashboard/costos_vs_abonos_mensual?meses=${months}&moneda=${encodeURIComponent(currency)}&tc=${encodeURIComponent(fx)}`;
 
   xhrGET(
     url,
     (res) => {
       if (res?.status !== "ok" || !Array.isArray(res.data)) {
-        console.warn("[costos_mensuales] respuesta no OK:", res);
-        renderCostosMensuales([], currency);
+        console.warn("[costos_vs_abonos_mensual] respuesta no OK:", res);
+        renderCostosVsAbonosMensuales([], currency);
         return;
       }
-      renderCostosMensuales(res.data, currency);
+      renderCostosVsAbonosMensuales(res.data, currency);
     },
     (err) => {
-      console.error("[costos_mensuales]", err);
-      renderCostosMensuales([], currency);
+      console.error("[costos_vs_abonos_mensual]", err);
+      renderCostosVsAbonosMensuales([], currency);
     },
   );
 }
 // Debounce simple para no spamear el endpoint al teclear el tipo de cambio
+/*
 function debounce(fn, ms) {
   let t;
   return (...args) => {
     clearTimeout(t);
     t = setTimeout(() => fn(...args), ms);
   };
-}
+}*/
 const debouncedReloadCostos = debounce(() => cargarCostosMensuales(12), 350);
 
 if (selCostosMoneda)
   selCostosMoneda.addEventListener("change", () => cargarCostosMensuales(12));
+
 if (inputCostosFx)
   inputCostosFx.addEventListener("input", debouncedReloadCostos);
 
@@ -741,6 +743,7 @@ function renderCostosVsAbonosMensuales(rows, currency) {
     },
   });
 }
+/*
 async function loadCostosVsAbonos() {
   const moneda = document.getElementById("costosDashboard").value || "MXN";
   const tc = Number(
@@ -762,7 +765,7 @@ document
 document
   .getElementById("costosDashboardTipoCambio")
   .addEventListener("input", loadCostosVsAbonos);
-
+*/
 /* =========================
    TIMELINE (ETD → ETA)
    ========================= */
@@ -1039,7 +1042,6 @@ function cargarTimelineOperaciones(days = 30, limit = 50) {
   );
 }
 
-// Debounce para resize
 function debounce(fn, ms) {
   let t;
   return (...args) => {
@@ -1399,9 +1401,10 @@ document.addEventListener("DOMContentLoaded", function () {
   cargarKPIs();
   cargarOpsPorSubtipo();
   cargarOpsPorEstatus(); //
-  cargarPuntualidadSemana(8);
+  //cargarPuntualidadSemana(8);
   cargarTimelineOperaciones(30, 50);
   cargarAlertas();
   cargarKPIAlertas();
-  loadCostosVsAbonos();
+  // loadCostosVsAbonos();
+  cargarCostosMensuales(12);
 });

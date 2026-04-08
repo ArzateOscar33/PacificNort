@@ -25,7 +25,7 @@
                 <div class="position-relative">
                     <input type="hidden" id="documentosFiltroContendorId">
                     <input type="text" id="documentosFiltroContendorNombre" class="form-control"
-                        placeholder="Escribe para buscar (ej. FXE o MGU)" autocomplete="off">
+                        placeholder="Escribe para buscar (ej. FXE o MGU)" autocomplete="off " readonly disabled>
                     <div id="documentosFiltroContenedorSugerencias" class="list-group"
                         style="position:absolute; z-index:1061; width:100%; display:none;"></div>
                 </div>
@@ -187,7 +187,7 @@
     </div>
 
 </div>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/documentos_ferro.js"></script>
+
 <script>
     function forzarMayusculas(inputId) {
         const input = document.getElementById(inputId);
@@ -204,3 +204,4 @@
     // Uso
     forzarMayusculas("documentosFiltroOpNombre");
 </script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/documentos_ferro.js"></script>

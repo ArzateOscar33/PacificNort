@@ -137,50 +137,40 @@ WHERE o.estatus_id IN (1,5,9);
     ): array {
         $sql = "
     SELECT
-      DATE_FORMAT(mes, '%Y-%m') AS anio_mes,
-      ROUND(SUM(CASE WHEN tipo = 'GASTO' THEN monto_conv ELSE 0 END), 2)  AS gastos,
-      ROUND(SUM(CASE WHEN tipo = 'ABONO' THEN monto_conv ELSE 0 END), 2)  AS abonos
-    FROM (
-      -- --------- Operación ----------
-      SELECT
-        DATE_FORMAT(coo.fecha_creacion, '%Y-%m-01') AS mes,
-        tm.tipo AS tipo,  -- 'GASTO' | 'ABONO'
+      DATE_FORMAT(coo.fecha_creacion, '%Y-%m') AS anio_mes,
+      ROUND(SUM(
         CASE
-          WHEN ? = 'MXN' THEN
-            CASE WHEN tm.moneda = 'DLLS'  THEN coo.monto * ? ELSE coo.monto END
-          ELSE
-            CASE WHEN tm.moneda = 'PESOS' THEN coo.monto / ? ELSE coo.monto END
-        END AS monto_conv
-      FROM costos_operacion coo
-      JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = coo.tipo_movimiento_id
-      WHERE coo.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
-        AND coo.estatus = 1
-
-      UNION ALL
-
-      -- --------- Contenedor ---------
-      SELECT
-        DATE_FORMAT(cco.fecha_creacion, '%Y-%m-01') AS mes,
-        tm.tipo AS tipo,
+          WHEN LOWER(tm.tipo) = 'gasto' THEN
+            CASE
+              WHEN ? = 'MXN' THEN CASE WHEN tm.moneda = 'DLLS' THEN coo.monto * ? ELSE coo.monto END
+              ELSE CASE WHEN tm.moneda = 'PESOS' THEN coo.monto / ? ELSE coo.monto END
+            END
+          ELSE 0
+        END
+      ), 2) AS gastos,
+      ROUND(SUM(
         CASE
-          WHEN ? = 'MXN' THEN
-            CASE WHEN tm.moneda = 'DLLS'  THEN cco.monto * ? ELSE cco.monto END
-          ELSE
-            CASE WHEN tm.moneda = 'PESOS' THEN cco.monto / ? ELSE cco.monto END
-        END AS monto_conv
-      FROM costos_contenedor_operacion cco
-      JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = cco.tipo_movimiento_id
-      WHERE cco.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
-    ) t
-    GROUP BY anio_mes
+          WHEN LOWER(tm.tipo) = 'abono' THEN
+            CASE
+              WHEN ? = 'MXN' THEN CASE WHEN tm.moneda = 'DLLS' THEN coo.monto * ? ELSE coo.monto END
+              ELSE CASE WHEN tm.moneda = 'PESOS' THEN coo.monto / ? ELSE coo.monto END
+            END
+          ELSE 0
+        END
+      ), 2) AS abonos
+    FROM costos_operacion coo
+    INNER JOIN tipos_movimiento tm
+      ON tm.id_tipo_movimiento = coo.tipo_movimiento_id
+    WHERE coo.estatus = 1
+      AND coo.fecha_creacion >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
+    GROUP BY DATE_FORMAT(coo.fecha_creacion, '%Y-%m')
     ORDER BY anio_mes ASC
-  ";
+    ";
 
         return $this->selectAll($sql, [
             $monedaDestino,
             $tcUsdMxn,
             $tcUsdMxn,
-            $meses,
             $monedaDestino,
             $tcUsdMxn,
             $tcUsdMxn,
@@ -196,24 +186,22 @@ WHERE o.estatus_id IN (1,5,9);
             o.id_operacion,
             o.numero_operacion,
             o.etd,
-            o.eta,
-            d.arribo_sd,
-            COALESCE(d.arribo_sd, o.eta) AS llegada_real,
+            o.eta, 
+            COALESCE( o.eta) AS llegada_real,
             o.estatus_id,
             s.nombre          AS estatus_nombre,
             st.prefijo_codigo AS subtipo_prefijo,
             st.nombre         AS subtipo_nombre
-        FROM operaciones o
-        LEFT JOIN detalles_logisticos   d  ON d.operacion_id = o.id_operacion
+        FROM operaciones o 
         LEFT JOIN subtipos_operacion    st ON st.id_subtipo = o.subtipo_operacion_id
         LEFT JOIN estatus               s  ON s.id_estatus = o.estatus_id
-        WHERE o.estatus_id IN (1,5,9)
+        WHERE o.estatus_id IN (9,11,16,17) -- EN AGUA, PUERTO, CON NOTIFICACION DE ARRIBO, CON CITA
           AND o.etd IS NOT NULL
-          AND (o.eta IS NOT NULL OR d.arribo_sd IS NOT NULL)
+          AND (o.eta IS NOT NULL)
           AND (
                 o.etd BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY)
                            AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
-             OR COALESCE(d.arribo_sd, o.eta) BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY)
+             OR COALESCE( o.eta) BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY)
                                                 AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
           )
         ORDER BY o.etd ASC
