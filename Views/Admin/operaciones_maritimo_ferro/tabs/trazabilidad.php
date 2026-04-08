@@ -370,7 +370,7 @@
 
               <div class="card-body">
                 <div class="text-muted small mb-2">
-                  Haz click en un punto de la ruta para ver notas y responsable.
+                  Haz click en un punto de la ruta para ver notas.
                 </div>
 
                 <div class="mb-3">
@@ -388,7 +388,7 @@
                   <div class="border rounded-3 p-2 bg-light" id="rutaHist_det_notas">—</div>
                 </div>
 
-                <div class="mb-0">
+                <div class="mb-0 d-none">
                   <div class="small text-muted">Usuario</div>
                   <div class="fw-semibold" id="rutaHist_det_usuario">—</div>
                 </div>
