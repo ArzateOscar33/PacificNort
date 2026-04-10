@@ -1091,7 +1091,7 @@ class Operaciones_maritimo_ferroModel extends Query
 
             if ($usuarioId > 0) {
                 $descripcionLog = $this->construirDescripcionAuditoria($cambiosOperacion, $cambiosContenedores);
-                $logId = $this->crearLog($opId, $usuarioId, 'edicion', $descripcionLog);
+                $logId = $this->crearLog($opId, $usuarioId, 'actualizacion', $descripcionLog);
 
                 if ($logId <= 0) {
                     $this->save("ROLLBACK", []);
