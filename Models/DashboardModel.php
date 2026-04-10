@@ -88,7 +88,7 @@ WHERE o.estatus_id IN (1,5,9);
     }
 
     public function chartOpsPorSubtipo(): array
-    {
+    { //--QUE NO ESTEN LOS CANCELADOS NI LOS ENTREGADOS
         $sql = "
         SELECT 
             s.id_subtipo,
@@ -98,7 +98,7 @@ WHERE o.estatus_id IN (1,5,9);
         FROM operaciones o
         INNER JOIN subtipos_operacion s 
             ON s.id_subtipo = o.subtipo_operacion_id
-        WHERE o.estatus_id IN (1,5,6,9,10,11,12,14,15,16) 
+           WHERE o.estatus_id != 13 AND  o.estatus_id !=7 
         GROUP BY s.id_subtipo, s.nombre, s.prefijo_codigo
         ORDER BY total DESC
     ";

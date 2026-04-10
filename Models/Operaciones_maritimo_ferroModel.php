@@ -1010,29 +1010,42 @@ class Operaciones_maritimo_ferroModel extends Query
                 return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
             }
 
+            $anterior = $this->getOperacionById($opId);
+            if (!$anterior) {
+                return ['status' => 'error', 'msg' => 'La operación no existe'];
+            }
+
+            $contenedoresAntes = $this->getContenedoresDeOperacion($opId);
+            $nuevoNormalizado = $this->normalizarDatosOperacionParaComparar($d, $st);
+            $cambiosOperacion = $this->detectarCambiosOperacion($anterior, $nuevoNormalizado);
+            $cambiosContenedores = ['agregados' => [], 'eliminados' => [], 'modificados' => []];
+
+            if (is_array($contenedores) && !empty($contenedores)) {
+                $cambiosContenedores = $this->detectarCambiosContenedores($contenedoresAntes, $contenedores);
+            }
+
             $this->save("START TRANSACTION", []);
 
             $sql = "UPDATE operaciones
-                SET tipo_operacion_id     = ?,
-                    subtipo_operacion_id  = ?,
-                    etd                   = ?,
-                    eta                   = ?,
-                    numero_bl             = ?,
-                    cliente_id            = ?,
-                    estatus_id            = ?,
-                    naviera_id            = ?,
-                    forwarder_id          = ?,
-                    shipper_id            = ?,
-                    isf                   = ?,
-                    cita_puerto           = ?,
-                    notas                 = ?,
-                    peso_total            = ?,
-                    transportista_id      = ?,
-                    broker_id             = ?,
-                    descripcion_mercancia = ?
-                WHERE id_operacion = ?
-                LIMIT 1";
-
+            SET tipo_operacion_id     = ?,
+                subtipo_operacion_id  = ?,
+                etd                   = ?,
+                eta                   = ?,
+                numero_bl             = ?,
+                cliente_id            = ?,
+                estatus_id            = ?,
+                naviera_id            = ?,
+                forwarder_id          = ?,
+                shipper_id            = ?,
+                isf                   = ?,
+                cita_puerto           = ?,
+                notas                 = ?,
+                peso_total            = ?,
+                transportista_id      = ?,
+                broker_id             = ?,
+                descripcion_mercancia = ?
+            WHERE id_operacion = ?
+            LIMIT 1";
 
             $args = [
                 (int)$st['tipo_operacion_id'],
@@ -1042,13 +1055,12 @@ class Operaciones_maritimo_ferroModel extends Query
                 trim($d['numero_bl'] ?? ''),
                 !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
                 !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
-                ($d['naviera_id']   ?? '') !== '' ? (int)$d['naviera_id']   : null,
+                ($d['naviera_id'] ?? '') !== '' ? (int)$d['naviera_id'] : null,
                 ($d['forwarder_id'] ?? '') !== '' ? (int)$d['forwarder_id'] : null,
-                ($d['shipper_id']   ?? '') !== '' ? (int)$d['shipper_id']   : null,
+                ($d['shipper_id'] ?? '') !== '' ? (int)$d['shipper_id'] : null,
                 (int)($d['isf'] ?? 0),
                 ($d['cita_puerto'] ?? null),
                 ($d['notas'] ?? null),
-
                 (isset($d['peso_total']) && $d['peso_total'] !== '' ? (float)$d['peso_total'] : null),
                 (!empty($d['transportista_id']) ? (int)$d['transportista_id'] : null),
                 (!empty($d['broker_id']) ? (int)$d['broker_id'] : null),
@@ -1064,14 +1076,12 @@ class Operaciones_maritimo_ferroModel extends Query
                 return ['status' => 'error', 'msg' => 'No se pudo actualizar la operación'];
             }
 
-            // Broker pivot + sync broker_id NULL si aplica
             $brokerId = !empty($d['broker_id']) ? (int)$d['broker_id'] : 0;
             if (!$this->upsertOperacionBroker($opId, $brokerId)) {
                 $this->save("ROLLBACK", []);
                 return ['status' => 'error', 'msg' => 'No se pudo actualizar el broker'];
             }
 
-            // Contenedores (si tu UI los manda en editar)
             if (is_array($contenedores) && !empty($contenedores)) {
                 if (!$this->syncContenedoresOperacion($opId, $contenedores, $d)) {
                     $this->save("ROLLBACK", []);
@@ -1079,9 +1089,10 @@ class Operaciones_maritimo_ferroModel extends Query
                 }
             }
 
-            // Log edición
             if ($usuarioId > 0) {
-                $logId = $this->crearLog($opId, $usuarioId, 'edicion', 'Operación actualizada');
+                $descripcionLog = $this->construirDescripcionAuditoria($cambiosOperacion, $cambiosContenedores);
+                $logId = $this->crearLog($opId, $usuarioId, 'edicion', $descripcionLog);
+
                 if ($logId <= 0) {
                     $this->save("ROLLBACK", []);
                     return ['status' => 'error', 'msg' => 'No se pudo registrar la bitácora de edición'];
@@ -1160,5 +1171,224 @@ class Operaciones_maritimo_ferroModel extends Query
                 WHERE estatus = 1
                 ORDER BY nombre";
         return $this->selectAll($sql) ?: [];
+    }
+
+    private function normalizarDatosOperacionParaComparar(array $d, array $st): array
+    {
+        return [
+            'tipo_operacion_id'     => (int)$st['tipo_operacion_id'],
+            'subtipo_operacion_id'  => (int)($d['subtipo_operacion_id'] ?? 0),
+            'etd'                   => !empty($d['etd']) ? $d['etd'] : null,
+            'eta'                   => !empty($d['eta']) ? $d['eta'] : null,
+            'numero_bl'             => trim((string)($d['numero_bl'] ?? '')),
+            'cliente_id'            => !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
+            'estatus_id'            => !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
+            'naviera_id'            => (($d['naviera_id'] ?? '') !== '') ? (int)$d['naviera_id'] : null,
+            'forwarder_id'          => (($d['forwarder_id'] ?? '') !== '') ? (int)$d['forwarder_id'] : null,
+            'shipper_id'            => (($d['shipper_id'] ?? '') !== '') ? (int)$d['shipper_id'] : null,
+            'isf'                   => (int)($d['isf'] ?? 0),
+            'cita_puerto'           => ($d['cita_puerto'] ?? null),
+            'notas'                 => ($d['notas'] ?? null),
+            'peso_total'            => (isset($d['peso_total']) && $d['peso_total'] !== '') ? (float)$d['peso_total'] : null,
+            'transportista_id'      => !empty($d['transportista_id']) ? (int)$d['transportista_id'] : null,
+            'broker_id'             => !empty($d['broker_id']) ? (int)$d['broker_id'] : null,
+            'descripcion_mercancia' => (isset($d['descripcion_mercancia']) && trim((string)$d['descripcion_mercancia']) !== '')
+                ? trim((string)$d['descripcion_mercancia'])
+                : null,
+        ];
+    }
+    private function valorComparable($valor)
+    {
+        if ($valor === '') return null;
+        if (is_numeric($valor)) return (string)(0 + $valor);
+        return $valor;
+    }
+
+    private function detectarCambiosContenedores(array $anteriores, array $nuevos): array
+    {
+        $mapAnt = [];
+        foreach ($anteriores as $c) {
+            $id = (int)($c['id'] ?? 0);
+            if ($id > 0) {
+                $mapAnt[$id] = [
+                    'numero' => trim((string)($c['numero'] ?? '')),
+                    'bultos' => ($c['bultos'] === '' ? null : $c['bultos']),
+                    'tipo'   => trim((string)($c['tipo'] ?? '')),
+                ];
+            }
+        }
+
+        $mapNvo = [];
+        foreach ($nuevos as $c) {
+            $id = (int)($c['id'] ?? 0);
+            if ($id > 0) {
+                $mapNvo[$id] = [
+                    'numero' => trim((string)($c['numero'] ?? '')),
+                    'bultos' => (($c['bultos'] ?? '') === '' ? null : $c['bultos']),
+                    'tipo'   => trim((string)($c['tipo'] ?? '')),
+                ];
+            }
+        }
+
+        $cambios = [
+            'agregados'   => [],
+            'eliminados'  => [],
+            'modificados' => [],
+        ];
+
+        foreach ($mapAnt as $id => $ant) {
+            if (!isset($mapNvo[$id])) {
+                $cambios['eliminados'][] = $ant['numero'];
+                continue;
+            }
+
+            $nvo = $mapNvo[$id];
+            $mods = [];
+
+            if ($this->valorComparable($ant['bultos']) !== $this->valorComparable($nvo['bultos'])) {
+                $mods[] = 'bultos';
+            }
+            if ($this->valorComparable($ant['tipo']) !== $this->valorComparable($nvo['tipo'])) {
+                $mods[] = 'tipo contenedor';
+            }
+
+            if (!empty($mods)) {
+                $cambios['modificados'][] = [
+                    'numero' => $ant['numero'],
+                    'campos' => $mods,
+                ];
+            }
+        }
+
+        foreach ($mapNvo as $id => $nvo) {
+            if (!isset($mapAnt[$id])) {
+                $cambios['agregados'][] = $nvo['numero'];
+            }
+        }
+
+        return $cambios;
+    }
+    private function etiquetasCamposOperacion(): array
+    {
+        return [
+            'tipo_operacion_id'     => 'tipo_operación',
+            'subtipo_operacion_id'  => 'subtipo',
+            'etd'                   => 'ETD',
+            'eta'                   => 'ETA',
+            'numero_bl'             => 'BL',
+            'cliente_id'            => 'cliente',
+            'estatus_id'            => 'estatus',
+            'naviera_id'            => 'naviera',
+            'forwarder_id'          => 'forwarder',
+            'shipper_id'            => 'shipper',
+            'isf'                   => 'ISF',
+            'cita_puerto'           => 'cita_puerto',
+            'notas'                 => 'notas',
+            'peso_total'            => 'peso_total',
+            'transportista_id'      => 'transportista',
+            'broker_id'             => 'broker',
+            'descripcion_mercancia' => 'mercancia',
+        ];
+    }
+
+    private function construirDescripcionAuditoria(array $cambiosOp, array $cambiosCont): string
+    {
+        $partes = [];
+        $labels = $this->etiquetasCamposOperacion();
+
+        foreach ($cambiosOp as $campo => $info) {
+            $label = $labels[$campo] ?? $campo;
+            $antes = $this->resolverValorAuditoria($campo, $info['antes'] ?? null);
+            $despues = $this->resolverValorAuditoria($campo, $info['despues'] ?? null);
+
+            $partes[] = "{$label} [{$antes} → {$despues}]";
+        }
+
+        foreach ($cambiosCont['modificados'] ?? [] as $mod) {
+            foreach ($mod['campos'] as $campo) {
+                $partes[] = "{$campo} [{$mod['numero']}]";
+            }
+        }
+
+        foreach ($cambiosCont['agregados'] ?? [] as $num) {
+            $partes[] = "contenedor agregado [{$num}]";
+        }
+
+        foreach ($cambiosCont['eliminados'] ?? [] as $num) {
+            $partes[] = "contenedor eliminado [{$num}]";
+        }
+
+        if (empty($partes)) {
+            return 'Operación actualizada sin cambios detectados';
+        }
+
+        return 'Operación actualizada. Cambios: ' . implode(', ', $partes);
+    }
+
+    private function textoAuditoria($valor): string
+    {
+        if ($valor === null || $valor === '') {
+            return 'vacío';
+        }
+        return (string)$valor;
+    }
+
+
+    private function detectarCambiosOperacion(array $anterior, array $nuevo): array
+    {
+        $cambios = [];
+
+        foreach ($nuevo as $campo => $valorNuevo) {
+            $valorAnterior = $anterior[$campo] ?? null;
+
+            if ($this->valorComparable($valorAnterior) !== $this->valorComparable($valorNuevo)) {
+                $cambios[$campo] = [
+                    'antes'   => $valorAnterior,
+                    'despues' => $valorNuevo,
+                ];
+            }
+        }
+
+        return $cambios;
+    }
+
+    private function resolverValorAuditoria(string $campo, $valor): string
+    {
+        if ($valor === null || $valor === '') {
+            return 'vacío';
+        }
+
+        switch ($campo) {
+            case 'estatus_id':
+                $row = $this->select("SELECT nombre FROM estatus WHERE id_estatus = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'cliente_id':
+                $row = $this->select("SELECT nombre FROM clientes WHERE id_cliente = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'broker_id':
+                $row = $this->select("SELECT nombre FROM brokers WHERE id_broker = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'transportista_id':
+                $row = $this->select("SELECT nombre FROM transportistas WHERE id_transportista = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'naviera_id':
+                $row = $this->select("SELECT nombre FROM navieras WHERE id_naviera = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'forwarder_id':
+                $row = $this->select("SELECT nombre FROM forwarders WHERE id_forwarder = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'shipper_id':
+                $row = $this->select("SELECT nombre FROM shippers WHERE id_shipper = ? LIMIT 1", [(int)$valor]);
+                return $row['nombre'] ?? (string)$valor;
+
+            default:
+                return (string)$valor;
+        }
     }
 }
