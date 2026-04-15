@@ -149,12 +149,14 @@ class Finanzas extends Controller
 
             // Búsqueda
             $term = trim((string)($_GET['term'] ?? ($_GET['costosCliente_term'] ?? '')));
+            $factura = trim((string)($_GET['factura'] ?? ($_GET['factura_cc'] ?? '')));
 
             $filters = [
                 'cliente_id'                => $clienteId,
                 'fecha_inicio'              => $fechaInicio,
                 'fecha_fin'                 => $fechaFin,
                 'broker_id'                 => $brokerId,
+                'factura'                   => $factura,
 
                 // nuevos
                 'transportista_maritimo_id' => $transportistaMaritimoId,

@@ -100,10 +100,10 @@ class FinanzasModel extends Query
             $args[] = $ff;
         }
 
-        // Broker
+        // Broker del costo
         $brokerId = (int)($filters['broker_id'] ?? 0);
         if ($brokerId > 0) {
-            $where .= " AND bro.broker_id = ? ";
+            $where .= " AND co.broker_id = ? ";
             $args[] = $brokerId;
         }
 
@@ -180,45 +180,49 @@ class FinanzasModel extends Query
                 $needle = '%' . $t . '%';
 
                 $where .= " AND (
-                LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
-                OR LOWER(COALESCE(cl.nombre, '')) LIKE ?
-                OR LOWER(COALESCE(tm.nombre, '')) LIKE ?
-                OR LOWER(COALESCE(co.comentario, '')) LIKE ?
-                OR EXISTS (
-                    SELECT 1
-                    FROM contenedores_maritimos_operacion cmo2
-                    INNER JOIN contenedores_maritimos cm2
-                        ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
-                    WHERE cmo2.operacion_id = o.id_operacion
-                      AND LOWER(COALESCE(cm2.numero_contenedor, '')) LIKE ?
-                )
-                OR EXISTS (
-                    SELECT 1
-                    FROM contenedores_maritimos_operacion cmo3
-                    INNER JOIN contenedor_maritimo_ferro cmf3
-                        ON cmf3.cont_maritimo_operacion_id = cmo3.id
-                       AND cmf3.estatus = 1
-                    INNER JOIN contenedores_fisicos cf3
-                        ON cf3.id_fisico = cmf3.contenedor_fisico_id
-                    LEFT JOIN operaciones_ferroviarias of3
-                        ON of3.id_operacion_ferro = cmf3.operacion_ferro_id
-                    LEFT JOIN transportistas tf3
-                        ON tf3.id_transportista = of3.transportista_id
-                    WHERE cmo3.operacion_id = o.id_operacion
-                      AND (
-                          LOWER(COALESCE(cf3.numero_ferro, '')) LIKE ?
-                          OR LOWER(COALESCE(tf3.nombre, '')) LIKE ?
-                      )
-                )
-            ) ";
+    LOWER(COALESCE(o.numero_operacion, '')) LIKE ?
+    OR LOWER(COALESCE(cl.nombre, '')) LIKE ?
+    OR LOWER(COALESCE(tm.nombre, '')) LIKE ?
+    OR LOWER(COALESCE(co.comentario, '')) LIKE ?
+    OR LOWER(COALESCE(co.factura, '')) LIKE ?
+    OR LOWER(COALESCE(bco.nombre, '')) LIKE ?
+    OR EXISTS (
+        SELECT 1
+        FROM contenedores_maritimos_operacion cmo2
+        INNER JOIN contenedores_maritimos cm2
+            ON cm2.id_contenedor_maritimo = cmo2.contenedor_maritimo_id
+        WHERE cmo2.operacion_id = o.id_operacion
+          AND LOWER(COALESCE(cm2.numero_contenedor, '')) LIKE ?
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM contenedores_maritimos_operacion cmo3
+        INNER JOIN contenedor_maritimo_ferro cmf3
+            ON cmf3.cont_maritimo_operacion_id = cmo3.id
+           AND cmf3.estatus = 1
+        INNER JOIN contenedores_fisicos cf3
+            ON cf3.id_fisico = cmf3.contenedor_fisico_id
+        LEFT JOIN operaciones_ferroviarias of3
+            ON of3.id_operacion_ferro = cmf3.operacion_ferro_id
+        LEFT JOIN transportistas tf3
+            ON tf3.id_transportista = of3.transportista_id
+        WHERE cmo3.operacion_id = o.id_operacion
+          AND (
+              LOWER(COALESCE(cf3.numero_ferro, '')) LIKE ?
+              OR LOWER(COALESCE(tf3.nombre, '')) LIKE ?
+          )
+    )
+) ";
 
                 array_push(
                     $args,
-                    $needle, // o.numero_operacion
-                    $needle, // cl.nombre
-                    $needle, // tm.nombre
-                    $needle, // co.comentario
-                    $needle, // contenedor marítimo
+                    $needle, // numero_operacion
+                    $needle, // cliente
+                    $needle, // concepto
+                    $needle, // comentario
+                    $needle, // factura
+                    $needle, // broker costo
+                    $needle, // contenedor
                     $needle, // ferro/caja
                     $needle  // transportista ferro
                 );
@@ -400,8 +404,8 @@ SELECT
     COALESCE(fer.transportista_ferro_id, 0)                       AS transportista_ferro_id,
     COALESCE(fer.transportistas_ferro, 'No aplica')               AS transportista_ferro,
 
-    bro.broker_id,
-    COALESCE(bro.brokers, 'No aplica')                            AS broker,
+co.broker_id                                                AS broker_id,
+COALESCE(bco.nombre, ' ')                           AS broker, 
     COALESCE(e.nombre, 'Sin estatus')                             AS estatus_operacion,
     COALESCE(DATE_FORMAT(o.cita_puerto, '%Y-%m-%d'), 'No aplica') AS cita_puerto,
     CASE
@@ -413,6 +417,7 @@ SELECT
     tm.id_tipo_movimiento                                         AS tipo_movimiento_id,
     tm.nombre                                                     AS concepto,
     tm.moneda,
+    COALESCE(co.factura, '')                             AS factura,
     COALESCE(co.monto, 0)                                         AS monto,
     COALESCE(co.Pagado, 0)                                        AS pagado,
     COALESCE(co.comentario, '')                                   AS comentario
@@ -471,20 +476,8 @@ LEFT JOIN (
     GROUP BY cmo.operacion_id
 ) fer
     ON fer.operacion_id = o.id_operacion
-LEFT JOIN (
-    SELECT
-        ob.operacion_id,
-        MAX(ob.broker_id) AS broker_id,
-        GROUP_CONCAT(
-            DISTINCT b.nombre
-            ORDER BY b.nombre SEPARATOR ', '
-        ) AS brokers
-    FROM operacion_brokers ob
-    INNER JOIN brokers b
-        ON b.id_broker = ob.broker_id
-    GROUP BY ob.operacion_id
-) bro
-    ON bro.operacion_id = o.id_operacion
+ LEFT JOIN brokers bco
+    ON bco.id_broker = co.broker_id
 ";
     }
 
@@ -598,14 +591,8 @@ LEFT JOIN (
                     ON tm.id_tipo_movimiento = co.tipo_movimiento_id
                 LEFT JOIN subtipos_operacion st
                     ON st.id_subtipo = o.subtipo_operacion_id
-                LEFT JOIN (
-                    SELECT
-                        ob.operacion_id,
-                        MAX(ob.broker_id) AS broker_id
-                    FROM operacion_brokers ob
-                    GROUP BY ob.operacion_id
-                ) bro
-                    ON bro.operacion_id = o.id_operacion
+LEFT JOIN brokers bco
+    ON bco.id_broker = co.broker_id
                 {$wMar['sql']}";
 
         // =========================
@@ -871,6 +858,9 @@ WHERE st.tipo_operacion_id = 11
                 'pagado'              => $pagado,
                 'comentario'          => (string)($r['comentario'] ?? ''),
                 'fecha_base'          => (string)($r['fecha_base'] ?? ''),
+                'factura'             => (string)($r['factura'] ?? ''),
+                'broker_id'           => isset($r['broker_id']) ? (int)$r['broker_id'] : null,
+                'broker'              => (string)($r['broker'] ?? ''),
             ];
 
             $groups[$groupKey]['categorias'][$catKey]['conceptos'][] = $concepto;

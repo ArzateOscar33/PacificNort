@@ -148,7 +148,7 @@
                         <div class="input-group">
                             <span class="input-group-text"><i data-feather="filter"></i></span>
                             <input type="text" class="form-control" id="costosCliente_term"
-                                placeholder="Operación / Contenedor / Concepto">
+                                placeholder="Operación / Contenedor / Concepto / Factura">
                         </div>
                     </div>
                     <!-- Per page -->
@@ -222,10 +222,14 @@
                             <th>Ferro/Caja</th>
                             <th>Transportista</th>
                             <th>Transportista Ferro/Caja</th>
-                            <th>Broker</th>
+
                             <th>Estatus</th>
                             <th>Cita Puerto</th>
                             <th>ISF</th>
+                            <th>Broker</th>
+                            <th>Factura</th>
+                            <th>Broker</th>
+                            <th>Factura</th>
                             <th>Categoría</th>
                             <th>Concepto</th>
                             <th class="text-end">Monto</th>
@@ -237,7 +241,7 @@
 
                         <!-- Placeholder vacío -->
                         <tr>
-                            <td colspan="13" class="text-center text-muted py-5">
+                            <td colspan="15" class="text-center text-muted py-5">
                                 <i data-feather="inbox"></i>
                                 <div class="mt-2">Sin datos. Aplica filtros y presiona “Buscar”.</div>
                             </td>

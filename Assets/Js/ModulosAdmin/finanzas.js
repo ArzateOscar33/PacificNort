@@ -32,6 +32,9 @@
     "transportistaFerroId_cc",
   );
 
+  // NUEVO: filtro de factura (si existe en la vista)
+  const facturaSel = document.getElementById("factura_cc");
+
   const monedaVistaSel = document.getElementById("costosClienteMonedaVista");
   const tipoCambioInp = document.getElementById("costosClienteTipoCambio");
 
@@ -59,9 +62,9 @@
   let state = { page: 1, loading: false };
 
   // Origen | Referencia | Contenedor | Ferro/Caja | Transportista |
-  // Transportista Ferro/Caja | Broker | Estatus | Cita Puerto | ISF |
-  // Categoría | Concepto | Monto | Pagado
-  const COLS = 14;
+  // Transportista Ferro/Caja | Estatus | Cita Puerto | ISF |
+  // Broker | Factura | Categoría | Concepto | Monto | Pagado
+  const COLS = 15;
 
   // =========================
   // HELPERS
@@ -151,8 +154,9 @@
     if (fechaInicio?.value) qs.set("fecha_inicio", fechaInicio.value);
     if (fechaFin?.value) qs.set("fecha_fin", fechaFin.value);
     if (brokerSel?.value) qs.set("brokerId_cc", brokerSel.value);
-    if (transportistaSel?.value)
+    if (transportistaSel?.value) {
       qs.set("transportistaId_cc", transportistaSel.value);
+    }
     if (categoriaSel?.value) qs.set("categoriaId_cc", categoriaSel.value);
     if (origenSel?.value) qs.set("origenTipo_cc", origenSel.value);
 
@@ -163,6 +167,10 @@
     if (transportistaFerroSel?.value) {
       qs.set("transportistaFerroId_cc", transportistaFerroSel.value);
     }
+
+    // NUEVO: factura separada, si existe
+    const factura = (facturaSel?.value || "").trim();
+    if (factura) qs.set("factura_cc", factura);
 
     const t = (termInput?.value || "").trim();
     if (t) qs.set("costosCliente_term", t);
@@ -298,6 +306,11 @@
           monto: Number(c?.monto || 0),
           pagado: Number(c?.pagado || 0),
           moneda: c?.moneda || cat?.moneda || op?.moneda || "MXN",
+
+          // NUEVO: broker y factura por concepto
+          broker: c?.broker || op?.broker || "No aplica",
+          broker_id: c?.broker_id ?? op?.broker_id ?? null,
+          factura: c?.factura || "No aplica",
         });
       });
     });
@@ -310,6 +323,9 @@
         monto: 0,
         pagado: 0,
         moneda: op?.moneda || "MXN",
+        broker: op?.broker || "No aplica",
+        broker_id: op?.broker_id ?? null,
+        factura: "No aplica",
       });
     }
 
@@ -381,7 +397,6 @@
       const contenedor = op.contenedor ? esc(op.contenedor) : "—";
       const ferroCaja = op.ferro_caja ? esc(op.ferro_caja) : "—";
       const transportista = op.transportista ? esc(op.transportista) : "—";
-      const broker = op.broker ? esc(op.broker) : "—";
       const estatus = badgeEstatus(op.estatus_operacion);
       const citaPuerto = fmtDate(op.cita_puerto);
       const isf = badgeIsf(op.isf);
@@ -400,6 +415,9 @@
 
       detalles.forEach((d, idx) => {
         const montoConv = convertAmount(d.monto, d.moneda, monedaVista, tc);
+        const brokerDetalle = d.broker ? esc(d.broker) : "—";
+        const facturaDetalle =
+          d.factura && d.factura !== "No aplica" ? esc(d.factura) : " ";
 
         html += `<tr ${idx === 0 ? 'class="finanzas-op-start"' : ""}>`;
 
@@ -411,7 +429,6 @@
             <td rowspan="${rowspan}" class="align-top">${ferroCaja}</td>
             <td rowspan="${rowspan}" class="align-top">${transportista}</td>
             <td rowspan="${rowspan}" class="align-top">${transportistaFerro}</td>
-            <td rowspan="${rowspan}" class="align-top">${broker}</td>
             <td rowspan="${rowspan}" class="align-top">${estatus}</td>
             <td rowspan="${rowspan}" class="align-top">${esc(citaPuerto)}</td>
             <td rowspan="${rowspan}" class="align-top text-center">${isf}</td>
@@ -419,6 +436,8 @@
         }
 
         html += `
+          <td class="align-top">${brokerDetalle}</td>
+          <td class="align-top">${facturaDetalle}</td>
           <td class="align-top">${esc(d.categoria)}</td>
           <td class="align-top">
             <div>${esc(d.concepto)}</div>
@@ -576,6 +595,7 @@
   hookChange(origenSel);
   hookChange(monedaVistaSel);
   hookChange(transportistaFerroSel);
+  hookChange(facturaSel);
 
   let tmr = null;
 
@@ -606,6 +626,7 @@
       if (perPageSel) perPageSel.value = "25";
       if (origenSel) origenSel.value = "";
       if (transportistaFerroSel) transportistaFerroSel.value = "";
+      if (facturaSel) facturaSel.value = "";
       if (monedaVistaSel) monedaVistaSel.value = "MXN";
       if (tipoCambioInp) tipoCambioInp.value = "17.00";
 
