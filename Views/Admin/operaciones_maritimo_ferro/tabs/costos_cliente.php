@@ -67,7 +67,6 @@
                 <div class="col-12 col-md-12 row">
                     <!-- Broker -->
                     <div class="col-12 col-md-2">
-                        <label class="form-label mb-1">Broker</label>
                         <label class="form-label">Broker</label>
                         <select id="brokerId_cc" name="brokerId_cc" class="form-control">
                             <option value="">Seleccione...</option>
@@ -142,7 +141,7 @@
                         <div class="input-group">
                             <span class="input-group-text"><i data-feather="filter"></i></span>
                             <input type="text" class="form-control" id="costosCliente_term"
-                                placeholder="Operación / Contenedor / Concepto">
+                                placeholder="Operación / Contenedor / Concepto / Factura / Broker">
                         </div>
                     </div>
                     <!-- Per page -->
@@ -211,17 +210,17 @@
                 <table class="table table-sm table-hover align-middle mb-0 table-bordered" id="costosCliente_table">
                     <thead class="table-light">
                         <tr class="text-nowrap">
-
                             <th style="min-width:140px;">Operacion</th>
                             <th style="min-width:140px;">Contenedor</th>
                             <th style="min-width:160px;">Caja/Ferro</th>
                             <th style="min-width:160px;">Transportista Marítimo</th>
                             <th style="min-width:180px;">Transportista Ferro/Caja</th>
-                            <th style="min-width:160px;">Broker</th>
                             <th style="min-width:120px;">Estatus</th>
                             <th style="min-width:140px;">Cita Puerto</th>
                             <th style="min-width:90px;" class="text-center">ISF</th>
 
+                            <th style="min-width:160px;">Broker/Proveedor</th>
+                            <th style="min-width:180px;">Factura</th>
                             <th style="min-width:220px;">Categoria</th>
                             <th style="min-width:220px;">Concepto</th>
                             <th style="min-width:120px;" class="text-end">Monto</th>
@@ -233,7 +232,7 @@
 
                         <!-- Placeholder vacío -->
                         <tr>
-                            <td colspan="13" class="text-center text-muted py-5">
+                            <td colspan="14" class="text-center text-muted py-5">
                                 <i data-feather="inbox"></i>
                                 <div class="mt-2">Sin datos. Aplica filtros y presiona “Buscar”.</div>
                             </td>

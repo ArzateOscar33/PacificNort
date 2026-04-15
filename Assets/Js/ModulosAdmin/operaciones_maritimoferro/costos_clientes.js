@@ -2,6 +2,7 @@
    MÓDULO: Costos por Cliente - LISTAR (XHR)
    Archivo: costos_clientes.js
    ============================================================ */
+
 (function () {
   "use strict";
 
@@ -239,7 +240,7 @@
         ? `<span class="badge bg-primary text-white">${esc(first.estatus)}</span>`
         : "—";
 
-      const brokers = first.brokers ? esc(first.brokers) : "—";
+      //const brokers = first.brokers ? esc(first.brokers) : "—";
       const conts = first.contenedores ? esc(first.contenedores) : "—";
       const ferros = first.ferros_cajas ? esc(first.ferros_cajas) : "—";
       const transMar = first.transportista ? esc(first.transportista) : "—";
@@ -267,35 +268,42 @@
 
         const montoConv = convertAmount(r.monto, r.moneda, monedaVista, tc);
         const montoTxt = money(montoConv);
+        const broker = (r.broker || r.brokers || "").trim()
+          ? esc(r.broker || r.brokers)
+          : "—";
+        const factura = (r.factura || "").trim() ? esc(r.factura) : "—";
 
         if (idx === 0) {
           html += `
-            <tr>
-              <td rowspan="${rowspan}">${opLabel}</td>
-              <td rowspan="${rowspan}">${conts}</td>
-              <td rowspan="${rowspan}">${ferros}</td>
-              <td rowspan="${rowspan}">${transMar}</td>
-              <td rowspan="${rowspan}">${transFerro}</td>
-              <td rowspan="${rowspan}">${brokers}</td>
-              <td rowspan="${rowspan}">${estatus}</td>
-              <td rowspan="${rowspan}">${fmtDate(first.cita_puerto)}</td>
-              <td rowspan="${rowspan}" class="text-center">${badgeIsf(first.isf)}</td>
+    <tr>
+      <td rowspan="${rowspan}">${opLabel}</td>
+      <td rowspan="${rowspan}">${conts}</td>
+      <td rowspan="${rowspan}">${ferros}</td>
+      <td rowspan="${rowspan}">${transMar}</td>
+      <td rowspan="${rowspan}">${transFerro}</td>
+      <td rowspan="${rowspan}">${estatus}</td>
+      <td rowspan="${rowspan}">${fmtDate(first.cita_puerto)}</td>
+      <td rowspan="${rowspan}" class="text-center">${badgeIsf(first.isf)}</td>
 
-              <td>${categoria}</td>
-              <td>${concepto}</td>
-              <td class="text-end">$${montoTxt}</td>
-              <td class="text-center">${badgePagado(r.Pagado)}</td>
-            </tr>
-          `;
+      <td>${broker}</td>
+      <td>${factura}</td>
+      <td>${categoria}</td>
+      <td>${concepto}</td>
+      <td class="text-end">$${montoTxt}</td>
+      <td class="text-center">${badgePagado(r.Pagado)}</td>
+    </tr>
+  `;
         } else {
           html += `
-            <tr>
-              <td>${categoria}</td>
-              <td>${concepto}</td>
-              <td class="text-end">$${montoTxt}</td>
-              <td class="text-center">${badgePagado(r.Pagado)}</td>
-            </tr>
-          `;
+    <tr>
+      <td>${broker}</td>
+      <td>${factura}</td>
+      <td>${categoria}</td>
+      <td>${concepto}</td>
+      <td class="text-end">$${montoTxt}</td>
+      <td class="text-center">${badgePagado(r.Pagado)}</td>
+    </tr>
+  `;
         }
       });
     });
