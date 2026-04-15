@@ -5,7 +5,7 @@
       <!-- Encabezado + botón -->
       <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
         <div>
-          <h3 class="mb-1">Costos por Operación</h3>
+          <h3 class="mb-1">Costos por Operación </h3>
           <small class="text-muted">Consulta y administra los costos a nivel operación.</small>
         </div>
 
@@ -29,6 +29,9 @@
                   <option value="">Moneda: Todas</option>
                   <option value="PESOS">PESOS</option>
                   <option value="DLLS">DLLS</option>
+                </select>
+                <select id="costosOperacionFiltroBroker" class="form-control form-control-sm" style="max-width:200px;">
+                  <option value="">Broker: Todos</option>
                 </select>
               </div>
 
@@ -164,18 +167,18 @@
           <thead class="table-light">
             <tr>
               <th style="width:110px;">Fecha</th>
-              <!-- ELIMINADO: Origen -->
-              <!-- ELIMINADO: Contenedor -->
               <th>Concepto</th>
+              <th style="width:160px;">Factura</th>
+              <th style="width:180px;">Proveedor / Broker</th>
               <th class="text-end" style="width:140px;">Monto</th>
               <th class="text-center" style="width:120px;">Estatus</th>
               <th class="text-center" style="width:120px;">Comentario</th>
-              <th class=" text-center" style="width:120px;">Acciones</th>
+              <th class="text-center" style="width:120px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyCostosOperacionCombined">
             <tr>
-              <td colspan="6" class="text-center text-muted py-4">Selecciona una operación para ver sus costos.</td>
+              <td colspan="8" class="text-center text-muted py-4">Selecciona una operación para ver sus costos.</td>
             </tr>
           </tbody>
         </table>
@@ -244,7 +247,22 @@
             <input type="number" id="costosContenedoresMonto" name="costosContenedoresMonto" class="form-control"
               required placeholder="Ej: 500">
           </div>
+          <div class="mb-3">
+            <label for="costosContenedoresFactura" class="form-label">Factura(Opcional)</label>
+            <input type="text"
+              id="costosContenedoresFactura"
+              name="costosContenedoresFactura"
+              class="form-control"
+              placeholder="Ej: INV-12345 / 45098 / FAC-001">
+          </div>
 
+          <div class="mb-3">
+            <label for="costosContenedoresBroker" class="form-label">Proveedor / Broker(Opcional)</label>
+            <select id="costosContenedoresBroker" name="costosContenedoresBroker" class="form-control">
+              <option value="">Seleccione un broker</option>
+            </select>
+
+          </div>
           <div class="mb-3">
             <label for="costosContenedoresMoneda" class="form-label">Moneda</label>
             <select id="costosContenedoresMoneda" name="costosContenedoresMoneda" class="form-control" readonly disabled>
@@ -302,4 +320,5 @@
   // Uso
   forzarMayusculas("costosOperacionFiltroOpNombre");
   forzarMayusculas("costosOperacionNombre");
+  forzarMayusculas("costosContenedoresFactura");
 </script>

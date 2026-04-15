@@ -59,6 +59,7 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
         $tipoId      = (int)($_GET['tipo'] ?? ($_GET['tipo_movimiento_id'] ?? 0));
         $operacionId = (int)($_GET['operacion_id'] ?? 0);
         $soloActivos = isset($_GET['solo_activos']) ? ((int)$_GET['solo_activos'] === 1) : true;
+        $brokerId    = (int)($_GET['broker_id'] ?? 0);
 
         $m = strtoupper($monedaRaw);
         if ($m !== 'PESOS' && $m !== 'DLLS') {
@@ -181,10 +182,11 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
             $rowId       = (int)($_POST['row_id'] ?? 0);
             $operacionId = (int)($_POST['operacion_id'] ?? 0);
             $tipoId      = (int)($_POST['tipo_movimiento_id'] ?? 0);
+            $brokerId    = (int)($_POST['broker_id'] ?? 0);
             $monto       = (float)($_POST['monto'] ?? 0);
+            $factura     = trim((string)($_POST['factura'] ?? ''));
             $comentario  = trim((string)($_POST['comentario'] ?? ''));
 
-            // ✅ NUEVO: pagado (0|1)
             $pagado = isset($_POST['costosContenedoresPagado']) ? (int)$_POST['costosContenedoresPagado'] : 0;
             $pagado = ($pagado === 1) ? 1 : 0;
 
@@ -208,14 +210,13 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
             }
 
             $monedaCat  = strtoupper((string)($tm['moneda'] ?? ''));
-            $tipoDinero = strtolower((string)($tm['tipo'] ?? '')); // 'gasto' | 'abono'
+            $tipoDinero = strtolower((string)($tm['tipo'] ?? ''));
             if ($monedaCat !== 'PESOS' && $monedaCat !== 'DLLS') {
                 echo json_encode(['status' => 'warning', 'message' => 'Moneda del tipo de movimiento inválida']);
                 return;
             }
 
             if ($rowId > 0) {
-                // === ACTUALIZAR ===
                 $prev = $this->model->obtenerCostoOperacionCombinado($rowId);
                 if (!$prev) {
                     echo json_encode(['status' => 'warning', 'message' => 'Registro no encontrado']);
@@ -225,9 +226,12 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                 $ok = $this->model->actualizarCostoOperacionCombinado($rowId, [
                     'tipo_movimiento_id' => $tipoId,
                     'monto'              => $monto,
+                    'factura'            => $factura,
+                    'broker_id'          => $brokerId,
                     'comentario'         => $comentario,
-                    'pagado'             => $pagado, // ✅ NUEVO
+                    'pagado'             => $pagado,
                 ]);
+
                 if (!$ok) {
                     echo json_encode(['status' => 'error', 'message' => 'No se actualizó el registro']);
                     return;
@@ -235,14 +239,16 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
 
                 $opId4 = (int)($prev['operacion_id'] ?? $operacionId);
                 $desc = $this->makeDesc('Movimiento de operación actualizado', [
-                    'fuente'   => 'MF',
-                    'costo_id' => $rowId,
-                    'tipo_id'  => $tipoId,
-                    'tipo'     => $tipoDinero,
-                    'monto'    => $monto,
-                    'moneda'   => $monedaCat,
-                    'pagado'   => $pagado,
-                    'coment'   => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
+                    'fuente'    => 'MF',
+                    'costo_id'  => $rowId,
+                    'tipo_id'   => $tipoId,
+                    'tipo'      => $tipoDinero,
+                    'monto'     => $monto,
+                    'moneda'    => $monedaCat,
+                    'factura'   => ($factura !== '' ? $factura : '-'),
+                    'broker_id' => ($brokerId > 0 ? $brokerId : '-'),
+                    'pagado'    => $pagado,
+                    'coment'    => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
                 ]);
                 $this->logOp($opId4, 'actualizacion', $desc);
 
@@ -250,7 +256,6 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                 return;
             }
 
-            // === CREAR ===
             if ($operacionId <= 0) {
                 echo json_encode(['status' => 'warning', 'message' => 'Falta operación']);
                 return;
@@ -260,23 +265,28 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
                 'operacion_id'       => $operacionId,
                 'tipo_movimiento_id' => $tipoId,
                 'monto'              => $monto,
+                'factura'            => $factura,
+                'broker_id'          => $brokerId,
                 'comentario'         => $comentario,
-                'pagado'             => $pagado, // ✅ NUEVO
+                'pagado'             => $pagado,
             ]);
+
             if ($newId <= 0) {
                 echo json_encode(['status' => 'error', 'message' => 'No se creó el registro']);
                 return;
             }
 
             $desc = $this->makeDesc('Movimiento de operación creado', [
-                'fuente'   => 'MF',
-                'costo_id' => $newId,
-                'tipo_id'  => $tipoId,
-                'tipo'     => $tipoDinero,
-                'monto'    => $monto,
-                'moneda'   => $monedaCat,
-                'pagado'   => $pagado,
-                'coment'   => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
+                'fuente'    => 'MF',
+                'costo_id'  => $newId,
+                'tipo_id'   => $tipoId,
+                'tipo'      => $tipoDinero,
+                'monto'     => $monto,
+                'moneda'    => $monedaCat,
+                'factura'   => ($factura !== '' ? $factura : '-'),
+                'broker_id' => ($brokerId > 0 ? $brokerId : '-'),
+                'pagado'    => $pagado,
+                'coment'    => ($comentario !== '' ? mb_substr($comentario, 0, 60) . '…' : '')
             ]);
             $this->logOp($operacionId, 'creacion', $desc);
 
@@ -335,12 +345,12 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
 
             if ($ok && $row) {
                 $opId = (int)($row['operacion_id'] ?? 0);
-                $desc = $this->makeDesc('Costo de operación desactivado', [
-                    'fuente'   => 'MF',
-                    'costo_id' => $id,
-                    'tipo_id'  => $row['tipo_movimiento_id'] ?? '-',
-                    'monto'    => $row['monto'] ?? '-',
-                    'moneda'   => $row['moneda'] ?? '-'
+                $desc = $this->makeDesc('Costo de operación reactivado', [
+                    'fuente'    => 'MF',
+                    'costo_id'  => $id,
+                    'tipo_id'   => $row['tipo_movimiento_id'] ?? '-',
+                    'factura'   => $row['factura'] ?? '-',
+                    'broker_id' => $row['broker_id'] ?? '-'
                 ]);
                 $this->logOp($opId, 'cancelacion', $desc);
             }
@@ -420,6 +430,26 @@ class Operaciones_maritimo_ferro_costos_Contenedor extends Controller
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * GET /operaciones_maritimo_ferro_costos_contenedor/brokers
+     * Devuelve brokers activos.
+     */
+    public function brokers()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+
+        try {
+            $rows = $this->model->obtenerBrokersActivos();
+            echo json_encode(is_array($rows) ? $rows : [], JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Error al obtener brokers: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
         }
     }
 }

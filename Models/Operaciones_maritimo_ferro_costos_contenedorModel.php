@@ -66,8 +66,9 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
         if ($opId <= 0) return 0;
 
         $buscar      = trim((string)($f['buscar'] ?? ''));
-        $moneda      = strtoupper(trim((string)($f['moneda'] ?? ''))); // 'PESOS'|'DLLS'|''
+        $moneda      = strtoupper(trim((string)($f['moneda'] ?? '')));
         $tipoId      = (int)($f['tipo_movimiento_id'] ?? ($f['tipo'] ?? 0));
+        $brokerId    = (int)($f['broker_id'] ?? 0);
         $soloActivos = (bool)($f['solo_activos'] ?? true);
 
         $w = ["c.operacion_id = ?"];
@@ -77,8 +78,12 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             $w[] = "c.estatus = 1";
         }
         if ($buscar !== '') {
-            $w[] = "(tm.nombre LIKE ? OR c.comentario LIKE ? OR o.numero_operacion LIKE ?)";
-            array_push($p, "%$buscar%", "%$buscar%", "%$buscar%");
+            $w[] = "(tm.nombre LIKE ? 
+                 OR c.comentario LIKE ? 
+                 OR o.numero_operacion LIKE ?
+                 OR c.factura LIKE ?
+                 OR b.nombre LIKE ?)";
+            array_push($p, "%$buscar%", "%$buscar%", "%$buscar%", "%$buscar%", "%$buscar%");
         }
         if ($moneda === 'PESOS' || $moneda === 'DLLS') {
             $w[] = "UPPER(tm.moneda) = ?";
@@ -88,12 +93,17 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             $w[] = "c.tipo_movimiento_id = ?";
             $p[] = $tipoId;
         }
+        if ($brokerId > 0) {
+            $w[] = "c.broker_id = ?";
+            $p[] = $brokerId;
+        }
 
         $sql = "SELECT COUNT(*) AS total
-                FROM costos_operacion c
-                LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
-                LEFT JOIN operaciones o ON o.id_operacion = c.operacion_id
-                WHERE " . implode(' AND ', $w);
+            FROM costos_operacion c
+            LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
+            LEFT JOIN operaciones o ON o.id_operacion = c.operacion_id
+            LEFT JOIN brokers b ON b.id_broker = c.broker_id
+            WHERE " . implode(' AND ', $w);
 
         try {
             $row = $this->select($sql, $p);
@@ -115,6 +125,7 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
         $buscar      = trim((string)($f['buscar'] ?? ''));
         $moneda      = strtoupper(trim((string)($f['moneda'] ?? '')));
         $tipoId      = (int)($f['tipo_movimiento_id'] ?? ($f['tipo'] ?? 0));
+        $brokerId    = (int)($f['broker_id'] ?? 0);
         $soloActivos = (bool)($f['solo_activos'] ?? true);
 
         $w = ["c.operacion_id = ?"];
@@ -124,8 +135,12 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             $w[] = "c.estatus = 1";
         }
         if ($buscar !== '') {
-            $w[] = "(tm.nombre LIKE ? OR c.comentario LIKE ? OR o.numero_operacion LIKE ?)";
-            array_push($p, "%$buscar%", "%$buscar%", "%$buscar%");
+            $w[] = "(tm.nombre LIKE ? 
+                 OR c.comentario LIKE ? 
+                 OR o.numero_operacion LIKE ?
+                 OR c.factura LIKE ?
+                 OR b.nombre LIKE ?)";
+            array_push($p, "%$buscar%", "%$buscar%", "%$buscar%", "%$buscar%", "%$buscar%");
         }
         if ($moneda === 'PESOS' || $moneda === 'DLLS') {
             $w[] = "UPPER(tm.moneda) = ?";
@@ -135,31 +150,39 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             $w[] = "c.tipo_movimiento_id = ?";
             $p[] = $tipoId;
         }
+        if ($brokerId > 0) {
+            $w[] = "c.broker_id = ?";
+            $p[] = $brokerId;
+        }
 
         $sql = "
-            SELECT
-                'OPERACION'              AS origen,
-                NULL                     AS contenedor_id,
-                NULL                     AS contenedor,
-                c.id_costo_operacion     AS row_id,
-                o.id_operacion           AS operacion_id,
-                o.numero_operacion       AS numero_operacion,
-                tm.id_tipo_movimiento    AS tipo_movimiento_id,
-                tm.nombre                AS concepto,
-                LOWER(tm.tipo)           AS naturaleza,
-                UPPER(tm.moneda)         AS moneda,
-                c.monto                  AS monto,
-                c.comentario             AS comentario,
-                c.fecha_creacion         AS fecha,
-                'MF'                     AS fuente,
-                c.pagado                 AS pagado
-            FROM costos_operacion c
-            LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
-            LEFT JOIN operaciones o ON o.id_operacion = c.operacion_id
-            WHERE " . implode(' AND ', $w) . "
-            ORDER BY c.fecha_creacion DESC, c.id_costo_operacion DESC
-            LIMIT {$perPage} OFFSET {$offset}
-        ";
+        SELECT
+            'OPERACION'              AS origen,
+            NULL                     AS contenedor_id,
+            NULL                     AS contenedor,
+            c.id_costo_operacion     AS row_id,
+            o.id_operacion           AS operacion_id,
+            o.numero_operacion       AS numero_operacion,
+            tm.id_tipo_movimiento    AS tipo_movimiento_id,
+            tm.nombre                AS concepto,
+            LOWER(tm.tipo)           AS naturaleza,
+            UPPER(tm.moneda)         AS moneda,
+            c.monto                  AS monto,
+            c.factura                AS factura,
+            c.broker_id              AS broker_id,
+            COALESCE(b.nombre, '')   AS broker_nombre,
+            c.comentario             AS comentario,
+            c.fecha_creacion         AS fecha,
+            'MF'                     AS fuente,
+            c.pagado                 AS pagado
+        FROM costos_operacion c
+        LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
+        LEFT JOIN operaciones o ON o.id_operacion = c.operacion_id
+        LEFT JOIN brokers b ON b.id_broker = c.broker_id
+        WHERE " . implode(' AND ', $w) . "
+        ORDER BY c.fecha_creacion DESC, c.id_costo_operacion DESC
+        LIMIT {$perPage} OFFSET {$offset}
+    ";
 
         try {
             $rows = $this->selectAll($sql, $p);
@@ -289,14 +312,19 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
         $pagado = isset($d['pagado']) ? (int)$d['pagado'] : 0;
         $pagado = ($pagado === 1) ? 1 : 0;
 
+        $factura  = trim((string)($d['factura'] ?? ''));
+        $brokerId = (int)($d['broker_id'] ?? 0);
+
         $sql = "INSERT INTO costos_operacion
-            (operacion_id, tipo_movimiento_id, monto, comentario, pagado, estatus, fecha_creacion)
-            VALUES (?, ?, ?, ?, ?, 1, NOW())";
+        (operacion_id, tipo_movimiento_id, monto, factura, broker_id, comentario, pagado, estatus, fecha_creacion)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())";
 
         return (int)$this->insertar($sql, [
             $opId,
             (int)($d['tipo_movimiento_id'] ?? 0),
             (float)($d['monto'] ?? 0),
+            $factura !== '' ? $factura : null,
+            $brokerId > 0 ? $brokerId : null,
             (string)($d['comentario'] ?? ''),
             $pagado
         ]);
@@ -315,12 +343,20 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             $sets[] = "monto = ?";
             $params[] = (float)$d['monto'];
         }
+        if (array_key_exists('factura', $d)) {
+            $factura = trim((string)$d['factura']);
+            $sets[] = "factura = ?";
+            $params[] = ($factura !== '') ? $factura : null;
+        }
+        if (array_key_exists('broker_id', $d)) {
+            $brokerId = (int)$d['broker_id'];
+            $sets[] = "broker_id = ?";
+            $params[] = ($brokerId > 0) ? $brokerId : null;
+        }
         if (array_key_exists('comentario', $d)) {
             $sets[] = "comentario = ?";
             $params[] = (string)$d['comentario'];
         }
-
-        // ✅ NUEVO
         if (array_key_exists('pagado', $d)) {
             $val = ((int)$d['pagado'] === 1) ? 1 : 0;
             $sets[] = "pagado = ?";
@@ -341,23 +377,28 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
     public function obtenerCostoOperacionCombinado(int $id): ?array
     {
         $sql = "SELECT 
-                    c.id_costo_operacion AS row_id,
-                    c.operacion_id       AS operacion_id,
-                    o.numero_operacion   AS numero_operacion,
-                    c.tipo_movimiento_id,
-                    tm.nombre            AS concepto,
-                    UPPER(tm.moneda)     AS moneda,
-                    c.monto,
-                    c.comentario,
-                    c.estatus,
-                    c.fecha_creacion     AS fecha,
-                    'MF'                 AS fuente,
-                    c.pagado             AS pagado
-                FROM costos_operacion c
-                LEFT JOIN operaciones o      ON o.id_operacion = c.operacion_id
-                LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
-                WHERE c.id_costo_operacion = ?
-                LIMIT 1";
+                c.id_costo_operacion AS row_id,
+                c.operacion_id       AS operacion_id,
+                o.numero_operacion   AS numero_operacion,
+                c.tipo_movimiento_id,
+                tm.nombre            AS concepto,
+                UPPER(tm.moneda)     AS moneda,
+                c.monto,
+                c.factura            AS factura,
+                c.broker_id          AS broker_id,
+                COALESCE(b.nombre, '') AS broker_nombre,
+                c.comentario,
+                c.estatus,
+                c.fecha_creacion     AS fecha,
+                'MF'                 AS fuente,
+                c.pagado             AS pagado
+            FROM costos_operacion c
+            LEFT JOIN operaciones o ON o.id_operacion = c.operacion_id
+            LEFT JOIN tipos_movimiento tm ON tm.id_tipo_movimiento = c.tipo_movimiento_id
+            LEFT JOIN brokers b ON b.id_broker = c.broker_id
+            WHERE c.id_costo_operacion = ?
+            LIMIT 1";
+
         $row = $this->select($sql, [$id]);
         return $row ?: null;
     }
@@ -415,6 +456,24 @@ class Operaciones_maritimo_ferro_costos_contenedorModel extends Query
             ];
         } catch (\Throwable $e) {
             return null;
+        }
+    }
+
+
+    //COSTOS POR PROOVEDOR
+    public function obtenerBrokersActivos(): array
+    {
+        $sql = "SELECT 
+                id_broker,
+                nombre
+            FROM brokers
+            WHERE estatus = 1
+            ORDER BY nombre ASC";
+
+        try {
+            return $this->selectAll($sql, []) ?: [];
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 }

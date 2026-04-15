@@ -44,8 +44,11 @@
     "costosContenedorContenedorNombre",
   );
 
-  const formModal = document.getElementById("formCostoOperacion");
+  const formModal = document.getElementById("formAgregarCostoContenedores");
   const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
+
+  const facturaModal = document.getElementById("costosContenedoresFactura");
+  const selBrokerModal = document.getElementById("costosContenedoresBroker");
 
   if (!modalEl || !btnGuardar) {
     return;
@@ -86,11 +89,15 @@
     const rowId = parseInt(hidRowId?.value || "0", 10) || 0;
     const operacionId = parseInt(operacionIdModal?.value || "0", 10) || 0;
     const tipoId = parseInt(selTipoModal?.value || "0", 10) || 0;
+    const brokerId = parseInt(selBrokerModal?.value || "0", 10) || 0;
 
     let montoRaw = String(montoModal?.value || "").trim();
     montoRaw = montoRaw.replace(/\s/g, "").replace(/,/g, "");
     const monto = parseFloat(montoRaw) || 0;
 
+    const factura = String(facturaModal?.value || "")
+      .trim()
+      .toUpperCase();
     const comentario = String(comentModal?.value || "").trim();
     const pagado = parseInt(selPagadoModal?.value || "0", 10) === 1 ? 1 : 0;
 
@@ -115,6 +122,8 @@
 
     fd.append("tipo_movimiento_id", String(tipoId));
     fd.append("monto", String(monto.toFixed(2)));
+    fd.append("factura", factura);
+    fd.append("broker_id", String(brokerId));
     fd.append("comentario", comentario);
     fd.append("costosContenedoresPagado", String(pagado));
 

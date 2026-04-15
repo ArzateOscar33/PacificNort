@@ -36,9 +36,12 @@
   // Contenedor ligado (solo informativo en filtro superior)
   const contFiltroIdHid = document.getElementById(
     "costosOperacionFiltroFerroId",
-  ); // OJO: en tu vista se llama "Ferro"
+  );
   const contFiltroNomInp = document.getElementById(
     "costosOperacionFiltroFerroNombre",
+  );
+  const selBrokerFiltro = document.getElementById(
+    "costosOperacionFiltroBroker",
   );
 
   // ---------------------- DOM (modal) ----------------------
@@ -53,6 +56,9 @@
   const selMonModal = document.getElementById("costosContenedoresMoneda");
   const montoModal = document.getElementById("costosContenedoresMonto");
   const comentModal = document.getElementById("costosContenedoresComentarios");
+
+  const facturaModal = document.getElementById("costosContenedoresFactura");
+  const selBrokerModal = document.getElementById("costosContenedoresBroker");
 
   const contIdModal = document.getElementById("costosContenedorContenedorId");
   const contNomModal = document.getElementById(
@@ -94,12 +100,12 @@
 
   function renderCargando() {
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
   }
 
   function renderVacio(msg) {
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">${msg || "No hay costos para mostrar."}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${msg || "No hay costos para mostrar."}</td></tr>`;
   }
 
   function ensureMonedaOptions(sel) {
@@ -187,6 +193,8 @@
   const END = {
     tiposMovimiento: () =>
       `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/tiposMovimiento`,
+    brokers: () =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/brokers`,
     listarPaginado: (qs) =>
       `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/listarPaginado?${qs}`,
     buscarOperaciones: (term) =>
@@ -195,8 +203,6 @@
       `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/contenedorLigado?operacion_id=${encodeURIComponent(opId)}`,
     desactivar: () =>
       `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/desactivarCostoOperacion`,
-    // ✅ NO guardar aquí (lo hace registrar.js)
-    // guardar: () => `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/guardar`,
   };
 
   function loadTiposMovimiento(selectEl, selectedId = null, done = null) {
@@ -332,30 +338,34 @@
       tr.dataset.coment = r.comentario || "";
       tr.dataset.pagado = r.pagado ?? "0";
       tr.dataset.nat = nat;
+      tr.dataset.factura = r.factura || "";
+      tr.dataset.brokerId = r.broker_id || "";
+      tr.dataset.brokerNombre = r.broker_nombre || "";
       tr.innerHTML = `
-        <td>${fmtFecha(r.fecha)}</td>
-        <td>${safe(r.concepto)}${badgeNat}</td>
-         
-                <td class="text-end ${montoCls} jsMontoVista"
-            data-amt="${Number(r.monto || 0) || 0}"
-            data-mon="${prettyMoneda(r.moneda)}">
-          ${montoConSigno}
-        </td>
-        <td class="text-center">${badgePagado(r.pagado)}</td>
-        <td>${safe(r.comentario)}</td>
-        <td class="text-center">
-          <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-outline-secondary btnEditarCostoOperacion" title="Ver / Editar">
-              <i data-feather="edit-2"></i>
-            </button>
-            <button type="button" class="btn btn-outline-danger btnEliminarCostoOperacion"
-                    title="${isTransporte ? "Eliminar deshabilitado para Transporte" : "Eliminar"}"
-                    ${isTransporte ? 'disabled aria-disabled="true"' : ""}>
-              <i data-feather="trash-2"></i>
-            </button>
-          </div>
-        </td>
-      `;
+  <td>${fmtFecha(r.fecha)}</td>
+  <td>${safe(r.concepto)}${badgeNat}</td>
+  <td>${safe(r.factura) || '<span class="text-muted">—</span>'}</td>
+  <td>${safe(r.broker_nombre) || '<span class="text-muted">—</span>'}</td>
+  <td class="text-end ${montoCls} jsMontoVista"
+      data-amt="${Number(r.monto || 0) || 0}"
+      data-mon="${prettyMoneda(r.moneda)}">
+    ${montoConSigno}
+  </td>
+  <td class="text-center">${badgePagado(r.pagado)}</td>
+  <td>${safe(r.comentario)}</td>
+  <td class="text-center">
+    <div class="btn-group btn-group-sm">
+      <button type="button" class="btn btn-outline-secondary btnEditarCostoOperacion" title="Ver / Editar">
+        <i data-feather="edit-2"></i>
+      </button>
+      <button type="button" class="btn btn-outline-danger btnEliminarCostoOperacion"
+              title="${isTransporte ? "Eliminar deshabilitado para Transporte" : "Eliminar"}"
+              ${isTransporte ? 'disabled aria-disabled="true"' : ""}>
+        <i data-feather="trash-2"></i>
+      </button>
+    </div>
+  </td>
+`;
       tbody.appendChild(tr);
     });
 
@@ -574,6 +584,7 @@
     const buscar = (inpBuscar?.value || "").trim();
     const moneda = (selMonedaFiltro?.value || "").toUpperCase();
     const tipoId = parseInt(selTipoFiltro?.value || "0", 10) || 0;
+    const brokerId = parseInt(selBrokerFiltro?.value || "0", 10) || 0;
 
     if (currentXHR && currentXHR.readyState !== 4) currentXHR.abort();
     renderCargando();
@@ -584,6 +595,7 @@
       buscar,
       moneda,
       tipo: String(tipoId),
+      broker_id: String(brokerId),
       operacion_id: String(operacionId),
       solo_activos: "1",
     });
@@ -756,6 +768,7 @@
     if (perPage < 1) perPage = 10;
 
     loadTiposMovimiento(selTipoModal);
+    loadBrokers();
 
     if (operacionId > 0) {
       fetchContenedorLigado(operacionId, (data) => {
@@ -789,6 +802,7 @@
 
   selMonedaFiltro?.addEventListener("change", () => listar(1));
   selTipoFiltro?.addEventListener("change", () => listar(1));
+  selMonedaFiltro?.addEventListener("change", () => listar(1));
 
   selMonedaVista?.addEventListener("change", () => {
     renderTotales(totalesDetalleCache);
@@ -831,8 +845,9 @@
     if (selTipoModal) selTipoModal.value = "";
     if (selMonModal) selMonModal.value = "";
     if (montoModal) montoModal.value = "";
+    if (facturaModal) facturaModal.value = "";
     if (comentModal) comentModal.value = "";
-
+    if (selBrokerModal) selBrokerModal.value = "";
     if (contIdModal) contIdModal.value = "";
     if (contNomModal) contNomModal.value = "";
 
@@ -855,6 +870,7 @@
 
     loadTiposMovimiento(selTipoModal);
 
+    loadBrokers();
     if (fid && fnom) {
       if (opIdModal) opIdModal.value = String(fid);
       if (opNomModal) opNomModal.value = fnom;
@@ -982,9 +998,12 @@
       if (opIdModal) opIdModal.value = tr.dataset.opId || "";
       if (opNomModal) opNomModal.value = tr.dataset.opNom || "";
       if (montoModal) montoModal.value = tr.dataset.monto || "";
+      if (facturaModal) facturaModal.value = tr.dataset.factura || "";
       if (comentModal) comentModal.value = tr.dataset.coment || "";
       if (selPagadoModal)
         selPagadoModal.value = String(tr.dataset.pagado ?? "0");
+
+      loadBrokers("", tr.dataset.brokerId || "");
 
       const tipoIdSel = tr.dataset.tipoId || "";
       const tipoNomSel = tr.dataset.tipoNom || "";
@@ -1108,7 +1127,7 @@
         ref: "#tablaCostosOperacionExportar",
         formato: "xlsx",
         nombre: "CostosOperacion_MF.xlsx",
-        columnasOcultas: [5],
+        columnasOcultas: [7],
         soloVisibles: true,
         sheetName: "Costos MF",
       });
@@ -1132,5 +1151,52 @@
         soloVisibles: true,
       });
     });
+  }
+
+  //cargar brokers
+  function loadBrokers(selectedFiltro = "", selectedModal = "", done = null) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", END.brokers(), true);
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      let rows = [];
+      if (xhr.status === 200) {
+        try {
+          rows = JSON.parse(xhr.responseText) || [];
+        } catch {
+          rows = [];
+        }
+      }
+
+      // filtro superior
+      if (selBrokerFiltro) {
+        let html = `<option value="">Broker: Todos</option>`;
+        rows.forEach((b) => {
+          html += `<option value="${b.id_broker}">${safe(b.nombre)}</option>`;
+        });
+        selBrokerFiltro.innerHTML = html;
+        if (selectedFiltro !== null && selectedFiltro !== undefined) {
+          selBrokerFiltro.value = String(selectedFiltro);
+        }
+      }
+
+      // modal
+      if (selBrokerModal) {
+        let html = `<option value="">Seleccione un broker</option>`;
+        rows.forEach((b) => {
+          html += `<option value="${b.id_broker}">${safe(b.nombre)}</option>`;
+        });
+        selBrokerModal.innerHTML = html;
+        if (selectedModal !== null && selectedModal !== undefined) {
+          selBrokerModal.value = String(selectedModal);
+        }
+      }
+
+      if (typeof done === "function") done(rows);
+    };
+
+    xhr.send();
   }
 })();
