@@ -228,8 +228,6 @@
                             <th>ISF</th>
                             <th>Broker</th>
                             <th>Factura</th>
-                            <th>Broker</th>
-                            <th>Factura</th>
                             <th>Categoría</th>
                             <th>Concepto</th>
                             <th class="text-end">Monto</th>
