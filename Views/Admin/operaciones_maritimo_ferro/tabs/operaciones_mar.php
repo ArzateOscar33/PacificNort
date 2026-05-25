@@ -25,6 +25,28 @@
     /* clave: evita “encogimientos” raros con overflow-x */
   }
 
+  /* ===== Color por estatus en renglones ===== */
+  .mf-table tbody tr.row-estatus-color>td {
+    background-color: var(--estatus-bg) !important;
+    color: var(--estatus-text, #000) !important;
+  }
+
+  /* Importante: las columnas sticky también deben respetar el color */
+  .mf-table tbody tr.row-estatus-color>td.sticky-col {
+    background-color: var(--estatus-bg) !important;
+    color: var(--estatus-text, #000) !important;
+  }
+
+  /* Mantener bordes visibles aunque el fondo cambie */
+  .mf-table tbody tr.row-estatus-color>td {
+    border: 1px solid rgba(0, 0, 0, .25) !important;
+  }
+
+  /* Hover suave sin perder el color base */
+  .mf-table tbody tr.row-estatus-color:hover>td {
+    filter: brightness(0.96);
+  }
+
   /* Base cells */
   .mf-table th,
   .mf-table td {

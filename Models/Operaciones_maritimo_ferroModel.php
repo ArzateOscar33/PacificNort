@@ -99,10 +99,14 @@ class Operaciones_maritimo_ferroModel extends Query
 
     public function catalogoEstatus(): array
     {
-        $sql = "SELECT id_estatus, nombre
-                FROM estatus
-                WHERE estatus = 1
-                ORDER BY nombre";
+        $sql = "SELECT 
+                id_estatus, 
+                nombre,
+                color_hex
+            FROM estatus
+            WHERE estatus = 1
+            ORDER BY nombre";
+
         return $this->selectAll($sql) ?: [];
     }
 
@@ -737,7 +741,19 @@ class Operaciones_maritimo_ferroModel extends Query
             ) asig ON asig.operacion_id = o.id_operacion
 
             $where
-            ORDER BY o.eta DESC,o.id_operacion DESC
+            ORDER BY
+                CASE
+                    WHEN o.eta IS NULL THEN 3
+                    WHEN DATE(o.eta) >= CURDATE() THEN 1
+                    ELSE 2
+                END ASC,
+                CASE
+                    WHEN DATE(o.eta) >= CURDATE() THEN DATE(o.eta)
+                END ASC,
+                CASE
+                    WHEN DATE(o.eta) < CURDATE() THEN DATE(o.eta)
+                END DESC,
+                o.id_operacion DESC
             LIMIT $limit OFFSET $off
         ";
 

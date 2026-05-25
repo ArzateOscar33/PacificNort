@@ -117,6 +117,43 @@
       </tr>`;
   }
 
+  function mfColorValido(hex) {
+    return /^#([0-9A-F]{3}){1,2}$/i.test(String(hex || "").trim());
+  }
+
+  function mfTextoContraste(hex) {
+    hex = String(hex || "")
+      .replace("#", "")
+      .trim();
+
+    if (hex.length === 3) {
+      hex = hex
+        .split("")
+        .map((c) => c + c)
+        .join("");
+    }
+
+    if (hex.length !== 6) {
+      return "#000000";
+    }
+
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Fórmula simple de luminancia
+    const luminancia = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    return luminancia > 160 ? "#000000" : "#ffffff";
+  }
+
+  function mfEstiloRenglonPorEstatus(colorHex) {
+    const color = mfColorValido(colorHex) ? colorHex : "#ffffff";
+    const texto = mfTextoContraste(color);
+
+    return `class="row-estatus-color" style="--estatus-bg:${color}; --estatus-text:${texto};"`;
+  }
+
   function renderAsignacionesCols(item) {
     const ferrosStr = (item.ferros_cajas || "").trim();
     const destinosStr = (item.destinos_ferros_cajas || "").trim();
@@ -188,72 +225,80 @@
   function renderTabla(rows) {
     if (!tablaBody) return;
     tablaBody.innerHTML = "";
+
     if (!Array.isArray(rows) || rows.length === 0) {
       tablaBody.innerHTML =
         "<tr><td colspan='25' class='text-center'>No se encontraron resultados</td></tr>";
       return;
     }
+
     rows.forEach((item) => {
       const tr = document.createElement("tr");
       const asig = renderAsignacionesCols(item);
-      tr.classList.add("text-center");
+
+      const colorEstatus = mfColorValido(item.estatus_color)
+        ? item.estatus_color
+        : "#ffffff";
+
+      const textoEstatus = mfTextoContraste(colorEstatus);
+
+      tr.classList.add("text-center", "row-estatus-color");
+      tr.style.setProperty("--estatus-bg", colorEstatus);
+      tr.style.setProperty("--estatus-text", textoEstatus);
+
       tr.innerHTML = `
-        <td class="sticky-col sticky-col-1 text-center ">${safe(item.numero_operacion)}</td>
-        <td class="sticky-col sticky-col-2 text-center">${safe(item.contenedores)}</td>
-        <td>${safe(item.subtipo || item.subtipo_operacion)}</td>
-        <td>${safe(item.etd)}</td>
-        <td>${safe(item.eta)}</td>
-        
+      <td class="sticky-col sticky-col-1 text-center">${safe(item.numero_operacion)}</td>
+      <td class="sticky-col sticky-col-2 text-center">${safe(item.contenedores)}</td>
+      <td>${safe(item.subtipo || item.subtipo_operacion)}</td>
+      <td>${safe(item.etd)}</td>
+      <td>${safe(item.eta)}</td>
 
-        <td>${safe(item.peso_total)} Kg</td>
-        <td>${safe(item.bultos_total)}</td>
-        <td>${safe(item.tipo_contenedor)}</td>
-        <td>${safe(item.mercancia) ? item.mercancia : "-"}</td>
-        <td>${safe(item.transportista)}</td>
-        <td>${safe(item.brokers)}</td>
-        <td>${safe(item.numero_bl)}</td>
-        <td>${safe(item.puerto_arribo)}</td>
-        <td>${safe(item.cliente)}</td> 
-        <td>${safe(item.estatus)}</td>
-        <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
-        <td>${safe(item.cita_puerto) || "-"}</td>
-        <td class="col-ellipsis" title="${safe(item.ubicacion_actual || "")}">
-          ${safe(item.ubicacion_actual || "-")}
-        </td>
+      <td>${safe(item.peso_total)} Kg</td>
+      <td>${safe(item.bultos_total)}</td>
+      <td>${safe(item.tipo_contenedor)}</td>
+      <td>${safe(item.mercancia) ? item.mercancia : "-"}</td>
+      <td>${safe(item.transportista)}</td>
+      <td>${safe(item.brokers)}</td>
+      <td>${safe(item.numero_bl)}</td>
+      <td>${safe(item.puerto_arribo)}</td>
+      <td>${safe(item.cliente)}</td> 
+      <td>${safe(item.estatus)}</td>
+      <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
+      <td>${safe(item.cita_puerto) || "-"}</td>
+      <td class="col-ellipsis" title="${safe(item.ubicacion_actual || "")}">
+        ${safe(item.ubicacion_actual || "-")}
+      </td>
 
-        <td class="col-wrap" title="${safe(item.observaciones || "")}">
-          ${safe(item.observaciones || "-")}
-        </td>
+      <td class="col-wrap" title="${safe(item.observaciones || "")}">
+        ${safe(item.observaciones || "-")}
+      </td>
 
-        <td>${asig.ferros} </td>
-        <td>${asig.destinos}</td>
-        <td>${asig.fechas}</td>
-        <td>${asig.ubicaciones}</td>
-        <td>${asig.transportistas_ferros_cajas ? asig.transportistas_ferros_cajas : "-"}</td>
-        <td>
+      <td>${asig.ferros}</td>
+      <td>${asig.destinos}</td>
+      <td>${asig.fechas}</td>
+      <td>${asig.ubicaciones}</td>
+      <td>${asig.transportistas_ferros_cajas ? asig.transportistas_ferros_cajas : "-"}</td>
+      <td>
         <div class="d-flex justify-content-center">
-          <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
+          <button class="btn btn-sm btn-primary text-white me-1 btn-edit-mf" data-id="${safe(item.id_operacion)}" title="Editar">
             <i data-feather="edit"></i>Editar Operacion
-            </button>
-           
- 
-        <button class="btn btn-sm btn-outline-success"
-          data-bs-toggle="modal"
-          data-bs-target="#modalAsignarFerroCaja"
-          data-mf-action="ferro"
-          data-id="${safe(item.id_operacion)}"
-          data-codigo="${safe(item.numero_operacion)}">
-          <i data-feather="truck" class="me-1"></i> Caja/Ferro
-        </button>
+          </button>
 
-          </div>
-        </td>
-      
-        
-         
+          <button class="btn btn-sm btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#modalAsignarFerroCaja"
+            data-mf-action="ferro"
+            data-id="${safe(item.id_operacion)}"
+            data-codigo="${safe(item.numero_operacion)}">
+            <i data-feather="truck" class="me-1"></i> Caja/Ferro
+          </button>
+        </div>
+      </td>
     `;
+
       tablaBody.appendChild(tr);
     });
+
     if (window.feather) feather.replace();
   }
 
