@@ -1,52 +1,50 @@
 <style>
   /* =========================================================
-   EVENTOS TERRESTRES (FER) — SOLO ANCHOS / LEGIBILIDAD
-   No cambia colores ni efectos, solo espaciamiento/ancho.
+   EVENTOS TERRESTRES (FER) — ANCHOS / LEGIBILIDAD / OBSERVACIONES
    ========================================================= */
 
-  /* Evita que el navegador “apriete” columnas */
   #tablaEventosFer {
     border-collapse: separate;
     border-spacing: 0;
     width: max-content;
-    /* clave: respeta min-width y permite scroll horizontal */
   }
 
-  /* Base: un poco más de padding + no wraps */
   #tablaEventosFer th,
   #tablaEventosFer td {
     padding: .55rem .75rem;
-    /* como tu tabla MF */
     white-space: nowrap;
-    /* evita que se apachurre en 2 líneas */
     vertical-align: middle;
   }
 
-  /* Asegura que el wrapper permita scroll horizontal si hay muchas columnas */
   .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* ====== ANCHOS DE COLUMNAS FIJAS (las primeras) ======
-   Ajusta estos valores a tu gusto.
-   (Con tu JS nuevo, ahora tienes 6 columnas fijas antes de las dinámicas)
-*/
   :root {
     --evfer-col-op-w: 170px;
     /* Operación Marítima */
+
+    --evfer-col-ctn-w: 190px;
+    /* Contenedor Marítimo */
+
     --evfer-col-cli-w: 240px;
     /* Cliente */
-    --evfer-col-est-w: 170px;
-    /* Estatus Marítima */
+
     --evfer-col-des-w: 190px;
     /* Destino */
+
     --evfer-col-tra-w: 200px;
     /* Transportista */
+
     --evfer-col-fer-w: 180px;
     /* Caja/Ferro */
+
+    --evfer-col-obs-w: 220px;
+    /* Observaciones */
+
     --evfer-col-evt-w: 140px;
-    /* Cada evento (columna dinámica) */
+    /* Cada evento dinámico */
   }
 
   /* Fijas */
@@ -58,14 +56,14 @@
 
   #tablaEventosFer th:nth-child(2),
   #tablaEventosFer td:nth-child(2) {
-    min-width: var(--evfer-col-cli-w);
-    width: var(--evfer-col-cli-w);
+    min-width: var(--evfer-col-ctn-w);
+    width: var(--evfer-col-ctn-w);
   }
 
   #tablaEventosFer th:nth-child(3),
   #tablaEventosFer td:nth-child(3) {
-    min-width: var(--evfer-col-est-w);
-    width: var(--evfer-col-est-w);
+    min-width: var(--evfer-col-cli-w);
+    width: var(--evfer-col-cli-w);
   }
 
   #tablaEventosFer th:nth-child(4),
@@ -86,12 +84,50 @@
     width: var(--evfer-col-fer-w);
   }
 
-  /* Dinámicas (eventos): desde la columna 7 en adelante */
-  #tablaEventosFer thead th:nth-child(n+7),
-  #tablaEventosFer tbody td:nth-child(n+7) {
+  #tablaEventosFer th:nth-child(7),
+  #tablaEventosFer td:nth-child(7) {
+    min-width: var(--evfer-col-obs-w);
+    width: var(--evfer-col-obs-w);
+    max-width: var(--evfer-col-obs-w);
+  }
+
+  /* Dinámicas (eventos): desde la columna 8 en adelante */
+  #tablaEventosFer thead th:nth-child(n+8),
+  #tablaEventosFer tbody td:nth-child(n+8) {
     min-width: var(--evfer-col-evt-w);
     width: var(--evfer-col-evt-w);
     text-align: center;
+  }
+
+  /* Celda de observaciones */
+  .evfer-observacion-cell {
+    white-space: normal !important;
+    line-height: 1.25;
+    font-size: .82rem;
+  }
+
+  .evfer-observacion-text {
+    display: block;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .evfer-observacion-vacia {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .evfer-observacion-click {
+    cursor: pointer;
+    transition: background-color .15s ease, box-shadow .15s ease;
+  }
+
+
+
+  .evfer-observacion-click:hover .evfer-observacion-text {
+    text-decoration: underline;
   }
 </style>
 
@@ -210,9 +246,14 @@
         <table class="table table-hover  align-middle" id="tablaEventosFer">
           <thead class="table-primary">
             <tr id="theadEventosFer" class="text-center">
-              <!-- Fijos -->
-              <th style="min-width: 140px;" class="text-center">Operación</th>
-              <th style="min-width: 180px;" class="text-center">Caja / Ferro</th>
+              <!-- Fijos iniciales. El JS reconstruye este encabezado al cargar columnas. -->
+              <th class="text-center">Operación Marítima</th>
+              <th class="text-center">Contenedor Marítimo</th>
+              <th class="text-center">Cliente</th>
+              <th class="text-center">Destino</th>
+              <th class="text-center">Transportista</th>
+              <th class="text-center">Caja / Ferro</th>
+              <th class="text-center">Observaciones</th>
               <!-- Dinámicos (JS): una <th> por cada tipo de evento terrestre -->
             </tr>
           </thead>
@@ -361,6 +402,71 @@
         <div class="modal-footer">
           <button type="button" id="btnCellDeleteFer" class="btn btn-outline-danger d-none">Eliminar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- MODAL observación por renglón -->
+<div class="modal fade" id="modalObsRenglonFer" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h6 class="modal-title">
+          <i data-feather="message-square" class="me-2"></i>
+          Observaciones del renglón
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <form id="formObsRenglonFer" autocomplete="off">
+        <div class="modal-body">
+          <input type="hidden" id="obsFerOperacionId">
+          <input type="hidden" id="obsFerOperacionFerroId">
+          <input type="hidden" id="obsFerContenedorFisicoId">
+
+          <div class="mb-2">
+            <label class="form-label">Operación marítima</label>
+            <input type="text" id="obsFerOperacionTxt" class="form-control" readonly>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Contenedor marítimo</label>
+            <input type="text" id="obsFerContenedorMaritimoTxt" class="form-control" readonly>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Ferro / Caja</label>
+            <input type="text" id="obsFerFerroTxt" class="form-control" readonly>
+          </div>
+
+          <div class="mb-2">
+            <label for="obsFerTexto" class="form-label">Observación</label>
+            <textarea
+              id="obsFerTexto"
+              class="form-control"
+              rows="5"
+              placeholder="Escribe una observación general para este renglón..."></textarea>
+            <div class="form-text">
+              Observacion general.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" id="btnLimpiarObsFer" class="btn btn-outline-danger">
+            <i data-feather="trash-2" class="me-1"></i> Limpiar
+          </button>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i data-feather="x-circle" class="me-1"></i> Cancelar
+            </button>
+
+            <button type="submit" id="btnGuardarObsFer" class="btn btn-primary">
+              <i data-feather="save" class="me-1"></i> Guardar
+            </button>
+          </div>
         </div>
       </form>
     </div>
