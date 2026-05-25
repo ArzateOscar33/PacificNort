@@ -17,6 +17,7 @@ const selEstatusMF = document.getElementById("estatusId_mf");
 const inpETD_MF = document.getElementById("etd_mf");
 const inpETA_MF = document.getElementById("eta_mf");
 const selPuertoMF = document.getElementById("puertoArribo_mf");
+const selPuertoMF = document.getElementById("puertoArribo_mf");
 const selNavieraMF = document.getElementById("navieraId_mf");
 const selForwarderMF = document.getElementById("forwarderId_mf");
 const selShipperMF = document.getElementById("shipperId_mf");
@@ -246,6 +247,18 @@ function guardarOperacionMF() {
       resolve(false);
       return;
     }
+    const ubicacionActual = (inpUbicacionActual_MF?.value || "").trim();
+
+    if (ubicacionActual.length > 250) {
+      Swal?.fire(
+        "Ubicación actual muy larga",
+        "La ubicación actual no puede superar los 250 caracteres.",
+        "warning",
+      );
+      inpUbicacionActual_MF?.focus();
+      resolve(false);
+      return;
+    }
 
     // Construir payload alineado a tu controlador MF::guardar()
     const fd = new FormData();
@@ -256,7 +269,12 @@ function guardarOperacionMF() {
     fd.append("estatus_id_mf", selEstatusMF?.value || "");
     fd.append("etd_mf", inpETD_MF?.value || "");
     fd.append("eta_mf", inpETA_MF?.value || "");
+    fd.append(
+      "ubicacion_actual_mf",
+      (inpUbicacionActual_MF?.value || "").trim().toUpperCase(),
+    );
     fd.append("numero_bl_mf", inpBL_MF?.value || "");
+
     fd.append("cliente_id_mf", hidClienteMF?.value || "");
     fd.append("naviera_id_mf", selNavieraMF?.value || "");
     fd.append("forwarder_id_mf", selForwarderMF?.value || "");

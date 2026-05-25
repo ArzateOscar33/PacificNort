@@ -569,56 +569,59 @@ class Operaciones_maritimo_ferroModel extends Query
 
         // DATA
         $sqlData = "
-            SELECT
-                o.id_operacion,
-                o.numero_operacion,
-                st.nombre  AS subtipo,
-                st.tipo_operacion_id AS tipo,
-                o.numero_bl,
-                p.nombre   AS puerto_arribo,
-                n.nombre   AS naviera,
-                f.nombre   AS forwarder,
-                c.nombre   AS cliente,
-                o.etd, o.eta,
-                o.descripcion_mercancia AS mercancia,
-                e.nombre   AS estatus,
-                o.isf,
-                o.cita_puerto,
-                o.shipper_id,
-                s.nombre     AS shipper,
+    SELECT
+        o.id_operacion,
+        o.numero_operacion,
+        st.nombre  AS subtipo,
+        st.tipo_operacion_id AS tipo,
+        o.numero_bl,
+        p.nombre   AS puerto_arribo,
 
-                /* ===== agregados sin fan-out ===== */
-                cont.contenedores,
-                cont.bultos_total,
-                cont.tipo_contenedor,
+        c.nombre   AS cliente,
+        o.etd,
+        o.eta,
+        o.ubicacion_actual,
+        o.descripcion_mercancia AS mercancia,
 
-                bro.brokers,
+        e.nombre   AS estatus,
+        e.color_hex AS estatus_color,
 
-                o.peso_total,
-                tr.nombre AS transportista,
+        o.isf,
+        o.cita_puerto,
+        o.notas AS observaciones,
 
-                /* ===== TODOS los ferros/cajas vinculados ===== */
-                asig.ferros_cajas,
-                asig.destinos_ferros_cajas,
-                asig.fechas_salida_ferros_cajas,
-                asig.fechas_carga_ferros_cajas,
-                asig.ubicaciones_ferros_cajas,
+        /* ===== agregados sin fan-out ===== */
+        cont.contenedores,
+        cont.bultos_total,
+        cont.tipo_contenedor,
 
-                /* ✅ NUEVO: transportistas por FO/caja/ferro (lista paralela) */
-                asig.transportistas_ferros_cajas,
+        bro.brokers,
 
-                /* opcional: un string “bonito” ya formateado */
-                asig.detalle_ferros_cajas
+        o.peso_total,
+        tr.nombre AS transportista,
 
-            FROM operaciones o
-            LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-            LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
-            LEFT JOIN navieras n            ON n.id_naviera = o.naviera_id
-            LEFT JOIN forwarders f          ON f.id_forwarder = o.forwarder_id
-            LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
-            LEFT JOIN shippers s            ON s.id_shipper = o.shipper_id
-            LEFT JOIN transportistas tr     ON tr.id_transportista = o.transportista_id
+        /* ===== TODOS los ferros/cajas vinculados ===== */
+        asig.ferros_cajas,
+        asig.destinos_ferros_cajas,
+        asig.fechas_salida_ferros_cajas,
+        asig.fechas_carga_ferros_cajas,
+        asig.ubicaciones_ferros_cajas,
+
+        /* transportistas por FO/caja/ferro */
+        asig.transportistas_ferros_cajas,
+
+        /* opcional: un string “bonito” ya formateado */
+        asig.detalle_ferros_cajas
+
+    FROM operaciones o
+    LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
+    LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
+    LEFT JOIN navieras n            ON n.id_naviera = o.naviera_id
+    LEFT JOIN forwarders f          ON f.id_forwarder = o.forwarder_id
+    LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
+    LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
+    LEFT JOIN shippers s            ON s.id_shipper = o.shipper_id
+    LEFT JOIN transportistas tr     ON tr.id_transportista = o.transportista_id
 
             /* ===== contenedores + bultos (1 fila por operación) ===== */
             LEFT JOIN (
@@ -779,10 +782,10 @@ class Operaciones_maritimo_ferroModel extends Query
             }
 
             $sqlOp = "INSERT INTO operaciones
-                (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, numero_bl,
-                 cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto,
-                 peso_total, transportista_id, broker_id,descripcion_mercancia)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, ubicacion_actual, numero_bl,
+     cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto,
+     peso_total, transportista_id, broker_id, descripcion_mercancia)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
             $paramsOp = [
                 trim($op['numero_operacion']),
@@ -790,6 +793,11 @@ class Operaciones_maritimo_ferroModel extends Query
                 (int)$op['subtipo_operacion_id'],
                 $op['etd'] ?? null,
                 $op['eta'] ?? null,
+
+                isset($op['ubicacion_actual']) && trim((string)$op['ubicacion_actual']) !== ''
+                    ? trim((string)$op['ubicacion_actual'])
+                    : null,
+
                 $op['numero_bl'] ?? null,
                 !empty($op['cliente_id']) ? (int)$op['cliente_id'] : null,
                 (int)($op['estatus_id'] ?? 9),
@@ -805,7 +813,6 @@ class Operaciones_maritimo_ferroModel extends Query
                 (!empty($op['broker_id']) ? (int)$op['broker_id'] : null),
                 $op['descripcion_mercancia'] ?? null,
             ];
-
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
             if ($opId <= 0) {
                 $this->save("ROLLBACK", []);
@@ -894,6 +901,7 @@ class Operaciones_maritimo_ferroModel extends Query
 
             o.etd,
             o.eta,
+            o.ubicacion_actual,
 
             o.estatus_id,
             e.nombre AS estatus_nombre,
@@ -950,6 +958,7 @@ class Operaciones_maritimo_ferroModel extends Query
             c.nombre,
             o.etd,
             o.eta,
+            o.ubicacion_actual,
             o.estatus_id,
             e.nombre,
             o.isf,
@@ -1031,6 +1040,7 @@ class Operaciones_maritimo_ferroModel extends Query
                 subtipo_operacion_id  = ?,
                 etd                   = ?,
                 eta                   = ?,
+                ubicacion_actual      = ?,
                 numero_bl             = ?,
                 cliente_id            = ?,
                 estatus_id            = ?,
@@ -1052,6 +1062,9 @@ class Operaciones_maritimo_ferroModel extends Query
                 (int)($d['subtipo_operacion_id'] ?? 0),
                 !empty($d['etd']) ? $d['etd'] : null,
                 !empty($d['eta']) ? $d['eta'] : null,
+                isset($d['ubicacion_actual']) && trim((string)$d['ubicacion_actual']) !== ''
+                    ? trim((string)$d['ubicacion_actual'])
+                    : null,
                 trim($d['numero_bl'] ?? ''),
                 !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
                 !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
@@ -1180,6 +1193,9 @@ class Operaciones_maritimo_ferroModel extends Query
             'subtipo_operacion_id'  => (int)($d['subtipo_operacion_id'] ?? 0),
             'etd'                   => !empty($d['etd']) ? $d['etd'] : null,
             'eta'                   => !empty($d['eta']) ? $d['eta'] : null,
+            'ubicacion_actual' => isset($d['ubicacion_actual']) && trim((string)$d['ubicacion_actual']) !== ''
+                ? trim((string)$d['ubicacion_actual'])
+                : null,
             'numero_bl'             => trim((string)($d['numero_bl'] ?? '')),
             'cliente_id'            => !empty($d['cliente_id']) ? (int)$d['cliente_id'] : null,
             'estatus_id'            => !empty($d['estatus_id']) ? (int)$d['estatus_id'] : null,
@@ -1275,6 +1291,7 @@ class Operaciones_maritimo_ferroModel extends Query
             'subtipo_operacion_id'  => 'subtipo',
             'etd'                   => 'ETD',
             'eta'                   => 'ETA',
+            'ubicacion_actual' => 'ubicación actual',
             'numero_bl'             => 'BL',
             'cliente_id'            => 'cliente',
             'estatus_id'            => 'estatus',

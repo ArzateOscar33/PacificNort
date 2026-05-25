@@ -329,9 +329,7 @@
               <th>ETD</th>
               <th>ETA</th>
 
-              <th class="col-ellipsis col-lg">Naviera</th>
-              <th class="col-ellipsis col-xl">Forwarder</th>
-              <th class="col-ellipsis col-xl">Shipper</th>
+
 
               <th>Peso</th>
               <th>Bultos</th>
@@ -350,10 +348,14 @@
               <th>ISF</th>
               <th class="col-md">Cita en Puerto</th>
 
+              <th class="col-ellipsis col-lg">Ubicación Actual</th>
+              <th class="col-wrap col-xl">Observaciones</th>
+
+
               <th class="col-md">Caja/Ferro</th>
               <th class="col-ellipsis col-md">Destino</th>
               <th class="col-md">Fecha Salida</th>
-              <th class="col-ellipsis col-md">Ubicación Actual</th>
+              <th class="col-ellipsis col-md">Ubicación Actual Caja/Ferro</th>
               <th class="col-ellipsis col-md">Transportista Caja/Ferro</th>
 
               <th class="col-actions">Acciones</th>
@@ -444,11 +446,12 @@
               <input type="date" id="eta_mf" name="eta_mf" class="form-control form-control-lg">
             </div>
 
+
+
             <div class="col-md-3">
               <label class="form-label">Cita en Puerto</label>
               <input type="date" id="cita_puerto" name="cita_puerto" class="form-control form-control-lg">
             </div>
-
             <div class="col-md-3 d-flex flex-column">
               <label class="form-label">ISF</label>
               <div class="form-check mt-2">
@@ -645,7 +648,16 @@
               <textarea id="notas_mf" name="notas_mf" class="form-control input-uppercase" rows="2"
                 placeholder="Observaciones generales"></textarea>
             </div>
-
+            <div class="col-md-12">
+              <label class="form-label">Ubicación Actual</label>
+              <input
+                type="text"
+                id="ubicacionActual_mf"
+                name="ubicacion_actual_mf"
+                class="form-control form-control input-uppercase"
+                maxlength="250"
+                placeholder="">
+            </div>
           </div><!-- row -->
         </form>
       </div><!-- modal-body -->
@@ -814,8 +826,8 @@
                   <span class="text-muted small" id="asigFerro_countFerros">0</span>
                 </div>
 
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle mb-0 p-3">
+                <div class="table-responsive ">
+                  <table class="table table-sm table-hover  align-middle mb-0 p-3">
                     <thead class="table-light">
                       <tr class="text-center">
                         <th class="text-start">Ferro/Caja</th>
@@ -1085,4 +1097,5 @@
 
   // Uso
   forzarMayusculas("asigFerro_inputNumero");
+  forzarMayusculas("ubicacionActual_mf");
 </script>

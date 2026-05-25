@@ -50,6 +50,7 @@
   const selEstatus = document.getElementById("estatusId_mf");
   const inpETD = document.getElementById("etd_mf");
   const inpETA = document.getElementById("eta_mf");
+  const inpUbicacionActual = document.getElementById("ubicacionActual_mf");
   const inpBL = document.getElementById("numeroBL_mf");
 
   const selPuerto = document.getElementById("puertoArribo_mf"); // disabled/readonly
@@ -112,7 +113,7 @@
     if (!tablaBody) return;
     tablaBody.innerHTML = `
       <tr>
-        <td colspan="13" class="text-center text-muted py-4">Cargando resultados...</td>
+        <td colspan="25" class="text-center text-muted py-4">Cargando resultados...</td>
       </tr>`;
   }
 
@@ -189,7 +190,7 @@
     tablaBody.innerHTML = "";
     if (!Array.isArray(rows) || rows.length === 0) {
       tablaBody.innerHTML =
-        "<tr><td colspan='13' class='text-center'>No se encontraron resultados</td></tr>";
+        "<tr><td colspan='25' class='text-center'>No se encontraron resultados</td></tr>";
       return;
     }
     rows.forEach((item) => {
@@ -203,9 +204,7 @@
         <td>${safe(item.etd)}</td>
         <td>${safe(item.eta)}</td>
         
-        <td>${safe(item.naviera)}</td>
-        <td>${safe(item.forwarder)}</td>
-        <td>${safe(item.shipper)}</td>
+
         <td>${safe(item.peso_total)} Kg</td>
         <td>${safe(item.bultos_total)}</td>
         <td>${safe(item.tipo_contenedor)}</td>
@@ -218,6 +217,13 @@
         <td>${safe(item.estatus)}</td>
         <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
         <td>${safe(item.cita_puerto) || "-"}</td>
+        <td class="col-ellipsis" title="${safe(item.ubicacion_actual || "")}">
+          ${safe(item.ubicacion_actual || "-")}
+        </td>
+
+        <td class="col-wrap" title="${safe(item.observaciones || "")}">
+          ${safe(item.observaciones || "-")}
+        </td>
 
         <td>${asig.ferros} </td>
         <td>${asig.destinos}</td>
@@ -538,6 +544,7 @@
     setSelectValue(selEstatus, "");
     if (inpETD) inpETD.value = "";
     if (inpETA) inpETA.value = "";
+    if (inpUbicacionActual) inpUbicacionActual.value = "";
     if (inpBL) inpBL.value = "";
     if (hidCliente) hidCliente.value = "";
     if (inpClienteNom) inpClienteNom.value = "";
@@ -1070,6 +1077,8 @@
 
       if (inpETD) inpETD.value = val(op.etd);
       if (inpETA) inpETA.value = val(op.eta);
+      if (inpUbicacionActual)
+        inpUbicacionActual.value = val(op.ubicacion_actual);
       if (inpBL) inpBL.value = val(op.numero_bl);
 
       if (hidCliente) hidCliente.value = val(op.cliente_id);
@@ -1192,6 +1201,17 @@
       Swal?.fire("Error", "Falta id de la operación.", "error");
       return;
     }
+    const ubicacionActual = (inpUbicacionActual?.value || "").trim();
+
+    if (ubicacionActual.length > 250) {
+      Swal?.fire(
+        "Ubicación actual muy larga",
+        "La ubicación actual no puede superar los 250 caracteres.",
+        "warning",
+      );
+      inpUbicacionActual?.focus();
+      return;
+    }
 
     // ---- helpers locales para UI (duplicado contenedor) ----
     const clearContenedorInvalid = () => {
@@ -1244,6 +1264,10 @@
     // Asegurar ID (por si acaso)
     fd.set("id_operacion_mf", String(id));
 
+    fd.set(
+      "ubicacion_actual_mf",
+      (inpUbicacionActual?.value || "").trim().toUpperCase(),
+    );
     // ✅ 2) Normalizar BL (tu input tiene name="numero_bl_mf")
     const blInp = document.getElementById("numeroBL_mf");
     const bl = (blInp?.value || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();

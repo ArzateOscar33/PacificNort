@@ -193,6 +193,12 @@ class Operaciones_maritimo_ferro extends Controller
 
         $etd = trim((string)($_POST['etd_mf'] ?? '')) ?: null;
         $eta = trim((string)($_POST['eta_mf'] ?? '')) ?: null;
+        $ubicacionActual = trim((string)($_POST['ubicacion_actual_mf'] ?? ''));
+        $ubicacionActual = ($ubicacionActual !== '') ? mb_strtoupper($ubicacionActual, 'UTF-8') : null;
+
+        if ($ubicacionActual !== null && mb_strlen($ubicacionActual, 'UTF-8') > 250) {
+            return $this->jsonError('La ubicación actual no puede superar los 250 caracteres.', 200);
+        }
 
         // BL
         $blRaw = (string)($_POST['numero_bl_mf'] ?? '');
@@ -265,6 +271,7 @@ class Operaciones_maritimo_ferro extends Controller
             'subtipo_operacion_id'  => $subtipoId,
             'etd'                   => $etd,
             'eta'                   => $eta,
+            'ubicacion_actual'      => $ubicacionActual,
             'numero_bl'             => $bl,
             'cliente_id'            => $clienteId,
             'estatus_id'            => $estatusId,
@@ -359,6 +366,13 @@ class Operaciones_maritimo_ferro extends Controller
         $etd = trim((string)($_POST['etd_mf'] ?? ($actual['etd'] ?? ''))) ?: null;
         $eta = trim((string)($_POST['eta_mf'] ?? ($actual['eta'] ?? ''))) ?: null;
 
+        $ubicacionActual = trim((string)($_POST['ubicacion_actual_mf'] ?? ($actual['ubicacion_actual'] ?? '')));
+        $ubicacionActual = ($ubicacionActual !== '') ? mb_strtoupper($ubicacionActual, 'UTF-8') : null;
+
+        if ($ubicacionActual !== null && mb_strlen($ubicacionActual, 'UTF-8') > 250) {
+            return $this->jsonError('La ubicación actual no puede superar los 250 caracteres.', 200);
+        }
+
         $blRaw = (string)($_POST['numero_bl_mf'] ?? ($actual['numero_bl'] ?? ''));
         $bl    = preg_replace('/[^A-Za-z0-9]/', '', $blRaw) ?: null;
 
@@ -426,6 +440,7 @@ class Operaciones_maritimo_ferro extends Controller
             'estatus_id'            => $estatusId,
             'etd'                   => $etd,
             'eta'                   => $eta,
+            'ubicacion_actual'      => $ubicacionActual,
             'numero_bl'             => $bl,
             'cliente_id'            => $clienteId,
             'naviera_id'            => $navieraId ?: null,
