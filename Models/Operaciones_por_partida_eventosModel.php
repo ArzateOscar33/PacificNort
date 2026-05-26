@@ -1,4 +1,5 @@
 <?php
+
 class Operaciones_por_partida_eventosModel extends Query
 {
     public function __construct()
@@ -6,24 +7,41 @@ class Operaciones_por_partida_eventosModel extends Query
         parent::__construct();
     }
 
+    /* ==========================================================
+       EVENTOS OPERACIONES POR PARTIDA - FERRO / CAJA
+       Flujo tipo Excel:
+       - Edición directa desde celda.
+       - Si no existe la celda: inserta.
+       - Si ya existe la celda: actualiza.
+       - Si fecha viene vacía: elimina/baja lógica.
+       - Llave lógica:
+         envio_partida_id + contenedor_fisico_id + tipo_evento_id
+       ========================================================== */
+
+
     /* ============================
-       COLUMNAS (catálogo terrestre)
+       COLUMNAS / CATÁLOGO TERRESTRE
        ============================ */
     public function listarTiposEventoTerrestre(): array
     {
-        $sql = "SELECT id_tipo_evento, nombre
-                FROM tipos_evento_logistico
-                WHERE estatus = 1
-                  AND id_tipo_operacion = 2
-                ORDER BY id_tipo_evento ASC";
+        $sql = "
+            SELECT 
+                id_tipo_evento, 
+                nombre
+            FROM tipos_evento_logistico
+            WHERE estatus = 1
+              AND id_tipo_operacion = 2
+            ORDER BY id_tipo_evento ASC
+        ";
 
         $rows = $this->selectAll($sql);
         return is_array($rows) ? $rows : [];
     }
 
+
     /* =======================================================
-       Sugerencias de ENVÍO / FERRO / FACTURA / CLIENTE
-       Devuelve el envío de operaciones por partida
+       SUGERENCIAS DE ENVÍO / FERRO / FACTURA / CLIENTE
+       Devuelve el envío de operaciones por partida.
        ======================================================= */
     public function sugerirOperacionesPartidaOFerro(string $term, int $limit = 8): array
     {
@@ -43,13 +61,21 @@ class Operaciones_por_partida_eventosModel extends Query
             OR LOWER(COALESCE(fac.numero_factura, '')) LIKE ?
         )";
 
-        $params = [$needle, $needle, $needle, $needle, $needle, $needle];
+        $params = [
+            $needle,
+            $needle,
+            $needle,
+            $needle,
+            $needle,
+            $needle
+        ];
 
         if ($isNum) {
             $where = "(
                 {$where}
                 OR ope.id_envio = ?
             )";
+
             $params[] = (int)$term;
         }
 
@@ -68,30 +94,41 @@ class Operaciones_por_partida_eventosModel extends Query
                     DISTINCT NULLIF(TRIM(fac.numero_factura), '')
                     ORDER BY fac.numero_factura ASC
                     SEPARATOR ', '
-                ) AS factura
+                ) AS factura,
+
+                GROUP_CONCAT(
+                    DISTINCT NULLIF(TRIM(cli.nombre), '')
+                    ORDER BY cli.nombre ASC
+                    SEPARATOR ', '
+                ) AS cliente
 
             FROM operaciones_partida_envios ope
+
             INNER JOIN contenedores_fisicos cf
                 ON cf.id_fisico = ope.contenedor_fisico_id
                AND cf.estatus = 1
 
             LEFT JOIN transportistas tr
                 ON tr.id_transportista = ope.transportista_id
+
             LEFT JOIN ciudades ci
                 ON ci.id_ciudad = ope.destino_ciudad_id
 
-            LEFT JOIN operaciones_partida_envio_detalle det
-                ON det.envio_id = ope.id_envio
-               AND det.estatus = 1
+            LEFT JOIN operaciones_partida_envio_detalle ed
+                ON ed.envio_id = ope.id_envio
+               AND ed.estatus = 1
+
             LEFT JOIN op_partida_facturas fac
-                ON fac.id_factura = det.factura_id
+                ON fac.id_factura = ed.factura_id
                AND fac.estatus = 1
+
             LEFT JOIN clientes cli
                 ON cli.id_cliente = fac.cliente_id
                AND cli.estatus = 1
 
             WHERE ope.estatus = 1
               AND {$where}
+
             GROUP BY ope.id_envio
             ORDER BY ope.id_envio DESC
             LIMIT {$limit}
@@ -101,21 +138,21 @@ class Operaciones_por_partida_eventosModel extends Query
         return is_array($rows) ? $rows : [];
     }
 
-    /* ================================================================
-       FERRO de un envío por partida
-       En este módulo hay 1 ferro por envío (ope.contenedor_fisico_id)
-       ================================================================ */
+
+    /* =======================================================
+       FERRO / CAJA DE UN ENVÍO POR PARTIDA
+       ======================================================= */
     public function buscarFerrosDeOperacion(int $envioId, string $term = '', int $limit = 10): array
     {
         if ($envioId <= 0) return [];
 
-        $limit  = max(1, (int)$limit);
+        $limit  = max(1, min(50, (int)$limit));
         $params = [$envioId];
         $filtro = '';
 
-        if ($term !== '') {
+        if (trim($term) !== '') {
             $filtro = " AND LOWER(cf.numero_ferro) LIKE ? ";
-            $params[] = '%' . mb_strtolower($term, 'UTF-8') . '%';
+            $params[] = '%' . mb_strtolower(trim($term), 'UTF-8') . '%';
         }
 
         $sql = "
@@ -124,12 +161,15 @@ class Operaciones_por_partida_eventosModel extends Query
                 cf.numero_ferro AS label,
                 'FERRO'         AS tipo
             FROM operaciones_partida_envios ope
+
             INNER JOIN contenedores_fisicos cf
                 ON cf.id_fisico = ope.contenedor_fisico_id
                AND cf.estatus = 1
+
             WHERE ope.id_envio = ?
               AND ope.estatus = 1
               {$filtro}
+
             ORDER BY cf.numero_ferro ASC
             LIMIT {$limit}
         ";
@@ -138,9 +178,7 @@ class Operaciones_por_partida_eventosModel extends Query
         return is_array($rows) ? $rows : [];
     }
 
-    /* ======================================================
-       Obtener el ferro principal de un envío por partida
-       ====================================================== */
+
     public function getFerroDeOperacion(int $envioId): ?array
     {
         if ($envioId <= 0) return null;
@@ -150,11 +188,14 @@ class Operaciones_por_partida_eventosModel extends Query
                 cf.id_fisico    AS id,
                 cf.numero_ferro AS label
             FROM operaciones_partida_envios ope
+
             INNER JOIN contenedores_fisicos cf
                 ON cf.id_fisico = ope.contenedor_fisico_id
                AND cf.estatus = 1
+
             WHERE ope.id_envio = ?
               AND ope.estatus = 1
+
             LIMIT 1
         ";
 
@@ -162,14 +203,14 @@ class Operaciones_por_partida_eventosModel extends Query
         return $row ?: null;
     }
 
+
     /* ==========================================================
        LISTADO PAGINADO
-       Conservé el nombre listarEventosFOPaginado para que luego
-       el controlador pueda parecerse mucho al módulo original.
+       Devuelve pares envío + ferro/caja, y sus eventos.
+       
+       Se conserva el nombre listarPaginado porque tu módulo actual
+       ya trabaja con ese método.
        ========================================================== */
-
-
-
     public function listarPaginado(
         int $page,
         int $perPage,
@@ -179,111 +220,137 @@ class Operaciones_por_partida_eventosModel extends Query
         ?int $transportistaId = null,
         ?int $destinoId = null
     ): array {
-        $perPage = min(100, max(1, $perPage));
-        $offset  = max(0, ($page - 1) * $perPage);
+        $page    = max(1, $page);
+        $perPage = min(10000, max(1, $perPage));
+        $offset  = ($page - 1) * $perPage;
 
-        $where = ["e.estatus = 1"];
+        $where  = [];
         $params = [];
 
-        if (!empty($opId)) {
+        $factura = trim($factura);
+        $ferro   = trim($ferro);
+
+        $where[] = "e.estatus = 1";
+        $where[] = "cf.estatus = 1";
+
+        if (!empty($opId) && $opId > 0) {
             $where[] = "e.id_envio = ?";
             $params[] = $opId;
         }
 
-        if (!empty($ferro)) {
-            $where[] = "cf.numero_ferro LIKE ?";
-            $params[] = "%" . $ferro . "%";
+        if ($ferro !== '') {
+            $where[] = "LOWER(COALESCE(cf.numero_ferro, '')) LIKE ?";
+            $params[] = '%' . mb_strtolower($ferro, 'UTF-8') . '%';
         }
 
-        if (!empty($transportistaId)) {
+        if (!empty($transportistaId) && $transportistaId > 0) {
             $where[] = "e.transportista_id = ?";
             $params[] = $transportistaId;
         }
 
-        if (!empty($destinoId)) {
+        if (!empty($destinoId) && $destinoId > 0) {
             $where[] = "e.destino_ciudad_id = ?";
             $params[] = $destinoId;
         }
 
-        if (!empty($factura)) {
-            $where[] = "f.numero_factura LIKE ?";
-            $params[] = "%" . $factura . "%";
+        if ($factura !== '') {
+            $where[] = "LOWER(COALESCE(fx.facturas, '')) LIKE ?";
+            $params[] = '%' . mb_strtolower($factura, 'UTF-8') . '%';
         }
 
-        $whereSql = "WHERE " . implode(" AND ", $where);
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-        /*
-         * Subconsulta de facturas/cliente por envío:
-         * - Un envío puede tener varias facturas
-         * - Las agrupamos en un solo campo
-         * - Cliente se toma desde op_partida_facturas -> clientes
-         */
-        $sqlBase = "
-            FROM operaciones_partida_envios e
-            INNER JOIN contenedores_fisicos cf 
-                ON cf.id_fisico = e.contenedor_fisico_id
-            LEFT JOIN ciudades d
-                ON d.id_ciudad = e.destino_ciudad_id
-            LEFT JOIN transportistas t
-                ON t.id_transportista = e.transportista_id
-            LEFT JOIN (
-                SELECT
-                    ed.envio_id,
-                    GROUP_CONCAT(DISTINCT f.numero_factura ORDER BY f.numero_factura SEPARATOR ', ') AS facturas,
-                    GROUP_CONCAT(DISTINCT c.nombre ORDER BY c.nombre SEPARATOR ', ') AS clientes
-                FROM operaciones_partida_envio_detalle ed
-                INNER JOIN op_partida_facturas f
-                    ON f.id_factura = ed.factura_id
-                   AND f.estatus = 1
-                LEFT JOIN clientes c
-                    ON c.id_cliente = f.cliente_id
-                   AND c.estatus = 1
-                WHERE ed.estatus = 1
-                GROUP BY ed.envio_id
-            ) fx
-                ON fx.envio_id = e.id_envio
-            LEFT JOIN eventos_operacion_partida_ferro ev
-                ON ev.envio_partida_id = e.id_envio
-               AND ev.contenedor_fisico_id = e.contenedor_fisico_id
-               AND ev.estatus = 1
-            LEFT JOIN tipos_evento_logistico te
-                ON te.id_tipo_evento = ev.tipo_evento_id
-               AND te.estatus = 1
-            $whereSql
+        $sqlFx = "
+            SELECT
+                ed.envio_id,
+
+                GROUP_CONCAT(
+                    DISTINCT f.numero_factura
+                    ORDER BY f.numero_factura ASC
+                    SEPARATOR ', '
+                ) AS facturas,
+
+                GROUP_CONCAT(
+                    DISTINCT c.nombre
+                    ORDER BY c.nombre ASC
+                    SEPARATOR ', '
+                ) AS clientes
+
+            FROM operaciones_partida_envio_detalle ed
+
+            INNER JOIN op_partida_facturas f
+                ON f.id_factura = ed.factura_id
+               AND f.estatus = 1
+
+            LEFT JOIN clientes c
+                ON c.id_cliente = f.cliente_id
+               AND c.estatus = 1
+
+            WHERE ed.estatus = 1
+
+            GROUP BY ed.envio_id
         ";
 
+        $sqlBase = "
+            FROM operaciones_partida_envios e
+
+            INNER JOIN contenedores_fisicos cf
+                ON cf.id_fisico = e.contenedor_fisico_id
+               AND cf.estatus = 1
+
+            LEFT JOIN ciudades d
+                ON d.id_ciudad = e.destino_ciudad_id
+
+            LEFT JOIN transportistas t
+                ON t.id_transportista = e.transportista_id
+
+            LEFT JOIN ({$sqlFx}) fx
+                ON fx.envio_id = e.id_envio
+
+            {$whereSql}
+        ";
+
+        /*
+          Conteo correcto:
+          Cuenta pares envío + ferro/caja, NO eventos.
+          Esto evita que la paginación crezca artificialmente cuando
+          un mismo envío tiene varios eventos.
+        */
         $sqlCount = "
             SELECT COUNT(*) AS total
             FROM (
                 SELECT
                     e.id_envio,
-                    e.contenedor_fisico_id,
-                    COALESCE(ev.tipo_evento_id, 0) AS tipo_evento_id
-                $sqlBase
-                GROUP BY e.id_envio, e.contenedor_fisico_id, COALESCE(ev.tipo_evento_id, 0)
+                    e.contenedor_fisico_id
+                {$sqlBase}
+                GROUP BY
+                    e.id_envio,
+                    e.contenedor_fisico_id
             ) q
         ";
 
-        $totalRow = $this->select($sqlCount, $params);
-        $total = !empty($totalRow) ? (int)$totalRow['total'] : 0;
+        $rowCount = $this->select($sqlCount, $params);
+        $total    = $rowCount ? (int)$rowCount['total'] : 0;
 
-        $sqlData = "
+        $sqlPairs = "
             SELECT
+                e.id_envio AS envio_partida_id,
                 e.id_envio AS operacion_ferro_id,
                 e.contenedor_fisico_id,
+
                 CONCAT('ENV-', e.id_envio) AS operacion,
+                CONCAT('ENV-', e.id_envio) AS operacion_maritima,
+
                 cf.numero_ferro AS ferro,
+
                 COALESCE(fx.facturas, '') AS factura,
                 COALESCE(fx.clientes, '') AS cliente,
-                COALESCE(d.nombre_ciudad, '') AS destino,
-                COALESCE(t.nombre, '') AS transportista,
 
-                ev.id_evento,
-                ev.tipo_evento_id,
-                COALESCE(te.nombre, '') AS evento,
-                ev.fecha,
-                ev.comentario
-            $sqlBase
+                COALESCE(d.nombre_ciudad, '') AS destino,
+                COALESCE(t.nombre, '') AS transportista
+
+            {$sqlBase}
+
             GROUP BY
                 e.id_envio,
                 e.contenedor_fisico_id,
@@ -291,223 +358,634 @@ class Operaciones_por_partida_eventosModel extends Query
                 fx.facturas,
                 fx.clientes,
                 d.nombre_ciudad,
-                t.nombre,
-                ev.id_evento,
-                ev.tipo_evento_id,
-                te.nombre,
-                ev.fecha,
-                ev.comentario
-            ORDER BY e.id_envio DESC, cf.numero_ferro ASC, ev.tipo_evento_id ASC
-            LIMIT $offset, $perPage
+                t.nombre
+
+            ORDER BY e.id_envio DESC, cf.numero_ferro ASC
+            LIMIT {$perPage} OFFSET {$offset}
         ";
 
-        $rows = $this->selectAll($sqlData, $params);
+        $rowsPairs = $this->selectAll($sqlPairs, $params) ?: [];
+
+        if (empty($rowsPairs)) {
+            return [
+                'rows'     => [],
+                'total'    => $total,
+                'page'     => $page,
+                'per_page' => $perPage
+            ];
+        }
+
+        $envioIds = array_values(array_unique(array_map(
+            'intval',
+            array_column($rowsPairs, 'envio_partida_id')
+        )));
+
+        $ferroIds = array_values(array_unique(array_map(
+            'intval',
+            array_column($rowsPairs, 'contenedor_fisico_id')
+        )));
+
+        if (empty($envioIds) || empty($ferroIds)) {
+            return [
+                'rows'     => [],
+                'total'    => $total,
+                'page'     => $page,
+                'per_page' => $perPage
+            ];
+        }
+
+        $inEnvios = implode(',', array_fill(0, count($envioIds), '?'));
+        $inFerros = implode(',', array_fill(0, count($ferroIds), '?'));
+
+        $paramsEvt = array_merge($envioIds, $ferroIds);
+
+        $sqlEvts = "
+            SELECT
+                ev.id_evento,
+                ev.envio_partida_id,
+                ev.envio_partida_id AS operacion_ferro_id,
+                ev.contenedor_fisico_id,
+                ev.tipo_evento_id,
+                te.nombre AS evento,
+                ev.fecha,
+                ev.comentario
+
+            FROM eventos_operacion_partida_ferro ev
+
+            LEFT JOIN tipos_evento_logistico te
+                ON te.id_tipo_evento = ev.tipo_evento_id
+               AND te.estatus = 1
+
+            WHERE ev.estatus = 1
+              AND ev.envio_partida_id IN ({$inEnvios})
+              AND ev.contenedor_fisico_id IN ({$inFerros})
+        ";
+
+        $rowsEvts = $this->selectAll($sqlEvts, $paramsEvt) ?: [];
+
+        $byPair = [];
+
+        foreach ($rowsPairs as $p) {
+            $key = (int)$p['envio_partida_id'] . '_' . (int)$p['contenedor_fisico_id'];
+            $byPair[$key] = $p;
+        }
+
+        $out = [];
+
+        foreach ($rowsEvts as $e) {
+            $key = (int)$e['envio_partida_id'] . '_' . (int)$e['contenedor_fisico_id'];
+
+            if (!isset($byPair[$key])) {
+                continue;
+            }
+
+            $p = $byPair[$key];
+
+            $out[] = [
+                'id_evento'            => (int)$e['id_evento'],
+
+                'envio_partida_id'     => (int)$e['envio_partida_id'],
+                'operacion_ferro_id'   => (int)$e['envio_partida_id'],
+
+                'contenedor_fisico_id' => (int)$e['contenedor_fisico_id'],
+                'tipo_evento_id'       => (int)$e['tipo_evento_id'],
+                'evento'               => (string)($e['evento'] ?? ''),
+                'fecha'                => (string)($e['fecha'] ?? ''),
+                'comentario'           => (string)($e['comentario'] ?? ''),
+
+                'operacion'            => (string)($p['operacion'] ?? ''),
+                'operacion_maritima'   => (string)($p['operacion_maritima'] ?? ''),
+                'ferro'                => (string)($p['ferro'] ?? ''),
+                'factura'              => (string)($p['factura'] ?? ''),
+                'cliente'              => (string)($p['cliente'] ?? ''),
+                'destino'              => (string)($p['destino'] ?? ''),
+                'transportista'        => (string)($p['transportista'] ?? '')
+            ];
+        }
+
+        /*
+          Agregar renglones sin evento para que también aparezcan
+          celdas vacías editables.
+        */
+        $pairsConEvento = array_unique(array_map(
+            fn($r) => (int)$r['envio_partida_id'] . '_' . (int)$r['contenedor_fisico_id'],
+            $out
+        ));
+
+        foreach ($rowsPairs as $p) {
+            $key = (int)$p['envio_partida_id'] . '_' . (int)$p['contenedor_fisico_id'];
+
+            if (!in_array($key, $pairsConEvento, true)) {
+                $out[] = [
+                    'id_evento'            => null,
+
+                    'envio_partida_id'     => (int)$p['envio_partida_id'],
+                    'operacion_ferro_id'   => (int)$p['envio_partida_id'],
+
+                    'contenedor_fisico_id' => (int)$p['contenedor_fisico_id'],
+                    'tipo_evento_id'       => null,
+                    'evento'               => null,
+                    'fecha'                => null,
+                    'comentario'           => null,
+
+                    'operacion'            => (string)($p['operacion'] ?? ''),
+                    'operacion_maritima'   => (string)($p['operacion_maritima'] ?? ''),
+                    'ferro'                => (string)($p['ferro'] ?? ''),
+                    'factura'              => (string)($p['factura'] ?? ''),
+                    'cliente'              => (string)($p['cliente'] ?? ''),
+                    'destino'              => (string)($p['destino'] ?? ''),
+                    'transportista'        => (string)($p['transportista'] ?? '')
+                ];
+            }
+        }
 
         return [
-            'total' => $total,
-            'data'  => $rows
+            'rows'     => $out,
+            'total'    => $total,
+            'page'     => $page,
+            'per_page' => $perPage
         ];
     }
 
-    public function eventosFerroColumnas(): array
-    {
-        $sql = "SELECT id_tipo_evento AS id, nombre
-                FROM tipos_evento_logistico
-                WHERE estatus = 1
-                ORDER BY id_tipo_evento ASC";
-        return $this->selectAll($sql);
+
+    /*
+      Alias por compatibilidad si después quieres que el controlador
+      se parezca al de eventos terrestres.
+    */
+    public function listarEventosFOPaginado(
+        int $page,
+        int $perPage,
+        ?int $opId = null,
+        ?int $ferroId = null,
+        string $q = '',
+        ?string $fechaDesde = null,
+        ?string $fechaHasta = null,
+        ?int $transportistaId = null,
+        ?int $clienteId = null,
+        ?int $destinoId = null,
+        string $contenedor = '',
+        string $ferro = '',
+        string $operacion = ''
+    ): array {
+        return $this->listarPaginado(
+            $page,
+            $perPage,
+            $opId,
+            $q,
+            $ferro,
+            $transportistaId,
+            $destinoId
+        );
     }
+
 
     /* ==========================================================
-       VALIDACIONES + CRUD
+       NUEVO FLUJO TIPO EXCEL
+       Guarda una celda de evento por partida.
+
+       Recibe:
+       - envio_partida_id u operacion_ferro_id
+       - contenedor_fisico_id
+       - tipo_evento_id
+       - fecha
+       - comentario opcional
+
+       Retorna:
+       [
+         ok => bool,
+         accion => insertado|actualizado|eliminado|sin_cambios|error,
+         id_evento => int|null,
+         fecha => string,
+         msg => string
+       ]
        ========================================================== */
-
-    private function existeEventoFerroDuplicado(
-        int $envioId,
-        int $ferroId,
-        int $tipoEvtId,
-        ?int $excluirId = null
-    ): bool {
-        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return false;
-
-        $sql = "SELECT id_evento
-                FROM eventos_operacion_partida_ferro
-                WHERE estatus = 1
-                  AND envio_partida_id = ?
-                  AND contenedor_fisico_id = ?
-                  AND tipo_evento_id = ?"
-            . ($excluirId ? " AND id_evento <> ?" : "")
-            . " LIMIT 1";
-
-        $params = $excluirId
-            ? [$envioId, $ferroId, $tipoEvtId, $excluirId]
-            : [$envioId, $ferroId, $tipoEvtId];
-
-        return (bool)$this->select($sql, $params);
-    }
-
-    public function registrar(array $data, int $idUsuario): int
+    public function guardarCeldaEvento(array $data, int $idUsuario = 0): array
     {
-        $envioId    = (int)($data['operacion_ferro_id'] ?? $data['envio_partida_id'] ?? 0);
+        /*
+          Aceptamos ambos nombres:
+          - envio_partida_id: nombre real correcto.
+          - operacion_ferro_id: alias para no romper el JS/controlador actual.
+        */
+        $envioId = (int)(
+            $data['envio_partida_id']
+            ?? $data['operacion_ferro_id']
+            ?? 0
+        );
+
         $ferroId    = (int)($data['contenedor_fisico_id'] ?? 0);
         $tipoEvtId  = (int)($data['tipo_evento_id'] ?? 0);
-        $fecha      = (string)($data['fecha'] ?? '');
-        $comentario = $data['comentario'] ?? null;
+        $fecha      = trim((string)($data['fecha'] ?? ''));
+        $comentario = trim((string)($data['comentario'] ?? ''));
 
-        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
-            return 0;
+        $usuario = $idUsuario > 0 ? $idUsuario : null;
+
+        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) {
+            return [
+                'ok'        => false,
+                'accion'    => 'error',
+                'id_evento' => null,
+                'fecha'     => '',
+                'msg'       => 'Faltan datos de la celda.'
+            ];
         }
 
-        // 1) El envío debe existir
-        $rowOp = $this->select("
-            SELECT id_envio, contenedor_fisico_id
-            FROM operaciones_partida_envios
-            WHERE id_envio = ?
-              AND estatus = 1
-            LIMIT 1
-        ", [$envioId]);
-
-        if (!$rowOp) return 0;
-
-        // 2) El ferro debe estar activo y corresponder al envío
-        $rowF = $this->select("
-            SELECT cf.id_fisico
-            FROM operaciones_partida_envios ope
-            INNER JOIN contenedores_fisicos cf
-                ON cf.id_fisico = ope.contenedor_fisico_id
-               AND cf.estatus = 1
-            WHERE ope.id_envio = ?
-              AND ope.contenedor_fisico_id = ?
-              AND ope.estatus = 1
-            LIMIT 1
-        ", [$envioId, $ferroId]);
-
-        if (!$rowF) return 0;
-
-        // 3) Tipo de evento terrestre activo
-        $rowEvt = $this->select("
-            SELECT id_tipo_evento
-            FROM tipos_evento_logistico
-            WHERE id_tipo_evento = ?
-              AND id_tipo_operacion = 2
-              AND estatus = 1
-            LIMIT 1
-        ", [$tipoEvtId]);
-
-        if (!$rowEvt) return 0;
-
-        // 4) No duplicar
-        if ($this->existeEventoFerroDuplicado($envioId, $ferroId, $tipoEvtId)) {
-            return 0;
+        if (!$this->validarCeldaEventoPartida($envioId, $ferroId, $tipoEvtId)) {
+            return [
+                'ok'        => false,
+                'accion'    => 'error',
+                'id_evento' => null,
+                'fecha'     => '',
+                'msg'       => 'El envío, ferro/caja o tipo de evento no es válido.'
+            ];
         }
 
-        // 5) Insertar
-        $sqlIns = "INSERT INTO eventos_operacion_partida_ferro
-                    (envio_partida_id, contenedor_fisico_id, tipo_evento_id, fecha, comentario, creado_por)
-                   VALUES (?, ?, ?, ?, ?, ?)";
-
-        $params = [$envioId, $ferroId, $tipoEvtId, $fecha, $comentario, ($idUsuario ?: null)];
-
-        return (int)$this->insertar($sqlIns, $params);
-    }
-
-    public function actualizar(array $data): bool
-    {
-        $idEvento   = (int)($data['id_evento'] ?? 0);
-        $envioId    = (int)($data['operacion_ferro_id'] ?? $data['envio_partida_id'] ?? 0);
-        $ferroId    = (int)($data['contenedor_fisico_id'] ?? 0);
-        $tipoEvtId  = (int)($data['tipo_evento_id'] ?? 0);
-        $fecha      = (string)($data['fecha'] ?? '');
-        $comentario = $data['comentario'] ?? null;
-
-        if ($idEvento <= 0 || $envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
-            return false;
+        /*
+          Si la fecha viene vacía, se interpreta como limpiar celda.
+          Esto permite que el JS borre con Delete/Backspace.
+        */
+        if ($fecha === '') {
+            return $this->eliminarEventoPorClave($envioId, $ferroId, $tipoEvtId);
         }
 
-        $rowOp = $this->select("
-            SELECT id_envio
-            FROM operaciones_partida_envios
-            WHERE id_envio = ?
-              AND estatus = 1
-            LIMIT 1
-        ", [$envioId]);
-
-        if (!$rowOp) return false;
-
-        $rowF = $this->select("
-            SELECT cf.id_fisico
-            FROM operaciones_partida_envios ope
-            INNER JOIN contenedores_fisicos cf
-                ON cf.id_fisico = ope.contenedor_fisico_id
-               AND cf.estatus = 1
-            WHERE ope.id_envio = ?
-              AND ope.contenedor_fisico_id = ?
-              AND ope.estatus = 1
-            LIMIT 1
-        ", [$envioId, $ferroId]);
-
-        if (!$rowF) return false;
-
-        $rowEvt = $this->select("
-            SELECT id_tipo_evento
-            FROM tipos_evento_logistico
-            WHERE id_tipo_evento = ?
-              AND id_tipo_operacion = 2
-              AND estatus = 1
-            LIMIT 1
-        ", [$tipoEvtId]);
-
-        if (!$rowEvt) return false;
-
-        if ($this->existeEventoFerroDuplicado($envioId, $ferroId, $tipoEvtId, $idEvento)) {
-            return false;
+        if (!$this->fechaSQLValida($fecha)) {
+            return [
+                'ok'        => false,
+                'accion'    => 'error',
+                'id_evento' => null,
+                'fecha'     => $fecha,
+                'msg'       => 'La fecha no tiene un formato válido.'
+            ];
         }
 
-        $sql = "UPDATE eventos_operacion_partida_ferro
-                SET envio_partida_id = ?,
-                    contenedor_fisico_id = ?,
-                    tipo_evento_id = ?,
-                    fecha = ?,
+        $actual = $this->obtenerEventoActivoPorClave($envioId, $ferroId, $tipoEvtId);
+
+        if ($actual) {
+            $idEvento = (int)$actual['id_evento'];
+
+            $sqlUpd = "
+                UPDATE eventos_operacion_partida_ferro
+                SET fecha = ?,
                     comentario = ?
                 WHERE id_evento = ?
-                  AND estatus = 1";
+                  AND estatus = 1
+                LIMIT 1
+            ";
 
-        $params = [$envioId, $ferroId, $tipoEvtId, $fecha, $comentario, $idEvento];
+            $ok = (bool)$this->save($sqlUpd, [
+                $fecha,
+                $comentario,
+                $idEvento
+            ]);
 
-        return (bool)$this->save($sql, $params);
+            return [
+                'ok'        => $ok,
+                'accion'    => $ok ? 'actualizado' : 'error',
+                'id_evento' => $idEvento,
+                'fecha'     => $fecha,
+                'msg'       => $ok
+                    ? 'Evento actualizado correctamente.'
+                    : 'No fue posible actualizar el evento.'
+            ];
+        }
+
+        /*
+          Requiere el índice único:
+          uk_eopf_celda_activa
+          (
+            envio_partida_id,
+            contenedor_fisico_id,
+            tipo_evento_id,
+            celda_activa
+          )
+
+          Esto evita duplicados si dos usuarios guardan la misma celda.
+        */
+        $sqlIns = "
+            INSERT INTO eventos_operacion_partida_ferro
+                (
+                    envio_partida_id,
+                    contenedor_fisico_id,
+                    tipo_evento_id,
+                    fecha,
+                    comentario,
+                    creado_por,
+                    estatus
+                )
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE
+                fecha = VALUES(fecha),
+                comentario = VALUES(comentario),
+                estatus = 1,
+                id_evento = LAST_INSERT_ID(id_evento)
+        ";
+
+        $idInsert = (int)$this->insertar($sqlIns, [
+            $envioId,
+            $ferroId,
+            $tipoEvtId,
+            $fecha,
+            $comentario,
+            $usuario
+        ]);
+
+        $row = $this->obtenerEventoActivoPorClave($envioId, $ferroId, $tipoEvtId);
+
+        if (!$row) {
+            return [
+                'ok'        => false,
+                'accion'    => 'error',
+                'id_evento' => null,
+                'fecha'     => $fecha,
+                'msg'       => 'No fue posible guardar el evento.'
+            ];
+        }
+
+        $idEvento = (int)$row['id_evento'];
+
+        return [
+            'ok'        => true,
+            'accion'    => $idInsert > 0 ? 'insertado' : 'actualizado',
+            'id_evento' => $idEvento,
+            'fecha'     => $fecha,
+            'msg'       => 'Evento guardado correctamente.'
+        ];
     }
 
-    public function eliminar(int $idEvento): bool
+
+    private function validarCeldaEventoPartida(
+        int $envioId,
+        int $ferroId,
+        int $tipoEvtId
+    ): bool {
+        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) {
+            return false;
+        }
+
+        $sql = "
+            SELECT
+                ope.id_envio,
+                cf.id_fisico,
+                te.id_tipo_evento
+
+            FROM operaciones_partida_envios ope
+
+            INNER JOIN contenedores_fisicos cf
+                ON cf.id_fisico = ope.contenedor_fisico_id
+               AND cf.estatus = 1
+
+            INNER JOIN tipos_evento_logistico te
+                ON te.id_tipo_evento = ?
+               AND te.id_tipo_operacion = 2
+               AND te.estatus = 1
+
+            WHERE ope.id_envio = ?
+              AND ope.contenedor_fisico_id = ?
+              AND ope.estatus = 1
+
+            LIMIT 1
+        ";
+
+        $row = $this->select($sql, [
+            $tipoEvtId,
+            $envioId,
+            $ferroId
+        ]);
+
+        return !empty($row);
+    }
+
+
+    public function obtenerEventoActivoPorClave(
+        int $envioId,
+        int $ferroId,
+        int $tipoEvtId
+    ): ?array {
+        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) {
+            return null;
+        }
+
+        $sql = "
+            SELECT
+                id_evento,
+                envio_partida_id,
+                envio_partida_id AS operacion_ferro_id,
+                contenedor_fisico_id,
+                tipo_evento_id,
+                fecha,
+                comentario,
+                estatus
+            FROM eventos_operacion_partida_ferro
+            WHERE envio_partida_id = ?
+              AND contenedor_fisico_id = ?
+              AND tipo_evento_id = ?
+              AND estatus = 1
+            LIMIT 1
+        ";
+
+        $row = $this->select($sql, [
+            $envioId,
+            $ferroId,
+            $tipoEvtId
+        ]);
+
+        return $row ?: null;
+    }
+
+
+    public function eliminarEventoPorClave(
+        int $envioId,
+        int $ferroId,
+        int $tipoEvtId
+    ): array {
+        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) {
+            return [
+                'ok'        => false,
+                'accion'    => 'error',
+                'id_evento' => null,
+                'fecha'     => '',
+                'msg'       => 'Faltan datos para eliminar la celda.'
+            ];
+        }
+
+        $actual = $this->obtenerEventoActivoPorClave($envioId, $ferroId, $tipoEvtId);
+
+        if (!$actual) {
+            return [
+                'ok'        => true,
+                'accion'    => 'sin_cambios',
+                'id_evento' => null,
+                'fecha'     => '',
+                'msg'       => 'La celda ya estaba vacía.'
+            ];
+        }
+
+        $idEvento = (int)$actual['id_evento'];
+
+        $sql = "
+            UPDATE eventos_operacion_partida_ferro
+            SET estatus = 0
+            WHERE id_evento = ?
+            LIMIT 1
+        ";
+
+        $ok = (bool)$this->save($sql, [$idEvento]);
+
+        return [
+            'ok'        => $ok,
+            'accion'    => $ok ? 'eliminado' : 'error',
+            'id_evento' => $idEvento,
+            'fecha'     => '',
+            'msg'       => $ok
+                ? 'Evento eliminado correctamente.'
+                : 'No fue posible eliminar el evento.'
+        ];
+    }
+
+
+    public function eliminarEventoPorId(int $idEvento): bool
     {
         if ($idEvento <= 0) return false;
 
-        $sql = "UPDATE eventos_operacion_partida_ferro
-                SET estatus = 0
-                WHERE id_evento = ?
-                LIMIT 1";
+        $sql = "
+            UPDATE eventos_operacion_partida_ferro
+            SET estatus = 0
+            WHERE id_evento = ?
+            LIMIT 1
+        ";
 
         return (bool)$this->save($sql, [$idEvento]);
     }
 
+
+    private function fechaSQLValida(string $fecha): bool
+    {
+        $fecha = trim($fecha);
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return false;
+        }
+
+        [$year, $month, $day] = array_map('intval', explode('-', $fecha));
+
+        return checkdate($month, $day, $year);
+    }
+
+
+    /* ==========================================================
+       MÉTODOS VIEJOS CONSERVADOS POR COMPATIBILIDAD
+       El nuevo flujo debe usar guardarCeldaEvento().
+       ========================================================== */
+
+    public function registrar(array $data, int $idUsuario = 0): int
+    {
+        $res = $this->guardarCeldaEvento($data, $idUsuario);
+
+        if (!is_array($res) || empty($res['ok'])) {
+            return 0;
+        }
+
+        return (int)($res['id_evento'] ?? 0);
+    }
+
+
+    public function actualizar(array $data): bool
+    {
+        $idEvento = (int)($data['id_evento'] ?? 0);
+
+        if ($idEvento <= 0) {
+            return false;
+        }
+
+        $envioId = (int)(
+            $data['envio_partida_id']
+            ?? $data['operacion_ferro_id']
+            ?? 0
+        );
+
+        $ferroId    = (int)($data['contenedor_fisico_id'] ?? 0);
+        $tipoEvtId  = (int)($data['tipo_evento_id'] ?? 0);
+        $fecha      = trim((string)($data['fecha'] ?? ''));
+        $comentario = trim((string)($data['comentario'] ?? ''));
+
+        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0 || $fecha === '') {
+            return false;
+        }
+
+        if (!$this->fechaSQLValida($fecha)) {
+            return false;
+        }
+
+        if (!$this->validarCeldaEventoPartida($envioId, $ferroId, $tipoEvtId)) {
+            return false;
+        }
+
+        $sql = "
+            UPDATE eventos_operacion_partida_ferro
+            SET envio_partida_id = ?,
+                contenedor_fisico_id = ?,
+                tipo_evento_id = ?,
+                fecha = ?,
+                comentario = ?
+            WHERE id_evento = ?
+              AND estatus = 1
+            LIMIT 1
+        ";
+
+        return (bool)$this->save($sql, [
+            $envioId,
+            $ferroId,
+            $tipoEvtId,
+            $fecha,
+            $comentario,
+            $idEvento
+        ]);
+    }
+
+
+    public function eliminar(int $idEvento): bool
+    {
+        return $this->eliminarEventoPorId($idEvento);
+    }
+
+
     public function obtenerEventoPorClave(int $envioId, int $ferroId, int $tipoEvtId): ?array
     {
-        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) return null;
+        return $this->obtenerEventoActivoPorClave($envioId, $ferroId, $tipoEvtId);
+    }
 
-        $sql = "SELECT
-                    e.id_evento,
-                    e.envio_partida_id AS operacion_ferro_id,
-                    e.contenedor_fisico_id,
-                    e.tipo_evento_id,
-                    e.fecha,
-                    e.comentario
-                FROM eventos_operacion_partida_ferro e
-                WHERE e.estatus = 1
-                  AND e.envio_partida_id = ?
-                  AND e.contenedor_fisico_id = ?
-                  AND e.tipo_evento_id = ?
-                LIMIT 1";
 
-        $row = $this->select($sql, [$envioId, $ferroId, $tipoEvtId]);
-        return $row ?: null;
+    public function existeEventoFerroDuplicado(
+        int $envioId,
+        int $ferroId,
+        int $tipoEvtId,
+        int $exceptId = 0
+    ): bool {
+        if ($envioId <= 0 || $ferroId <= 0 || $tipoEvtId <= 0) {
+            return false;
+        }
+
+        $params = [$envioId, $ferroId, $tipoEvtId];
+
+        $extra = '';
+
+        if ($exceptId > 0) {
+            $extra = " AND id_evento <> ? ";
+            $params[] = $exceptId;
+        }
+
+        $sql = "
+            SELECT id_evento
+            FROM eventos_operacion_partida_ferro
+            WHERE envio_partida_id = ?
+              AND contenedor_fisico_id = ?
+              AND tipo_evento_id = ?
+              AND estatus = 1
+              {$extra}
+            LIMIT 1
+        ";
+
+        $row = $this->select($sql, $params);
+
+        return !empty($row);
     }
 }

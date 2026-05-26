@@ -1,7 +1,8 @@
 <style>
   /* =========================================================
-   EVENTOS TERRESTRES (FER) — ANCHOS / LEGIBILIDAD / OBSERVACIONES
-   ========================================================= */
+     EVENTOS TERRESTRES (FER)
+     ANCHOS / LEGIBILIDAD / OBSERVACIONES / EDICIÓN TIPO EXCEL
+     ========================================================= */
 
   #tablaEventosFer {
     border-collapse: separate;
@@ -99,6 +100,78 @@
     text-align: center;
   }
 
+  /* =========================================================
+     CELDAS EDITABLES TIPO EXCEL
+     Estas clases las usará el JS nuevo.
+     ========================================================= */
+
+  .evfer-date-cell {
+    cursor: cell;
+    position: relative;
+    transition:
+      background-color .15s ease,
+      box-shadow .15s ease,
+      color .15s ease;
+  }
+
+  .evfer-date-cell:hover {
+    background-color: rgba(13, 110, 253, .08);
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, .35);
+  }
+
+  .evfer-date-cell:focus {
+    outline: none;
+    background-color: rgba(13, 110, 253, .10);
+    box-shadow: inset 0 0 0 2px rgba(13, 110, 253, .65);
+  }
+
+  .evfer-date-cell.evfer-empty {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .evfer-date-cell.evfer-saving {
+    background-color: rgba(255, 193, 7, .18);
+    box-shadow: inset 0 0 0 2px rgba(255, 193, 7, .55);
+  }
+
+  .evfer-date-cell.evfer-saved {
+    background-color: rgba(25, 135, 84, .12);
+    box-shadow: inset 0 0 0 2px rgba(25, 135, 84, .45);
+  }
+
+  .evfer-date-cell.evfer-error {
+    background-color: rgba(220, 53, 69, .12);
+    box-shadow: inset 0 0 0 2px rgba(220, 53, 69, .55);
+  }
+
+  .evfer-date-input {
+    width: 100%;
+    min-width: 110px;
+    height: 30px;
+    border: 1px solid #0d6efd;
+    border-radius: .375rem;
+    padding: .15rem .35rem;
+    font-size: .85rem;
+    text-align: center;
+    outline: none;
+  }
+
+  .evfer-date-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 .15rem rgba(13, 110, 253, .18);
+  }
+
+  .evfer-cell-status {
+    position: absolute;
+    right: 4px;
+    bottom: 2px;
+    font-size: .65rem;
+    line-height: 1;
+    opacity: .75;
+    pointer-events: none;
+  }
+
   /* Celda de observaciones */
   .evfer-observacion-cell {
     white-space: normal !important;
@@ -124,10 +197,26 @@
     transition: background-color .15s ease, box-shadow .15s ease;
   }
 
-
+  .evfer-observacion-click:hover {
+    background-color: rgba(13, 110, 253, .08);
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, .25);
+  }
 
   .evfer-observacion-click:hover .evfer-observacion-text {
     text-decoration: underline;
+  }
+
+  /* Ayuda visual superior */
+  .evfer-help-box {
+    border: 1px solid rgba(13, 110, 253, .18);
+    background: rgba(13, 110, 253, .04);
+    border-radius: .5rem;
+    padding: .65rem .85rem;
+    color: #495057;
+  }
+
+  .evfer-help-box strong {
+    color: #0d6efd;
   }
 </style>
 
@@ -137,43 +226,61 @@
       <h5 class="mb-0">
         <i data-feather="file-text" class="me-1"></i> Eventos Terrestres
       </h5>
-      <button class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticosFer"
-        id="btnAbrirModalDetallesFer">
-        <i data-feather="plus-circle" class="me-1"></i> Añadir / Editar Evento
-      </button>
     </div>
 
     <div class="card-body">
 
+
+
       <!-- Filtros superiores -->
       <div class="row g-3 align-items-end mb-3">
-        <!-- Operación con sugerencias -->
+        <!-- Operación con sugerencias: se conserva oculto por compatibilidad -->
         <div class="col-md-3 d-none">
           <label for="eventosFerFiltroOpNombre" class="form-label mb-1">Operación</label>
           <div class="position-relative">
             <input type="hidden" id="eventosFerFiltroOpId">
-            <input type="text" id="eventosFerFiltroOpNombre" class="form-control"
-              placeholder="Escribe para buscar" autocomplete="off">
-            <div id="eventosFerFiltroOpSugerencias" class="list-group"
+            <input
+              type="text"
+              id="eventosFerFiltroOpNombre"
+              class="form-control"
+              placeholder="Escribe para buscar"
+              autocomplete="off">
+            <div
+              id="eventosFerFiltroOpSugerencias"
+              class="list-group"
               style="position:absolute; z-index:1061; width:100%; display:none;"></div>
           </div>
           <div class="form-text" id="eventosFerFiltroOpMeta"></div>
         </div>
 
         <div class="col-md-2">
-          <label for="eventosFerFiltroContenedor">Contendor maritimo </label>
-          <input type="text" id="eventosFerFiltroContenedor" name="eventosFerFiltroContenedor" class="form-control"
-            placeholder="Escribe para buscar" autocomplete="off">
-
+          <label for="eventosFerFiltroContenedor">Contenedor marítimo</label>
+          <input
+            type="text"
+            id="eventosFerFiltroContenedor"
+            name="eventosFerFiltroContenedor"
+            class="form-control"
+            placeholder="Escribe para buscar"
+            autocomplete="off">
         </div>
+
         <div class="col-md-2">
           <label for="eventosFerFiltroFerro">Ferro / Caja</label>
-          <input type="text" id="eventosFerFiltroFerro" name="eventosFerFiltroFerro" class="form-control"
-            placeholder="FXEU..." autocomplete="off">
+          <input
+            type="text"
+            id="eventosFerFiltroFerro"
+            name="eventosFerFiltroFerro"
+            class="form-control"
+            placeholder="FXEU..."
+            autocomplete="off">
         </div>
+
         <div class="col-md-2">
-          <label for="">Transportista</label>
-          <select class="form-control" id="eventosFerFiltroTransportista" name="eventosFerFiltroTransportista">
+          <label for="eventosFerFiltroTransportista">Transportista</label>
+          <select
+            class="form-control"
+            id="eventosFerFiltroTransportista"
+            name="eventosFerFiltroTransportista">
             <option value="">Transportista (Todos)</option>
             <?php if (!empty($data['transportistas'])): ?>
               <?php foreach ($data['transportistas'] as $st): ?>
@@ -186,8 +293,11 @@
         </div>
 
         <div class="col-md-2">
-          <label for="">Cliente</label>
-          <select class="form-control" id="eventosFerFiltroCliente" name="eventosFerFiltroCliente">
+          <label for="eventosFerFiltroCliente">Cliente</label>
+          <select
+            class="form-control"
+            id="eventosFerFiltroCliente"
+            name="eventosFerFiltroCliente">
             <option value="">Cliente (Todos)</option>
             <?php if (!empty($data['clientes'])): ?>
               <?php foreach ($data['clientes'] as $cl): ?>
@@ -200,8 +310,11 @@
         </div>
 
         <div class="col-md-3">
-          <label for="">Destino</label>
-          <select class="form-control" id="eventosFerFiltroDestino" name="eventosFerFiltroDestino">
+          <label for="eventosFerFiltroDestino">Destino</label>
+          <select
+            class="form-control"
+            id="eventosFerFiltroDestino"
+            name="eventosFerFiltroDestino">
             <option value="">Destino (Todos)</option>
             <?php if (!empty($data['ciudades'])): ?>
               <?php foreach ($data['ciudades'] as $c): ?>
@@ -214,15 +327,14 @@
         </div>
 
         <!-- Exportaciones -->
-        <div class="row d-flex col-md-12 align-items-end justify-content-end">
-          <div class="col-md-1 d-flex">
-            <button class="btn btn-sm btn-outline-success " id="btnExportarExcelEventosLogisticosFer">
-              <i data-feather="file-text" class="me-1"></i> Excel
-            </button>
-            <button class="btn btn-sm btn-outline-warning " id="btnExportarPDFEventosLogisticosFer">
-              <i data-feather="file" class="me-1"></i> PDF
-            </button>
-          </div>
+        <div class="col-12 d-flex align-items-center justify-content-end gap-2">
+          <button class="btn btn-sm btn-outline-success" id="btnExportarExcelEventosLogisticosFer">
+            <i data-feather="file-text" class="me-1"></i> Excel
+          </button>
+
+          <button class="btn btn-sm btn-outline-warning" id="btnExportarPDFEventosLogisticosFer">
+            <i data-feather="file" class="me-1"></i> PDF
+          </button>
         </div>
 
         <!-- perPage -->
@@ -243,7 +355,7 @@
 
       <!-- Tabla de eventos por contenedor ferroviario -->
       <div class="table-responsive">
-        <table class="table table-hover table-bordered-pacific  align-middle" id="tablaEventosFer">
+        <table class="table table-hover table-bordered-pacific align-middle" id="tablaEventosFer">
           <thead class="table-primary">
             <tr id="theadEventosFer" class="text-center">
               <!-- Fijos iniciales. El JS reconstruye este encabezado al cargar columnas. -->
@@ -254,9 +366,10 @@
               <th class="text-center">Transportista</th>
               <th class="text-center">Caja / Ferro</th>
               <th class="text-center">Observaciones</th>
-              <!-- Dinámicos (JS): una <th> por cada tipo de evento terrestre -->
+              <!-- Dinámicos JS: una <th> por cada tipo de evento terrestre -->
             </tr>
           </thead>
+
           <tbody id="tbodyEventosFer">
             <!-- JS: filas dinámicas -->
           </tbody>
@@ -267,7 +380,8 @@
           <div class="small text-muted">
             <span id="evFerMetaResumen">Mostrando 0–0 de 0</span>
           </div>
-          <nav aria-label="Paginación de eventos ferroviarios">
+
+          <nav aria-label="Paginación de eventos terrestres">
             <ul id="evFerPaginacion" class="pagination pagination-sm mb-0">
               <!-- JS -->
             </ul>
@@ -279,134 +393,6 @@
   </div>
 </div>
 
-<!-- MODAL: Crear / Editar Evento Logístico (Ferroviario) -->
-<div class="modal fade" id="modalDetallesLogisticosFer" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title">
-          <i data-feather="plus-square" class="me-2"></i>
-          <span id="modalTituloDetallesFer">Registrar Evento</span>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      <form id="formEventosLogisticosFer" autocomplete="off">
-        <div class="modal-body">
-          <input type="hidden" id="idEventoFer" name="idEventoFer" value="">
-          <input type="hidden" id="eventoContenedorTipoFer">
-          <div class="row g-3 mb-2">
-            <!-- Operación con sugerencias -->
-            <div class="col-md-6 d-none">
-              <label for="eventoOperacionNombreFer" class="form-label">Operación</label>
-              <div class="position-relative">
-                <input type="hidden" id="eventoOperacionIdFer" name="eventoOperacionIdFer">
-                <input type="text" id="eventoOperacionNombreFer" class="form-control"
-                  placeholder="Escribe para buscar (ej. JL-FER-05)" autocomplete="off" required>
-                <div id="eventoOperacionSugerenciasFer" class="list-group"
-                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-              </div>
-              <div class="form-text" id="eventoOperacionMetaFer"></div>
-            </div>
-
-            <!-- Contenedor físico (Caja/Ferro) con sugerencias -->
-            <div class="col-md-6">
-              <label for="eventoContenedorNombreFer" class="form-label">Contenedor</label>
-              <div class="position-relative">
-                <!-- Guardaremos directamente el contenedor_ferro_operacion_id -->
-                <input type="hidden" id="eventoContenedorOperacionIdFer" name="eventoContenedorOperacionIdFer">
-                <input type="text" id="eventoContenedorNombreFer" class="form-control"
-                  placeholder="Escribe para buscar (ej. FXEU..., MGU...)" autocomplete="off" readonly>
-                <div id="eventoContenedorSugerenciasFer" class="list-group"
-                  style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-              </div>
-              <div class="form-text">Se listan los contenedores físicos de la operación seleccionada.</div>
-            </div>
-          </div>
-
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label for="tipoEventoIdFer" class="form-label">Tipo de evento</label>
-              <select id="tipoEventoIdFer" name="tipoEventoIdFer" class="form-control">
-                <option value="">Selecciona...</option>
-              </select>
-            </div>
-
-            <div class="col-md-4">
-              <label for="fechaEventoLogisticoFer" class="form-label">Fecha</label>
-              <input type="date" class="form-control" id="fechaEventoLogisticoFer"
-                name="fechaEventoLogisticoFer" required>
-            </div>
-
-            <div class="col-md-4">
-              <label for="comentarioEventoLogisticoFer" class="form-label">Comentarios</label>
-              <input type="text" id="comentarioEventoLogisticoFer" name="comentarioEventoLogisticoFer"
-                class="form-control" placeholder="Opcional">
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer d-flex justify-content-between">
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              <i data-feather="x-circle" class="me-1"></i> Cancelar
-            </button>
-            <button type="submit" id="btnSubmitEventoLogisticoFer" class="btn btn-primary">
-              <i data-feather="save" class="me-1"></i> Guardar
-            </button>
-          </div>
-        </div>
-      </form>
-
-    </div>
-  </div>
-</div>
-
-<!-- MODAL celda -->
-<div class="modal fade" id="modalEvtCellFer" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h6 class="modal-title" id="modalEvtCellTitleFer">Evento</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <form id="formEvtCellFer">
-        <div class="modal-body">
-          <input type="hidden" id="cellOpIdFer">
-          <input type="hidden" id="cellCfoIdFer"> <!-- contenedor_ferro_operacion.id -->
-          <input type="hidden" id="cellEvtIdFer">
-          <input type="hidden" id="cellIdEventoFer"> <!-- si existe -->
-
-          <div class="mb-2">
-            <label class="form-label">Operación</label>
-            <input id="cellOpTxtFer" class="form-control" readonly>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Ferro/Caja / Maritimo</label>
-            <input id="cellCtnTxtFer" class="form-control" readonly>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Tipo de evento</label>
-            <input id="cellEvtTxtFer" class="form-control" readonly>
-          </div>
-
-          <div class="mb-2">
-            <label class="form-label">Fecha</label>
-            <input type="date" id="cellFechaFer" class="form-control" required>
-          </div>
-          <div>
-            <label class="form-label">Comentario</label>
-            <input id="cellComentarioFer" class="form-control" placeholder="Opcional">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" id="btnCellDeleteFer" class="btn btn-outline-danger d-none">Eliminar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
 <!-- MODAL observación por renglón -->
 <div class="modal fade" id="modalObsRenglonFer" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-md modal-dialog-scrollable">
@@ -448,7 +434,7 @@
               rows="5"
               placeholder="Escribe una observación general para este renglón..."></textarea>
             <div class="form-text">
-              Observacion general.
+              Observación general del renglón.
             </div>
           </div>
         </div>
@@ -476,8 +462,10 @@
 <script>
   feather.replace();
 </script>
+
 <!-- JS específico ferroviario -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/eventos_logisticos_fer.js"></script>
+
 <script>
   function forzarMayusculas(inputId) {
     const input = document.getElementById(inputId);
@@ -486,11 +474,12 @@
     input.addEventListener("input", function() {
       const start = this.selectionStart;
       const end = this.selectionEnd;
+
       this.value = this.value.toUpperCase();
       this.setSelectionRange(start, end);
     });
   }
 
-  // Uso
-  forzarMayusculas("eventoOperacionNombreFer");
+  forzarMayusculas("eventosFerFiltroContenedor");
+  forzarMayusculas("eventosFerFiltroFerro");
 </script>

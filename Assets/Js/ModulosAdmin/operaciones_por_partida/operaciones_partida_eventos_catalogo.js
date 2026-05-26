@@ -1,715 +1,1112 @@
-(function evOpPartidaCatalogo() {
+/* ===============================================================
+   Eventos Operaciones por Partida
+   NUEVA LÓGICA TIPO EXCEL - MISMO ESTILO QUE EVENTOS TERRESTRES
+
+   Funcionalidad:
+   - Columnas dinámicas por tipo de evento terrestre.
+   - Cada celda de evento se edita directamente.
+   - Se ve igual que Eventos Terrestres usando:
+     .evfer-date-cell
+     .evfer-date-input
+     .evfer-saving
+     .evfer-saved
+     .evfer-error
+     .evfer-empty
+   - Enter: guarda.
+   - Tab: guarda y avanza a la derecha.
+   - Shift + Tab: guarda y regresa a la izquierda.
+   - Escape: cancela edición.
+   - Delete / Backspace: limpia la celda.
+   - Guarda en backend con Operaciones_por_partida_eventos/guardar_celda.
+   =============================================================== */
+
+(function evOpPartidaListPivotExcel() {
   "use strict";
 
+  // =============================================================
+  // Base URL
+  // =============================================================
   const base_url =
     (typeof window.base_url !== "undefined" && window.base_url) ||
     (typeof window.BASE_URL !== "undefined" && window.BASE_URL) ||
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
 
+  // =============================================================
+  // Endpoints
+  // =============================================================
   const URL_LISTAR = base_url + "Operaciones_por_partida_eventos/listar";
+
   const URL_COLUMNAS =
     base_url + "Operaciones_por_partida_eventos/eventos_ferro_columnas";
-  const URL_OBTENER_POR_CLAVE =
-    base_url + "Operaciones_por_partida_eventos/obtener_por_clave";
-  const URL_REGISTRAR = base_url + "Operaciones_por_partida_eventos/registrar";
-  const URL_ACTUALIZAR =
-    base_url + "Operaciones_por_partida_eventos/actualizar";
-  const URL_ELIMINAR = base_url + "Operaciones_por_partida_eventos/eliminar";
-  const URL_TIPOS_EVENTO =
-    base_url + "Operaciones_por_partida_eventos/tipos_evento";
 
-  // =========================
-  // REFS TABLA
-  // =========================
+  const URL_GUARDAR_CELDA =
+    base_url + "Operaciones_por_partida_eventos/guardar_celda";
+
+  // =============================================================
+  // Referencias UI
+  // =============================================================
   const theadRow = document.getElementById("theadEventosOpPartida");
   const tbody = document.getElementById("tbodyEventosOpPartida");
   const pagBox = document.getElementById("evOpPartidaPaginacion");
   const metaBox = document.getElementById("evOpPartidaMetaResumen");
   const perPageSel = document.getElementById("evOpPartidaPerPage");
 
-  // =========================
-  // REFS FILTROS
-  // =========================
   const filtroOpId = document.getElementById("eventosOpPartidaFiltroOpId");
-  const filtroOpNom = document.getElementById("eventosOpPartidaFiltroOpNombre");
 
   const filtroFactura = document.getElementById(
     "eventosOpPartidaFiltroFactura",
   );
+
   const filtroFerro = document.getElementById("eventosOpPartidaFiltroFerro");
+
   const filtroTransportista = document.getElementById(
     "eventosOpPartidaFiltroTransportista",
   );
+
   const filtroDestino = document.getElementById(
     "eventosOpPartidaFiltroDestino",
   );
 
-  // =========================
-  // MODAL CELDA
-  // =========================
-  const modalCellEl = document.getElementById("modalEvtCellOpPartida");
-  const formCell = document.getElementById("formEvtCellOpPartida");
-
-  const cellOpId = document.getElementById("cellOpIdOpPartida");
-  const cellCfoId = document.getElementById("cellCfoIdOpPartida");
-  const cellEvtId = document.getElementById("cellEvtIdOpPartida");
-  const cellIdEvento = document.getElementById("cellIdEventoOpPartida");
-
-  const cellOpTxt = document.getElementById("cellOpTxtOpPartida");
-  const cellCtnTxt = document.getElementById("cellCtnTxtOpPartida");
-  const cellEvtTxt = document.getElementById("cellEvtTxtOpPartida");
-  const cellFecha = document.getElementById("cellFechaOpPartida");
-  const cellComentario = document.getElementById("cellComentarioOpPartida");
-  const cellTitle = document.getElementById("modalEvtCellTitleOpPartida");
-  const btnCellDelete = document.getElementById("btnCellDeleteOpPartida");
-
-  if (typeof bootstrap === "undefined") {
-    console.error(
-      "Bootstrap JS no está cargado. Verifica bootstrap.bundle.min.js",
-    );
-  }
-
-  const modalCell =
-    modalCellEl && typeof bootstrap !== "undefined"
-      ? new bootstrap.Modal(modalCellEl)
-      : null;
-
-  // =========================
-  // ESTADO
-  // =========================
-  let page = 1;
-  let perPage = perPageSel ? parseInt(perPageSel.value || "10", 10) : 10;
+  // =============================================================
+  // Estado
+  // =============================================================
+  let COLS = [];
+  let currentPage = 1;
+  let perPage = parseInt(perPageSel?.value || "10", 10);
   let totalRows = 0;
 
-  let columnasEventos = []; // [{id,nombre,key}]
-  let lastRowsRaw = [];
-  let lastRowsPivot = [];
+  let activeEditCell = null;
+  let activeEditInput = null;
+  let activeEditOriginalValue = "";
+  let isCommittingCell = false;
 
-  let debounceTimer = null;
-  let loading = false;
+  // =============================================================
+  // Utilidades HTTP
+  // =============================================================
+  function xhrGet(url, ok, err) {
+    const http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
-  // =========================
-  // HELPERS
-  // =========================
-  function xhGet(url, onOk, onErr) {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
-    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
 
-      if (xhr.status >= 200 && xhr.status < 300) {
+      if (this.status >= 200 && this.status < 300) {
         try {
-          const json = JSON.parse(xhr.responseText || "null");
-          onOk(json);
+          ok && ok(JSON.parse(this.responseText || "null"));
         } catch (e) {
-          console.error("JSON inválido GET:", e, xhr.responseText);
-          if (typeof onErr === "function") onErr(e);
+          console.error("JSON inválido GET:", this.responseText);
+          err && err("JSON inválido");
         }
       } else {
-        console.error("GET error:", xhr.status, xhr.responseText);
-        if (typeof onErr === "function") onErr(xhr);
+        console.error("GET error:", this.status, this.responseText);
+        err && err(this.responseText || "HTTP error");
       }
     };
-    xhr.send();
+
+    http.send();
   }
 
-  function xhPost(url, formData, onOk, onErr) {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url, true);
-    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
+  function xhrPost(url, formData, ok, err) {
+    const http = new XMLHttpRequest();
+    http.open("POST", url, true);
+    http.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const json = JSON.parse(xhr.responseText || "null");
-          onOk(json);
-        } catch (e) {
-          console.error("JSON inválido POST:", e, xhr.responseText);
-          if (typeof onErr === "function") onErr(e);
-        }
+    http.onreadystatechange = function () {
+      if (this.readyState !== 4) return;
+
+      let res = null;
+
+      try {
+        res = JSON.parse(this.responseText || "null");
+      } catch (e) {
+        res = null;
+      }
+
+      if (this.status >= 200 && this.status < 300) {
+        ok && ok(res);
       } else {
-        console.error("POST error:", xhr.status, xhr.responseText);
-        if (typeof onErr === "function") onErr(xhr);
+        console.error("POST error:", this.status, this.responseText);
+        err && err(res || this.responseText || "HTTP error");
       }
     };
-    xhr.send(formData);
+
+    http.send(formData);
   }
 
-  function esc(v) {
-    return String(v == null ? "" : v)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  // =============================================================
+  // Utilidades base
+  // =============================================================
+  function esc(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
-  function debounce(fn, ms) {
-    return function () {
-      const ctx = this;
-      const args = arguments;
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(function () {
-        fn.apply(ctx, args);
-      }, ms);
+  function debounce(fn, wait = 300) {
+    let t = null;
+
+    return function (...args) {
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), wait);
     };
   }
 
-  function fmtDateInput(val) {
-    if (!val) return "";
-    const s = String(val).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    return "";
+  function swalMsg(title, text, icon) {
+    if (window.Swal) {
+      Swal.fire(title, text, icon);
+    } else {
+      alert(text || title || "Listo");
+    }
   }
 
-  function notify(icon, title, text) {
-    if (typeof Swal !== "undefined") {
+  function toastMsg(title, icon = "success") {
+    if (window.Swal) {
       Swal.fire({
-        icon: icon || "info",
-        title: title || "",
-        text: text || "",
-        timer: icon === "success" ? 1600 : undefined,
-        showConfirmButton: icon !== "success",
+        toast: true,
+        position: "top-end",
+        icon,
+        title,
+        showConfirmButton: false,
+        timer: 1400,
+        timerProgressBar: true,
       });
-      return;
     }
-    alert((title ? title + "\n" : "") + (text || ""));
   }
 
-  function buildQuery() {
-    const qs = new URLSearchParams();
-    qs.set("page", String(page));
-    qs.set("per_page", String(perPage));
-
-    const opId = filtroOpId ? String(filtroOpId.value || "").trim() : "";
-    const factura = filtroFactura
-      ? String(filtroFactura.value || "").trim()
-      : "";
-    const ferro = filtroFerro ? String(filtroFerro.value || "").trim() : "";
-    const transportistaId = filtroTransportista
-      ? String(filtroTransportista.value || "").trim()
-      : "";
-    const destinoId = filtroDestino
-      ? String(filtroDestino.value || "").trim()
-      : "";
-
-    if (opId) qs.set("op_id", opId);
-    if (factura) qs.set("factura", factura);
-    if (ferro) qs.set("ferro", ferro);
-    if (transportistaId) qs.set("transportista_id", transportistaId);
-    if (destinoId) qs.set("destino_id", destinoId);
-
-    return qs.toString();
+  // =============================================================
+  // Fechas - igual que Eventos Terrestres
+  // =============================================================
+  function pad2(n) {
+    return String(n).padStart(2, "0");
   }
 
-  function renderMeta(total, currentPage, currentPerPage) {
-    if (!metaBox) return;
+  function isValidDateParts(y, m, d) {
+    if (!y || !m || !d) return false;
+    if (y < 1900 || y > 2100) return false;
+    if (m < 1 || m > 12) return false;
+    if (d < 1 || d > 31) return false;
 
-    if (!total) {
-      metaBox.textContent = "Mostrando 0–0 de 0";
-      return;
-    }
+    const dt = new Date(y, m - 1, d);
 
-    const from = (currentPage - 1) * currentPerPage + 1;
-    const to = Math.min(total, currentPage * currentPerPage);
-    metaBox.textContent = `Mostrando ${from}–${to} de ${total}`;
-  }
-
-  function renderPagination(total, currentPage, currentPerPage) {
-    if (!pagBox) return;
-
-    pagBox.innerHTML = "";
-
-    const totalPages = Math.max(
-      1,
-      Math.ceil((Number(total) || 0) / currentPerPage),
-    );
-    if (totalPages <= 1) return;
-
-    function makeLi(label, targetPage, disabled, active) {
-      const li = document.createElement("li");
-      li.className =
-        "page-item" + (disabled ? " disabled" : "") + (active ? " active" : "");
-
-      const a = document.createElement("a");
-      a.className = "page-link";
-      a.href = "#";
-      a.textContent = label;
-
-      a.addEventListener("click", function (e) {
-        e.preventDefault();
-        if (disabled || active) return;
-        page = targetPage;
-        cargarListado();
-      });
-
-      li.appendChild(a);
-      return li;
-    }
-
-    pagBox.appendChild(
-      makeLi("«", Math.max(1, currentPage - 1), currentPage <= 1, false),
-    );
-
-    let start = Math.max(1, currentPage - 2);
-    let end = Math.min(totalPages, currentPage + 2);
-
-    if (currentPage <= 3) end = Math.min(totalPages, 5);
-    if (currentPage >= totalPages - 2) start = Math.max(1, totalPages - 4);
-
-    for (let i = start; i <= end; i++) {
-      pagBox.appendChild(makeLi(String(i), i, false, i === currentPage));
-    }
-
-    pagBox.appendChild(
-      makeLi(
-        "»",
-        Math.min(totalPages, currentPage + 1),
-        currentPage >= totalPages,
-        false,
-      ),
+    return (
+      dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d
     );
   }
 
-  function renderHead() {
+  function normalizeDateToSQL(value) {
+    let v = String(value || "").trim();
+
+    if (!v || v === "-") return "";
+
+    v = v.replace(/\s+/g, "");
+
+    // yyyy-mm-dd
+    let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) {
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const d = parseInt(m[3], 10);
+
+      if (!isValidDateParts(y, mo, d)) return null;
+
+      return `${y}-${pad2(mo)}-${pad2(d)}`;
+    }
+
+    // yyyy/mm/dd
+    m = v.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (m) {
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const d = parseInt(m[3], 10);
+
+      if (!isValidDateParts(y, mo, d)) return null;
+
+      return `${y}-${pad2(mo)}-${pad2(d)}`;
+    }
+
+    // dd/mm/yyyy o dd-mm-yyyy
+    m = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    if (m) {
+      const d = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const y = parseInt(m[3], 10);
+
+      if (!isValidDateParts(y, mo, d)) return null;
+
+      return `${y}-${pad2(mo)}-${pad2(d)}`;
+    }
+
+    // ddmmyyyy
+    m = v.match(/^(\d{2})(\d{2})(\d{4})$/);
+    if (m) {
+      const d = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const y = parseInt(m[3], 10);
+
+      if (!isValidDateParts(y, mo, d)) return null;
+
+      return `${y}-${pad2(mo)}-${pad2(d)}`;
+    }
+
+    // yyyymmdd
+    m = v.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (m) {
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const d = parseInt(m[3], 10);
+
+      if (!isValidDateParts(y, mo, d)) return null;
+
+      return `${y}-${pad2(mo)}-${pad2(d)}`;
+    }
+
+    return null;
+  }
+
+  function formatDateForDisplay(value) {
+    const sql = normalizeDateToSQL(value);
+
+    if (!sql) return "";
+
+    const parts = sql.split("-");
+    if (parts.length !== 3) return "";
+
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  function formatDateForInput(value) {
+    const sql = normalizeDateToSQL(value);
+
+    if (!sql) return "";
+
+    const parts = sql.split("-");
+    if (parts.length !== 3) return "";
+
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  // =============================================================
+  // Encabezado dinámico
+  // =============================================================
+  function buildHead() {
     if (!theadRow) return;
 
-    let html = "";
-    html += `<th class="text-center">Operación</th>`;
-    html += `<th class="text-center">Factura</th>`;
-    html += `<th class="text-center">Cliente</th>`;
-    html += `<th class="text-center">Destino</th>`;
-    html += `<th class="text-center">Transportista</th>`;
-    html += `<th class="text-center">Caja / Ferro</th>`;
+    theadRow.innerHTML = `
+      <th class="text-center">Operación</th>
+      <th class="text-center">Factura</th>
+      <th class="text-center">Cliente</th>
+      <th class="text-center">Destino</th>
+      <th class="text-center">Transportista</th>
+      <th class="text-center">Caja / Ferro</th>
+    `;
 
-    columnasEventos.forEach(function (col) {
-      html += `<th class="text-center">${esc(col.nombre)}</th>`;
-    });
-
-    theadRow.innerHTML = html;
+    for (const c of COLS) {
+      const th = document.createElement("th");
+      th.setAttribute("data-evt-id", c.id);
+      th.textContent = c.nombre;
+      th.className = "text-center";
+      theadRow.appendChild(th);
+    }
   }
 
-  function agruparPivot(rows) {
-    const map = new Map();
+  // =============================================================
+  // Pivot de registros
+  // =============================================================
+  function pivotRows(rows) {
+    const byEvtId = new Map(COLS.map((c) => [String(c.id), c]));
+    const groups = new Map();
 
-    (Array.isArray(rows) ? rows : []).forEach(function (r) {
-      const opId = Number(r.operacion_ferro_id || 0);
-      const ferroId = Number(r.contenedor_fisico_id || 0);
-      const key = opId + "_" + ferroId;
+    (rows || []).forEach((r) => {
+      const envioId = parseInt(
+        r.envio_partida_id || r.operacion_ferro_id || r.op_id || 0,
+        10,
+      );
 
-      if (!map.has(key)) {
-        map.set(key, {
-          key: key,
-          operacion_ferro_id: opId,
-          contenedor_fisico_id: ferroId,
-          operacion: r.operacion || r.operacion_maritima || "ENV-" + opId,
-          ferro: r.ferro || "",
-          cliente: r.cliente || r.nombre_cliente || "",
-          destino: r.destino || "",
-          transportista: r.transportista || "",
+      const ferId = parseInt(r.contenedor_fisico_id || r.ferro_id || 0, 10);
+
+      if (!envioId || !ferId) return;
+
+      const key = `${envioId}||${ferId}`;
+
+      if (!groups.has(key)) {
+        const cells = {};
+
+        for (const c of COLS) {
+          cells[c.key || String(c.id)] = {
+            id_evento: null,
+            fecha: "",
+            comentario: "",
+            tipo_evento_id: c.id,
+            evento: c.nombre,
+          };
+        }
+
+        groups.set(key, {
+          envio_partida_id: envioId,
+          operacion_ferro_id: envioId, // alias para compatibilidad con controlador/modelo
+          contenedor_fisico_id: ferId,
+
+          operacion:
+            r.operacion ||
+            r.operacion_maritima ||
+            r.numero_operacion ||
+            `ENV-${envioId}`,
+
           factura:
             r.factura ||
             r.facturas ||
             r.numero_factura ||
             r.factura_folio ||
             "",
-          ubicacion_actual: r.ubicacion_actual || "",
-          eventos: {},
+
+          cliente: r.cliente || r.nombre_cliente || "",
+          destino: r.destino || r.nombre_destino || "",
+          transportista: r.transportista || "",
+          ferro: r.ferro || r.numero_ferro || "",
+
+          cells,
         });
       }
 
-      const row = map.get(key);
+      const g = groups.get(key);
+      const c = byEvtId.get(String(r.tipo_evento_id || ""));
 
-      if (!row.factura) {
-        row.factura =
+      if (c) {
+        const cellKey = c.key || String(c.id);
+        const currentCell = g.cells[cellKey];
+        const newFecha = r.fecha || "";
+
+        if (
+          !currentCell.fecha ||
+          String(newFecha) >= String(currentCell.fecha)
+        ) {
+          g.cells[cellKey] = {
+            id_evento: r.id_evento || null,
+            fecha: newFecha,
+            comentario: r.comentario || "",
+            tipo_evento_id: c.id,
+            evento: c.nombre,
+          };
+        }
+      }
+
+      if (!g.operacion && (r.operacion || r.operacion_maritima)) {
+        g.operacion = r.operacion || r.operacion_maritima;
+      }
+
+      if (!g.factura) {
+        g.factura =
           r.factura || r.facturas || r.numero_factura || r.factura_folio || "";
       }
 
-      if (!row.cliente) {
-        row.cliente = r.cliente || r.nombre_cliente || "";
+      if (!g.cliente && (r.cliente || r.nombre_cliente)) {
+        g.cliente = r.cliente || r.nombre_cliente;
       }
 
-      if (!row.destino) {
-        row.destino = r.destino || "";
+      if (!g.destino && (r.destino || r.nombre_destino)) {
+        g.destino = r.destino || r.nombre_destino;
       }
 
-      if (!row.transportista) {
-        row.transportista = r.transportista || "";
+      if (!g.transportista && r.transportista) {
+        g.transportista = r.transportista;
       }
 
-      if (!row.ferro) {
-        row.ferro = r.ferro || "";
-      }
-
-      if (r.tipo_evento_id) {
-        row.eventos[String(r.tipo_evento_id)] = {
-          id_evento: r.id_evento || null,
-          tipo_evento_id: Number(r.tipo_evento_id || 0),
-          evento: r.evento || "",
-          fecha: r.fecha || "",
-          comentario: r.comentario || "",
-        };
+      if (!g.ferro && (r.ferro || r.numero_ferro)) {
+        g.ferro = r.ferro || r.numero_ferro;
       }
     });
 
-    return Array.from(map.values());
+    return Array.from(groups.values()).sort((a, b) => {
+      const ao = String(a.operacion || "").localeCompare(
+        String(b.operacion || ""),
+      );
+
+      if (ao !== 0) return ao;
+
+      return String(a.ferro || "").localeCompare(String(b.ferro || ""));
+    });
   }
 
-  function buildCellText(evtObj) {
-    if (!evtObj || !evtObj.fecha) {
-      return `<span class="text-muted">-</span>`;
-    }
-
-    return `<span>${esc(evtObj.fecha)}</span>`;
-  }
-
-  function renderBody(rowsPivot) {
+  // =============================================================
+  // Render cuerpo
+  // =============================================================
+  function renderBody(pivoted) {
     if (!tbody) return;
 
-    if (!Array.isArray(rowsPivot) || !rowsPivot.length) {
-      tbody.innerHTML = `
-      <tr>
-        <td colspan="${6 + columnasEventos.length}" class="text-center text-muted py-4">
-          No hay registros para mostrar
+    tbody.innerHTML = "";
+
+    const fixedCols = 6;
+
+    if (!Array.isArray(pivoted) || pivoted.length === 0) {
+      tbody.innerHTML = `<tr>
+        <td colspan="${fixedCols + COLS.length}" class="text-center text-muted py-3">
+          No hay registros
         </td>
-      </tr>
-    `;
+      </tr>`;
       return;
     }
 
-    let html = "";
+    for (const row of pivoted) {
+      const tr = document.createElement("tr");
 
-    rowsPivot.forEach(function (r) {
-      html += `<tr>`;
+      tr.dataset.oplabel = row.operacion || "";
+      tr.dataset.ctnlabel = row.ferro || "";
 
-      // OPERACIÓN
-      html += `
-        <td class="text-center align-middle">
-          <div class="fw-semibold">${esc(r.operacion || "-")}</div>
-        </td>
+      let html = `
+        <td class="text-center">${esc(row.operacion || "-")}</td>
+        <td class="text-center">${esc(row.factura || "-")}</td>
+        <td>${esc(row.cliente || "-")}</td>
+        <td>${esc(row.destino || "-")}</td>
+        <td>${esc(row.transportista || "-")}</td>
+        <td class="text-center">${esc(row.ferro || "-")}</td>
       `;
 
-      // FACTURA
-      html += `
-        <td class="text-center align-middle">
-          <span>${esc(r.factura || "-")}</span>
-        </td>
-      `;
-
-      // CLIENTE
-      html += `
-        <td class="text-center align-middle">
-          <span>${esc(r.cliente || "-")}</span>
-        </td>
-      `;
-
-      // DESTINO
-      html += `
-        <td class="text-center align-middle">
-          <span>${esc(r.destino || "-")}</span>
-        </td>
-      `;
-
-      // TRANSPORTISTA
-      html += `
-        <td class="text-center align-middle">
-          <span>${esc(r.transportista || "-")}</span>
-        </td>
-      `;
-
-      // CAJA / FERRO
-      html += `
-        <td class="text-center align-middle">
-          <div class="fw-semibold">${esc(r.ferro || "-")}</div>
-        </td>
-      `;
-
-      // EVENTOS DINÁMICOS
-      columnasEventos.forEach(function (col) {
-        const evt = r.eventos[String(col.id)] || null;
-        const comentario = evt && evt.comentario ? esc(evt.comentario) : "";
-        const title = comentario ? ` title="${comentario}"` : "";
+      for (const c of COLS) {
+        const cellKey = c.key || String(c.id);
+        const cell = row.cells[cellKey] || {};
+        const fechaSQL = cell.fecha || "";
+        const fechaLabel = fechaSQL ? formatDateForDisplay(fechaSQL) : "";
+        const emptyClass = fechaSQL ? "" : "evfer-empty";
+        const idEvento = cell.id_evento || "";
 
         html += `
-          <td class="text-center align-middle">
-            <button
-              type="button"
-              class="btn-cell-evento-op-partida evop-cell-btn"
-              data-op-id="${esc(r.operacion_ferro_id)}"
-              data-ferro-id="${esc(r.contenedor_fisico_id)}"
-              data-evt-id="${esc(col.id)}"
-              data-evt-nombre="${esc(col.nombre)}"
-              data-op-txt="${esc(r.operacion || "")}"
-              data-ferro-txt="${esc(r.ferro || "")}"
-              data-id-evento="${esc(evt && evt.id_evento ? evt.id_evento : "")}"
-              data-fecha="${esc(evt && evt.fecha ? evt.fecha : "")}"
-              data-comentario="${esc(evt && evt.comentario ? evt.comentario : "")}"
-              ${title}
-              style="
-                background: transparent;
-                border: 0;
-                padding: 0;
-                min-width: 100%;
-                color: inherit;
-                box-shadow: none;
-              "
-            >
-              ${buildCellText(evt)}
-            </button>
+          <td class="text-center evfer-date-cell ${emptyClass}"
+              tabindex="0"
+              title="Clic para escribir fecha. Enter guarda. Tab guarda y avanza."
+              data-envio-partida-id="${esc(row.envio_partida_id)}"
+              data-operacion-ferro-id="${esc(row.operacion_ferro_id)}"
+              data-contenedor-fisico-id="${esc(row.contenedor_fisico_id)}"
+              data-tipo-evento-id="${esc(c.id)}"
+              data-id-evento="${esc(idEvento)}"
+              data-fecha="${esc(fechaSQL)}"
+              data-comentario="${esc(cell.comentario || "")}"
+              data-evento-nombre="${esc(c.nombre)}">
+            ${fechaLabel ? esc(fechaLabel) : '<span class="text-muted">-</span>'}
           </td>
         `;
-      });
+      }
 
-      html += `</tr>`;
-    });
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    }
 
-    tbody.innerHTML = html;
+    if (window.feather) feather.replace();
   }
 
-  function attachBodyEvents() {
-    if (!tbody) return;
+  // =============================================================
+  // Paginación / meta
+  // =============================================================
+  function renderPagination(page, total, perPageValue) {
+    if (!pagBox) return;
 
-    tbody
-      .querySelectorAll(".btn-cell-evento-op-partida")
-      .forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          openCellModalFromButton(this);
+    pagBox.innerHTML = "";
+
+    const totalPages = Math.max(1, Math.ceil(total / perPageValue));
+
+    if (totalPages <= 1) return;
+
+    const mk = (p, label, disabled = false, active = false) => {
+      const li = document.createElement("li");
+
+      li.className = `page-item${disabled ? " disabled" : ""}${
+        active ? " active" : ""
+      }`;
+
+      const a = document.createElement("a");
+      a.className = "page-link";
+      a.href = "#";
+      a.innerHTML = label;
+
+      if (!disabled && !active) {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          currentPage = p;
+          listar();
         });
-      });
-  }
+      }
 
-  function openCellModalFromButton(btn) {
-    if (!modalCell) return;
-
-    const opId = String(btn.getAttribute("data-op-id") || "");
-    const ferroId = String(btn.getAttribute("data-ferro-id") || "");
-    const evtId = String(btn.getAttribute("data-evt-id") || "");
-    const evtNombre = String(btn.getAttribute("data-evt-nombre") || "");
-    const opTxt = String(btn.getAttribute("data-op-txt") || "");
-    const ferroTxt = String(btn.getAttribute("data-ferro-txt") || "");
-    const idEvento = String(btn.getAttribute("data-id-evento") || "");
-    const fecha = String(btn.getAttribute("data-fecha") || "");
-    const comentario = String(btn.getAttribute("data-comentario") || "");
-
-    cellOpId.value = opId;
-    cellCfoId.value = ferroId;
-    cellEvtId.value = evtId;
-    cellIdEvento.value = idEvento;
-
-    cellOpTxt.value = opTxt;
-    cellCtnTxt.value = ferroTxt;
-    cellEvtTxt.value = evtNombre;
-    cellFecha.value = fmtDateInput(fecha);
-    cellComentario.value = comentario || "";
-
-    if (cellTitle) {
-      cellTitle.textContent = idEvento ? "Editar evento" : "Registrar evento";
-    }
-
-    if (btnCellDelete) {
-      btnCellDelete.classList.toggle("d-none", !idEvento);
-    }
-
-    modalCell.show();
-  }
-
-  function cargarColumnas(cb) {
-    xhGet(
-      URL_COLUMNAS,
-      function (json) {
-        columnasEventos = Array.isArray(json && json.columns)
-          ? json.columns
-          : [];
-        renderHead();
-        if (typeof cb === "function") cb();
-      },
-      function () {
-        columnasEventos = [];
-        renderHead();
-        if (tbody) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="text-center text-danger py-4">
-                No fue posible cargar las columnas de eventos.
-              </td>
-            </tr>
-          `;
-        }
-      },
-    );
-  }
-
-  function cargarListado() {
-    if (loading) return;
-    loading = true;
-
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="${6 + Math.max(1, columnasEventos.length)}" class="text-center py-4 text-muted">
-            Cargando...
-          </td>
-        </tr>
-      `;
-    }
-
-    const url = URL_LISTAR + "?" + buildQuery();
-
-    xhGet(
-      url,
-      function (json) {
-        loading = false;
-
-        lastRowsRaw = Array.isArray(json && json.data) ? json.data : [];
-        totalRows = Number(json && json.total ? json.total : 0);
-
-        lastRowsPivot = agruparPivot(lastRowsRaw);
-
-        renderBody(lastRowsPivot);
-        attachBodyEvents();
-        renderMeta(totalRows, page, perPage);
-        renderPagination(totalRows, page, perPage);
-
-        if (typeof feather !== "undefined") feather.replace();
-      },
-      function () {
-        loading = false;
-        if (tbody) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="${6 + Math.max(1, columnasEventos.length)}" class="text-center text-danger py-4">
-                Error al cargar el listado.
-              </td>
-            </tr>
-          `;
-        }
-        renderMeta(0, page, perPage);
-        renderPagination(0, page, perPage);
-      },
-    );
-  }
-
-  function guardarEventoCelda(e) {
-    e.preventDefault();
-
-    const opId = parseInt(cellOpId.value || "0", 10);
-    const ferroId = parseInt(cellCfoId.value || "0", 10);
-    const evtId = parseInt(cellEvtId.value || "0", 10);
-    const idEvento = parseInt(cellIdEvento.value || "0", 10);
-    const fecha = String(cellFecha.value || "").trim();
-    const comentario = String(cellComentario.value || "").trim();
-
-    if (opId <= 0) {
-      notify("warning", "Dato faltante", "No se encontró la operación.");
-      return;
-    }
-    if (ferroId <= 0) {
-      notify("warning", "Dato faltante", "No se encontró el ferro/caja.");
-      return;
-    }
-    if (evtId <= 0) {
-      notify("warning", "Dato faltante", "No se encontró el tipo de evento.");
-      return;
-    }
-    if (!fecha) {
-      notify(
-        "warning",
-        "Fecha requerida",
-        "Debes capturar la fecha del evento.",
-      );
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append("operacion_ferro_id", String(opId));
-    fd.append("contenedor_fisico_id", String(ferroId));
-    fd.append("tipo_evento_id", String(evtId));
-    fd.append("fecha", fecha);
-    fd.append("comentario", comentario);
-
-    let url = URL_REGISTRAR;
-
-    if (idEvento > 0) {
-      fd.append("id_evento", String(idEvento));
-      url = URL_ACTUALIZAR;
-    }
-
-    xhPost(
-      url,
-      fd,
-      function (json) {
-        const status = String((json && json.status) || "");
-        const msg = String((json && json.msg) || "Proceso completado.");
-
-        if (status === "success") {
-          modalCell.hide();
-          notify("success", "Correcto", msg);
-          cargarListado();
-        } else {
-          notify(status === "warning" ? "warning" : "error", "Atención", msg);
-        }
-      },
-      function () {
-        notify("error", "Error", "No fue posible guardar el evento.");
-      },
-    );
-  }
-
-  function eliminarEventoCelda() {
-    const idEvento = parseInt(cellIdEvento.value || "0", 10);
-    if (idEvento <= 0) return;
-
-    const proceed = function () {
-      const fd = new FormData();
-      fd.append("id_evento", String(idEvento));
-
-      xhPost(
-        URL_ELIMINAR,
-        fd,
-        function (json) {
-          const status = String((json && json.status) || "");
-          const msg = String((json && json.msg) || "");
-
-          if (status === "success") {
-            modalCell.hide();
-            notify("success", "Eliminado", msg || "Evento eliminado.");
-            cargarListado();
-          } else {
-            notify("error", "Error", msg || "No fue posible eliminar.");
-          }
-        },
-        function () {
-          notify("error", "Error", "No fue posible eliminar el evento.");
-        },
-      );
+      li.appendChild(a);
+      pagBox.appendChild(li);
     };
 
-    if (typeof Swal !== "undefined") {
-      Swal.fire({
-        icon: "warning",
-        title: "¿Eliminar evento?",
-        text: "Esta acción dará eliminara al evento seleccionado.",
-        showCancelButton: true,
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
-      }).then(function (res) {
-        if (res.isConfirmed) proceed();
+    mk(Math.max(1, page - 1), "&laquo;", page === 1, false);
+
+    const win = 5;
+    let s = Math.max(1, page - Math.floor(win / 2));
+    let e = Math.min(totalPages, s + win - 1);
+
+    if (e - s + 1 < win) {
+      s = Math.max(1, e - win + 1);
+    }
+
+    for (let p = s; p <= e; p++) {
+      mk(p, String(p), false, p === page);
+    }
+
+    mk(Math.min(totalPages, page + 1), "&raquo;", page === totalPages, false);
+  }
+
+  function renderMeta(page, total, perPageValue) {
+    if (!metaBox) return;
+
+    if (total === 0) {
+      metaBox.textContent = "Mostrando 0–0 de 0";
+      return;
+    }
+
+    const start = (page - 1) * perPageValue + 1;
+    const end = Math.min(page * perPageValue, total);
+
+    metaBox.textContent = `Mostrando ${start}–${end} de ${total}`;
+  }
+
+  // =============================================================
+  // Filtros / query string
+  // =============================================================
+  function buildQueryString() {
+    const params = new URLSearchParams();
+
+    params.append("page", String(currentPage));
+    params.append("per_page", String(perPage));
+
+    const opId = (filtroOpId?.value || "").trim();
+    const factura = (filtroFactura?.value || "").trim();
+    const ferro = (filtroFerro?.value || "").trim();
+    const transportistaId = (filtroTransportista?.value || "").trim();
+    const destinoId = (filtroDestino?.value || "").trim();
+
+    if (opId) params.append("op_id", opId);
+    if (factura) params.append("factura", factura);
+    if (ferro) params.append("ferro", ferro);
+    if (transportistaId) params.append("transportista_id", transportistaId);
+    if (destinoId) params.append("destino_id", destinoId);
+
+    return params.toString();
+  }
+
+  function listar() {
+    cancelarEdicionActiva(false);
+
+    const url = `${URL_LISTAR}?${buildQueryString()}`;
+
+    xhrGet(
+      url,
+      (res) => {
+        const rows = Array.isArray(res?.rows)
+          ? res.rows
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
+
+        const pivoted = pivotRows(rows);
+
+        renderBody(pivoted);
+
+        totalRows =
+          res && typeof res.total !== "undefined"
+            ? parseInt(res.total || 0, 10)
+            : pivoted.length || 0;
+
+        renderPagination(currentPage, totalRows, perPage);
+        renderMeta(currentPage, totalRows, perPage);
+      },
+      (err) => {
+        console.error("Listar eventos operación por partida:", err);
+
+        const fixedCols = 6;
+
+        if (tbody) {
+          tbody.innerHTML = `<tr>
+            <td colspan="${fixedCols + COLS.length}" class="text-center text-danger py-3">
+              Error al obtener datos
+            </td>
+          </tr>`;
+        }
+
+        renderPagination(currentPage, 0, perPage);
+        renderMeta(currentPage, 0, perPage);
+      },
+    );
+  }
+
+  window.refreshEventosOpPartida = function (opts = { keepPage: true }) {
+    if (!opts.keepPage) currentPage = 1;
+    listar();
+  };
+
+  // =============================================================
+  // Edición tipo Excel - misma lógica que Eventos Terrestres
+  // =============================================================
+  function getCellTextValue(td) {
+    return formatDateForInput(td?.dataset?.fecha || "");
+  }
+
+  function getAllEditableCells() {
+    return Array.from(
+      document.querySelectorAll("#tbodyEventosOpPartida .evfer-date-cell"),
+    );
+  }
+
+  function getNextEditableCell(td, direction = 1) {
+    const cells = getAllEditableCells();
+    const idx = cells.indexOf(td);
+
+    if (idx === -1) return null;
+
+    const nextIdx = idx + direction;
+
+    if (nextIdx < 0 || nextIdx >= cells.length) return null;
+
+    return cells[nextIdx];
+  }
+
+  function setCellStatus(td, status, text = "") {
+    if (!td) return;
+
+    td.classList.remove("evfer-saving", "evfer-saved", "evfer-error");
+
+    const oldStatus = td.querySelector(".evfer-cell-status");
+    if (oldStatus) oldStatus.remove();
+
+    if (!status) return;
+
+    if (status === "saving") td.classList.add("evfer-saving");
+    if (status === "saved") td.classList.add("evfer-saved");
+    if (status === "error") td.classList.add("evfer-error");
+
+    if (text) {
+      const span = document.createElement("span");
+      span.className = "evfer-cell-status";
+      span.textContent = text;
+      td.appendChild(span);
+    }
+
+    if (status === "saved") {
+      setTimeout(() => {
+        td.classList.remove("evfer-saved");
+
+        const s = td.querySelector(".evfer-cell-status");
+        if (s) s.remove();
+      }, 900);
+    }
+  }
+
+  function renderCellValue(td, fechaSQL) {
+    const label = fechaSQL ? formatDateForDisplay(fechaSQL) : "";
+
+    td.dataset.fecha = fechaSQL || "";
+
+    if (fechaSQL) {
+      td.classList.remove("evfer-empty");
+      td.innerHTML = esc(label);
+    } else {
+      td.classList.add("evfer-empty");
+      td.innerHTML = '<span class="text-muted">-</span>';
+    }
+  }
+
+  function cancelarEdicionActiva(restoreOriginal = true) {
+    if (!activeEditCell || !activeEditInput) {
+      activeEditCell = null;
+      activeEditInput = null;
+      activeEditOriginalValue = "";
+      isCommittingCell = false;
+      return;
+    }
+
+    const td = activeEditCell;
+
+    if (restoreOriginal) {
+      renderCellValue(td, td.dataset.fecha || "");
+    }
+
+    activeEditCell = null;
+    activeEditInput = null;
+    activeEditOriginalValue = "";
+    isCommittingCell = false;
+  }
+
+  function startEditCell(td, selectText = true) {
+    if (!td || td.classList.contains("evfer-saving")) return;
+
+    if (activeEditCell && activeEditCell !== td) {
+      cancelarEdicionActiva(true);
+    }
+
+    if (activeEditCell === td) return;
+
+    activeEditCell = td;
+    activeEditOriginalValue = td.dataset.fecha || "";
+
+    const inputValue = getCellTextValue(td);
+
+    td.classList.remove("evfer-error", "evfer-saved");
+    td.innerHTML = "";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "evfer-date-input";
+    input.value = inputValue;
+    input.placeholder = "dd/mm/aaaa";
+    input.autocomplete = "off";
+
+    td.appendChild(input);
+
+    activeEditInput = input;
+
+    setTimeout(() => {
+      input.focus();
+
+      if (selectText) {
+        input.select();
+      }
+    }, 0);
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        commitActiveCell({ move: 0 });
+        return;
+      }
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        commitActiveCell({ move: e.shiftKey ? -1 : 1 });
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelarEdicionActiva(true);
+        td.focus();
+        return;
+      }
+    });
+
+    input.addEventListener("blur", function () {
+      setTimeout(() => {
+        if (!activeEditInput || isCommittingCell) return;
+        commitActiveCell({ move: 0, silentIfSame: true });
+      }, 120);
+    });
+  }
+
+  function commitActiveCell(options = {}) {
+    if (!activeEditCell || !activeEditInput || isCommittingCell) return;
+
+    const td = activeEditCell;
+    const input = activeEditInput;
+
+    const move = Number(options.move || 0);
+    const silentIfSame = !!options.silentIfSame;
+
+    const rawValue = String(input.value || "").trim();
+    const normalized = normalizeDateToSQL(rawValue);
+
+    if (normalized === null) {
+      setCellStatus(td, "error", "!");
+      input.focus();
+      input.select();
+
+      if (!silentIfSame) {
+        toastMsg("Fecha inválida", "error");
+      }
+
+      return;
+    }
+
+    const oldValue = td.dataset.fecha || "";
+    const newValue = normalized || "";
+
+    if (oldValue === newValue) {
+      renderCellValue(td, oldValue);
+
+      activeEditCell = null;
+      activeEditInput = null;
+      activeEditOriginalValue = "";
+      isCommittingCell = false;
+
+      if (move !== 0) {
+        const next = getNextEditableCell(td, move);
+
+        if (next) {
+          startEditCell(next, true);
+        }
+      } else {
+        td.focus();
+      }
+
+      return;
+    }
+
+    isCommittingCell = true;
+
+    guardarCeldaEnBackend(td, newValue, {
+      onSuccess: (res) => {
+        const fechaRespuesta = String(res?.fecha ?? newValue).trim();
+        const fechaFinal = normalizeDateToSQL(fechaRespuesta) || "";
+
+        td.dataset.idEvento = res?.id_evento || "";
+        td.dataset.comentario = "";
+
+        renderCellValue(td, fechaFinal);
+        setCellStatus(td, "saved", "✓");
+
+        activeEditCell = null;
+        activeEditInput = null;
+        activeEditOriginalValue = "";
+        isCommittingCell = false;
+
+        if (move !== 0) {
+          const next = getNextEditableCell(td, move);
+
+          if (next) {
+            startEditCell(next, true);
+          } else {
+            td.focus();
+          }
+        } else {
+          td.focus();
+        }
+      },
+      onError: (msg) => {
+        isCommittingCell = false;
+        setCellStatus(td, "error", "!");
+
+        td.innerHTML = "";
+        td.appendChild(input);
+
+        activeEditCell = td;
+        activeEditInput = input;
+
+        input.focus();
+        input.select();
+
+        toastMsg(msg || "No fue posible guardar la celda", "error");
+      },
+    });
+  }
+
+  function guardarCeldaEnBackend(td, fechaSQL, callbacks = {}) {
+    const envioPartidaId =
+      td.dataset.envioPartidaId || td.dataset.operacionFerroId || "";
+
+    const opFerroId = td.dataset.operacionFerroId || envioPartidaId || "";
+
+    const contenedorFisicoId = td.dataset.contenedorFisicoId || "";
+    const tipoEventoId = td.dataset.tipoEventoId || "";
+    const comentario = td.dataset.comentario || "";
+
+    const fd = new FormData();
+
+    /*
+      Mandamos los dos:
+      - envio_partida_id: nombre correcto del módulo por partida.
+      - operacion_ferro_id: alias de compatibilidad que ya dejamos en controlador/modelo.
+    */
+    fd.append("envio_partida_id", envioPartidaId);
+    fd.append("operacion_ferro_id", opFerroId);
+    fd.append("contenedor_fisico_id", contenedorFisicoId);
+    fd.append("tipo_evento_id", tipoEventoId);
+    fd.append("fecha", fechaSQL || "");
+    fd.append("comentario", comentario || "");
+
+    setCellStatus(td, "saving", "…");
+
+    xhrPost(
+      URL_GUARDAR_CELDA,
+      fd,
+      (res) => {
+        if (res && res.status === "success") {
+          callbacks.onSuccess && callbacks.onSuccess(res);
+          return;
+        }
+
+        callbacks.onError &&
+          callbacks.onError(res?.msg || "No fue posible guardar la celda.");
+      },
+      (err) => {
+        console.error("guardar_celda eventos op partida:", err);
+
+        callbacks.onError &&
+          callbacks.onError(err?.msg || "Error interno al guardar la celda.");
+      },
+    );
+  }
+
+  // =============================================================
+  // Eventos globales de celdas
+  // =============================================================
+  document.addEventListener("click", function (e) {
+    const td = e.target.closest(".evfer-date-cell");
+
+    if (!td || !tbody || !tbody.contains(td)) return;
+
+    e.preventDefault();
+    startEditCell(td, true);
+  });
+
+  document.addEventListener("dblclick", function (e) {
+    const td = e.target.closest(".evfer-date-cell");
+
+    if (!td || !tbody || !tbody.contains(td)) return;
+
+    e.preventDefault();
+    startEditCell(td, true);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    const td = e.target.closest?.(".evfer-date-cell");
+
+    if (!td || !tbody || !tbody.contains(td)) return;
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      startEditCell(td, true);
+      return;
+    }
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      startEditCell(td, true);
+
+      setTimeout(() => {
+        if (activeEditInput) {
+          activeEditInput.value = "";
+          commitActiveCell({ move: 0 });
+        }
+      }, 0);
+    }
+  });
+
+  // =============================================================
+  // Filtros
+  // =============================================================
+  perPageSel?.addEventListener("change", () => {
+    perPage = parseInt(perPageSel.value || "10", 10);
+    currentPage = 1;
+    listar();
+  });
+
+  filtroTransportista?.addEventListener("change", () => {
+    currentPage = 1;
+    listar();
+  });
+
+  filtroDestino?.addEventListener("change", () => {
+    currentPage = 1;
+    listar();
+  });
+
+  const onTextoFiltro = debounce(() => {
+    currentPage = 1;
+    listar();
+  }, 300);
+
+  filtroFactura?.addEventListener("input", onTextoFiltro);
+  filtroFerro?.addEventListener("input", onTextoFiltro);
+
+  filtroFactura?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      currentPage = 1;
+      listar();
+    }
+  });
+
+  filtroFerro?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      currentPage = 1;
+      listar();
+    }
+  });
+
+  // =============================================================
+  // Inicialización
+  // =============================================================
+  function init() {
+    if (
+      Array.isArray(window.__evOpPartidaCols) &&
+      window.__evOpPartidaCols.length > 0
+    ) {
+      COLS = window.__evOpPartidaCols;
+      buildHead();
+      listar();
+      return;
+    }
+
+    xhrGet(
+      URL_COLUMNAS,
+      (json) => {
+        const cols =
+          json && Array.isArray(json.columns)
+            ? json.columns
+            : json && Array.isArray(json.data)
+              ? json.data
+              : [];
+
+        COLS = cols.map((c) => {
+          const id = c.id || c.id_tipo_evento || 0;
+          const nombre = c.nombre || "";
+          const key = c.key || String(id);
+
+          return {
+            id,
+            nombre,
+            key,
+          };
+        });
+
+        window.__evOpPartidaCols = COLS;
+
+        buildHead();
+        listar();
+      },
+      () => {
+        COLS = [];
+        buildHead();
+        listar();
+      },
+    );
+  }
+
+  init();
+})();
+
+// ===============================================================
+// Exportación
+// ===============================================================
+document
+  .getElementById("btnExportarExcelEventosLogisticosOpPartida")
+  ?.addEventListener("click", () => {
+    if (window.ExportarTablas) {
+      ExportarTablas.exportar({
+        ref: "tablaEventosOpPartida",
+        formato: "xlsx",
+        nombre: "Eventos Operaciones por Partida.xlsx",
+        columnasOcultas: [],
+        soloVisibles: true,
+        sheetName: "Eventos Op Partida",
       });
       return;
     }
 
-    if (window.confirm("¿Eliminar evento?")) {
-      proceed();
-    }
-  }
-
-  function exportarTablaExcelHTML() {
     const table = document.getElementById("tablaEventosOpPartida");
+
     if (!table) {
-      notify("warning", "Sin datos", "No se encontró la tabla a exportar.");
+      if (window.Swal) {
+        Swal.fire(
+          "Atención",
+          "No se encontró la tabla para exportar.",
+          "warning",
+        );
+      }
       return;
     }
 
@@ -724,90 +1121,22 @@
 
     const a = document.createElement("a");
     const now = new Date();
+
     const name =
       "eventos_operaciones_partida_" +
       now.getFullYear() +
       String(now.getMonth() + 1).padStart(2, "0") +
       String(now.getDate()).padStart(2, "0") +
-      "_" +
-      String(now.getHours()).padStart(2, "0") +
-      String(now.getMinutes()).padStart(2, "0") +
-      String(now.getSeconds()).padStart(2, "0") +
       ".xls";
 
     a.href = URL.createObjectURL(blob);
     a.download = name;
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
-    setTimeout(function () {
+    setTimeout(() => {
       URL.revokeObjectURL(a.href);
     }, 1000);
-  }
-
-  function attachFilters() {
-    const reload = debounce(function () {
-      page = 1;
-      cargarListado();
-    }, 350);
-
-    if (filtroFactura) filtroFactura.addEventListener("input", reload);
-    if (filtroFerro) filtroFerro.addEventListener("input", reload);
-    if (filtroTransportista)
-      filtroTransportista.addEventListener("change", reload);
-    if (filtroDestino) filtroDestino.addEventListener("change", reload);
-
-    if (perPageSel) {
-      perPageSel.addEventListener("change", function () {
-        perPage = parseInt(this.value || "10", 10);
-        page = 1;
-        cargarListado();
-      });
-    }
-
-    const btnExcel = document.getElementById(
-      "btnExportarExcelEventosLogisticosOpPartida",
-    );
-    if (btnExcel) {
-      btnExcel.addEventListener("click", function (e) {
-        e.preventDefault();
-        exportarTablaExcelHTML();
-      });
-    }
-  }
-
-  function attachModalEvents() {
-    if (formCell) {
-      formCell.addEventListener("submit", guardarEventoCelda);
-    }
-
-    if (btnCellDelete) {
-      btnCellDelete.addEventListener("click", eliminarEventoCelda);
-    }
-
-    if (modalCellEl) {
-      modalCellEl.addEventListener("hidden.bs.modal", function () {
-        if (formCell) formCell.reset();
-        if (cellOpId) cellOpId.value = "";
-        if (cellCfoId) cellCfoId.value = "";
-        if (cellEvtId) cellEvtId.value = "";
-        if (cellIdEvento) cellIdEvento.value = "";
-
-        if (btnCellDelete) btnCellDelete.classList.add("d-none");
-        if (cellTitle) cellTitle.textContent = "Evento";
-      });
-    }
-  }
-
-  function init() {
-    attachFilters();
-    attachModalEvents();
-
-    cargarColumnas(function () {
-      cargarListado();
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-})();
+  });
