@@ -87,7 +87,7 @@
 
       <!-- Tabla de eventos por contenedor marítimo -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle" id="tablaEventosMar">
+        <table class="table table-hover table-bordered-pacific align-middle" id="tablaEventosMar">
           <thead class="table-primary">
             <tr id="theadEventosMar" class="text-center">
               <!-- Fijos -->

@@ -123,7 +123,7 @@
 
   <div class="card-body pt-2">
     <div class="table-responsive">
-      <table class="table table-bordered table-hover align-middle mb-0 text-center" id="tablaRutas">
+      <table class="table table-bordered-pacific table-hover align-middle mb-0 text-center" id="tablaRutas">
         <thead class="table-light">
           <tr>
             <th style="min-width:140px;">Operación Maritma</th>

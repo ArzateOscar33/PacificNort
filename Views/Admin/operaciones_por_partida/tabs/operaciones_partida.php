@@ -75,7 +75,7 @@
 
       <!-- Tabla de facturas -->
       <div class="table-responsive">
-        <table class="table align-middle" id="operaciones_partida_TablaFacturasExportar">
+        <table class="table align-middle table-bordered-pacific-p" id="operaciones_partida_TablaFacturasExportar">
           <thead class="table-dark">
             <tr class="text-center">
               <th style="width:120px;">ID</th>

@@ -175,7 +175,7 @@
 
             <!-- Tabla -->
             <div class="table-responsive">
-                <table class="table align-middle" id="tablaEventosOpPartida">
+                <table class="table align-middle table-bordered-pacific-p" id="tablaEventosOpPartida">
                     <thead class="table-dark">
                         <tr id="theadEventosOpPartida" class="text-center">
                             <th style="min-width: 140px;" class="text-center">Operación</th>

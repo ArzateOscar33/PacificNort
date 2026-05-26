@@ -85,7 +85,7 @@
 
      <!-- Tabla -->
      <div class="table-responsive">
-         <table class="table table-bordered align-middle" id="mercanciaPisoTabla">
+         <table class="table table-bordered-pacific align-middle" id="mercanciaPisoTabla">
              <thead class="table-light">
                  <tr>
                      <th>Bodega</th>

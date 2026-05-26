@@ -65,7 +65,7 @@
         </div>
 
         <div class="table-responsive mb-4">
-            <table class="table table-bordered align-middle">
+            <table class="table table-bordered-pacific align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>Operación</th>

@@ -243,7 +243,7 @@
 
       <!-- Tabla de eventos por contenedor ferroviario -->
       <div class="table-responsive">
-        <table class="table table-hover  align-middle" id="tablaEventosFer">
+        <table class="table table-hover table-bordered-pacific  align-middle" id="tablaEventosFer">
           <thead class="table-primary">
             <tr id="theadEventosFer" class="text-center">
               <!-- Fijos iniciales. El JS reconstruye este encabezado al cargar columnas. -->

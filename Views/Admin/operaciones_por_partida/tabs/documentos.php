@@ -31,8 +31,7 @@
             id="partidas_docs_facturaInput"
             class="form-control"
             placeholder="Factura"
-            autocomplete="off"
-          />
+            autocomplete="off" />
           <!-- Hidden para guardar el ID real seleccionado (lo setea tu JS) -->
           <input type="hidden" id="partidas_docs_facturaId" value="">
 
@@ -54,7 +53,7 @@
             -->
           </div>
 
- 
+
         </div>
 
         <!-- BUSCAR DOCUMENTOS -->
@@ -65,16 +64,15 @@
             class="form-control"
             placeholder="Buscar por nombre de archivo / tipo / notas"
             autocomplete="off"
-            disabled
-          >
+            disabled>
         </div>
 
- 
+
       </div>
 
       <!-- ===================== TABLA DOCUMENTOS ===================== -->
       <div class="table-responsive">
-        <table class="table  align-middle" id="partidas_docs_tabla">
+        <table class="table table-bordered-pacific-p align-middle" id="partidas_docs_tabla">
           <thead class="table-dark">
             <tr class="text-center">
               <th style="min-width:260px;">Archivo</th>
@@ -104,7 +102,7 @@
       <div class="modal-header bg-success text-white">
         <h5 class="modal-title d-flex align-items-spac gap-2 mb-0 ">
           <i data-feather="upload"></i>
-          <span>Subir documentos</span> 
+          <span>Subir documentos</span>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -127,9 +125,9 @@
               <label class="form-label">Tipo de documento</label>
               <select id="partidas_docs_tipoDoc" class="form-control" disabled>
                 <option value="">Seleccione tipo...</option>
- >
+                >
               </select>
-     
+
             </div>
 
             <div class="col-md-6">
@@ -225,7 +223,9 @@
 </div>
 
 <style>
-  .modal-xxl-wide { max-width: min(1600px, calc(100vw - 2rem)); }
+  .modal-xxl-wide {
+    max-width: min(1600px, calc(100vw - 2rem));
+  }
 
   /* Sugerencias: mantener look Bootstrap limpio */
   #partidas_docs_facturaSuggest .list-group-item {

@@ -314,7 +314,7 @@
         </div>
 
         <div class="table-responsive partidas_transito_box_tabla">
-            <table class="table align-middle mb-0 partidas_transito_tabla_detalle" id="partidas_transito_tablaEnvios">
+            <table class="table align-middle mb-0 partidas_transito_tabla_detalle table-bordered-pacific-p" id="partidas_transito_tablaEnvios">
                 <thead class="table-dark">
                     <tr class="text-center">
                         <th style="min-width:130px;">Ferro / Caja</th>
@@ -578,7 +578,7 @@
                                         <div class="fw-semibold mb-2">Productos agregados al envío</div>
 
                                         <div class="table-responsive border rounded">
-                                            <table class="table align-middle mb-0">
+                                            <table class="table align-middle table-bordered-pacific-p mb-0">
                                                 <thead class="table-dark">
                                                     <tr class="text-center">
                                                         <th style="min-width:130px;">Factura</th>

@@ -81,6 +81,88 @@
                 margin-left: 260px !important;
             }
         }
+
+
+        /*tablas*/
+        /* ==========================================================
+   TABLAS CON BORDES PERSONALIZADOS - PACIFICNORT
+   Usar manualmente agregando: table-bordered-pacific
+========================================================== */
+
+        .table-bordered-pacific {
+            border-collapse: collapse !important;
+            border: 1.5px solid #b8c2d6 !important;
+        }
+
+        /* Todas las celdas */
+        .table-bordered-pacific> :not(caption)>*>* {
+            border: 1.5px solid #b8c2d6 !important;
+        }
+
+        /* Encabezado */
+        .table-bordered-pacific thead th {
+            border: 1.5px solid #a8b5d6 !important;
+            background-color: #dfe6ff !important;
+            color: #56627a !important;
+            font-weight: 700;
+            text-transform: uppercase;
+            vertical-align: middle;
+        }
+
+        /* Celdas del cuerpo */
+        .table-bordered-pacific tbody td {
+            border: 1.5px solid #c4ccdc !important;
+            vertical-align: middle;
+        }
+
+        /* Hover compatible con Bootstrap */
+        .table-hover.table-bordered-pacific tbody tr:hover td {
+            background-color: #f4f7ff !important;
+        }
+
+        /* Evita que se corte visualmente dentro del responsive */
+        .table-responsive .table-bordered-pacific {
+            margin-bottom: 0;
+        }
+
+
+        /* ==========================================================
+   BORDES PARA TABLAS OSCURAS - OPERACIONES POR PARTIDA
+   Usar manualmente agregando: table-bordered-pacific-p
+   Solo agrega bordes, no modifica colores
+========================================================== */
+
+        .table-bordered-pacific-p {
+            border-collapse: collapse !important;
+            border: 1.5px solid #9aa8b8 !important;
+        }
+
+        /* Todas las celdas */
+        .table-bordered-pacific-p> :not(caption)>*>* {
+            border: 1.5px solid #b8c2d0 !important;
+        }
+
+        /* Encabezado oscuro */
+        .table-bordered-pacific-p thead th {
+            border: 1.5px solid #6f7f92 !important;
+            vertical-align: middle;
+        }
+
+        /* Celdas del cuerpo */
+        .table-bordered-pacific-p tbody td {
+            border: 1.5px solid #c9d1dc !important;
+            vertical-align: middle;
+        }
+
+        /* Respeta el hover que ya tengas */
+        .table-hover.table-bordered-pacific-p tbody tr:hover td {
+            border-color: #aeb8c6 !important;
+        }
+
+        /* Evita espacios raros dentro del responsive */
+        .table-responsive .table-bordered-pacific-p {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 

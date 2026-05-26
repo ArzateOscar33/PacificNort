@@ -163,7 +163,7 @@
 
       <!-- Tabla simplificada (solo operación) -->
       <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle" id="tablaCostosOperacionExportar">
+        <table class="table table-sm table-hover align-middle table-bordered-pacific" id="tablaCostosOperacionExportar">
           <thead class="table-light">
             <tr>
               <th style="width:110px;">Fecha</th>

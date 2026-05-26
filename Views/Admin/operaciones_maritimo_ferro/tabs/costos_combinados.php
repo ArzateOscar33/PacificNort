@@ -10,24 +10,24 @@
   <div class="row g-3 align-items-end mb-4">
 
     <!-- Contenedor -->
-<!-- Contenedor -->
-<div class="col-md-3 position-relative">
-  <label for="inputContenedorBuscarCostosCombinados" class="form-label">Contenedor marítimo</label>
+    <!-- Contenedor -->
+    <div class="col-md-3 position-relative">
+      <label for="inputContenedorBuscarCostosCombinados" class="form-label">Contenedor marítimo</label>
 
-  <input
-    type="text"
-    id="inputContenedorBuscarCostosCombinados"
-    class="form-control"
-    placeholder="Ej. TRHU6818550"
-    autocomplete="off">
+      <input
+        type="text"
+        id="inputContenedorBuscarCostosCombinados"
+        class="form-control"
+        placeholder="Ej. TRHU6818550"
+        autocomplete="off">
 
-  <!-- Sugerencias (formato estándar) -->
-  <div
-    id="sugerenciasContenedorCostosCombinados"
-    class="list-group position-absolute top-100 start-0 w-100"
-    style="display:none; z-index:999;">
-  </div>
-</div>
+      <!-- Sugerencias (formato estándar) -->
+      <div
+        id="sugerenciasContenedorCostosCombinados"
+        class="list-group position-absolute top-100 start-0 w-100"
+        style="display:none; z-index:999;">
+      </div>
+    </div>
 
 
     <!-- Rango de fechas -->
@@ -88,10 +88,10 @@
 
   <!-- Tabla -->
   <div class="table-responsive">
-    <table class="table table-bordered align-middle" id="tablaCostosContenedoresCostosCombinados">
+    <table class="table table-bordered-pacific align-middle" id="tablaCostosContenedoresCostosCombinados">
       <thead class="table-light">
         <tr>
-          <th>Operacion De Origen</th> 
+          <th>Operacion De Origen</th>
           <th>Contenedor</th>
           <th>Cliente</th>
           <th>Concepto</th>
@@ -117,20 +117,20 @@
   feather.replace();
 </script>
 
- <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_combinados.js"></script>  
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/costos_combinados.js"></script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
 
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
 
-// Uso 
-forzarMayusculas("inputContenedorBuscarCostosCombinados");
+  // Uso 
+  forzarMayusculas("inputContenedorBuscarCostosCombinados");
 </script>

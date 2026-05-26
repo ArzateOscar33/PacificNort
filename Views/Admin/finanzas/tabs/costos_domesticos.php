@@ -199,7 +199,7 @@
 
             <!-- Tabla -->
             <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle" id="tablaCostosPartidaExportar">
+                <table class="table table-sm table-hover align-middle table-bordered-pacific" id="tablaCostosPartidaExportar">
                     <thead class="table-light">
                         <tr>
                             <th style="width:110px;">Fecha</th>

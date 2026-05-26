@@ -213,7 +213,7 @@
             </div>
             <!-- Tabla -->
             <div class="table-responsive border rounded">
-                <table class="table table-sm table-hover align-middle mb-0 table-bordered" id="costosCliente_table">
+                <table class="table table-sm table-hover align-middle mb-0 table-bordered-pacific" id="costosCliente_table">
                     <thead class="table-light">
                         <tr class="text-nowrap">
                             <th>Origen</th>

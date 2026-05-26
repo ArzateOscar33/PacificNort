@@ -41,7 +41,7 @@
 
       <!-- ===================== TABLA DE PRODUCTOS DE LA FACTURA ===================== -->
       <div class="table-responsive">
-        <table class="table table align-middle" id="partidas_transito_tablaProductos">
+        <table class="table table align-middle table-bordered-pacific-p" id="partidas_transito_tablaProductos">
           <thead class="table-dark">
             <tr class="text-center">
               <th style="min-width:280px;">Producto</th>
@@ -123,7 +123,7 @@
 
           <!-- TABLA DE RENGLONES -->
           <div class="table border rounded">
-            <table class="table  align-middle mb-0" id="partidas_transito_tblEnvios">
+            <table class="table table-bordered-pacific-p  align-middle mb-0" id="partidas_transito_tblEnvios">
               <thead class="table-dark">
                 <tr class="text-center">
                   <th style="min-width:240px;" class="text-start">Destino (ciudad)</th>
@@ -194,7 +194,7 @@
                   < class="text-start">
                     <input type="text" class="form-control form-control-sm pt_nota" placeholder="Nota (opcional)"
                       maxlength="255">
-                    </<table class="table table-light">
+                    </<table class="table table-bordered-pacific-p table-light">
                     <thead class="thead-light">
                       <tr>
                         <th>#</th>

@@ -27,11 +27,11 @@
           <label class="form-label small mb-1 text-muted">Ferro</label>
           <input type="hidden" id="ferros_envios_ferroId" value="">
           <input type="text" id="ferros_envios_buscarFerro" class="form-control"
-                 placeholder="Buscar ferro... (Ej. Ferro 17 / FO-22)"
-                 autocomplete="off">
+            placeholder="Buscar ferro... (Ej. Ferro 17 / FO-22)"
+            autocomplete="off">
           <div id="ferros_envios_sugerenciasFerros"
-               class="list-group position-absolute w-100 z-3"
-               style="z-index:999;">
+            class="list-group position-absolute w-100 z-3"
+            style="z-index:999;">
           </div>
         </div>
 
@@ -50,8 +50,8 @@
         <div style="max-width:360px; width:100%;">
           <label class="form-label small mb-1 text-muted">Producto</label>
           <input type="text" id="ferros_envios_buscarProducto" class="form-control"
-                 placeholder="Buscar producto por descripción / UPC / marca"
-                 autocomplete="off">
+            placeholder="Buscar producto por descripción / UPC / marca"
+            autocomplete="off">
         </div>
 
         <!-- Botón aplicar filtros (opcional, pero útil si no quieres recargar en cada tecla) -->
@@ -63,10 +63,10 @@
         <button class="btn btn-outline-secondary" id="ferros_envios_btnLimpiar" type="button">
           <i data-feather="x" class="me-1"></i> Limpiar
         </button>
-        
+
         <div class="ms-auto text-end p-2">
-            <span class="badge bg-success text-white d-none gap-4" id="ferros_envios_badgeTotalCajas">0 cajas</span>
-            </label>
+          <span class="badge bg-success text-white d-none gap-4" id="ferros_envios_badgeTotalCajas">0 cajas</span>
+          </label>
         </div>
 
 
@@ -75,17 +75,17 @@
 
       <!-- ===================== TABLA (SOLO LECTURA) ===================== -->
       <div class="table-responsive">
-        <table class="table align-middle" id="ferros_envios_tabla">
+        <table class="table align-middle table-bordered-pacific-p" id="ferros_envios_tabla">
           <thead class="table-dark">
             <tr class="text-center">
-              <th   class="text-start">Ferro</th>
-              <th   class="text-start">Producto</th>
-              <th >Cajas</th>
-              <th   class="text-start">Factura</th>
-              <th  >Estatus</th>
+              <th class="text-start">Ferro</th>
+              <th class="text-start">Producto</th>
+              <th>Cajas</th>
+              <th class="text-start">Factura</th>
+              <th>Estatus</th>
 
               <!-- Recomendado: para que el filtro de fechas sea visible -->
-              <th  >Fecha envío</th>
+              <th>Fecha envío</th>
             </tr>
           </thead>
           <tbody id="ferros_envios_tbody"></tbody>
@@ -102,18 +102,18 @@
 
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_ferros_catalogo.js"></script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
 
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
 
-// Uso
-forzarMayusculas("ferros_envios_buscarFerro"); 
+  // Uso
+  forzarMayusculas("ferros_envios_buscarFerro");
 </script>
