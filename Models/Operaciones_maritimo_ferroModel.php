@@ -508,11 +508,32 @@ class Operaciones_maritimo_ferroModel extends Query
 
         // ===== NUEVOS FILTROS (selects) =====
 
-        // Estatus
-        $estatusId = isset($filters['filtroEstatus']) ? (int)$filters['filtroEstatus'] : 0;
-        if ($estatusId > 0) {
-            $where .= " AND o.estatus_id = ? ";
-            $args[] = $estatusId;
+        // Estatus múltiple
+        $estatusIds = $filters['filtroEstatus'] ?? [];
+
+        if (!is_array($estatusIds)) {
+            $estatusIds = explode(',', (string)$estatusIds);
+        }
+
+        $estatusIds = array_values(array_unique(array_filter(array_map('intval', $estatusIds), function ($id) {
+            return $id > 0;
+        })));
+
+        if (!empty($estatusIds)) {
+            $placeholders = implode(',', array_fill(0, count($estatusIds), '?'));
+            $where .= " AND o.estatus_id IN ($placeholders) ";
+            foreach ($estatusIds as $idEst) {
+                $args[] = $idEst;
+            }
+        } else {
+            /*
+     * Default:
+     * Ocultar ENTREGADO y CANCELADO si el usuario NO los pidió explícitamente.
+     * Según tu catálogo:
+     * 7  = ENTREGADO
+     * 13 = CANCELADO
+     */
+            $where .= " AND o.estatus_id NOT IN (7, 13) ";
         }
 
         // Naviera
@@ -823,32 +844,29 @@ class Operaciones_maritimo_ferroModel extends Query
             ) asig ON asig.operacion_id = o.id_operacion
 
             $where
-   ORDER BY
-    CASE o.estatus_id
-        WHEN 9  THEN 1   /* EN AGUA */
-        WHEN 16 THEN 2   /* CON NOTIFICACION DE ARRIBO */
-        WHEN 17 THEN 3   /* CON CITA */
-        WHEN 11 THEN 4   /* PUERTO */
-        WHEN 10 THEN 5   /* YARDA USA */
-        WHEN 12 THEN 5   /* YARDA MX */
-        WHEN 6  THEN 6   /* BODEGA USA */
-        WHEN 5  THEN 6   /* BODEGA MX */
-        WHEN 15 THEN 7   /* EN PROCESO DE TRANSBORDO */
-        WHEN 19 THEN 8   /* CARGADO */
-        WHEN 1  THEN 9   /* CAMINO A DESTINO */
-        WHEN 14 THEN 10  /* DISPONIBLE EN DESTINO */
-        WHEN 18 THEN 11  /* POR ENTREGARSE */
-        WHEN 7  THEN 12  /* ENTREGADO */
-        WHEN 13 THEN 13  /* CANCELADO */
-        ELSE 99
+ORDER BY
+    CASE
+        WHEN o.estatus_id IN (9, 16, 17, 11) THEN 0
+        WHEN o.estatus_id IN (7, 13) THEN 2
+        ELSE 1
     END ASC,
 
-    CASE 
-        WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 1
-        ELSE 0
+    CASE
+        WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 3
+        WHEN DATE(o.eta) > CURDATE() THEN 0
+        WHEN DATE(o.eta) = CURDATE() THEN 1
+        ELSE 2
     END ASC,
 
-    DATE(o.eta) ASC,
+    CASE
+        WHEN DATE(o.eta) > CURDATE() THEN DATE(o.eta)
+        ELSE NULL
+    END ASC,
+
+    CASE
+        WHEN DATE(o.eta) <= CURDATE() THEN DATE(o.eta)
+        ELSE NULL
+    END DESC,
 
     CAST(SUBSTRING_INDEX(o.numero_operacion, '-', -1) AS UNSIGNED) ASC,
     o.id_operacion ASC

@@ -28,7 +28,11 @@
 
   const selBroker = document.getElementById("brokerId_mf");
   const selTransportista = document.getElementById("transportistaId_mf");
-
+  const checksEstatus = document.querySelectorAll(".chkFiltroEstatus");
+  const txtFiltroEstatus = document.getElementById("txtFiltroEstatus");
+  const btnLimpiarFiltroEstatus = document.getElementById(
+    "btnLimpiarFiltroEstatus",
+  );
   let currentPage = 1;
   let perPage = (selectPerPage?.value || "10").toString(); // "10" | "25" | ... | "todos"
   let currentListXHR = null;
@@ -466,7 +470,11 @@
     const term = (inputBuscar?.value || "").trim();
     const fi = (inpFechaIni?.value || "").trim();
     const ff = (inpFechaFin?.value || "").trim();
-    const estatus = (selectEstatus?.value || "").trim();
+    const estatusSeleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroEstatus:checked"),
+    )
+      .map((chk) => (chk.value || "").trim())
+      .filter((v) => v !== "");
     const naviera = (selectNaviera?.value || "").trim();
     const forwarder = (selectForwarder?.value || "").trim();
     const shipper = (selectShipper?.value || "").trim();
@@ -477,7 +485,9 @@
     if (term !== "") params.append("maritimo_ferro_buscarOperacion", term);
     if (fi !== "") params.append("maritimo_ferro_fechaInicio", fi);
     if (ff !== "") params.append("maritimo_ferro_fechaFin", ff);
-    if (estatus !== "") params.append("maritimo_ferro_filtroEstatus", estatus);
+    estatusSeleccionados.forEach((id) => {
+      params.append("maritimo_ferro_filtroEstatus[]", id);
+    });
     if (naviera !== "") params.append("maritimo_ferro_filtroNaviera", naviera);
     if (forwarder !== "")
       params.append("maritimo_ferro_filtroForwarder", forwarder);
@@ -1237,6 +1247,47 @@
     };
   }
 
+  function actualizarTextoFiltroEstatus() {
+    const seleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroEstatus:checked"),
+    );
+
+    if (!txtFiltroEstatus) return;
+
+    if (seleccionados.length === 0) {
+      txtFiltroEstatus.textContent = "Estatus";
+      return;
+    }
+
+    if (seleccionados.length === 1) {
+      const label = seleccionados[0].closest("label");
+      const texto = label ? label.innerText.trim() : "1 seleccionado";
+      txtFiltroEstatus.textContent = texto;
+      return;
+    }
+
+    txtFiltroEstatus.textContent = `${seleccionados.length} estatus seleccionados`;
+  }
+
+  checksEstatus.forEach((chk) => {
+    chk.addEventListener("change", () => {
+      currentPage = 1;
+      actualizarTextoFiltroEstatus();
+      listar();
+    });
+  });
+
+  if (btnLimpiarFiltroEstatus) {
+    btnLimpiarFiltroEstatus.addEventListener("click", () => {
+      checksEstatus.forEach((chk) => {
+        chk.checked = false;
+      });
+
+      currentPage = 1;
+      actualizarTextoFiltroEstatus();
+      listar();
+    });
+  }
   // Delegación: click en botón Editar de la tabla
   tablaBody?.addEventListener("click", (e) => {
     const btn = e.target.closest(".btn-edit-mf");

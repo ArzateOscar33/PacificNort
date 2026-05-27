@@ -158,6 +158,70 @@
     height: 1px;
     width: 0px;
   }
+
+  /**/
+  .filtro-estatus-wrapper .dropdown-toggle::after {
+    display: none;
+  }
+
+  .filtro-estatus-menu {
+    width: 260px;
+    max-height: 320px;
+    overflow-y: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, .08);
+  }
+
+  .filtro-estatus-item {
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .filtro-estatus-item .form-check-input {
+    margin-right: 6px !important;
+    flex: 0 0 auto;
+  }
+
+  .filtro-estatus-item .estatus-dot {
+    margin-left: 2px;
+    margin-right: 4px;
+  }
+
+  .filtro-estatus-item span:last-child {
+    padding-left: 4px;
+  }
+
+  .filtro-estatus-item:hover {
+    background-color: #f1f5f9;
+  }
+
+  .estatus-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 10px;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, .05);
+  }
+
+  #btnFiltroEstatus {
+    min-height: 38px;
+    border-radius: 8px;
+    background-color: #fff;
+    font-size: 0.875rem;
+  }
+
+  #btnFiltroEstatus:hover {
+    background-color: #f8fafc;
+  }
+
+  #txtFiltroEstatus {
+    font-weight: 500;
+  }
 </style>
 
 <div class="container py-4 col-md-12">
@@ -218,18 +282,55 @@
             <?php endif; ?>
           </select>
 
-          <!-- Estatus -->
-          <select id="maritimo_ferro_filtroEstatus" name="maritimo_ferro_filtroEstatus" class="form-control"
-            style="max-width:240px;">
-            <option value="">Estatus (Todos)</option>
-            <?php if (!empty($data['estatus'])): ?>
-              <?php foreach ($data['estatus'] as $st): ?>
-                <option value="<?= (int)$st['id_estatus']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
+          <!-- Filtro Estatus múltiple -->
+          <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
+            <button
+              class="btn btn-light border w-100 d-flex justify-content-between align-items-center"
+              type="button"
+              id="btnFiltroEstatus"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <span>
+                <i data-feather="flag" class="me-1" style="width:16px;height:16px;"></i>
+                <span id="txtFiltroEstatus">Estatus</span>
+              </span>
+              <i data-feather="chevron-down" style="width:16px;height:16px;"></i>
+            </button>
+
+            <div class="dropdown-menu p-2 shadow filtro-estatus-menu" aria-labelledby="btnFiltroEstatus">
+              <div class="px-2 pb-2 border-bottom mb-2">
+                <strong class="small text-muted">Filtrar por estatus</strong>
+                <div class="small text-muted">Puedes seleccionar uno o varios</div>
+              </div>
+
+              <?php if (!empty($data['estatus'])): ?>
+                <?php foreach ($data['estatus'] as $st): ?>
+                  <label class="dropdown-item d-flex align-items-center gap-2 filtro-estatus-item">
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0 chkFiltroEstatus"
+                      name="maritimo_ferro_filtroEstatus[]"
+                      value="<?= (int)$st['id_estatus']; ?>">
+
+                    <span
+                      class="estatus-dot"
+                      style="background-color: <?= !empty($st['color_hex']) ? htmlspecialchars($st['color_hex'], ENT_QUOTES, 'UTF-8') : '#6c757d'; ?>;">
+                    </span>
+
+                    <span>
+                      <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </label>
+                <?php endforeach; ?>
+              <?php endif; ?>
+
+              <div class="border-top mt-2 pt-2 px-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btnLimpiarFiltroEstatus">
+                  Limpiar estatus
+                </button>
+              </div>
+            </div>
+          </div>
 
           <!-- Naviera -->
           <select id="maritimo_ferro_filtroNaviera" name="maritimo_ferro_filtroNaviera" class="form-control"

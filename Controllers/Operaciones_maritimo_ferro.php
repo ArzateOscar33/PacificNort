@@ -54,7 +54,24 @@ class Operaciones_maritimo_ferro extends Controller
         $fechaFin    = isset($_GET['maritimo_ferro_fechaFin'])    ? trim($_GET['maritimo_ferro_fechaFin'])    : '';
         $page        = isset($_GET['page'])    ? (int)$_GET['page']    : 1;
         $perPage     = isset($_GET['perPage']) ? (int)$_GET['perPage'] : (isset($_GET['maritimo_ferro_perPage']) ? (int)$_GET['maritimo_ferro_perPage'] : 10);
-        $estatusId       = isset($_GET['maritimo_ferro_filtroEstatus']) ? (int)$_GET['maritimo_ferro_filtroEstatus'] : 0;
+        $estatusIds = [];
+
+        if (isset($_GET['maritimo_ferro_filtroEstatus'])) {
+            $rawEstatus = $_GET['maritimo_ferro_filtroEstatus'];
+
+            if (!is_array($rawEstatus)) {
+                $rawEstatus = explode(',', (string)$rawEstatus);
+            }
+
+            foreach ($rawEstatus as $idEst) {
+                $idEst = (int)$idEst;
+                if ($idEst > 0) {
+                    $estatusIds[] = $idEst;
+                }
+            }
+
+            $estatusIds = array_values(array_unique($estatusIds));
+        }
         $navieraId       = isset($_GET['maritimo_ferro_filtroNaviera']) ? (int)$_GET['maritimo_ferro_filtroNaviera'] : 0;
         $forwarderId     = isset($_GET['maritimo_ferro_filtroForwarder']) ? (int)$_GET['maritimo_ferro_filtroForwarder'] : 0;
         $shipperId       = isset($_GET['maritimo_ferro_filtroShipper']) ? (int)$_GET['maritimo_ferro_filtroShipper'] : 0;
@@ -66,7 +83,7 @@ class Operaciones_maritimo_ferro extends Controller
 
         $filters = [
             'filtroSubtipo'         => $subtipoId,
-            'filtroEstatus'         => $estatusId,
+            'filtroEstatus'         => $estatusIds,
             'filtroNaviera'         => $navieraId,
             'filtroForwarder'       => $forwarderId,
             'filtroShipper'         => $shipperId,
