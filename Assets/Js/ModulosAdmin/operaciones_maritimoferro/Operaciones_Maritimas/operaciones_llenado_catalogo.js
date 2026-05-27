@@ -79,6 +79,21 @@
 
   // ===== Helpers UI/DOM =====
   const safe = (v) => (v === undefined || v === null ? "" : v);
+  const opcional = (v) => {
+    const s = String(v ?? "").trim();
+
+    if (
+      s === "" ||
+      s === "0" ||
+      s === "#0" ||
+      s.toLowerCase() === "null" ||
+      s.toLowerCase() === "undefined"
+    ) {
+      return "-";
+    }
+
+    return s;
+  };
   const show = (el) => el?.classList.remove("d-none");
   const hide = (el) => el?.classList.add("d-none");
   const enable = (el) => el?.removeAttribute("disabled");
@@ -89,8 +104,10 @@
 
   function setSelectValue(sel, val) {
     if (!sel) return;
-    const s = String(val ?? "");
-    if (s === "") {
+
+    const s = String(val ?? "").trim();
+
+    if (s === "" || s === "0" || s === "#0") {
       sel.value = "";
       return;
     }
@@ -101,7 +118,6 @@
       return;
     }
 
-    // ✅ si el option no existe, crea uno temporal para que se vea
     const opt = document.createElement("option");
     opt.value = s;
     opt.textContent = `#${s}`;
@@ -257,8 +273,8 @@
       <td>${safe(item.bultos_total)}</td>
       <td>${safe(item.tipo_contenedor)}</td>
       <td>${safe(item.mercancia) ? item.mercancia : "-"}</td>
-      <td>${safe(item.transportista)}</td>
-      <td>${safe(item.brokers)}</td>
+<td>${opcional(item.transportista)}</td>
+<td>${opcional(item.brokers)}</td>
       <td>${safe(item.numero_bl)}</td>
       <td>${safe(item.puerto_arribo)}</td>
       <td>${safe(item.cliente)}</td> 

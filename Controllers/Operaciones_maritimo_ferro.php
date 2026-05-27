@@ -208,12 +208,24 @@ class Operaciones_maritimo_ferro extends Controller
         $clienteIdRaw = trim((string)($_POST['cliente_id_mf'] ?? ''));
         $clienteId = ctype_digit($clienteIdRaw) ? (int)$clienteIdRaw : 0;
         $clienteId = ($clienteId > 0) ? $clienteId : null;
+        if ($clienteId === null) {
+            return $this->jsonWarning('Selecciona un cliente de la lista antes de guardar la operación.');
+        }
 
-        $navieraId       = (int)($_POST['naviera_id_mf'] ?? 0);
-        $forwarderId     = (int)($_POST['forwarder_id_mf'] ?? 0);
-        $shipperId       = (int)($_POST['shipper_id_mf'] ?? 0);
-        $brokerId        = (int)($_POST['broker_id_mf'] ?? 0);
-        $transportistaId = (int)($_POST['transportista_id_mf'] ?? 0);
+        if (method_exists($this->model, 'clienteActivoExiste') && !$this->model->clienteActivoExiste((int)$clienteId)) {
+            return $this->jsonWarning('El cliente seleccionado no existe o está inactivo.');
+        }
+        $navieraIdRaw       = (int)($_POST['naviera_id_mf'] ?? 0);
+        $forwarderIdRaw     = (int)($_POST['forwarder_id_mf'] ?? 0);
+        $shipperIdRaw       = (int)($_POST['shipper_id_mf'] ?? 0);
+        $brokerIdRaw        = (int)($_POST['broker_id_mf'] ?? 0);
+        $transportistaIdRaw = (int)($_POST['transportista_id_mf'] ?? 0);
+
+        $navieraId       = $navieraIdRaw > 0 ? $navieraIdRaw : null;
+        $forwarderId     = $forwarderIdRaw > 0 ? $forwarderIdRaw : null;
+        $shipperId       = $shipperIdRaw > 0 ? $shipperIdRaw : null;
+        $brokerId        = $brokerIdRaw > 0 ? $brokerIdRaw : null;
+        $transportistaId = $transportistaIdRaw > 0 ? $transportistaIdRaw : null;
 
         $notas = trim((string)($_POST['notas_mf'] ?? '')) ?: null;
 
@@ -275,17 +287,18 @@ class Operaciones_maritimo_ferro extends Controller
             'numero_bl'             => $bl,
             'cliente_id'            => $clienteId,
             'estatus_id'            => $estatusId,
-            'naviera_id'            => $navieraId ?: null,
-            'forwarder_id'          => $forwarderId ?: null,
-            'shipper_id'            => $shipperId ?: null,
+            'naviera_id'            => $navieraId,
+            'forwarder_id'          => $forwarderId,
+            'shipper_id'            => $shipperId,
+
             'notas'                 => $notas,
             'isf'                   => $isf,
             'cita_puerto'           => $cita,
 
             // ✅ NUEVOS
             'peso_total'            => $pesoOperacion,
-            'broker_id'             => $brokerId ?: null,
-            'transportista_id'      => $transportistaId ?: null,
+            'broker_id'             => $brokerId,
+            'transportista_id'      => $transportistaId,
             'descripcion_mercancia'             => $mercancia,
         ];
 
@@ -380,11 +393,17 @@ class Operaciones_maritimo_ferro extends Controller
         $clienteId = ctype_digit((string)$clienteIdRaw) ? (int)$clienteIdRaw : 0;
         $clienteId = ($clienteId > 0) ? $clienteId : null;
 
-        $navieraId       = (int)($_POST['naviera_id_mf'] ?? ($actual['naviera_id'] ?? 0));
-        $forwarderId     = (int)($_POST['forwarder_id_mf'] ?? ($actual['forwarder_id'] ?? 0));
-        $shipperId       = (int)($_POST['shipper_id_mf'] ?? ($actual['shipper_id'] ?? 0));
-        $brokerId        = (int)($_POST['broker_id_mf'] ?? ($actual['broker_id'] ?? 0));
-        $transportistaId = (int)($_POST['transportista_id_mf'] ?? ($actual['transportista_id'] ?? 0));
+        $navieraIdRaw       = (int)($_POST['naviera_id_mf'] ?? ($actual['naviera_id'] ?? 0));
+        $forwarderIdRaw     = (int)($_POST['forwarder_id_mf'] ?? ($actual['forwarder_id'] ?? 0));
+        $shipperIdRaw       = (int)($_POST['shipper_id_mf'] ?? ($actual['shipper_id'] ?? 0));
+        $brokerIdRaw        = (int)($_POST['broker_id_mf'] ?? ($actual['broker_id'] ?? 0));
+        $transportistaIdRaw = (int)($_POST['transportista_id_mf'] ?? ($actual['transportista_id'] ?? 0));
+
+        $navieraId       = $navieraIdRaw > 0 ? $navieraIdRaw : null;
+        $forwarderId     = $forwarderIdRaw > 0 ? $forwarderIdRaw : null;
+        $shipperId       = $shipperIdRaw > 0 ? $shipperIdRaw : null;
+        $brokerId        = $brokerIdRaw > 0 ? $brokerIdRaw : null;
+        $transportistaId = $transportistaIdRaw > 0 ? $transportistaIdRaw : null;
 
         $notas = trim((string)($_POST['notas_mf'] ?? ($actual['notas'] ?? ''))) ?: null;
         $mercancia = trim((string)($_POST['descripcion_mercancia_mf'] ?? ($actual['descripcion_mercancia'] ?? '')));
@@ -443,16 +462,17 @@ class Operaciones_maritimo_ferro extends Controller
             'ubicacion_actual'      => $ubicacionActual,
             'numero_bl'             => $bl,
             'cliente_id'            => $clienteId,
-            'naviera_id'            => $navieraId ?: null,
-            'forwarder_id'          => $forwarderId ?: null,
-            'shipper_id'            => $shipperId ?: null,
+            'naviera_id'            => $navieraId,
+            'forwarder_id'          => $forwarderId,
+            'shipper_id'            => $shipperId,
+
             'notas'                 => $notas,
             'isf'                   => $isf,
             'cita_puerto'           => $cita,
 
             'peso_total'            => $pesoOperacion,
-            'broker_id'             => $brokerId ?: null,
-            'transportista_id'      => $transportistaId ?: null,
+            'broker_id'             => $brokerId,
+            'transportista_id'      => $transportistaId,
             'descripcion_mercancia' => $mercancia,
         ];
 
@@ -515,6 +535,17 @@ class Operaciones_maritimo_ferro extends Controller
         http_response_code($code);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['status' => 'error', 'msg' => $msg], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private function jsonWarning($msg, $code = 200)
+    {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'status' => 'warning',
+            'msg'    => $msg
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
     // ✅ Parsea errores del modelo (DUP_CONT_MES|CONT|OP|YYYY-MM)

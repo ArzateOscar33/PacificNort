@@ -17,7 +17,6 @@ const selEstatusMF = document.getElementById("estatusId_mf");
 const inpETD_MF = document.getElementById("etd_mf");
 const inpETA_MF = document.getElementById("eta_mf");
 const selPuertoMF = document.getElementById("puertoArribo_mf");
-const selPuertoMF = document.getElementById("puertoArribo_mf");
 const selNavieraMF = document.getElementById("navieraId_mf");
 const selForwarderMF = document.getElementById("forwarderId_mf");
 const selShipperMF = document.getElementById("shipperId_mf");
@@ -33,7 +32,7 @@ const inpDescripcionMercancia_MF = document.getElementById(
 // Repeater MF
 const repeaterMF = document.getElementById("contenedoresRepeater_mf");
 const tplContMF = document.getElementById("contenedorTemplate_mf");
-
+const inpUbicacionActual_MF = document.getElementById("ubicacionActual_mf");
 // ===== Helpers =====
 function valStr(v) {
   return (v ?? "").toString().trim();
@@ -102,18 +101,43 @@ function validarBL_MF() {
 
 function validarClienteSeleccionadoMF() {
   if (!hidClienteMF || !inpClienteMF) return true;
+
   const id = valStr(hidClienteMF.value);
   const nom = valStr(inpClienteMF.value);
+
+  // Cliente totalmente vacío
+  if (id === "") {
+    Swal?.fire(
+      "Cliente requerido",
+      "Selecciona un cliente de la lista antes de guardar la operación.",
+      "warning",
+    );
+
+    inpClienteMF.classList.add("is-invalid");
+    inpClienteMF.focus();
+    return false;
+  }
+
+  // Nombre escrito pero sin ID válido
   if (nom !== "" && id === "") {
     Swal?.fire(
       "Cliente no válido",
       "Selecciona un cliente de la lista de sugerencias.",
       "warning",
     );
+
+    inpClienteMF.classList.add("is-invalid");
+    inpClienteMF.focus();
     return false;
   }
+
+  inpClienteMF.classList.remove("is-invalid");
   return true;
 }
+
+inpClienteMF?.addEventListener("input", () => {
+  inpClienteMF.classList.remove("is-invalid");
+});
 
 // Importante: usamos la validación ya montada en tu archivo MF anterior:
 // validarCamposObligatorios() mira los requisitos del subtipo (naviera/forwarder) obtenidos con subtipo_info.
@@ -182,7 +206,7 @@ function guardarOperacionMF() {
       resolve(false);
       return;
     }
-
+    window.guardarOperacionMF = guardarOperacionMF;
     // ---- helpers locales para UI ----
     const clearContenedorInvalid = () => {
       document

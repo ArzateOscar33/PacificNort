@@ -154,6 +154,21 @@ class Operaciones_maritimo_ferroModel extends Query
                 ORDER BY nombre";
         return $this->selectAll($sql) ?: [];
     }
+    public function clienteActivoExiste(int $clienteId): bool
+    {
+        if ($clienteId <= 0) return false;
+
+        $row = $this->select(
+            "SELECT id_cliente 
+         FROM clientes 
+         WHERE id_cliente = ? 
+           AND estatus = 1 
+         LIMIT 1",
+            [$clienteId]
+        );
+
+        return !empty($row);
+    }
     /* =========================
        ===   AUTOCOMPLETES   ===
        ========================= */
@@ -373,6 +388,73 @@ class Operaciones_maritimo_ferroModel extends Query
 
         $row = $this->select($sql, [$contenedorId, $eta, $eta, $opIdActual]);
         return $row ?: null;
+    }
+
+    public function prevalidarContenedoresAntesDeCrear(array $contenedores, array $op): array
+    {
+        $etaOp = trim((string)($op['eta'] ?? ''));
+
+        if ($etaOp === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $etaOp)) {
+            return [
+                'ok' => false,
+                'status' => 'warning',
+                'msg' => 'Selecciona una ETA válida antes de guardar la operación.',
+            ];
+        }
+
+        foreach ($contenedores as $c) {
+            $cid  = isset($c['id']) ? (int)$c['id'] : 0;
+            $cnum = trim((string)($c['numero'] ?? ''));
+
+            if ($cid <= 0 && $cnum === '') {
+                continue;
+            }
+
+            /*
+         * IMPORTANTE:
+         * Aquí NO creamos contenedores.
+         * Solo resolvemos si ya existe.
+         * Así no consumimos IDs ni alteramos datos antes de saber si la operación es válida.
+         */
+            if ($cid <= 0 && $cnum !== '') {
+                $found = $this->findContenedorByNumero($cnum);
+                if ($found) {
+                    $cid = (int)$found['id_contenedor_maritimo'];
+                }
+            }
+
+            /*
+         * Si el contenedor todavía no existe en catálogo,
+         * entonces no puede tener conflicto mensual.
+         */
+            if ($cid <= 0) {
+                continue;
+            }
+
+            $conf = $this->findConflictoContenedorMes($cid, $etaOp, 0);
+
+            if ($conf) {
+                $numCont = (string)($conf['numero_contenedor'] ?? $cnum);
+                $opConf  = (string)($conf['numero_operacion'] ?? '');
+                $mes     = substr($etaOp, 0, 7);
+
+                return [
+                    'ok' => false,
+                    'status' => 'warning',
+                    'code' => 'DUP_CONT_MES',
+                    'msg' => "El contenedor {$numCont} ya está registrado en la operación {$opConf} para el mes {$mes}.",
+                    'contenedor' => $numCont,
+                    'operacion_conflicto' => $opConf,
+                    'mes' => $mes,
+                ];
+            }
+        }
+
+        return [
+            'ok' => true,
+            'status' => 'success',
+            'msg' => 'Prevalidación correcta',
+        ];
     }
     /* =========================
        ===  HELPERS BROKER   ===
@@ -774,34 +856,90 @@ class Operaciones_maritimo_ferroModel extends Query
     public function insertarOperacion(array $op, array $contenedores, int $usuarioId): array
     {
         try {
-            if (empty($op['numero_operacion'])) {
-                $codigo = $this->generarCodigoPorSecuencia((int)$op['subtipo_operacion_id']);
-                if (!$codigo) return ['status' => 'error', 'msg' => 'No se pudo generar el folio'];
-                $op['numero_operacion'] = $codigo;
-            }
-
-            $this->save("START TRANSACTION", []);
-
-            $st = $this->getSubtipoFull((int)$op['subtipo_operacion_id']);
+            /*
+         * 1) Validar subtipo ANTES de generar folio.
+         */
+            $st = $this->getSubtipoFull((int)($op['subtipo_operacion_id'] ?? 0));
             if (!$st) {
-                $this->save("ROLLBACK", []);
                 return ['status' => 'error', 'msg' => 'Subtipo inválido'];
             }
+            /*
+ * Validar cliente ANTES de generar folio.
+ * Esto evita operaciones sin cliente y evita brincar consecutivos.
+ */
+            $clienteId = (int)($op['cliente_id'] ?? 0);
 
+            if ($clienteId <= 0) {
+                return [
+                    'status' => 'warning',
+                    'msg'    => 'Selecciona un cliente antes de guardar la operación.'
+                ];
+            }
+
+            if (!$this->clienteActivoExiste($clienteId)) {
+                return [
+                    'status' => 'warning',
+                    'msg'    => 'El cliente seleccionado no existe o está inactivo.'
+                ];
+            }
+            /*
+         * 2) Validaciones obligatorias ANTES de generar folio.
+         */
             if ((int)$st['requiere_naviera'] === 1 && empty($op['naviera_id'])) {
-                $this->save("ROLLBACK", []);
                 return ['status' => 'warning', 'msg' => 'Selecciona una naviera'];
             }
+
             if ((int)$st['requiere_forwarder'] === 1 && empty($op['forwarder_id'])) {
-                $this->save("ROLLBACK", []);
                 return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
             }
 
+            /*
+         * 3) Prevalidar contenedores ANTES de:
+         *    - generar consecutivo
+         *    - iniciar transacción
+         *    - insertar operación
+         *
+         * Esto evita brincar folios como NT-04, NT-05, etc.
+         */
+            if (!empty($contenedores)) {
+                $prevCont = $this->prevalidarContenedoresAntesDeCrear($contenedores, $op);
+
+                if (empty($prevCont['ok'])) {
+                    return [
+                        'status' => $prevCont['status'] ?? 'warning',
+                        'msg' => $prevCont['msg'] ?? 'No se pudo validar el contenedor.',
+                        'code' => $prevCont['code'] ?? null,
+                        'contenedor' => $prevCont['contenedor'] ?? null,
+                        'operacion_conflicto' => $prevCont['operacion_conflicto'] ?? null,
+                        'mes' => $prevCont['mes'] ?? null,
+                    ];
+                }
+            }
+
+            /*
+         * 4) Ahora sí generar folio.
+         *    Ya sabemos que la operación no se va a bloquear por contenedor duplicado.
+         */
+            if (empty($op['numero_operacion'])) {
+                $codigo = $this->generarCodigoPorSecuencia((int)$op['subtipo_operacion_id']);
+
+                if (!$codigo) {
+                    return ['status' => 'error', 'msg' => 'No se pudo generar el folio'];
+                }
+
+                $op['numero_operacion'] = $codigo;
+            }
+
+            /*
+         * 5) Transacción real.
+         */
+            $this->save("START TRANSACTION", []);
+
             $sqlOp = "INSERT INTO operaciones
-    (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, ubicacion_actual, numero_bl,
-     cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto,
-     peso_total, transportista_id, broker_id, descripcion_mercancia)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            (numero_operacion, tipo_operacion_id, subtipo_operacion_id, etd, eta, ubicacion_actual, numero_bl,
+             cliente_id, estatus_id, naviera_id, forwarder_id, shipper_id, notas, isf, cita_puerto,
+             peso_total, transportista_id, broker_id, descripcion_mercancia)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
             $paramsOp = [
                 trim($op['numero_operacion']),
@@ -829,20 +967,28 @@ class Operaciones_maritimo_ferroModel extends Query
                 (!empty($op['broker_id']) ? (int)$op['broker_id'] : null),
                 $op['descripcion_mercancia'] ?? null,
             ];
+
             $opId = (int)$this->insertar($sqlOp, $paramsOp);
+
             if ($opId <= 0) {
                 $this->save("ROLLBACK", []);
                 return ['status' => 'error', 'msg' => 'No se pudo guardar la operación'];
             }
 
-            // Broker pivot + sync broker_id NULL si aplica
+            /*
+         * 6) Broker.
+         */
             $brokerId = !empty($op['broker_id']) ? (int)$op['broker_id'] : 0;
+
             if (!$this->upsertOperacionBroker($opId, $brokerId)) {
                 $this->save("ROLLBACK", []);
                 return ['status' => 'error', 'msg' => 'No se pudo vincular el broker a la operación'];
             }
 
-            // Contenedores: sync (en alta funciona igual: inserta/actualiza tipo/bultos)
+            /*
+         * 7) Sync real de contenedores.
+         *    Aquí puede crear contenedores nuevos y vincularlos.
+         */
             if (!empty($contenedores)) {
                 if (!$this->syncContenedoresOperacion($opId, $contenedores, $op)) {
                     $this->save("ROLLBACK", []);
@@ -850,13 +996,18 @@ class Operaciones_maritimo_ferroModel extends Query
                 }
             }
 
+            /*
+         * 8) Bitácora.
+         */
             $logId = $this->crearLog($opId, $usuarioId, 'creacion', 'Operación creada');
+
             if ($logId <= 0) {
                 $this->save("ROLLBACK", []);
                 return ['status' => 'error', 'msg' => 'No se pudo registrar la bitácora de creación'];
             }
 
             $this->save("COMMIT", []);
+
             return [
                 'status'           => 'success',
                 'msg'              => 'Operación creada',
@@ -865,10 +1016,36 @@ class Operaciones_maritimo_ferroModel extends Query
             ];
         } catch (\Throwable $ex) {
             error_log("insertarOperacion error: " . $ex->getMessage());
+
             try {
                 $this->save("ROLLBACK", []);
             } catch (\Throwable $e2) {
             }
+
+            /*
+         * Seguridad extra:
+         * Si de todos modos syncContenedoresOperacion lanza DUP_CONT_MES,
+         * regresamos mensaje claro al JS.
+         */
+            $msgEx = $ex->getMessage();
+
+            if (strpos($msgEx, 'DUP_CONT_MES|') === 0) {
+                $parts = explode('|', $msgEx);
+
+                $numCont = $parts[1] ?? '';
+                $opConf  = $parts[2] ?? '';
+                $mes     = $parts[3] ?? '';
+
+                return [
+                    'status' => 'warning',
+                    'code' => 'DUP_CONT_MES',
+                    'msg' => "El contenedor {$numCont} ya está registrado en la operación {$opConf} para el mes {$mes}.",
+                    'contenedor' => $numCont,
+                    'operacion_conflicto' => $opConf,
+                    'mes' => $mes,
+                ];
+            }
+
             return ['status' => 'error', 'msg' => 'Error inesperado al guardar'];
         }
     }
@@ -1028,12 +1205,29 @@ class Operaciones_maritimo_ferroModel extends Query
             $st = $this->getSubtipoFull((int)($d['subtipo_operacion_id'] ?? 0));
             if (!$st) return ['status' => 'error', 'msg' => 'Subtipo inválido'];
 
+
+            $clienteId = (int)($d['cliente_id'] ?? 0);
+
+            if ($clienteId <= 0) {
+                return [
+                    'status' => 'warning',
+                    'msg'    => 'Selecciona un cliente antes de actualizar la operación.'
+                ];
+            }
+
+            if (!$this->clienteActivoExiste($clienteId)) {
+                return [
+                    'status' => 'warning',
+                    'msg'    => 'El cliente seleccionado no existe o está inactivo.'
+                ];
+            }
             if ((int)$st['requiere_naviera'] === 1 && empty($d['naviera_id'])) {
                 return ['status' => 'warning', 'msg' => 'Selecciona una naviera'];
             }
             if ((int)$st['requiere_forwarder'] === 1 && empty($d['forwarder_id'])) {
                 return ['status' => 'warning', 'msg' => 'Selecciona un forwarder'];
             }
+
 
             $anterior = $this->getOperacionById($opId);
             if (!$anterior) {
