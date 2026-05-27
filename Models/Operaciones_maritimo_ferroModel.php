@@ -741,19 +741,35 @@ class Operaciones_maritimo_ferroModel extends Query
             ) asig ON asig.operacion_id = o.id_operacion
 
             $where
-            ORDER BY
-                CASE
-                    WHEN o.eta IS NULL THEN 3
-                    WHEN DATE(o.eta) >= CURDATE() THEN 1
-                    ELSE 2
-                END ASC,
-                CASE
-                    WHEN DATE(o.eta) >= CURDATE() THEN DATE(o.eta)
-                END ASC,
-                CASE
-                    WHEN DATE(o.eta) < CURDATE() THEN DATE(o.eta)
-                END DESC,
-                o.id_operacion DESC
+ORDER BY
+    CASE o.estatus_id
+        WHEN 9  THEN 1   /* EN AGUA */
+        WHEN 16 THEN 2   /* CON NOTIFICACION DE ARRIBO */
+        WHEN 17 THEN 3   /* CON CITA */
+        WHEN 11 THEN 4   /* PUERTO */
+        WHEN 10 THEN 5   /* YARDA USA */
+        WHEN 12 THEN 5   /* YARDA MX */
+        WHEN 6  THEN 6   /* BODEGA USA */
+        WHEN 5  THEN 6   /* BODEGA MX */
+        WHEN 15 THEN 7   /* EN PROCESO DE TRANSBORDO */
+        WHEN 19 THEN 8   /* CARGADO */
+        WHEN 1  THEN 9   /* CAMINO A DESTINO */
+        WHEN 14 THEN 10  /* DISPONIBLE EN DESTINO */
+        WHEN 18 THEN 11  /* POR ENTREGARSE */
+        WHEN 7  THEN 12  /* ENTREGADO */
+        WHEN 13 THEN 13  /* CANCELADO */
+        ELSE 99
+    END ASC,
+
+    CASE 
+        WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 1
+        ELSE 0
+    END ASC,
+
+    DATE(o.eta) ASC,
+
+    CAST(SUBSTRING_INDEX(o.numero_operacion, '-', -1) AS UNSIGNED) ASC,
+    o.id_operacion ASC
             LIMIT $limit OFFSET $off
         ";
 
