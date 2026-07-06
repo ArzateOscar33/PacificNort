@@ -844,33 +844,42 @@ class Operaciones_maritimo_ferroModel extends Query
             ) asig ON asig.operacion_id = o.id_operacion
 
             $where
+            /*ORDENAMIENTO DE OPERACIONES*/
 ORDER BY
+    /* 1) PRIORIDAD POR GRUPO DE ESTATUS (Usa IDs numéricos, es mucho más rápido) */
     CASE
-        WHEN o.estatus_id IN (9, 16, 17, 11) THEN 0
-        WHEN o.estatus_id IN (7, 13) THEN 2
-        ELSE 1
+        /* Grupo 1: En camino / Crítico */
+        WHEN o.estatus_id = 9 THEN 1 -- 'EN AGUA'
+
+        /* Grupo 2: Operaciones activas en proceso */
+        WHEN o.estatus_id IN (1, 5, 6, 11) THEN 2 -- 'CAMINO A DESTINO', 'BODEGA MX', 'BODEGA USA', 'PUERTO'
+
+        /* Grupo 4: Operaciones finalizadas o canceladas (Al final) */
+        WHEN o.estatus_id IN (7, 13) THEN 4 -- 'ENTRINCADO', 'CANCELADO'
+
+        /* Grupo 3: Cualquier otro estatus intermedio */
+        ELSE 3
     END ASC,
 
+    /* 2) CONDICIÓN DE ETA (Futuro, Pasado o Sin Fecha) */
     CASE
         WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 3
-        WHEN DATE(o.eta) > CURDATE() THEN 0
-        WHEN DATE(o.eta) = CURDATE() THEN 1
+        WHEN DATE(o.eta) >= CURDATE() THEN 1
         ELSE 2
     END ASC,
 
+    /* 3) ETAs próximas (Orden cronológico: la más cercana primero) */
     CASE
-        WHEN DATE(o.eta) > CURDATE() THEN DATE(o.eta)
-        ELSE NULL
+        WHEN DATE(o.eta) >= CURDATE() THEN DATE(o.eta)
     END ASC,
 
+    /* 4) ETAs vencidas (La retrasada más reciente primero) */
     CASE
-        WHEN DATE(o.eta) <= CURDATE() THEN DATE(o.eta)
-        ELSE NULL
+        WHEN DATE(o.eta) < CURDATE() THEN DATE(o.eta)
     END DESC,
 
-    CAST(SUBSTRING_INDEX(o.numero_operacion, '-', -1) AS UNSIGNED) ASC,
-    o.id_operacion ASC
-
+    /* 5) Desempate final */
+    o.id_operacion DESC
 
             LIMIT $limit OFFSET $off
         ";
