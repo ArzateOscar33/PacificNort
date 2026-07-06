@@ -41,7 +41,7 @@
 
       <!-- ===================== TABLA DE PRODUCTOS DE LA FACTURA ===================== -->
       <div class="table-responsive">
-        <table class="table table align-middle" id="partidas_transito_tablaProductos">
+        <table class="table table align-middle table-bordered-pacific-p" id="partidas_transito_tablaProductos">
           <thead class="table-dark">
             <tr class="text-center">
               <th style="min-width:280px;">Producto</th>
@@ -51,7 +51,7 @@
               <th style="width:120px;">Cajas (Total)</th>
 
               <!-- REEMPLAZA DESTINOS FIJOS POR 1 COLUMNA -->
-              <th style="min-width:420px;">Enviados / Pendientes de Envio</th> 
+              <th style="min-width:420px;">Enviados / Pendientes de Envio</th>
               <th style="width:130px;">Acción</th>
             </tr>
           </thead>
@@ -123,7 +123,7 @@
 
           <!-- TABLA DE RENGLONES -->
           <div class="table border rounded">
-            <table class="table  align-middle mb-0" id="partidas_transito_tblEnvios">
+            <table class="table table-bordered-pacific-p  align-middle mb-0" id="partidas_transito_tblEnvios">
               <thead class="table-dark">
                 <tr class="text-center">
                   <th style="min-width:240px;" class="text-start">Destino (ciudad)</th>
@@ -191,18 +191,29 @@
                     </select>
                   </td>
                   <!-- NOTAS POR RENGLÓN -->
-                  <td class="text-start">
+                  < class="text-start">
                     <input type="text" class="form-control form-control-sm pt_nota" placeholder="Nota (opcional)"
                       maxlength="255">
-                  </td>
-
-                  <td class="text-center">
-                    <button type="button" class="btn btn-outline-danger btn-sm pt_btnRemoveRow" title="Quitar renglón">
-                      <i data-feather="trash-2"></i>
-                    </button>
-                  </td>
+                    </<table class="table table-bordered-pacific-p table-light">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>#</th>
+                      </tr>
+                    </thead>
+              <tbody>
+                <tr>
+                  <td></td>
                 </tr>
               </tbody>
+            </table>>
+
+            <td class="text-center">
+              <button type="button" class="btn btn-outline-danger btn-sm pt_btnRemoveRow" title="Quitar renglón">
+                <i data-feather="trash-2"></i>
+              </button>
+            </td>
+            </tr>
+            </tbody>
             </table>
           </div>
 
@@ -240,18 +251,18 @@
 <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_por_partida/operaciones_partida_rutas_registrar.js">
 </script>
 <script>
-document.addEventListener("input", function (e) {
-  const el = e.target;
-  if (!el || !el.classList.contains("pt_fisico_txt")) return;
+  document.addEventListener("input", function(e) {
+    const el = e.target;
+    if (!el || !el.classList.contains("pt_fisico_txt")) return;
 
-  const start = el.selectionStart;
-  const end   = el.selectionEnd;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
 
-  el.value = (el.value || "").toUpperCase();
+    el.value = (el.value || "").toUpperCase();
 
-  // Mantener cursor (si el input lo soporta)
-  if (typeof start === "number" && typeof end === "number") {
-    el.setSelectionRange(start, end);
-  }
-});
+    // Mantener cursor (si el input lo soporta)
+    if (typeof start === "number" && typeof end === "number") {
+      el.setSelectionRange(start, end);
+    }
+  });
 </script>

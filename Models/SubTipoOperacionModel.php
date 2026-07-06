@@ -57,60 +57,58 @@ class SubTipoOperacionModel extends Query
     }
 
 
-public function registrarSubTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo = null)
-{
-    try {
-        // Inicia transacción (usa tu método de Query)
-        $this->save("START TRANSACTION", []);
+    public function registrarSubTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo = null)
+    {
+        try {
+            // Inicia transacción (usa tu método de Query)
+            $this->save("START TRANSACTION", []);
 
-        // Inserta subtipo
-        $sql = "INSERT INTO subtipos_operacion 
+            // Inserta subtipo
+            $sql = "INSERT INTO subtipos_operacion 
                 (tipo_operacion_id, clave, nombre, puerto_arribo_default_id, prefijo_codigo, estatus) 
                 VALUES (?,?,?,?,?,1)";
-        $newId = (int)$this->insertar($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo]);
+            $newId = (int)$this->insertar($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo]);
 
-        if ($newId <= 0) {
-            $this->save("ROLLBACK", []);
-            return 0;
-        }
+            if ($newId <= 0) {
+                $this->save("ROLLBACK", []);
+                return 0;
+            }
 
-        // Siembra/asegura secuencia para el año actual (requiere UNIQUE (subtipo_id, anio))
-        $anio = (int)date('Y');
-        $ok = $this->save(
-            "INSERT INTO secuencias_operacion (subtipo_id, anio, valor)
-             VALUES (?, ?, 0)
+
+            $ok = $this->save(
+                "INSERT INTO secuencias_operacion (subtipo_id, valor)
+             VALUES (?, 0)
              ON DUPLICATE KEY UPDATE valor = valor",
-            [$newId, $anio]
-        );
-        if ($ok === false) {
+                [$newId]
+            );
+            if ($ok === false) {
+                $this->save("ROLLBACK", []);
+                return 0;
+            }
+
+            $this->save("COMMIT", []);
+            return $newId;
+        } catch (\Throwable $e) {
             $this->save("ROLLBACK", []);
             return 0;
         }
-
-        $this->save("COMMIT", []);
-        return $newId;
-
-    } catch (\Throwable $e) {
-        $this->save("ROLLBACK", []);
-        return 0;
     }
-}
 
-public function getSubtipoOperacion($id)
-{
-    $sql = "SELECT id_subtipo,tipo_operacion_id,clave,nombre,puerto_arribo_default_id,prefijo_codigo
+    public function getSubtipoOperacion($id)
+    {
+        $sql = "SELECT id_subtipo,tipo_operacion_id,clave,nombre,puerto_arribo_default_id,prefijo_codigo
             FROM subtipos_operacion
             WHERE id_subtipo = ? AND estatus = 1";
-    return $this->select($sql, [$id]);
-}
+        return $this->select($sql, [$id]);
+    }
 
-public function actualizarTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo, $id)
-{
-    $sql = "UPDATE subtipos_operacion 
+    public function actualizarTipoOperacion($id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo, $id)
+    {
+        $sql = "UPDATE subtipos_operacion 
             SET tipo_operacion_id = ?, clave = ?, nombre = ?, puerto_arribo_default_id = ?, prefijo_codigo = ?
             WHERE id_subtipo = ?";
-    return $this->save($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo, $id]);
-}
+        return $this->save($sql, [$id_tipo_operacion, $clave, $nombre, $puerto_id, $prefijo, $id]);
+    }
 
     public function eliminarSubtipoOperacion($id)
     {
@@ -147,28 +145,26 @@ public function actualizarTipoOperacion($id_tipo_operacion, $clave, $nombre, $pu
 
         return $this->selectAll($sql, [$like, $like, $like, $like]);
     }
-  
- public function existePrefijo($prefijo, $excluirId = null)
-{
-    $sql = "SELECT id_subtipo FROM subtipos_operacion 
-            WHERE estatus = 1 AND LOWER(prefijo_codigo) = LOWER(?)";
-    $params = [$prefijo];
-    if (!empty($excluirId)) {
-        $sql .= " AND id_subtipo <> ?";
-        $params[] = $excluirId;
-    }
-    return $this->select($sql, $params);
-}
 
-public function getTiposOperacionIdsByNombreLike(string $like): array
-{
-    $sql = "SELECT id_tipo_operacion
+    public function existePrefijo($prefijo, $excluirId = null)
+    {
+        $sql = "SELECT id_subtipo FROM subtipos_operacion 
+            WHERE estatus = 1 AND LOWER(prefijo_codigo) = LOWER(?)";
+        $params = [$prefijo];
+        if (!empty($excluirId)) {
+            $sql .= " AND id_subtipo <> ?";
+            $params[] = $excluirId;
+        }
+        return $this->select($sql, $params);
+    }
+
+    public function getTiposOperacionIdsByNombreLike(string $like): array
+    {
+        $sql = "SELECT id_tipo_operacion
             FROM tipos_operacion
             WHERE estatus = 1 AND nombre_operacion LIKE ?
             ORDER BY id_tipo_operacion ASC";
-    $rows = $this->selectAll($sql, [$like]) ?: [];
-    return array_map('intval', array_column($rows, 'id_tipo_operacion'));
-}
-
- 
+        $rows = $this->selectAll($sql, [$like]) ?: [];
+        return array_map('intval', array_column($rows, 'id_tipo_operacion'));
+    }
 }

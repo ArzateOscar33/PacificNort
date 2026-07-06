@@ -9,6 +9,8 @@ class Contenedores_maritimos extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()
@@ -56,11 +58,15 @@ class Contenedores_maritimos extends Controller
     public function buscar()
     {
         $term = trim($_GET['term'] ?? '');
-        if ($term === '') { echo json_encode([]); die(); }
+        if ($term === '') {
+            echo json_encode([]);
+            die();
+        }
 
         // El modelo debe implementar buscar($term)
         $rows = $this->model->buscar($term);
-        echo json_encode($rows, JSON_UNESCAPED_UNICODE); die();
+        echo json_encode($rows, JSON_UNESCAPED_UNICODE);
+        die();
     }
 
     public function registrar()
@@ -69,29 +75,34 @@ class Contenedores_maritimos extends Controller
         $tipo   = trim($_POST['tipo'] ?? '');
         $obs    = trim($_POST['observaciones'] ?? '');
 
-        if ($numero === '' ) {
-            echo json_encode(['status'=>'warning','msg'=>'Número de contenedor y tipo son obligatorios']); die();
+        if ($numero === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Número de contenedor y tipo son obligatorios']);
+            die();
         }
 
         // El modelo debe implementar existeNumero($numero)
         if ($this->model->existeNumero($numero)) {
-            echo json_encode(['status'=>'warning','msg'=>'Ya existe un contenedor con ese número']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un contenedor con ese número']);
+            die();
         }
 
         // El modelo debe implementar registrar($numero,$tipo,$obs)
         $nuevoId = $this->model->registrar($numero, $tipo, $obs);
         if (!$nuevoId) {
-            echo json_encode(['status'=>'error','msg'=>'No se pudo registrar el contenedor']); die();
+            echo json_encode(['status' => 'error', 'msg' => 'No se pudo registrar el contenedor']);
+            die();
         }
 
-        echo json_encode(['status'=>'success','msg'=>'Contenedor registrado correctamente']); die();
+        echo json_encode(['status' => 'success', 'msg' => 'Contenedor registrado correctamente']);
+        die();
     }
 
     public function editar($id)
     {
         // El modelo debe implementar obtenerContenedorMaritimo($id)
         $data = $this->model->obtenerContenedorMaritimo($id);
-        echo json_encode($data, JSON_UNESCAPED_UNICODE); die();
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        die();
     }
 
     public function actualizar()
@@ -101,22 +112,26 @@ class Contenedores_maritimos extends Controller
         $tipo   = trim($_POST['tipo'] ?? '');
         $obs    = trim($_POST['observaciones'] ?? '');
 
-        if ($id <= 0 || $numero === '' ) {
-            echo json_encode(['status'=>'warning','msg'=>'Datos incompletos']); die();
+        if ($id <= 0 || $numero === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Datos incompletos']);
+            die();
         }
 
         // El modelo debe implementar existeNumeroEnOtro($numero,$id)
         if ($this->model->existeNumeroEnOtro($numero, $id)) {
-            echo json_encode(['status'=>'warning','msg'=>'Ya existe otro contenedor con ese número']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe otro contenedor con ese número']);
+            die();
         }
 
         // El modelo debe implementar actualizar($id,$numero,$tipo,$obs)
         $ok = $this->model->actualizar($id, $numero, $tipo, $obs);
         if (!$ok) {
-            echo json_encode(['status'=>'error','msg'=>'No se pudo actualizar el contenedor']); die();
+            echo json_encode(['status' => 'error', 'msg' => 'No se pudo actualizar el contenedor']);
+            die();
         }
 
-        echo json_encode(['status'=>'success','msg'=>'Contenedor actualizado correctamente']); die();
+        echo json_encode(['status' => 'success', 'msg' => 'Contenedor actualizado correctamente']);
+        die();
     }
 
     public function eliminar($id)

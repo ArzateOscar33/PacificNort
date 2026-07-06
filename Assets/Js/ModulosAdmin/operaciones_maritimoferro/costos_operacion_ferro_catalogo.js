@@ -1,10 +1,6 @@
 // ============================================================================
-//  MÓDULO: Costos por Operación (FO/MF) - CATÁLOGO + LISTADO (SOLO VISUALIZAR)
-//  Archivo: costos_operacion_catalogo_listado.js
-//  — Autocomplete operación (sin prefijos), rellena contenedor ligado.
-//  — Lista costos/abonos de la operación seleccionada.
-//  — Carga tipos en modal según fuente y muestra contenedor ligado.
-//  — NO registra ni actualiza (modo lectura). Editar/Eliminar solo informativos.
+//  MÓDULO: Costos por Operación (SOLO MF - Operación marítima maestra)
+//  Catálogo / Vista  ✅ (SIN guardar: eso se queda en costos_operacion_ferro_registrar.js)
 // ============================================================================
 
 (function () {
@@ -13,301 +9,549 @@
   // ---------------------- DOM (vista principal) ----------------------
   const tbody = document.getElementById("tbodyCostosOperacionCombined");
   const inpBuscar = document.getElementById("costosOperacionBuscar");
-  const selMonedaFiltro = document.getElementById("costosOperacionFiltroMoneda");
-  const selTipoFiltro = document.getElementById("costosOperacionFiltroTipo"); // podría no existir
+  const selMonedaFiltro = document.getElementById(
+    "costosOperacionFiltroMoneda",
+  );
+  const selTipoFiltro = document.getElementById("costosOperacionFiltroTipo"); // puede no existir
   const selPerPage = document.getElementById("costosOperacionPerPage");
   const ulPag = document.getElementById("costosOperacionPaginacion");
   const metaTxt = document.getElementById("costosOperacionMeta");
 
-  // Totales / vista
-  const cardTotOperacion = document.getElementById("costosOperacionTotalOperacion");
-  const cardTotGeneral   = document.getElementById("costosOperacionTotalGeneral");
-  const selMonedaVista   = document.getElementById("costosOperacionMonedaVista");
-  const inpTipoCambio    = document.getElementById("costosOperacionTipoCambio");
+  // Totales / vista (cards)
+  const cardTotOperacion = document.getElementById(
+    "costosOperacionTotalOperacion",
+  );
+  const cardTotGeneral = document.getElementById("costosOperacionTotalGeneral");
+  const selMonedaVista = document.getElementById("costosOperacionMonedaVista");
+  const inpTipoCambio = document.getElementById("costosOperacionTipoCambio");
 
   // Autocomplete Operación (filtro superior)
-  const opIdHid   = document.getElementById("costosOperacionFiltroOpId");
-  const opNomInp  = document.getElementById("costosOperacionFiltroOpNombre");
-  const opListBox = document.getElementById("costosOperacionFiltroOpSugerencias");
-  const opMeta    = document.getElementById("costosOperacionFiltroOpMeta");
+  const opIdHid = document.getElementById("costosOperacionFiltroOpId");
+  const opNomInp = document.getElementById("costosOperacionFiltroOpNombre");
+  const opListBox = document.getElementById(
+    "costosOperacionFiltroOpSugerencias",
+  );
+  const opMeta = document.getElementById("costosOperacionFiltroOpMeta");
 
-  // Contenedor ligado (filtro)
-  const contFiltroIdHid  = document.getElementById("costosOperacionFiltroFerroId");
-  const contFiltroNomInp = document.getElementById("costosOperacionFiltroFerroNombre");
-  const contFiltroList   = document.getElementById("costosOperacionFiltroFerroSugerencias"); // no se usa aquí
+  // Contenedor ligado (solo informativo en filtro superior)
+  const contFiltroIdHid = document.getElementById(
+    "costosOperacionFiltroFerroId",
+  );
+  const contFiltroNomInp = document.getElementById(
+    "costosOperacionFiltroFerroNombre",
+  );
+  const selBrokerFiltro = document.getElementById(
+    "costosOperacionFiltroBroker",
+  );
 
-  // ---------------------- DOM (modal - solo mostrar) ----------------------
-  const modalEl      = document.getElementById("modalCostoOperacion");
-  const hidRowId     = document.getElementById("row_id");
-  const opIdModal    = document.getElementById("costosOperacionid");
-  const opNomModal   = document.getElementById("costosOperacionNombre");
+  // ---------------------- DOM (modal) ----------------------
+  const modalEl = document.getElementById("modalCostoOperacion");
+  const hidRowId = document.getElementById("row_id");
+
+  const opIdModal = document.getElementById("costosOperacionid");
+  const opNomModal = document.getElementById("costosOperacionNombre");
   const listOpsModal = document.getElementById("costosSugerenciasOperaciones");
-  const selTipoModal = document.getElementById("costosContenedoresTipoCosto");
-  const selMonModal  = document.getElementById("costosContenedoresMoneda");
-  const montoModal   = document.getElementById("costosContenedoresMonto");
-  const comentModal  = document.getElementById("costosContenedoresComentarios");
-  const contIdModal  = document.getElementById("costosContenedorContenedorId");
-  const contNomModal = document.getElementById("costosContenedorContenedorNombre");
 
-  // Botón Nuevo (abrirá modal en modo lectura)
+  const selTipoModal = document.getElementById("costosContenedoresTipoCosto");
+  const selMonModal = document.getElementById("costosContenedoresMoneda");
+  const montoModal = document.getElementById("costosContenedoresMonto");
+  const comentModal = document.getElementById("costosContenedoresComentarios");
+
+  const facturaModal = document.getElementById("costosContenedoresFactura");
+  const selBrokerModal = document.getElementById("costosContenedoresBroker");
+
+  const contIdModal = document.getElementById("costosContenedorContenedorId");
+  const contNomModal = document.getElementById(
+    "costosContenedorContenedorNombre",
+  );
+
+  const selPagadoModal = document.getElementById("costosContenedoresPagado");
+
   const btnNuevo = document.getElementById("costosOperacionBtnNuevo");
+  // ✅ En tu vista ahora el botón es btnGuardarCostoOperacion y lo maneja registrar.js
+  // const btnGuardar = document.getElementById("btnGuardarCostoOperacion");
 
   // ---------------------- Estado ----------------------
   let currentPage = 1;
-  let perPage = parseInt(selPerPage?.value || "10", 10);
+  let perPage = parseInt(selPerPage?.value || "10", 10) || 10;
   let currentXHR = null;
   let debounceId = null;
   let isEditCosto = false;
 
-  // Operación seleccionada + fuente
+  // Operación seleccionada (SOLO MF)
   let operacionId = parseInt(opIdHid?.value || "0", 10) || 0;
-  let fuenteSel   = "F"; // 'F' o 'MF'
-  window.fuenteSel = fuenteSel; // expuesto para otros módulos
 
-  // Cache para totales
-  let totalesDetalleCache = null;  // { operacion:{PESOS, DLLS} }
-  let abonosDetalleCache  = null;  // { operacion:{PESOS, DLLS} }
+  // Cache totales
+  let totalesDetalleCache = null;
+  let abonosDetalleCache = null;
 
-  // ---------------------- Helpers generales ----------------------
-  const safe = (v) => (v === undefined || v === null) ? "" : v;
-  const fmtMoney = (n, sym = "$") => sym + " " + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // ---------------------- Helpers ----------------------
+  const safe = (v) => (v === undefined || v === null ? "" : v);
   const prettyMoneda = (m) => String(m || "").toUpperCase();
-  const fmtFecha = (s) => s ? String(s).substring(0, 10) : "";
-function lockEditFields() {
-  // Bloquea campos que no deben cambiar en edición
-  opNomModal && (opNomModal.readOnly = true);
-  selTipoModal && (selTipoModal.disabled = true);
-  // Evita que se despliegue el autocomplete en edición
-  if (listOpsModal) { listOpsModal.innerHTML = ""; listOpsModal.style.display = "none"; }
-}
-function desactivarCostoXHR(id, fuente, onDone) {
-  const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/desactivarCostoOperacion`;
-  const fd  = new FormData();
-  fd.append("id", String(id));
-  fd.append("fuente", (String(fuente || "F").toUpperCase() === "MF") ? "MF" : "F");
+  const fmtFecha = (s) => (s ? String(s).substring(0, 10) : "");
 
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", url, true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState !== 4) return;
-    let resp = {};
-    try { resp = JSON.parse(xhr.responseText) || {}; } catch { resp = {}; }
-    if (typeof onDone === "function") onDone(xhr.status, resp);
-  };
-  xhr.send(fd);
-}
+  const fmtMoney = (n, sym = "$") =>
+    sym +
+    " " +
+    Number(n || 0).toLocaleString("es-MX", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
-function unlockEditFields() {
-  // Habilita campos en modo nuevo
-  opNomModal && (opNomModal.readOnly = false);
-  selTipoModal && (selTipoModal.disabled = false);
-}
   function renderCargando() {
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Cargando resultados…</td></tr>`;
   }
-  function renderVacio() {
+
+  function renderVacio(msg) {
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No hay costos para mostrar.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${msg || "No hay costos para mostrar."}</td></tr>`;
   }
 
   function ensureMonedaOptions(sel) {
     if (!sel) return;
-    if (!sel.querySelector('option[value="PESOS"]')) sel.insertAdjacentHTML('beforeend','<option value="PESOS">PESOS</option>');
-    if (!sel.querySelector('option[value="DLLS"]'))  sel.insertAdjacentHTML('beforeend','<option value="DLLS">DLLS</option>');
+    if (!sel.querySelector('option[value="PESOS"]')) {
+      sel.insertAdjacentHTML(
+        "beforeend",
+        '<option value="PESOS">PESOS</option>',
+      );
+    }
+    if (!sel.querySelector('option[value="DLLS"]')) {
+      sel.insertAdjacentHTML("beforeend", '<option value="DLLS">DLLS</option>');
+    }
   }
   ensureMonedaOptions(selMonModal);
 
-  // ---------------------- Endpoints helpers ----------------------
-function loadTiposMovimiento(fuente, selectEl, selectedId = null, done = null) {
-  if (!selectEl) return;
-  const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/tiposMovimiento?fuente=${encodeURIComponent((fuente||'F').toUpperCase())}`;
-  const xhr = new XMLHttpRequest();
-  xhr.open("GET", url, true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState !== 4) return;
+  function badgePagado(v) {
+    const n = Number(v);
+    return n === 1
+      ? `<span class="badge bg-success text-white">Pagado</span>`
+      : `<span class="badge bg-danger text-white">Pendiente</span>`;
+  }
 
-    // fallback básico si hay error
-    if (xhr.status !== 200) {
-      selectEl.innerHTML = '<option value="">Seleccione un tipo</option>';
-      if (selectedId) selectEl.value = String(selectedId);
-      if (typeof done === "function") done();
-      return;
+  function toast(kind, title, text) {
+    if (window.Swal) Swal.fire({ icon: kind, title, text });
+    else alert((title ? title + ": " : "") + (text || ""));
+  }
+
+  // ---------------------- Modal lock/unlock ----------------------
+  function lockEditFields() {
+    if (opNomModal) opNomModal.readOnly = true;
+    if (selTipoModal) selTipoModal.disabled = true;
+    if (listOpsModal) {
+      listOpsModal.innerHTML = "";
+      listOpsModal.style.display = "none";
     }
+  }
 
-    let rows = [];
-    try { rows = JSON.parse(xhr.responseText) || []; } catch { rows = []; }
+  function unlockEditFields() {
+    if (opNomModal) opNomModal.readOnly = false;
+    if (selTipoModal) selTipoModal.disabled = false;
+  }
 
-    // llenar filtro superior si existe
-    if (selTipoFiltro) {
-      const cur = selTipoFiltro.value;
-      selTipoFiltro.innerHTML = `<option value="0">Todos los conceptos</option>` + rows.map(t =>
-        `<option value="${t.id_tipo_movimiento}">${t.nombre}</option>`
-      ).join("");
-      if (cur) selTipoFiltro.value = cur;
-    }
+  // ---------------------- Conversión (vista) ----------------------
+  function normVistaMoneda(vista) {
+    const v = String(vista || "").toUpperCase();
+    // vista: MXN | USD
+    return v === "USD" ? "USD" : "MXN";
+  }
 
-    // llenar modal
-    let html = '<option value="">Seleccione un tipo</option>';
-    rows.forEach(r => {
-      const id  = r.id_tipo_movimiento;
-      const nom = r.nombre || '';
-      const mon = (r.moneda || '').toUpperCase();
-      html += `<option value="${id}" data-moneda="${mon}">${nom}</option>`;
-    });
-    selectEl.innerHTML = html;
+  function normRowMoneda(rowMon) {
+    const m = String(rowMon || "").toUpperCase();
+    // row: PESOS | DLLS
+    if (m === "DLLS" || m === "USD") return "USD";
+    return "MXN"; // PESOS
+  }
 
-    // ⬅️ Seleccionar DESPUÉS de haber llenado el select
-    if (selectedId) {
-      selectEl.value = String(selectedId);
-    }
+  function getTipoCambio() {
+    let tc = parseFloat(inpTipoCambio?.value || "0");
+    if (!Number.isFinite(tc) || tc <= 0) tc = 1;
+    return tc;
+  }
 
-    // callback opcional
-    if (typeof done === "function") done();
+  function getVistaSymbol() {
+    const vista = normVistaMoneda(selMonedaVista?.value || "MXN");
+    return vista === "USD" ? "US$" : "$";
+  }
+
+  function convertAmount(amt, rowMoneda) {
+    const src = normRowMoneda(rowMoneda); // MXN | USD
+    const dst = normVistaMoneda(selMonedaVista?.value || "MXN"); // MXN | USD
+    const tc = getTipoCambio();
+
+    const n = Number(amt || 0) || 0;
+    if (src === dst) return n;
+
+    // USD -> MXN
+    if (src === "USD" && dst === "MXN") return n * tc;
+    // MXN -> USD
+    if (src === "MXN" && dst === "USD") return n / tc;
+
+    return n;
+  }
+  // ---------------------- Endpoints ----------------------
+  const END = {
+    tiposMovimiento: () =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/tiposMovimiento`,
+    brokers: () =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/brokers`,
+    listarPaginado: (qs) =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/listarPaginado?${qs}`,
+    buscarOperaciones: (term) =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/buscarOperaciones?term=${encodeURIComponent(term)}`,
+    contenedorLigado: (opId) =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/contenedorLigado?operacion_id=${encodeURIComponent(opId)}`,
+    desactivar: () =>
+      `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/desactivarCostoOperacion`,
   };
-  xhr.send();
-}
 
+  function loadTiposMovimiento(selectEl, selectedId = null, done = null) {
+    if (!selectEl) return;
 
-  function fetchContenedorLigado(fuente, opId, cb) {
-    const f = (fuente || 'F').toUpperCase();
-    const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/contenedorLigado?fuente=${encodeURIComponent(f)}&operacion_id=${encodeURIComponent(opId)}`;
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
+    xhr.open("GET", END.tiposMovimiento(), true);
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
-      if (xhr.status !== 200) { cb(null); return; }
+
+      if (xhr.status !== 200) {
+        selectEl.innerHTML = '<option value="">Seleccione un tipo</option>';
+        if (selectedId) selectEl.value = String(selectedId);
+        if (typeof done === "function") done();
+        return;
+      }
+
+      let rows = [];
+      try {
+        rows = JSON.parse(xhr.responseText) || [];
+      } catch {
+        rows = [];
+      }
+
+      // filtro superior
+      if (selTipoFiltro) {
+        const cur = selTipoFiltro.value;
+        selTipoFiltro.innerHTML =
+          `<option value="0">Todos los conceptos</option>` +
+          rows
+            .map(
+              (t) =>
+                `<option value="${t.id_tipo_movimiento}">${safe(t.nombre)}</option>`,
+            )
+            .join("");
+        if (cur !== null && cur !== undefined && cur !== "")
+          selTipoFiltro.value = cur;
+      }
+
+      // modal
+      let html = '<option value="">Seleccione un tipo</option>';
+      rows.forEach((r) => {
+        const id = r.id_tipo_movimiento;
+        const nom = r.nombre || "";
+        const mon = (r.moneda || "").toUpperCase();
+        html += `<option value="${id}" data-moneda="${mon}">${nom}</option>`;
+      });
+      selectEl.innerHTML = html;
+
+      if (selectedId) selectEl.value = String(selectedId);
+      if (typeof done === "function") done();
+    };
+    xhr.send();
+  }
+
+  function fetchContenedorLigado(opId, cb) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", END.contenedorLigado(opId), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status !== 200) return cb(null);
+
       let resp = {};
-      try { resp = JSON.parse(xhr.responseText) || {}; } catch { resp = {}; }
-      if (resp.status !== 'success' || !resp.data) { cb(null); return; }
+      try {
+        resp = JSON.parse(xhr.responseText) || {};
+      } catch {
+        resp = {};
+      }
+      if (resp.status !== "success" || !resp.data) return cb(null);
       cb(resp.data);
     };
     xhr.send();
   }
 
+  function desactivarCostoXHR(id, onDone) {
+    const fd = new FormData();
+    fd.append("id", String(id));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", END.desactivar(), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      let resp = {};
+      try {
+        resp = JSON.parse(xhr.responseText) || {};
+      } catch {
+        resp = {};
+      }
+      if (typeof onDone === "function") onDone(xhr.status, resp);
+    };
+    xhr.send(fd);
+  }
+
   // ---------------------- Render tabla ----------------------
   function renderTabla(rows) {
     if (!tbody) return;
-    tbody.innerHTML = "";
-    if (!Array.isArray(rows) || rows.length === 0) { renderVacio(); return; }
 
-    rows.forEach(r => {
+    tbody.innerHTML = "";
+    if (!Array.isArray(rows) || rows.length === 0) {
+      renderVacio("No hay costos para mostrar.");
+      return;
+    }
+
+    rows.forEach((r) => {
       const tr = document.createElement("tr");
 
-      const nat = String(r.naturaleza || "").toUpperCase(); // "GASTO" | "ABONO"
-      const isAbono = (nat === "ABONO");
-      const montoFmt = fmtMoney(r.monto || 0, "$");
-      const montoCls = isAbono ? "text-success fw-semibold" : "text-danger fw-semibold";
+      const nat = String(r.naturaleza || "").toUpperCase(); // GASTO | ABONO
+      const isAbono = nat === "ABONO";
+
+      const symbolVista = getVistaSymbol();
+      const montoVista = convertAmount(r.monto || 0, r.moneda);
+      const montoFmt = fmtMoney(montoVista, symbolVista);
+
+      const montoCls = isAbono
+        ? "text-success fw-semibold"
+        : "text-danger fw-semibold";
+
       const montoConSigno = `${isAbono ? "+" : " "}${montoFmt}`;
       const badgeNat = nat
-        ? `<span class="badge ${isAbono ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} ms-1">${nat}</span>`
+        ? `<span class="badge ${isAbono ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger"} ms-1">${nat}</span>`
         : "";
-const isTransporte = Number(r.tipo_movimiento_id) === 23;
-      // dataset para modal (solo mostrar)
-      tr.dataset.rowId   = r.row_id || "";
-      tr.dataset.opId    = r.operacion_id || r.operacion_ferro_id || "";
-      tr.dataset.opNom   = r.numero_operacion || "";
-      tr.dataset.tipoId  = r.tipo_movimiento_id || "";
-      tr.dataset.tipoNom = r.concepto || "";
-      tr.dataset.moneda  = r.moneda || "";
-      tr.dataset.monto   = r.monto || "";
-      tr.dataset.coment  = r.comentario || "";
-      tr.dataset.fuente  = r.fuente || fuenteSel;
 
-tr.innerHTML = `
+      const isTransporte = Number(r.tipo_movimiento_id) === 23;
+
+      // dataset (para editar)
+      tr.dataset.rowId = r.row_id || "";
+      tr.dataset.opId = r.operacion_id || "";
+      tr.dataset.opNom = r.numero_operacion || "";
+      tr.dataset.tipoId = r.tipo_movimiento_id || "";
+      tr.dataset.tipoNom = r.concepto || "";
+      tr.dataset.moneda = r.moneda || "";
+      tr.dataset.monto = r.monto || "";
+      tr.dataset.coment = r.comentario || "";
+      tr.dataset.pagado = r.pagado ?? "0";
+      tr.dataset.nat = nat;
+      tr.dataset.factura = r.factura || "";
+      tr.dataset.brokerId = r.broker_id || "";
+      tr.dataset.brokerNombre = r.broker_nombre || "";
+      tr.innerHTML = `
   <td>${fmtFecha(r.fecha)}</td>
-  <td>${safe(r.concepto || "")}${badgeNat}</td>
-  <td>${prettyMoneda(r.moneda || "")}</td>
-  <td class="text-end ${montoCls}">${montoConSigno}</td>
-  <td>${safe(r.comentario || "")}</td>
+  <td>${safe(r.concepto)}${badgeNat}</td>
+  <td>${safe(r.factura) || '<span class="text-muted">—</span>'}</td>
+  <td>${safe(r.broker_nombre) || '<span class="text-muted">—</span>'}</td>
+  <td class="text-end ${montoCls} jsMontoVista"
+      data-amt="${Number(r.monto || 0) || 0}"
+      data-mon="${prettyMoneda(r.moneda)}">
+    ${montoConSigno}
+  </td>
+  <td class="text-center">${badgePagado(r.pagado)}</td>
+  <td>${safe(r.comentario)}</td>
   <td class="text-center">
     <div class="btn-group btn-group-sm">
-      <button class="btn btn-outline-secondary btnEditarCostoOperacion" title="Ver / Editar">
+      <button type="button" class="btn btn-outline-secondary btnEditarCostoOperacion" title="Ver / Editar">
         <i data-feather="edit-2"></i>
       </button>
-      <button class="btn btn-outline-danger btnEliminarCostoOperacion"
-              title="${isTransporte ? 'Eliminar deshabilitado para Transporte' : 'Eliminar'}"
-              ${isTransporte ? 'disabled aria-disabled="true"' : ''}>
+      <button type="button" class="btn btn-outline-danger btnEliminarCostoOperacion"
+              title="${isTransporte ? "Eliminar deshabilitado para Transporte" : "Eliminar"}"
+              ${isTransporte ? 'disabled aria-disabled="true"' : ""}>
         <i data-feather="trash-2"></i>
       </button>
     </div>
-  </td>`;
+  </td>
+`;
       tbody.appendChild(tr);
     });
+
     window.feather?.replace?.();
   }
 
+  function refrescarMontosTablaVista() {
+    if (!tbody) return;
+
+    const symbolVista = getVistaSymbol();
+
+    tbody.querySelectorAll("td.jsMontoVista").forEach((td) => {
+      const amt = parseFloat(td.dataset.amt || "0") || 0;
+      const mon = (td.dataset.mon || "").toUpperCase(); // PESOS | DLLS
+      const tr = td.closest("tr");
+
+      // naturaleza para signo/color
+      const nat = String(tr?.dataset?.naturaleza || "").toUpperCase();
+      // OJO: en tu dataset aún no guardas naturaleza; así que lo inferimos por el badge:
+      // Mejor: guarda naturaleza en dataset en renderTabla (abajo te lo pongo)
+      // mientras: usa clase existente y solo actualiza texto.
+
+      const montoVista = convertAmount(amt, mon);
+      const montoFmt = fmtMoney(montoVista, symbolVista);
+
+      // signo: si es abono, antepone "+"
+      const isAbono = String(tr?.dataset?.nat || "").toUpperCase() === "ABONO";
+      td.textContent = `${isAbono ? "+" : " "}${montoFmt}`;
+    });
+  }
   // ---------------------- Totales ----------------------
   function renderTotales(totalesDetalle) {
     if (totalesDetalle) totalesDetalleCache = totalesDetalle;
 
     const det = totalesDetalleCache || { operacion: { PESOS: 0, DLLS: 0 } };
-    const opPesos = Number(det.operacion.PESOS || 0);
-    const opDlls  = Number(det.operacion.DLLS  || 0);
+    const opPesos = Number(det.operacion?.PESOS || 0);
+    const opDlls = Number(det.operacion?.DLLS || 0);
 
     const vista = (selMonedaVista?.value || "MXN").toUpperCase(); // MXN|USD
-    let tc = parseFloat(inpTipoCambio?.value || "0"); if (!Number.isFinite(tc) || tc <= 0) tc = 1;
+    let tc = parseFloat(inpTipoCambio?.value || "0");
+    if (!Number.isFinite(tc) || tc <= 0) tc = 1;
 
-    let symbol = "$", totalOpConv = 0;
-    if (vista === "MXN") { symbol = "$";   totalOpConv = opPesos + (opDlls * tc); }
-    else                 { symbol = "US$"; totalOpConv = opDlls + (opPesos / tc); }
+    let symbol = "$";
+    let totalOpConv = 0;
 
-    if (cardTotOperacion) cardTotOperacion.textContent = fmtMoney(totalOpConv, symbol);
-    if (cardTotGeneral)   cardTotGeneral.textContent   = fmtMoney(totalOpConv, symbol);
+    if (vista === "MXN") {
+      symbol = "$";
+      totalOpConv = opPesos + opDlls * tc;
+    } else {
+      symbol = "US$";
+      totalOpConv = opDlls + opPesos / tc;
+    }
+
+    if (cardTotOperacion)
+      cardTotOperacion.textContent = fmtMoney(totalOpConv, symbol);
+    if (cardTotGeneral)
+      cardTotGeneral.textContent = fmtMoney(totalOpConv, symbol);
   }
 
   function computeViewTotals(detCostos, detAbonos) {
     const vista = (selMonedaVista?.value || "MXN").toUpperCase();
-    let tc = parseFloat(inpTipoCambio?.value || "0"); if (!Number.isFinite(tc) || tc <= 0) tc = 1;
+    let tc = parseFloat(inpTipoCambio?.value || "0");
+    if (!Number.isFinite(tc) || tc <= 0) tc = 1;
 
     const c = detCostos || { operacion: { PESOS: 0, DLLS: 0 } };
     const a = detAbonos || { operacion: { PESOS: 0, DLLS: 0 } };
 
-    const opPesosC = Number(c.operacion?.PESOS || 0), opDllsC = Number(c.operacion?.DLLS || 0);
-    const opPesosA = Number(a.operacion?.PESOS || 0), opDllsA = Number(a.operacion?.DLLS || 0);
+    const opPesosC = Number(c.operacion?.PESOS || 0);
+    const opDllsC = Number(c.operacion?.DLLS || 0);
+    const opPesosA = Number(a.operacion?.PESOS || 0);
+    const opDllsA = Number(a.operacion?.DLLS || 0);
 
-    let opCost = 0, opAbono = 0, symbol = "$";
+    let opCost = 0;
+    let opAbono = 0;
+    let symbol = "$";
+
     if (vista === "MXN") {
       symbol = "$";
-      opCost  = opPesosC + (opDllsC * tc);
-      opAbono = opPesosA + (opDllsA * tc);
+      opCost = opPesosC + opDllsC * tc;
+      opAbono = opPesosA + opDllsA * tc;
     } else {
       symbol = "US$";
-      opCost  = opDllsC + (opPesosC / tc);
-      opAbono = opDllsA + (opPesosA / tc);
+      opCost = opDllsC + opPesosC / tc;
+      opAbono = opDllsA + opPesosA / tc;
     }
 
-    const fmt = (n) => symbol + " " + Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmt = (n) =>
+      symbol +
+      " " +
+      Number(n || 0).toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
     return { opCost, opAbono, fmt };
   }
 
+  function setBadgeValueSimple(id, val, fmt) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = fmt(val);
+    el.classList.remove(
+      "bg-light",
+      "text-dark",
+      "bg-danger",
+      "bg-success",
+      "bg-secondary",
+    );
+    if (val > 0) el.classList.add("bg-success");
+    else if (val < 0) el.classList.add("bg-danger");
+    else el.classList.add("bg-secondary");
+  }
+
+  function renderCostosAbonosCardsSoloOperacion({
+    opCost = 0,
+    opAbono = 0,
+    fmt,
+  } = {}) {
+    const opBalance = opAbono - opCost;
+
+    const elTotOp = document.getElementById("costosOperacionTotalOperacion");
+    const elAbOp = document.getElementById("costosOperacionAbonosOperacion");
+
+    if (elTotOp) elTotOp.textContent = fmt(opCost);
+    if (elAbOp) elAbOp.textContent = fmt(opAbono);
+
+    setBadgeValueSimple("costosOperacionBalanceOperacion", opBalance, fmt);
+
+    // General = SOLO operación
+    const totalAbonos = opAbono;
+    const totalCostos = opCost;
+    const totalBalance = totalAbonos - totalCostos;
+
+    const elGen = document.getElementById("costosOperacionTotalGeneral");
+    const elGenAb = document.getElementById(
+      "costosOperacionTotalAbonosGeneral",
+    );
+    const elGenCost = document.getElementById(
+      "costosOperacionTotalCostosGeneral",
+    );
+
+    if (elGen) elGen.textContent = fmt(totalBalance);
+    if (elGenAb) elGenAb.textContent = fmt(totalAbonos);
+    if (elGenCost) elGenCost.textContent = fmt(totalCostos);
+  }
+
+  // ---------------------- Paginación / meta ----------------------
   function renderPaginacion(meta) {
     if (!ulPag) return;
+
     const page = parseInt(meta.page || 1, 10);
     const totalPages = parseInt(meta.totalPages || 1, 10);
-    if (totalPages <= 1) { ulPag.innerHTML = ""; return; }
 
-    let start = Math.max(1, page - 2), end = Math.min(totalPages, start + 4); start = Math.max(1, end - 4);
+    if (totalPages <= 1) {
+      ulPag.innerHTML = "";
+      return;
+    }
+
+    let start = Math.max(1, page - 2);
+    let end = Math.min(totalPages, start + 4);
+    start = Math.max(1, end - 4);
+
     let html = `
       <li class="page-item ${page === 1 ? "disabled" : ""}">
         <a class="page-link" href="#" data-page="${page - 1}">«</a>
       </li>`;
+
     for (let p = start; p <= end; p++) {
       html += `
         <li class="page-item ${p === page ? "active" : ""}">
           <a class="page-link" href="#" data-page="${p}">${p}</a>
         </li>`;
     }
+
     html += `
       <li class="page-item ${page === totalPages ? "disabled" : ""}">
         <a class="page-link" href="#" data-page="${page + 1}">»</a>
       </li>`;
+
     ulPag.innerHTML = html;
 
-    ulPag.querySelectorAll("a.page-link").forEach(a => {
+    ulPag.querySelectorAll("a.page-link").forEach((a) => {
       a.addEventListener("click", (e) => {
         e.preventDefault();
-        const p = parseInt(a.dataset.page, 10);
+        const p = parseInt(a.dataset.page || "1", 10);
         if (!Number.isNaN(p)) listar(p);
       });
     });
@@ -318,8 +562,10 @@ tr.innerHTML = `
     const page = parseInt(meta.page || 1, 10);
     const perPg = parseInt(meta.perPage || perPage || 10, 10);
     const total = parseInt(meta.total || 0, 10);
-    const ini = total === 0 ? 0 : ((page - 1) * perPg) + 1;
+
+    const ini = total === 0 ? 0 : (page - 1) * perPg + 1;
     const fin = Math.min(page * perPg, total);
+
     metaTxt.textContent = `Mostrando ${ini}–${fin} de ${total}`;
   }
 
@@ -328,7 +574,7 @@ tr.innerHTML = `
     currentPage = page;
 
     if (!operacionId || operacionId <= 0) {
-      renderVacio();
+      renderVacio("Selecciona una operación para ver sus costos.");
       renderTotales({ operacion: { PESOS: 0, DLLS: 0 } });
       renderPaginacion({ page: 1, totalPages: 0 });
       renderMeta({ page: 1, perPage, total: 0 });
@@ -338,6 +584,7 @@ tr.innerHTML = `
     const buscar = (inpBuscar?.value || "").trim();
     const moneda = (selMonedaFiltro?.value || "").toUpperCase();
     const tipoId = parseInt(selTipoFiltro?.value || "0", 10) || 0;
+    const brokerId = parseInt(selBrokerFiltro?.value || "0", 10) || 0;
 
     if (currentXHR && currentXHR.readyState !== 4) currentXHR.abort();
     renderCargando();
@@ -348,29 +595,50 @@ tr.innerHTML = `
       buscar,
       moneda,
       tipo: String(tipoId),
+      broker_id: String(brokerId),
       operacion_id: String(operacionId),
-      operacion_ferro_id: String(operacionId),
-      fuente: fuenteSel,
       solo_activos: "1",
     });
 
-    const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/listarPaginado?${params.toString()}`;
+    const url = END.listarPaginado(params.toString());
     currentXHR = new XMLHttpRequest();
     currentXHR.open("GET", url, true);
-    currentXHR.send();
     currentXHR.onreadystatechange = function () {
       if (this.readyState !== 4) return;
-      if (this.status !== 200) { console.error(this.responseText); return; }
 
-      let payload;
-      try { payload = JSON.parse(this.responseText); } catch { return; }
+      if (this.status !== 200) {
+        console.error(this.responseText);
+        renderVacio("Error al cargar costos.");
+        return;
+      }
 
-      const data           = payload.data || [];
-      const meta           = payload.meta || { page: 1, totalPages: 1, total: 0, perPage };
-      const totalesDetalle = payload.totales_detalle || { operacion: { PESOS: 0, DLLS: 0 } };
-      const abonosDetalle  = payload.abonos_detalle  || { operacion: { PESOS: 0, DLLS: 0 } };
+      let payload = {};
+      try {
+        payload = JSON.parse(this.responseText) || {};
+      } catch {
+        payload = {};
+      }
 
-      if (data.length === 0 && meta.totalPages > 0 && currentPage > meta.totalPages) {
+      const data = payload.data || [];
+      const meta = payload.meta || {
+        page: 1,
+        totalPages: 1,
+        total: 0,
+        perPage,
+      };
+      const totalesDetalle = payload.totales_detalle || {
+        operacion: { PESOS: 0, DLLS: 0 },
+      };
+      const abonosDetalle = payload.abonos_detalle || {
+        operacion: { PESOS: 0, DLLS: 0 },
+      };
+
+      if (
+        Array.isArray(data) &&
+        data.length === 0 &&
+        meta.totalPages > 0 &&
+        currentPage > meta.totalPages
+      ) {
         listar(meta.totalPages);
         return;
       }
@@ -378,269 +646,320 @@ tr.innerHTML = `
       renderTabla(data);
       renderPaginacion(meta);
       renderMeta(meta);
-      renderTotales(totalesDetalle);
 
+      totalesDetalleCache = totalesDetalle;
       abonosDetalleCache = abonosDetalle;
-      const { opCost, opAbono, fmt } = computeViewTotals(totalesDetalleCache, abonosDetalleCache);
+
+      renderTotales(totalesDetalleCache);
+      const { opCost, opAbono, fmt } = computeViewTotals(
+        totalesDetalleCache,
+        abonosDetalleCache,
+      );
       renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
     };
+    currentXHR.send();
   }
-  window.listarCostosOperacion = listar; // por si lo llamas fuera
+  window.listarCostosOperacion = listar;
 
   // ---------------------- Autocomplete Operación (vista principal) ----------------------
   function buscarOps(term) {
     if (!opListBox) return;
+
     if (!term || term.length < 2) {
-      opListBox.style.display = "none"; opListBox.innerHTML = ""; opMeta && (opMeta.textContent = "");
+      opListBox.style.display = "none";
+      opListBox.innerHTML = "";
+      if (opMeta) opMeta.textContent = "";
       return;
     }
-    const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/buscarOperaciones?term=${encodeURIComponent(term)}`;
+
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
-    xhr.send();
+    xhr.open("GET", END.buscarOperaciones(term), true);
     xhr.onreadystatechange = function () {
-      if (this.readyState !== 4) return;
-      if (this.status !== 200) { opListBox.style.display = "none"; opListBox.innerHTML = ""; opMeta && (opMeta.textContent = ""); return; }
+      if (xhr.readyState !== 4) return;
 
-      let rows = [];
-      try { rows = JSON.parse(this.responseText) || []; } catch { rows = []; }
-
-      if (!Array.isArray(rows) || rows.length === 0) {
-        opListBox.style.display = "none"; opListBox.innerHTML = ""; opMeta && (opMeta.textContent = "Sin resultados"); return;
+      if (xhr.status !== 200) {
+        opListBox.style.display = "none";
+        opListBox.innerHTML = "";
+        if (opMeta) opMeta.textContent = "";
+        return;
       }
 
-      // SIN prefijos. Formato: NUMERO_OPERACION - CLIENTE
+      let rows = [];
+      try {
+        rows = JSON.parse(xhr.responseText) || [];
+      } catch {
+        rows = [];
+      }
+
+      if (!Array.isArray(rows) || rows.length === 0) {
+        opListBox.style.display = "none";
+        opListBox.innerHTML = "";
+        if (opMeta) opMeta.textContent = "Sin resultados";
+        return;
+      }
+
       let html = "";
-      rows.forEach(r => {
-        const id   = r.id;
-        const nom  = r.numero_operacion || "";
-        const cli  = r.cliente || "";
-        const f    = (r.fuente || 'F').toUpperCase(); // para fuenteSel
+      rows.forEach((r) => {
+        const id = r.id;
+        const nom = r.numero_operacion || "";
+        const cli = r.cliente || "";
         html += `
           <button type="button" class="list-group-item list-group-item-action"
-                  data-id="${id}" data-nom="${nom}" data-cli="${cli}" data-fuente="${f}">
-            ${nom}${cli ? ' - ' + cli : ''}
+                  data-id="${id}" data-nom="${nom}" data-cli="${cli}">
+            ${nom}${cli ? " - " + cli : ""}
           </button>`;
       });
+
       opListBox.innerHTML = html;
       opListBox.style.display = "block";
-      opMeta && (opMeta.textContent = `Resultados: ${rows.length}`);
 
-      opListBox.querySelectorAll("button.list-group-item").forEach(btn => {
+      opListBox.querySelectorAll("button.list-group-item").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const id  = parseInt(btn.dataset.id || "0", 10) || 0;
-          const nom = btn.dataset.nom || "";
-          const f   = (btn.dataset.fuente || 'F').toUpperCase();
+          const id = parseInt(btn.dataset.id || "0", 10) || 0;
 
-          // Seleccionar operación
-          if (opIdHid)  opIdHid.value  = String(id);
-          if (opNomInp) opNomInp.value = btn.textContent.trim(); // mostramos "OP - CLIENTE"
+          if (opIdHid) opIdHid.value = String(id);
+          if (opNomInp) opNomInp.value = btn.textContent.trim();
           operacionId = id;
-          fuenteSel   = (f === 'MF') ? 'MF' : 'F';
-          window.fuenteSel = fuenteSel;
 
-          // Cerrar lista
           opListBox.innerHTML = "";
           opListBox.style.display = "none";
 
-          // Autorellenar contenedor ligado en el filtro
-          fetchContenedorLigado(fuenteSel, operacionId, (data) => {
+          fetchContenedorLigado(operacionId, (data) => {
             if (!data) {
               if (contFiltroNomInp) contFiltroNomInp.value = "";
-              if (contFiltroIdHid)  contFiltroIdHid.value  = "";
+              if (contFiltroIdHid) contFiltroIdHid.value = "";
             } else {
               if (contFiltroNomInp) contFiltroNomInp.value = data.numero || "";
-              if (contFiltroIdHid) {
-                const ids = data.ids || {};
-                const contId = (fuenteSel === 'MF') ? (ids.contenedor_maritimo_id || '') : (ids.contenedor_fisico_id || '');
-                contFiltroIdHid.value = String(contId || "");
-              }
+              if (contFiltroIdHid)
+                contFiltroIdHid.value = String(
+                  data.ids?.contenedor_maritimo_id || "",
+                );
             }
           });
 
-          // Cargar tipos para el modal según la fuente actual (solo para mostrar)
-          loadTiposMovimiento(fuenteSel, selTipoModal);
-
-          // Listar
+          loadTiposMovimiento(selTipoModal);
           listar(1);
         });
       });
     };
+    xhr.send();
   }
 
   opNomInp?.addEventListener("input", () => {
     const term = (opNomInp.value || "").trim();
+
     if (opIdHid) opIdHid.value = "";
     operacionId = 0;
-    fuenteSel   = 'F';
-    window.fuenteSel = fuenteSel;
-    // limpiar contenedor del filtro
+
     if (contFiltroNomInp) contFiltroNomInp.value = "";
-    if (contFiltroIdHid)  contFiltroIdHid.value  = "";
+    if (contFiltroIdHid) contFiltroIdHid.value = "";
+
     buscarOps(term);
   });
 
   document.addEventListener("click", (e) => {
     if (!opListBox) return;
-    if (!opListBox.contains(e.target) && e.target !== opNomInp) {
+    if (!opListBox.contains(e.target) && e.target !== opNomInp)
       opListBox.style.display = "none";
+  });
+
+  // ---------------------- Filtros / paginación ----------------------
+  document.addEventListener("DOMContentLoaded", () => {
+    if (perPage < 1) perPage = 10;
+
+    loadTiposMovimiento(selTipoModal);
+    loadBrokers();
+
+    if (operacionId > 0) {
+      fetchContenedorLigado(operacionId, (data) => {
+        if (data) {
+          if (contFiltroNomInp) contFiltroNomInp.value = data.numero || "";
+          if (contFiltroIdHid)
+            contFiltroIdHid.value = String(
+              data.ids?.contenedor_maritimo_id || "",
+            );
+        }
+      });
+      listar(1);
+    } else {
+      renderVacio("Selecciona una operación para ver sus costos.");
     }
   });
 
-  // ---------------------- Eventos filtros/paginación ----------------------
-  document.addEventListener("DOMContentLoaded", () => {
-    if (!perPage || perPage < 1) perPage = 10;
-    // Si ya viene con op seleccionada, cargar tipos para modal
-    if (operacionId > 0) loadTiposMovimiento(fuenteSel, selTipoModal);
-  });
-
   selPerPage?.addEventListener("change", () => {
-    perPage = parseInt(selPerPage.value || "10", 10);
-    if (!perPage || perPage < 1) perPage = 10;
+    perPage = parseInt(selPerPage.value || "10", 10) || 10;
     listar(1);
   });
 
   inpBuscar?.addEventListener("keyup", (e) => {
     clearTimeout(debounceId);
     debounceId = setTimeout(() => listar(1), 250);
-    if (e.key === "Enter") { clearTimeout(debounceId); listar(1); }
+    if (e.key === "Enter") {
+      clearTimeout(debounceId);
+      listar(1);
+    }
   });
 
   selMonedaFiltro?.addEventListener("change", () => listar(1));
-  selTipoFiltro?.addEventListener("change",   () => listar(1));
+  selTipoFiltro?.addEventListener("change", () => listar(1));
+  selMonedaFiltro?.addEventListener("change", () => listar(1));
 
   selMonedaVista?.addEventListener("change", () => {
     renderTotales(totalesDetalleCache);
-    const { opCost, opAbono, fmt } = computeViewTotals(totalesDetalleCache, abonosDetalleCache);
+    const { opCost, opAbono, fmt } = computeViewTotals(
+      totalesDetalleCache,
+      abonosDetalleCache,
+    );
     renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
+
+    // ✅ NUEVO: actualiza columna monto en tabla
+    refrescarMontosTablaVista();
   });
 
   inpTipoCambio?.addEventListener("input", () => {
     renderTotales(totalesDetalleCache);
-    const { opCost, opAbono, fmt } = computeViewTotals(totalesDetalleCache, abonosDetalleCache);
+    const { opCost, opAbono, fmt } = computeViewTotals(
+      totalesDetalleCache,
+      abonosDetalleCache,
+    );
     renderCostosAbonosCardsSoloOperacion({ opCost, opAbono, fmt });
-  });
 
-  // ---------------------- Modal (solo visualizar) ----------------------
-function syncMonedaPorTipoModal() {
-  if (isEditCosto) return; // ⬅️ EN EDICIÓN NO tocar la moneda por cambio de tipo
-  if (!selTipoModal) return;
-  const opt = selTipoModal.selectedOptions?.[0];
-  const m = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
-  if (selMonModal) selMonModal.value = (m === "PESOS" || m === "DLLS") ? m : "";
-}
-selTipoModal?.addEventListener("change", syncMonedaPorTipoModal);
- 
+    // ✅ NUEVO: actualiza columna monto en tabla
+    refrescarMontosTablaVista();
+  });
+  // ---------------------- Modal: moneda depende del tipo ----------------------
+  function syncMonedaPorTipoModal() {
+    if (isEditCosto) return;
+    if (!selTipoModal) return;
+    const opt = selTipoModal.selectedOptions?.[0];
+    const m = opt ? (opt.getAttribute("data-moneda") || "").toUpperCase() : "";
+    if (selMonModal) selMonModal.value = m === "PESOS" || m === "DLLS" ? m : "";
+  }
+  selTipoModal?.addEventListener("change", syncMonedaPorTipoModal);
 
   function resetModalView() {
-    if (hidRowId)     hidRowId.value = "";
-    if (opIdModal)    opIdModal.value = "";
-    if (opNomModal)   opNomModal.value = "";
+    if (hidRowId) hidRowId.value = "";
+    if (opIdModal) opIdModal.value = "";
+    if (opNomModal) opNomModal.value = "";
+
     if (selTipoModal) selTipoModal.value = "";
-    if (selMonModal)  selMonModal.value = "";
-    if (montoModal)   montoModal.value = "";
-    if (comentModal)  comentModal.value = "";
-    if (contIdModal)  contIdModal.value = "";
+    if (selMonModal) selMonModal.value = "";
+    if (montoModal) montoModal.value = "";
+    if (facturaModal) facturaModal.value = "";
+    if (comentModal) comentModal.value = "";
+    if (selBrokerModal) selBrokerModal.value = "";
+    if (contIdModal) contIdModal.value = "";
     if (contNomModal) contNomModal.value = "";
-    if (listOpsModal) { listOpsModal.innerHTML = ""; listOpsModal.style.display = "none"; }
+
+    if (listOpsModal) {
+      listOpsModal.innerHTML = "";
+      listOpsModal.style.display = "none";
+    }
+
+    if (selPagadoModal) selPagadoModal.value = "0";
   }
 
-  // Abrir modal en “nuevo” (solo visualizar)
+  // Abrir modal "Nuevo"
   btnNuevo?.addEventListener("click", () => {
-      isEditCosto = false;        // ⬅️ MODO NUEVO
-  unlockEditFields();         // ⬅️ HABILITA campos
-  resetModalView(); 
-    // Si hay una operación ya elegida en filtro, sembrar en modal y contenedor
+    isEditCosto = false;
+    unlockEditFields();
+    resetModalView();
+
     const fid = parseInt(opIdHid?.value || "0", 10) || 0;
     const fnom = (opNomInp?.value || "").trim();
+
+    loadTiposMovimiento(selTipoModal);
+
+    loadBrokers();
     if (fid && fnom) {
-      if (opIdModal)  opIdModal.value  = String(fid);
+      if (opIdModal) opIdModal.value = String(fid);
       if (opNomModal) opNomModal.value = fnom;
-      loadTiposMovimiento(fuenteSel, selTipoModal);
-      fetchContenedorLigado(fuenteSel, fid, (data) => {
+
+      fetchContenedorLigado(fid, (data) => {
         if (data) {
           if (contNomModal) contNomModal.value = data.numero || "";
-          if (contIdModal) {
-            const ids = data.ids || {};
-            const contId = (fuenteSel === 'MF') ? (ids.contenedor_maritimo_id || '') : (ids.contenedor_fisico_id || '');
-            contIdModal.value = String(contId || "");
-          }
+          if (contIdModal)
+            contIdModal.value = String(data.ids?.contenedor_maritimo_id || "");
         }
       });
-    } else {
-      // sin operación elegida aún, prepara tipos por la fuente actual
-      loadTiposMovimiento(fuenteSel, selTipoModal);
     }
   });
 
-  // Autocomplete de operación dentro del modal (solo mostrar)
+  // Autocomplete operación dentro del modal
   opNomModal?.addEventListener("input", () => {
-  if (isEditCosto) return; // ⬅️ EN EDICIÓN NO PERMITIR CAMBIAR OPERACIÓN
-  if (!listOpsModal) return;
-  const term = (opNomModal.value || "").trim();
-  if (!term || term.length < 2) {
-    listOpsModal.style.display = "none"; listOpsModal.innerHTML = "";
-    return;
-  }
-    const url = `${base_url}Operaciones_maritimo_ferro_costos_Contenedor/buscarOperaciones?term=${encodeURIComponent(term)}`;
+    if (isEditCosto) return;
+    if (!listOpsModal) return;
+
+    const term = (opNomModal.value || "").trim();
+    if (!term || term.length < 2) {
+      listOpsModal.style.display = "none";
+      listOpsModal.innerHTML = "";
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
-    xhr.send();
+    xhr.open("GET", END.buscarOperaciones(term), true);
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
-      if (xhr.status !== 200) { listOpsModal.style.display = "none"; listOpsModal.innerHTML = ""; return; }
+
+      if (xhr.status !== 200) {
+        listOpsModal.style.display = "none";
+        listOpsModal.innerHTML = "";
+        return;
+      }
 
       let rows = [];
-      try { rows = JSON.parse(xhr.responseText) || []; } catch { rows = []; }
+      try {
+        rows = JSON.parse(xhr.responseText) || [];
+      } catch {
+        rows = [];
+      }
+
       if (!Array.isArray(rows) || rows.length === 0) {
-        listOpsModal.style.display = "none"; listOpsModal.innerHTML = "";
+        listOpsModal.style.display = "none";
+        listOpsModal.innerHTML = "";
         return;
       }
 
       let html = "";
-      rows.forEach(r => {
-        const id  = r.id;
+      rows.forEach((r) => {
+        const id = r.id;
         const nom = r.numero_operacion || "";
         const cli = r.cliente || "";
-        const f   = (r.fuente || 'F').toUpperCase();
         html += `
           <button type="button" class="list-group-item list-group-item-action"
-                  data-id="${id}" data-nom="${nom}" data-cli="${cli}" data-fuente="${f}">
-            ${nom}${cli ? ' - ' + cli : ''}
+                  data-id="${id}" data-nom="${nom}" data-cli="${cli}">
+            ${nom}${cli ? " - " + cli : ""}
           </button>`;
       });
+
       listOpsModal.innerHTML = html;
       listOpsModal.style.display = "block";
 
-      listOpsModal.querySelectorAll("button.list-group-item").forEach(btn => {
+      listOpsModal.querySelectorAll("button.list-group-item").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const id  = parseInt(btn.dataset.id || "0", 10) || 0;
+
+          const id = parseInt(btn.dataset.id || "0", 10) || 0;
           const nom = btn.dataset.nom || "";
           const cli = btn.dataset.cli || "";
-          const f   = (btn.dataset.fuente || "F").toUpperCase();
 
-          if (opIdModal)  opIdModal.value  = String(id);
-          if (opNomModal) opNomModal.value = `${nom}${cli ? ' - ' + cli : ''}`;
+          if (opIdModal) opIdModal.value = String(id);
+          if (opNomModal) opNomModal.value = `${nom}${cli ? " - " + cli : ""}`;
 
-          // Actualizar fuente para el modal y cargar tipos
-          fuenteSel = (f === "MF") ? "MF" : "F";
-          window.fuenteSel = fuenteSel;
-          loadTiposMovimiento(fuenteSel, selTipoModal);
+          loadTiposMovimiento(selTipoModal);
 
-          // Rellenar contenedor del modal
-          fetchContenedorLigado(fuenteSel, id, (data) => {
+          fetchContenedorLigado(id, (data) => {
             if (data) {
               if (contNomModal) contNomModal.value = data.numero || "";
-              if (contIdModal) {
-                const ids = data.ids || {};
-                const contId = (fuenteSel === 'MF') ? (ids.contenedor_maritimo_id || '') : (ids.contenedor_fisico_id || '');
-                contIdModal.value = String(contId || "");
-              }
+              if (contIdModal)
+                contIdModal.value = String(
+                  data.ids?.contenedor_maritimo_id || "",
+                );
             } else {
               if (contNomModal) contNomModal.value = "";
-              if (contIdModal)  contIdModal.value  = "";
+              if (contIdModal) contIdModal.value = "";
             }
           });
 
@@ -649,225 +968,235 @@ selTipoModal?.addEventListener("change", syncMonedaPorTipoModal);
         });
       });
     };
+    xhr.send();
   });
 
-modalEl?.addEventListener("shown.bs.modal", () => {
-  if (isEditCosto) {
-    montoModal?.focus();
-    try { montoModal?.select(); } catch {}
-  } else {
-    syncMonedaPorTipoModal();
-    opNomModal?.focus();
-  }
-});
+  modalEl?.addEventListener("shown.bs.modal", () => {
+    if (isEditCosto) {
+      montoModal?.focus();
+      try {
+        montoModal?.select();
+      } catch {}
+    } else {
+      syncMonedaPorTipoModal();
+      opNomModal?.focus();
+    }
+  });
 
-  // ---------------------- Acciones de fila (solo lectura) ----------------------
+  // ---------------------- Acciones en tabla ----------------------
   tbody?.addEventListener("click", (e) => {
+    // EDITAR (solo abre modal y prepara campos; el guardado lo hace registrar.js)
     const btnEdit = e.target.closest(".btnEditarCostoOperacion");
-if (btnEdit) {
-  const tr = btnEdit.closest("tr");
-  if (!tr) return;
+    if (btnEdit) {
+      const tr = btnEdit.closest("tr");
+      if (!tr) return;
 
-  isEditCosto = true;
-  resetModalView();
+      isEditCosto = true;
+      resetModalView();
 
-  // Fuente
-  const f = (tr.dataset.fuente || "F").toUpperCase();
-  fuenteSel = (f === "MF") ? "MF" : "F";
-  window.fuenteSel = fuenteSel;
+      if (hidRowId) hidRowId.value = tr.dataset.rowId || "";
+      if (opIdModal) opIdModal.value = tr.dataset.opId || "";
+      if (opNomModal) opNomModal.value = tr.dataset.opNom || "";
+      if (montoModal) montoModal.value = tr.dataset.monto || "";
+      if (facturaModal) facturaModal.value = tr.dataset.factura || "";
+      if (comentModal) comentModal.value = tr.dataset.coment || "";
+      if (selPagadoModal)
+        selPagadoModal.value = String(tr.dataset.pagado ?? "0");
 
-  // IDs y datos de la fila
-  const tipoIdSel = tr.dataset.tipoId || "";
-  const tipoNomSel = tr.dataset.tipoNom || ""; // ⬅️ usamos el nombre que pintaste en la tabla
+      loadBrokers("", tr.dataset.brokerId || "");
 
-  // Cargar tipos y seleccionar CUANDO TERMINE
-  loadTiposMovimiento(fuenteSel, selTipoModal, tipoIdSel, () => {
-    // Si por alguna razón el tipo de la fila NO vino en la lista, agregamos un option temporal
-    if (selTipoModal && tipoIdSel && !selTipoModal.querySelector(`option[value="${String(tipoIdSel)}"]`)) {
-      const opt = document.createElement('option');
-      opt.value = String(tipoIdSel);
-      opt.textContent = tipoNomSel || 'Concepto';
-      opt.setAttribute('data-moneda', (tr.dataset.moneda || '').toUpperCase());
-      selTipoModal.appendChild(opt);
-      selTipoModal.value = String(tipoIdSel);
+      const tipoIdSel = tr.dataset.tipoId || "";
+      const tipoNomSel = tr.dataset.tipoNom || "";
+
+      loadTiposMovimiento(selTipoModal, tipoIdSel, () => {
+        if (
+          selTipoModal &&
+          tipoIdSel &&
+          !selTipoModal.querySelector(`option[value="${String(tipoIdSel)}"]`)
+        ) {
+          const opt = document.createElement("option");
+          opt.value = String(tipoIdSel);
+          opt.textContent = tipoNomSel || "Concepto";
+          opt.setAttribute(
+            "data-moneda",
+            (tr.dataset.moneda || "").toUpperCase(),
+          );
+          selTipoModal.appendChild(opt);
+          selTipoModal.value = String(tipoIdSel);
+        }
+
+        if (selMonModal)
+          selMonModal.value = (tr.dataset.moneda || "").toUpperCase();
+        lockEditFields();
+
+        try {
+          const bs = bootstrap.Modal.getOrCreateInstance(modalEl);
+          bs.show();
+        } catch {}
+      });
+
+      const opId = parseInt(tr.dataset.opId || "0", 10) || 0;
+      if (opId) {
+        fetchContenedorLigado(opId, (data) => {
+          if (data) {
+            if (contNomModal) contNomModal.value = data.numero || "";
+            if (contIdModal)
+              contIdModal.value = String(
+                data.ids?.contenedor_maritimo_id || "",
+              );
+          }
+        });
+      }
+      return;
     }
 
-    // Moneda de la fila manda en edición (no la cambies por "data-moneda")
-    if (selMonModal) selMonModal.value = (tr.dataset.moneda || "").toUpperCase();
+    // ELIMINAR (desactivar)
+    const btnDel = e.target.closest(".btnEliminarCostoOperacion");
+    if (btnDel) {
+      const tr = btnDel.closest("tr");
+      if (!tr) return;
 
-    // 🔒 Bloquear campos que no deben cambiar
-    lockEditFields();
+      const tipoId = parseInt(tr.dataset.tipoId || "0", 10) || 0;
+      if (tipoId === 23) {
+        return toast(
+          "info",
+          "No permitido",
+          "Los costos de tipo Transporte no pueden eliminarse.",
+        );
+      }
 
-    // Mostrar modal y foco en monto
-    const bs = bootstrap.Modal.getOrCreateInstance(modalEl);
-    bs.show();
-    setTimeout(() => { montoModal?.focus(); try { montoModal?.select(); } catch {} }, 150);
+      const rowId = parseInt(tr.dataset.rowId || "0", 10) || 0;
+      if (!rowId) return;
+
+      const confirmar = () => {
+        const oldHtml = btnDel.innerHTML;
+        btnDel.disabled = true;
+        btnDel.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>…';
+
+        desactivarCostoXHR(rowId, (status, resp) => {
+          btnDel.disabled = false;
+          btnDel.innerHTML = oldHtml;
+
+          if (status !== 200)
+            return toast("error", "Error", resp?.message || `HTTP ${status}`);
+
+          const st = String(resp?.status || "").toLowerCase();
+          if (st === "success") {
+            toast("success", "Desactivado", "El costo fue desactivado.");
+            listar(1);
+          } else if (st === "warning") {
+            toast(
+              "warning",
+              "Aviso",
+              resp?.message || "No se pudo desactivar.",
+            );
+          } else {
+            toast("error", "Error", resp?.message || "No se desactivó.");
+          }
+        });
+      };
+
+      if (window.Swal) {
+        Swal.fire({
+          title: "¿Eliminar costo?",
+          text: "Esta acción no se puede deshacer",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Sí, eliminar",
+          cancelButtonText: "Cancelar",
+        }).then((res) => {
+          if (res.isConfirmed) confirmar();
+        });
+      } else {
+        if (confirm("¿Desactivar este costo?")) confirmar();
+      }
+      return;
+    }
   });
 
-  // Resto de llenado
-  if (hidRowId)     hidRowId.value     = tr.dataset.rowId || "";
-  if (opIdModal)    opIdModal.value    = tr.dataset.opId  || "";
-  if (opNomModal)   opNomModal.value   = tr.dataset.opNom || "";
-  if (montoModal)   montoModal.value   = tr.dataset.monto || "";
-  if (comentModal)  comentModal.value  = tr.dataset.coment || "";
+  // ---------------------- Exportación ----------------------
 
-  // Contenedor ligado (solo mostrar)
-  const opId = parseInt(tr.dataset.opId || "0", 10) || 0;
-  if (opId) {
-    fetchContenedorLigado(fuenteSel, opId, (data) => {
-      if (data) {
-        if (contNomModal) contNomModal.value = data.numero || "";
-        if (contIdModal) {
-          const ids = data.ids || {};
-          const contId = (fuenteSel === 'MF') ? (ids.contenedor_maritimo_id || '') : (ids.contenedor_fisico_id || '');
-          contIdModal.value = String(contId || "");
+  const btnXlsx = document.getElementById("btnExportarExcelCostosOperacion");
+  if (btnXlsx && !btnXlsx.dataset.bound) {
+    btnXlsx.dataset.bound = "1";
+    btnXlsx.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      ExportarTablas.exportar({
+        ref: "#tablaCostosOperacionExportar",
+        formato: "xlsx",
+        nombre: "CostosOperacion_MF.xlsx",
+        columnasOcultas: [7],
+        soloVisibles: true,
+        sheetName: "Costos MF",
+      });
+    });
+  }
+
+  const btnPdf = document.getElementById("btnExportarPDFCostosOperacion");
+  if (btnPdf && !btnPdf.dataset.bound) {
+    btnPdf.dataset.bound = "1";
+    btnPdf.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      ExportarTablas.exportar({
+        ref: "#tablaCostosOperacionExportar",
+        formato: "pdf",
+        nombre: "CostosOperacion_MF.pdf",
+        titulo: "Costos Operación MF",
+        orientacion: "landscape",
+        formatoPagina: "letter",
+        columnasOcultas: [5],
+        soloVisibles: true,
+      });
+    });
+  }
+
+  //cargar brokers
+  function loadBrokers(selectedFiltro = "", selectedModal = "", done = null) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", END.brokers(), true);
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      let rows = [];
+      if (xhr.status === 200) {
+        try {
+          rows = JSON.parse(xhr.responseText) || [];
+        } catch {
+          rows = [];
         }
       }
-    });
-  }
 
-  return;
-}
-
-
-
-const btnDel = e.target.closest(".btnEliminarCostoOperacion");
-if (btnDel) {
-  const tr = btnDel.closest("tr");
-  if (!tr) return;
-
-  // 🔒 Nuevo: bloquear si es Transporte (id 23)
-  const tipoId = parseInt(tr.dataset.tipoId || "0", 10);
-  if (tipoId === 23) {
-    if (window.Swal) {
-      Swal.fire({
-        icon: "info",
-        title: "No permitido",
-        text: "Los costos de tipo Transporte no pueden eliminarse. Edítalos desde aquí.",
-        confirmButtonText: "Entendido"
-      });
-    } else {
-      alert("Los costos de tipo Transporte no pueden eliminarse. Edítalos desde aquí.");
-    }
-    return; // 🚫 no seguimos con la eliminación
-  }
-
-  const rowId   = parseInt(tr.dataset.rowId || "0", 10) || 0;
-  const fuente  = (tr.dataset.fuente || "F").toUpperCase();
-  const tipoNom = (tr.dataset.tipoNom || tr.querySelector("td:nth-child(2)")?.textContent || "").trim();
-  const moneda  = (tr.dataset.moneda || "").toUpperCase();
-  const monto   = tr.dataset.monto || "";
-
-  // Confirmación
-  const confirmar = () => {
-    // estado UI
-    const oldHtml = btnDel.innerHTML;
-    btnDel.disabled = true;
-    btnDel.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>…';
-
-    desactivarCostoXHR(rowId, fuente, (status, resp) => {
-      btnDel.disabled = false;
-      btnDel.innerHTML = oldHtml;
-
-      const st = String(resp?.status || "").toLowerCase();
-      if (status !== 200) {
-        if (window.Swal) Swal.fire({ icon:"error", title:"Error", text: resp?.message || `HTTP ${status}` });
-        else alert(`Error: ${resp?.message || `HTTP ${status}`}`);
-        return;
+      // filtro superior
+      if (selBrokerFiltro) {
+        let html = `<option value="">Broker: Todos</option>`;
+        rows.forEach((b) => {
+          html += `<option value="${b.id_broker}">${safe(b.nombre)}</option>`;
+        });
+        selBrokerFiltro.innerHTML = html;
+        if (selectedFiltro !== null && selectedFiltro !== undefined) {
+          selBrokerFiltro.value = String(selectedFiltro);
+        }
       }
 
-      if (st === "success") {
-        if (window.Swal) Swal.fire({ icon:"success", title:"Desactivado", text:"El costo fue desactivado." });
-        // Refrescar listado para ocultarlo (solo_activos = 1)
-        if (typeof window.listarCostosOperacion === "function") window.listarCostosOperacion(1);
-      } else if (st === "warning") {
-        if (window.Swal) Swal.fire({ icon:"warning", title:"Aviso", text: resp?.message || "No se pudo desactivar." });
-        else alert(resp?.message || "No se pudo desactivar.");
-      } else {
-        if (window.Swal) Swal.fire({ icon:"error", title:"Error", text: resp?.message || "No se desactivó." });
-        else alert(resp?.message || "No se desactivó.");
+      // modal
+      if (selBrokerModal) {
+        let html = `<option value="">Seleccione un broker</option>`;
+        rows.forEach((b) => {
+          html += `<option value="${b.id_broker}">${safe(b.nombre)}</option>`;
+        });
+        selBrokerModal.innerHTML = html;
+        if (selectedModal !== null && selectedModal !== undefined) {
+          selBrokerModal.value = String(selectedModal);
+        }
       }
-    });
-  };
 
-  // Diálogo con detalle
-  if (window.Swal) {
-    Swal.fire({
-          title: '¿Eliminar costo?',
-    text: 'Esta acción no se puede deshacer',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-    }).then(res => { if (res.isConfirmed) confirmar(); });
-  } else {
-    if (confirm("¿Desactivar este costo?")) confirmar();
+      if (typeof done === "function") done(rows);
+    };
+
+    xhr.send();
   }
-
-  return;
-}
-
-  });
-
-  // ---------------------- Utilidades tarjetas (reusadas) ----------------------
-  function setBadgeValueSimple(id, val, fmt) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = fmt(val);
-    el.classList.remove('bg-light','text-dark','bg-danger','bg-success','bg-secondary');
-    if (val > 0) el.classList.add('bg-success');
-    else if (val < 0) el.classList.add('bg-danger');
-    else el.classList.add('bg-secondary');
-  }
-
-  function renderCostosAbonosCardsSoloOperacion({ opCost = 0, opAbono = 0, fmt } = {}) {
-    const opBalance = (opAbono - opCost);
-
-    // Operación
-    const elTotOp = document.getElementById('costosOperacionTotalOperacion');
-    const elAbOp  = document.getElementById('costosOperacionAbonosOperacion');
-    if (elTotOp) elTotOp.textContent = fmt(opCost);
-    if (elAbOp)  elAbOp.textContent  = fmt(opAbono);
-    setBadgeValueSimple('costosOperacionBalanceOperacion', opBalance, fmt);
-
-    // General = SOLO operación
-    const totalAbonos  = opAbono;
-    const totalCostos  = opCost;
-    const totalBalance = totalAbonos - totalCostos;
-
-    const elGen     = document.getElementById('costosOperacionTotalGeneral');
-    const elGenAb   = document.getElementById('costosOperacionTotalAbonosGeneral');
-    const elGenCost = document.getElementById('costosOperacionTotalCostosGeneral');
-    if (elGen)     elGen.textContent     = fmt(totalBalance);
-    if (elGenAb)   elGenAb.textContent   = fmt(totalAbonos);
-    if (elGenCost) elGenCost.textContent = fmt(totalCostos);
-  }
-
-  // ---------------------- Exportación (opcional, solo lectura) ----------------------
-  document.getElementById('btnExportarExcelCostosOperacion')?.addEventListener('click', () => {
-    const tag = (window.fuenteSel === 'MF') ? 'MF' : 'FO';
-    ExportarTablas.exportar({
-      ref: 'tablaCostosOperacionExportar',
-      formato: 'xlsx',
-      nombre: `CostosOperacion_${tag}.xlsx`,
-      columnasOcultas: [5],
-      soloVisibles: true,
-      sheetName: `Costos ${tag}`
-    });
-  });
-
-  document.getElementById('btnExportarPDFCostosOperacion')?.addEventListener('click', () => {
-    const tag = (window.fuenteSel === 'MF') ? 'MF' : 'FO';
-    ExportarTablas.exportar({
-      ref: '#tablaCostosOperacionExportar',
-      formato: 'pdf',
-      nombre: `CostosOperacion_${tag}.pdf`,
-      titulo: `Costos Operación ${tag}`,
-      orientacion: 'landscape',
-      formatoPagina: 'letter',
-      columnasOcultas: [5],
-      soloVisibles: true
-    });
-  });
-
 })();

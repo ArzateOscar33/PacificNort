@@ -1,6 +1,8 @@
 const tabla = document.getElementById("tablaTiposEventos");
 const form = document.getElementById("formTipoEvento");
-const modal = new bootstrap.Modal(document.getElementById("modalRegistrarTipoEvento"));
+const modal = new bootstrap.Modal(
+  document.getElementById("modalRegistrarTipoEvento"),
+);
 
 const inputBuscar = document.getElementById("buscarTipoEvento");
 const sugerencias = document.getElementById("sugerenciasTipoEvento");
@@ -44,15 +46,19 @@ function renderTabla(data) {
 }
 
 // Abrir modal (Agregar)
-document.getElementById("btnAgregarTipoEvento")?.addEventListener("click", () => {
-  form.reset();
-  document.getElementById("id_tipo_evento").value = "";
-  document.getElementById("tipo_operacion_id").value = ""; // reset select
-  document.getElementById("modalRegistrarTipoEventoLabel").textContent = "Registrar Tipo de Evento";
-  document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Agregar';
-  feather.replace();
-  modal.show();
-});
+document
+  .getElementById("btnAgregarTipoEvento")
+  ?.addEventListener("click", () => {
+    form.reset();
+    document.getElementById("id_tipo_evento").value = "";
+    document.getElementById("tipo_operacion_id").value = ""; // reset select
+    document.getElementById("modalRegistrarTipoEventoLabel").textContent =
+      "Registrar Tipo de Evento";
+    document.getElementById("btnSubmit").innerHTML =
+      '<i data-feather="check-circle" class="me-1"></i> Agregar';
+    feather.replace();
+    modal.show();
+  });
 
 // Editar (cargar datos)
 function editarTipoEvento(id) {
@@ -64,15 +70,17 @@ function editarTipoEvento(id) {
       const data = JSON.parse(this.responseText);
       document.getElementById("id_tipo_evento").value = data.id_tipo_evento;
       form.nombre.value = data.nombre;
-      document.getElementById("tipo_operacion_id").value = data.id_tipo_operacion ?? "";
-      document.getElementById("modalRegistrarTipoEventoLabel").textContent = "Editar Tipo de Evento";
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      document.getElementById("tipo_operacion_id").value =
+        data.id_tipo_operacion ?? "";
+      document.getElementById("modalRegistrarTipoEventoLabel").textContent =
+        "Editar Tipo de Evento";
+      document.getElementById("btnSubmit").innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
       modal.show();
     }
   };
 }
-
 
 // Submit (Registrar / Actualizar)
 form?.addEventListener("submit", function (e) {
@@ -82,7 +90,7 @@ form?.addEventListener("submit", function (e) {
   http.send(new FormData(form));
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-        console.log(this.responseText);
+      // console.log(this.responseText);
       const res = JSON.parse(this.responseText);
       if (res.status === "success") {
         modal.hide();
@@ -93,8 +101,6 @@ form?.addEventListener("submit", function (e) {
     }
   };
 });
-
- 
 
 // Eliminar
 function eliminarTipoEvento(id) {
@@ -108,7 +114,11 @@ function eliminarTipoEvento(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      http.open("GET", base_url + "Tipos_eventos_logisticos/eliminar/" + id, true);
+      http.open(
+        "GET",
+        base_url + "Tipos_eventos_logisticos/eliminar/" + id,
+        true,
+      );
       http.send();
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
@@ -133,7 +143,13 @@ inputBuscar?.addEventListener("keyup", function () {
     return;
   }
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Tipos_eventos_logisticos/buscar?term=" + encodeURIComponent(term), true);
+  http.open(
+    "GET",
+    base_url +
+      "Tipos_eventos_logisticos/buscar?term=" +
+      encodeURIComponent(term),
+    true,
+  );
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {

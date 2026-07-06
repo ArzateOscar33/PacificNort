@@ -32,7 +32,15 @@
   const emptyBox = document.getElementById("pf_empty");
   const metaBox = document.getElementById("pf_meta");
 
-  if (!modalEl || !pfTbody || !inputFacturaHidden || !btnGuardar || !btnAgregarLinea || !tpl) return;
+  if (
+    !modalEl ||
+    !pfTbody ||
+    !inputFacturaHidden ||
+    !btnGuardar ||
+    !btnAgregarLinea ||
+    !tpl
+  )
+    return;
 
   // ==========================
   // HELPERS
@@ -70,15 +78,18 @@
     alert(title + "\n" + text);
   }
 
+  // ✅ DESPUÉS
   function closeModal() {
     try {
-      const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      const inst =
+        bootstrap.Modal.getInstance(modalEl) ||
+        bootstrap.Modal.getOrCreateInstance(modalEl);
+
       inst.hide();
-    } catch (_) {
-      modalEl.classList.remove("show");
+    } catch (e) {
+      console.error("Error al cerrar modalProductosFactura:", e);
     }
   }
-
   function xhrPostForm(url, formData) {
     return new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
@@ -88,12 +99,19 @@
         if (xhr.readyState !== 4) return;
 
         let res = null;
-        try { res = JSON.parse(xhr.responseText); } catch (_) {}
+        try {
+          res = JSON.parse(xhr.responseText);
+        } catch (_) {}
 
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve({ okHttp: true, res, raw: xhr.responseText });
         } else {
-          resolve({ okHttp: false, res, raw: xhr.responseText, status: xhr.status });
+          resolve({
+            okHttp: false,
+            res,
+            raw: xhr.responseText,
+            status: xhr.status,
+          });
         }
       };
 
@@ -102,7 +120,9 @@
   }
 
   function featherRefresh() {
-    try { if (window.feather) feather.replace(); } catch (_) {}
+    try {
+      if (window.feather) feather.replace();
+    } catch (_) {}
   }
 
   function updateMetaUI() {
@@ -140,21 +160,27 @@
 
     // Prefill (opcional)
     tr.querySelector(".pf_descripcion").value = toStr(prefill.descripcion);
+    tr.querySelector(".pf_item").value = toStr(prefill.item);
     tr.querySelector(".pf_upc").value = toStr(prefill.upc);
     tr.querySelector(".pf_marca").value = toStr(prefill.marca);
     tr.querySelector(".pf_expiracion").value = toStr(prefill.expiracion);
     tr.querySelector(".pf_inner").value = toStr(prefill.inner_pack);
     tr.querySelector(".pf_case").value = toStr(prefill.case_pack);
-    tr.querySelector(".pf_pallets_rcv").value = toStr(prefill.pallets_rcv ?? 0);
-    tr.querySelector(".pf_cajas").value = toStr(prefill.cajas ?? 0);
-    tr.querySelector(".pf_piezas").value = toStr(prefill.piezas ?? 0);
+    tr.querySelector(".pf_pallets_rcv").value = toStr(
+      prefill.pallets_rcv ?? "",
+    );
+    tr.querySelector(".pf_cajas").value = toStr(prefill.cajas ?? "");
+    tr.querySelector(".pf_piezas").value = toStr(prefill.piezas ?? "");
+    tr.querySelector(".pf_observaciones").value = toStr(prefill.observaciones);
 
     return tr;
   }
 
   function isEditingRow(tr) {
     // Si tiene inputs pf_* en la fila, la consideramos editable (draft o convertida)
-    return !!tr.querySelector(".pf_descripcion, .pf_upc, .pf_marca, .pf_expiracion, .pf_inner, .pf_case, .pf_pallets_rcv, .pf_cajas, .pf_piezas");
+    return !!tr.querySelector(
+      ".pf_descripcion,.pf_item, .pf_upc, .pf_marca, .pf_expiracion, .pf_inner, .pf_case, .pf_pallets_rcv, .pf_cajas, .pf_piezas , .pf_observaciones",
+    );
   }
 
   function readRowFromInputs(tr) {
@@ -162,6 +188,7 @@
     const upc = toStr(tr.querySelector(".pf_upc")?.value);
     const marca = toStr(tr.querySelector(".pf_marca")?.value);
     const expiracion = toStr(tr.querySelector(".pf_expiracion")?.value); // YYYY-MM-DD o ""
+    const item = toStr(tr.querySelector(".pf_item")?.value);
 
     const inner_pack = toStr(tr.querySelector(".pf_inner")?.value);
     const case_pack = toStr(tr.querySelector(".pf_case")?.value);
@@ -169,6 +196,7 @@
     const pallets_rcv = toInt(tr.querySelector(".pf_pallets_rcv")?.value);
     const cajas = toInt(tr.querySelector(".pf_cajas")?.value);
     const piezas = toInt(tr.querySelector(".pf_piezas")?.value);
+    const observaciones = toStr(tr.querySelector(".pf_observaciones")?.value);
 
     return {
       descripcion,
@@ -180,15 +208,30 @@
       pallets_rcv,
       cajas,
       piezas,
+      item,
+      observaciones,
     };
   }
+  function syncDraftCajasRestantes(tr) {
+    if (!tr) return;
+    if (tr.dataset.state !== "draft") return;
 
+    const inpCajas = tr.querySelector(".pf_cajas");
+    const inpRestantes = tr.querySelector(".pf_cajas_restantes");
+    if (!inpCajas || !inpRestantes) return;
+
+    const cajas = toInt(inpCajas.value);
+    inpRestantes.value = String(cajas);
+  }
   function validarRow(row) {
-    if (!row.descripcion || !row.upc || !row.marca) {
-      return "Descripción, UPC y Marca son obligatorios.";
+    if (!row.descripcion || !row.upc || !row.marca || !row.item) {
+      return "Descripción, UPC, Marca e Item son obligatorios.";
     }
     if (row.pallets_rcv < 0 || row.cajas < 0 || row.piezas < 0) {
       return "Valores numéricos inválidos (no negativos).";
+    }
+    if (row.observaciones.length > 500) {
+      return "Las observaciones no pueden exceder 500 caracteres.";
     }
     // expiración opcional (input date ya valida)
     return "";
@@ -220,11 +263,17 @@
   }
 
   function ensureActionsButtons(tr) {
-    const tdActions = tr.querySelector("td[data-pf-actions]") || tr.querySelector("td:last-child");
+    const tdActions =
+      tr.querySelector("td[data-pf-actions]") ||
+      tr.querySelector("td:last-child");
     if (!tdActions) return;
 
     // Si ya tiene botones de guardar/cancelar, no duplicar
-    if (tdActions.querySelector(".pf_btnGuardarFila") && tdActions.querySelector(".pf_btnCancelarEdicion")) return;
+    if (
+      tdActions.querySelector(".pf_btnGuardarFila") &&
+      tdActions.querySelector(".pf_btnCancelarEdicion")
+    )
+      return;
 
     tdActions.innerHTML = `
       <div class="btn-group btn-group-sm" role="group">
@@ -273,6 +322,7 @@
     // Intentar leer texto desde clases esperadas del catálogo.
     // Si no existen, caerá en "" y tendrás que ajustar tu catálogo.
     const descripcion = getCellText(tr, ".pf_txt_descripcion");
+    const item = getCellText(tr, ".pf_txt_item");
     const upc = getCellText(tr, ".pf_txt_upc");
     const marca = getCellText(tr, ".pf_txt_marca");
     const expiracion = getCellText(tr, ".pf_txt_expiracion"); // ideal "YYYY-MM-DD"
@@ -281,33 +331,54 @@
     const pallets_rcv = getCellText(tr, ".pf_txt_pallets_rcv");
     const cajas = getCellText(tr, ".pf_txt_cajas");
     const piezas = getCellText(tr, ".pf_txt_piezas");
+    const observaciones = getCellText(tr, ".pf_txt_observaciones");
 
     const tds = Array.from(tr.children);
 
     // Estructura de tu tabla:
-    // 0 desc,1 upc,2 marca,3 expiración,4 inner,5 case,6 pallets,7 cajas,8 piezas,9 acciones
-    if (tds.length < 10) return;
+    // 0 desc,1 item,2 upc,3 marca,4 expiración,5 inner,6 case,7 pallets,8 cajas,9 piezas,10 observaciones,11 acciones
+    if (tds.length < 12) return;
 
-    replaceCellWithInput(tds[0], "text", "pf_descripcion", descripcion, "Descripción");
-    replaceCellWithInput(tds[1], "text", "pf_upc", upc, "UPC");
-    replaceCellWithInput(tds[2], "text", "pf_marca", marca, "Marca");
-    replaceCellWithInput(tds[3], "date", "pf_expiracion", expiracion, "");
-    replaceCellWithInput(tds[4], "text", "pf_inner", inner_pack, "Opcional");
-    replaceCellWithInput(tds[5], "text", "pf_case", case_pack, "Opcional");
+    replaceCellWithInput(
+      tds[0],
+      "text",
+      "pf_descripcion",
+      descripcion,
+      "Descripción",
+    );
+    replaceCellWithInput(tds[1], "text", "pf_item", item, "Item");
+    replaceCellWithInput(tds[2], "text", "pf_upc", upc, "UPC");
+    replaceCellWithInput(tds[3], "text", "pf_marca", marca, "Marca");
+    replaceCellWithInput(tds[4], "date", "pf_expiracion", expiracion, "");
+    replaceCellWithInput(tds[5], "text", "pf_inner", inner_pack, "Opcional");
+    replaceCellWithInput(tds[6], "text", "pf_case", case_pack, "Opcional");
 
     // Numéricos
-    replaceCellWithInput(tds[6], "number", "pf_pallets_rcv", pallets_rcv || "0", "0");
-    tds[6].querySelector("input").min = "0"; tds[6].querySelector("input").step = "1";
+    replaceCellWithInput(
+      tds[7],
+      "number",
+      "pf_pallets_rcv",
+      pallets_rcv || "0",
+      "0",
+    );
+    tds[7].querySelector("input").min = "0";
+    tds[7].querySelector("input").step = "1";
 
-    replaceCellWithInput(tds[7], "number", "pf_cajas", cajas || "0", "0");
-    tds[7].querySelector("input").min = "0"; tds[7].querySelector("input").step = "1";
+    replaceCellWithInput(tds[8], "number", "pf_cajas", cajas || "0", "0");
+    tds[8].querySelector("input").min = "0";
+    tds[8].querySelector("input").step = "1";
 
-    replaceCellWithInput(tds[8], "number", "pf_piezas", piezas || "0", "0");
-    tds[8].querySelector("input").min = "0"; tds[8].querySelector("input").step = "1";
+    replaceCellWithInput(tds[9], "number", "pf_piezas", piezas || "0", "0");
+    tds[9].querySelector("input").min = "0";
+    tds[9].querySelector("input").step = "1";
+
+    tds[10].innerHTML = `
+  <textarea class="form-control form-control-sm pf_observaciones" rows="2" placeholder="Observaciones">${observaciones}</textarea>
+`;
 
     // Botones guardar/cancelar para la fila
     // Marcamos el td acciones para encontrarlo fácil (si no existía)
-    tds[9].setAttribute("data-pf-actions", "1");
+    tds[11].setAttribute("data-pf-actions", "1");
     ensureActionsButtons(tr);
 
     // Marcar dirty
@@ -353,6 +424,7 @@
 
       const item = {
         descripcion: data.descripcion,
+        item: data.item,
         upc: data.upc,
         marca: data.marca,
         expiracion: data.expiracion || null,
@@ -361,6 +433,7 @@
         pallets_rcv: data.pallets_rcv,
         cajas: data.cajas,
         piezas: data.piezas,
+        observaciones: data.observaciones,
       };
 
       if (state === "dirty") item.id_producto = idProducto; // UPDATE
@@ -370,7 +443,10 @@
     }
 
     if (items.length === 0) {
-      return { ok: false, msg: "No hay cambios para guardar (no hay filas nuevas ni editadas)." };
+      return {
+        ok: false,
+        msg: "No hay cambios para guardar (no hay filas nuevas ni editadas).",
+      };
     }
 
     return { ok: true, items };
@@ -384,7 +460,10 @@
 
     const facturaId = getFacturaId();
     if (facturaId <= 0) {
-      await swalError("Factura inválida", "No se encontró un ID de factura válido.");
+      await swalError(
+        "Factura inválida",
+        "No se encontró un ID de factura válido.",
+      );
       return;
     }
 
@@ -406,27 +485,45 @@
     setBtnLoading(false);
 
     if (!resp.okHttp || !resp.res) {
-      await swalError("Error", "No se pudo guardar (respuesta inválida del servidor).");
+      await swalError(
+        "Error",
+        "No se pudo guardar (respuesta inválida del servidor).",
+      );
       return;
     }
 
     if (resp.res.ok !== true) {
-      await swalError("Error al guardar", String(resp.res.msg || "No se pudo guardar."));
+      await swalError(
+        "Error al guardar",
+        String(resp.res.msg || "No se pudo guardar."),
+      );
       return;
     }
 
+    // ✅ ASÍ debe quedar el final de guardarCambiosBatch()
     const ins = toInt(resp.res.insertados);
     const upd = toInt(resp.res.actualizados);
 
-    await swalSuccess("Guardado", `Cambios aplicados. Insertados: ${ins}, Actualizados: ${upd}.`);
+    // 1. Primero cerrar el modal (limpieza inmediata)
+    closeModal();
 
-    // Notificar a tu catálogo que recargue productos
-    document.dispatchEvent(new CustomEvent(EVT_REFRESH, { detail: { facturaId } }));
-
-    // Opcional: refrescar facturas (para actualizar #productos)
+    // 2. Luego disparar eventos de recarga
+    document.dispatchEvent(
+      new CustomEvent(EVT_REFRESH, { detail: { facturaId } }),
+    );
     if (window.opPartidaListarFacturas) window.opPartidaListarFacturas();
 
-    closeModal();
+    // 3. Al final mostrar Swal (ya sin modal abierto)
+    setTimeout(function () {
+      swalSuccess(
+        "Guardado",
+        "Cambios aplicados. Insertados: " +
+          ins +
+          ", Actualizados: " +
+          upd +
+          ".",
+      );
+    }, 350);
   }
 
   // ==========================
@@ -434,11 +531,28 @@
   // ==========================
 
   // Agregar fila draft
-  btnAgregarLinea.addEventListener("click", function () {
+  btnAgregarLinea.addEventListener("click", async function () {
     const facturaId = getFacturaId();
     if (facturaId <= 0) {
-      swalError("Factura inválida", "Abre la factura primero (no hay factura_id en el modal).");
+      swalError("Factura inválida", "Abre la factura primero.");
       return;
+    }
+
+    // ← NUEVO: alerta si es "Envío sin Revisión"
+    if (window.opPartidaEsEnvioSinRevision) {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Factura sin revisión",
+        html: `Esta factura tiene estatus <strong>"Envío sin Revisión"</strong>.<br>
+             Los productos se registrarán como <strong>cantidad dummy (1)</strong> 
+             ya que no se revisó el contenido real.`,
+        showCancelButton: true,
+        confirmButtonText: "Entendido, agregar igual",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#ffc107",
+        cancelButtonColor: "#6c757d",
+      });
+      if (!result.isConfirmed) return;
     }
 
     const tr = createDraftRow();
@@ -446,7 +560,15 @@
     featherRefresh();
     updateMetaUI();
   });
+  pfTbody.addEventListener("input", function (ev) {
+    const el = ev.target;
+    if (!el) return;
 
+    if (el.classList.contains("pf_cajas")) {
+      const tr = el.closest("tr");
+      syncDraftCajasRestantes(tr);
+    }
+  });
   // Guardar batch
   btnGuardar.addEventListener("click", function () {
     guardarCambiosBatch();
@@ -468,7 +590,10 @@
         return;
       }
       // Si quisieras baja lógica de producto, aquí iría OTRO endpoint.
-      swalInfo("Acción no disponible", "La eliminación de productos existentes aún no está implementada (solo filas nuevas).");
+      swalInfo(
+        "Acción no disponible",
+        "La eliminación de productos existentes aún no está implementada (solo filas nuevas).",
+      );
       return;
     }
 
@@ -491,9 +616,21 @@
       return;
     }
   });
-
+  // ✅ Solo dejar esto
+  modalEl.addEventListener("shown.bs.modal", function () {
+    updateMetaUI();
+  });
+  /*
   // Cuando se abre/cierra modal, actualizar meta UI
   modalEl.addEventListener("shown.bs.modal", function () {
     updateMetaUI();
   });
+  modalEl.addEventListener("hidden.bs.modal", function () {
+    if (!document.querySelector(".modal.show")) {
+      document.body.classList.remove("modal-open");
+      document.body.style.removeProperty("overflow");
+      document.body.style.removeProperty("padding-right");
+      document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+    }
+  });*/
 })();

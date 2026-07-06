@@ -67,15 +67,15 @@
                 <h6 class="fw-semibold mb-2">Números de guía</h6>
                 <div class="list-group small" id="listaGuias">
                   <button type="button"
-                          class="list-group-item list-group-item-action active js-chip-guia">
+                    class="list-group-item list-group-item-action active js-chip-guia">
                     JMX000865070272
                   </button>
                   <button type="button"
-                          class="list-group-item list-group-item-action js-chip-guia">
+                    class="list-group-item list-group-item-action js-chip-guia">
                     JMX000865070273
                   </button>
                   <button type="button"
-                          class="list-group-item list-group-item-action js-chip-guia">
+                    class="list-group-item list-group-item-action js-chip-guia">
                     JMX000865070274
                   </button>
                 </div>
@@ -150,28 +150,28 @@
 </section>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const chips = document.querySelectorAll('.js-chip-guia');
-  const labelGuia = document.getElementById('labelGuiaActual');
-  const inputGuia = document.getElementById('inputGuia');
-  const btnRastrear = document.getElementById('btnRastrear');
+  document.addEventListener('DOMContentLoaded', function() {
+    const chips = document.querySelectorAll('.js-chip-guia');
+    const labelGuia = document.getElementById('labelGuiaActual');
+    const inputGuia = document.getElementById('inputGuia');
+    const btnRastrear = document.getElementById('btnRastrear');
 
-  chips.forEach(chip => {
-    chip.addEventListener('click', function () {
-      chips.forEach(c => c.classList.remove('active'));
-      this.classList.add('active');
+    chips.forEach(chip => {
+      chip.addEventListener('click', function() {
+        chips.forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
 
-      const guiaNum = this.textContent.trim();
-      labelGuia.innerHTML = `<i class="bi bi-tag me-1"></i>${guiaNum}`;
+        const guiaNum = this.textContent.trim();
+        labelGuia.innerHTML = `<i class="bi bi-tag me-1"></i>${guiaNum}`;
+      });
+    });
+
+    btnRastrear.addEventListener('click', function() {
+      const guia = inputGuia.value.trim();
+      if (guia) {
+        //console.log('Rastrear:', guia);
+        // lógica real aquí
+      }
     });
   });
-
-  btnRastrear.addEventListener('click', function () {
-    const guia = inputGuia.value.trim();
-    if (guia) {
-      console.log('Rastrear:', guia);
-      // lógica real aquí
-    }
-  });
-});
 </script>

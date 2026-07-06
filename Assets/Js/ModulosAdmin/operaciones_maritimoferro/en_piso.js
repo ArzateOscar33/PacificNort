@@ -1,4 +1,4 @@
- // assets/js/modulosAdmin/operaciones_maritimoferro/en_piso.js
+// assets/js/modulosAdmin/operaciones_maritimoferro/en_piso.js
 
 (function () {
   "use strict";
@@ -105,8 +105,6 @@
         listar();
       });
     }
-
- 
   });
 
   // ===== Helper: construir querystring =====
@@ -153,7 +151,9 @@
       }
 
       if (!res || res.ok !== true) {
-        renderError(res && res.msg ? res.msg : "No fue posible cargar la información.");
+        renderError(
+          res && res.msg ? res.msg : "No fue posible cargar la información.",
+        );
         return;
       }
 
@@ -195,9 +195,9 @@
 
   function renderBadges(b) {
     // badges: { total, tj, sd }
-    const total = (b && typeof b.total === "number") ? b.total : 0;
-    const tj = (b && typeof b.tj === "number") ? b.tj : 0;
-    const sd = (b && typeof b.sd === "number") ? b.sd : 0;
+    const total = b && typeof b.total === "number" ? b.total : 0;
+    const tj = b && typeof b.tj === "number" ? b.tj : 0;
+    const sd = b && typeof b.sd === "number" ? b.sd : 0;
 
     if (badgeTotal) badgeTotal.textContent = String(total);
     if (badgeTJ) badgeTJ.textContent = String(tj);
@@ -230,12 +230,12 @@
       const bodegaBadge = badgeBodegaHtml(bodega);
       const totalBadge = `<span class="badge bg-primary text-white">${bTot}</span>`;
       const restantesBadge = badgeRestantesHtml(bRes, bTot);
-      const num_operacion=r.numero_operacion || '';
+      const num_operacion = r.numero_operacion || "";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${bodegaBadge}</td>
-        <td><span class="fw-semibold">${num_operacion || ''}</span></td>
+        <td><span class="fw-semibold">${num_operacion || ""}</span></td>
         <td>${escapeHtml(cliente)}</td>
         <td><span class="fw-semibold">${escapeHtml(contenedor)}</span></td>
         <td>${totalBadge}</td>
@@ -314,10 +314,10 @@
   // ===== Helpers badges =====
   function badgeBodegaHtml(bodega) {
     const name = (bodega || "").toString().trim();
-    if (name === "BODEGA TJ") {
+    if (name === "BODEGA MX") {
       return `<span class="badge bg-success text-white">${escapeHtml(name)}</span>`;
     }
-    if (name === "BODEGA SD") {
+    if (name === "BODEGA USA") {
       return `<span class="badge bg-primary text-white">${escapeHtml(name)}</span>`;
     }
     return `<span class="badge bg-light text-dark border">${escapeHtml(name || "—")}</span>`;
@@ -338,8 +338,10 @@
     if (r >= t) return `<span class="badge bg-warning text-dark">${r}</span>`;
 
     const ratio = r / t;
-    if (ratio <= 0.10) return `<span class="badge bg-danger text-white">${r}</span>`;
-    if (ratio <= 0.40) return `<span class="badge bg-warning text-dark">${r}</span>`;
+    if (ratio <= 0.1)
+      return `<span class="badge bg-danger text-white">${r}</span>`;
+    if (ratio <= 0.4)
+      return `<span class="badge bg-warning text-dark">${r}</span>`;
     return `<span class="badge bg-primary text-white">${r}</span>`;
   }
 
@@ -362,27 +364,30 @@
 // ===============================
 // Exportaciones
 // ===============================
-document.getElementById("mercanciaPisoBtnExcel")?.addEventListener("click", () => {
-  ExportarTablas.exportar({
-    ref: "mercanciaPisoTabla",
-    formato: "xlsx",
-    nombre: "MercanciaEnBodegas.xlsx",
-    columnasOcultas: [],
-    soloVisibles: true,
-    sheetName: "Mercancia en Bodegas",
+document
+  .getElementById("mercanciaPisoBtnExcel")
+  ?.addEventListener("click", () => {
+    ExportarTablas.exportar({
+      ref: "mercanciaPisoTabla",
+      formato: "xlsx",
+      nombre: "MercanciaEnBodegas.xlsx",
+      columnasOcultas: [],
+      soloVisibles: true,
+      sheetName: "Mercancia en Bodegas",
+    });
   });
-});
 
-document.getElementById("mercanciaPisoBtnPdf")?.addEventListener("click", () => {
-  ExportarTablas.exportar({
-    ref: "#mercanciaPisoTabla",
-    formato: "pdf",
-    nombre: "MercanciaEnBodegas.pdf",
-    titulo: "Mercancia en Bodegas",
-    orientacion: "landscape",
-    formatoPagina: "letter",
-    columnasOcultas: [],
-    soloVisibles: true,
+document
+  .getElementById("mercanciaPisoBtnPdf")
+  ?.addEventListener("click", () => {
+    ExportarTablas.exportar({
+      ref: "#mercanciaPisoTabla",
+      formato: "pdf",
+      nombre: "MercanciaEnBodegas.pdf",
+      titulo: "Mercancia en Bodegas",
+      orientacion: "landscape",
+      formatoPagina: "letter",
+      columnasOcultas: [],
+      soloVisibles: true,
+    });
   });
-});
- 

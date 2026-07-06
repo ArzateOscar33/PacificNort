@@ -7,6 +7,7 @@ require_once "Models/OperacionesLogModel.php";
 
 class Operaciones_maritimas extends Controller
 {
+    /*    
     private $contenedoresModel; 
     private $costos_OperacionModel;
     private $eventosModel; 
@@ -318,7 +319,7 @@ public function listar()
             $nuevoEst  = (int)$payload['estatus_id'];
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
             $warning = null;
-            if ($nuevoEst === 7 /* id Finalizada */) {
+            if ($nuevoEst === 7  ) {
                 $hayEntrega = $this->eventosModel->existeEventoEntregaOperacion($opId);
                 if (!$hayEntrega) {
                     $warning = 'La operación fue marcada como FINALIZADA pero no existe evento de ENTREGA. Captúralo para cerrar correctamente.';
@@ -377,4 +378,5 @@ public function listar()
         echo json_encode($prev ?: []);
         die();
     }
+        */
 }

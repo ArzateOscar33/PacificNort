@@ -6,36 +6,21 @@ class Operaciones_por_partidaModel extends Query
         parent::__construct();
     }
 
-    /**
-     * Lista facturas con filtros y paginación.
-     *
-     * @param array $filters [
-     *   'bodega_id' => (int|string) 0|''|id,
-     *   'term'      => (string) búsqueda por numero_factura o proveedor,
-     *   'fi'        => (string) YYYY-MM-DD fecha inicio,
-     *   'ff'        => (string) YYYY-MM-DD fecha fin,
-     *   'page'      => (int) 1..n,
-     *   'per_page'  => (int) 10/25/50/100
-     * ]
-     *
-     * @return array [
-     *   'rows' => [...],
-     *   'total' => (int)
-     * ]
-     */
+
     public function listarFacturas(array $filters = []): array
     {
         $page     = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
         $perPage  = isset($filters['per_page']) ? max(1, (int)$filters['per_page']) : 10;
         $offset   = ($page - 1) * $perPage;
 
-        $bodegaId = isset($filters['bodega_id']) ? trim((string)$filters['bodega_id']) : '';
-        $term     = isset($filters['term']) ? trim((string)$filters['term']) : '';
-        $fi       = isset($filters['fi']) ? trim((string)$filters['fi']) : '';
-        $ff       = isset($filters['ff']) ? trim((string)$filters['ff']) : '';
+        $bodegaId  = isset($filters['bodega_id']) ? trim((string)$filters['bodega_id']) : '';
+        $clienteId = isset($filters['cliente_id']) ? trim((string)$filters['cliente_id']) : '';
+        $term      = isset($filters['term']) ? trim((string)$filters['term']) : '';
+        $fi        = isset($filters['fi']) ? trim((string)$filters['fi']) : '';
+        $ff        = isset($filters['ff']) ? trim((string)$filters['ff']) : '';
 
         // ===== WHERE dinámico =====
-        $where = " WHERE f.estatus = 1 ";
+        $where  = " WHERE f.estatus = 1 ";
         $params = [];
 
         if ($bodegaId !== '' && $bodegaId !== '0') {
@@ -43,9 +28,19 @@ class Operaciones_por_partidaModel extends Query
             $params[] = (int)$bodegaId;
         }
 
+        if ($clienteId !== '' && $clienteId !== '0') {
+            $where .= " AND f.cliente_id = ? ";
+            $params[] = (int)$clienteId;
+        }
+
         if ($term !== '') {
-            $where .= " AND (f.numero_factura LIKE ? OR f.proveedor LIKE ?) ";
+            $where .= " AND (
+            f.numero_factura LIKE ?
+            OR f.proveedor LIKE ?
+            OR c.nombre LIKE ?
+        ) ";
             $like = '%' . $term . '%';
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
         }
@@ -62,41 +57,99 @@ class Operaciones_por_partidaModel extends Query
 
         // ===== Total =====
         $sqlTotal = "SELECT COUNT(*) AS total
-                     FROM op_partida_facturas f
-                     $where";
+                 FROM op_partida_facturas f
+                 LEFT JOIN clientes c
+                    ON c.id_cliente = f.cliente_id
+                 $where";
+
         $rowTotal = $this->select($sqlTotal, $params);
         $total = $rowTotal ? (int)$rowTotal['total'] : 0;
 
         // ===== Rows =====
-        // Ajusta "b.bodega" si tu columna de nombre real es distinta (p.ej. b.nombre)
-       $sqlRows = "SELECT
-        f.id_factura,
-        f.numero_factura,
-        f.proveedor,
-        f.revision_pasa,
-        f.pallets_inv,
-        f.fecha_recibido,
-        f.notas,
-        f.bodega_id,
-        b.nombre AS bodega_nombre,
-        (
-        SELECT COUNT(*)
-        FROM op_partida_productos p
-        WHERE p.factura_id = f.id_factura
-            AND p.estatus = 1
-        ) AS productos_count
-        FROM op_partida_facturas f
-        LEFT JOIN bodegas b
-            ON b.id_bodega = f.bodega_id
-        AND b.estatus = 1
-        $where
-        ORDER BY f.id_factura DESC
-        LIMIT $perPage OFFSET $offset";
+        $sqlRows = "SELECT
+                    f.id_factura,
+                    f.numero_factura,
+                    f.proveedor,
+                    f.revision_estatus,
+                    f.pallets_inv,
+                    f.fecha_recibido,
+                    f.notas,
+                    f.bodega_id,
+                    b.nombre AS bodega_nombre,
+                    f.cliente_id,
+                    c.nombre AS cliente_nombre,
 
+                    -- cuántos productos tiene la factura
+                    (
+                        SELECT COUNT(*)
+                        FROM op_partida_productos p
+                        WHERE p.factura_id = f.id_factura
+                          AND p.estatus = 1
+                    ) AS productos_count,
 
+                    -- cajas totales de la factura
+                    (
+                        SELECT COALESCE(SUM(p.cajas), 0)
+                        FROM op_partida_productos p
+                        WHERE p.factura_id = f.id_factura
+                          AND p.estatus = 1
+                    ) AS cajas_totales,
+
+                    -- cajas ya enviadas de la factura
+                    (
+                        SELECT COALESCE(SUM(d.cajas_enviadas), 0)
+                        FROM operaciones_partida_envio_detalle d
+                        INNER JOIN operaciones_partida_envios e
+                            ON e.id_envio = d.envio_id
+                        WHERE d.factura_id = f.id_factura
+                          AND d.estatus = 1
+                          AND e.estatus = 1
+                    ) AS cajas_enviadas,
+
+                    -- cajas restantes
+                    (
+                        (
+                            SELECT COALESCE(SUM(p.cajas), 0)
+                            FROM op_partida_productos p
+                            WHERE p.factura_id = f.id_factura
+                              AND p.estatus = 1
+                        )
+                        -
+                        (
+                            SELECT COALESCE(SUM(d.cajas_enviadas), 0)
+                            FROM operaciones_partida_envio_detalle d
+                            INNER JOIN operaciones_partida_envios e
+                                ON e.id_envio = d.envio_id
+                            WHERE d.factura_id = f.id_factura
+                              AND d.estatus = 1
+                              AND e.estatus = 1
+                        )
+                    ) AS cajas_restantes
+
+                FROM op_partida_facturas f
+                LEFT JOIN bodegas b
+                    ON b.id_bodega = f.bodega_id
+                   AND b.estatus = 1
+                LEFT JOIN clientes c
+                    ON c.id_cliente = f.cliente_id
+                   AND c.estatus = 1
+                $where
+                ORDER BY f.id_factura DESC
+                LIMIT $perPage OFFSET $offset";
 
         $rows = $this->selectAll($sqlRows, $params);
-        if ($rows === false) $rows = [];
+        if ($rows === false) {
+            $rows = [];
+        }
+
+        // Normalizar negativos por seguridad
+        foreach ($rows as &$row) {
+            $row['productos_count']  = (int)($row['productos_count'] ?? 0);
+            $row['cajas_totales']    = (int)($row['cajas_totales'] ?? 0);
+            $row['cajas_enviadas']   = (int)($row['cajas_enviadas'] ?? 0);
+            $row['cajas_restantes']  = max(0, (int)($row['cajas_restantes'] ?? 0));
+        }
+        unset($row);
 
         return [
             'rows'  => $rows,
@@ -105,7 +158,7 @@ class Operaciones_por_partidaModel extends Query
     }
 
     /**
-      * Traer una factura por ID (para modal editar/ver).
+     * Traer una factura por ID (para modal editar/ver).
      */
     public function getFacturaById(int $idFactura)
     {
@@ -155,55 +208,106 @@ class Operaciones_por_partidaModel extends Query
 
         // ===== Totales para badges del modal =====
         $sqlSums = "SELECT
-                        COALESCE(SUM(p.cajas), 0)       AS total_cajas,
-                        COALESCE(SUM(p.piezas), 0)      AS total_piezas,
-                        COALESCE(SUM(p.pallets_rcv), 0) AS total_pallets_rcv
-                    FROM op_partida_productos p
-                    $where";
+                COALESCE(SUM(p.cajas), 0) AS total_cajas,
+                COALESCE(SUM(p.piezas), 0) AS total_piezas,
+                COALESCE(SUM(p.pallets_rcv), 0) AS total_pallets_rcv,
+                COALESCE(SUM(COALESCE(pe.cajas_enviadas, 0)), 0) AS total_cajas_enviadas,
+                COALESCE(SUM(
+                    CASE
+                        WHEN (p.cajas - COALESCE(pe.cajas_enviadas, 0)) < 0 THEN 0
+                        ELSE (p.cajas - COALESCE(pe.cajas_enviadas, 0))
+                    END
+                ), 0) AS total_cajas_restantes
+            FROM op_partida_productos p
+            LEFT JOIN (
+                SELECT
+                    d.producto_id,
+                    d.factura_id,
+                    SUM(d.cajas_enviadas) AS cajas_enviadas
+                FROM operaciones_partida_envio_detalle d
+                INNER JOIN operaciones_partida_envios e
+                    ON e.id_envio = d.envio_id
+                WHERE d.estatus = 1
+                  AND e.estatus = 1
+                GROUP BY d.producto_id, d.factura_id
+            ) pe
+                ON pe.producto_id = p.id_producto
+               AND pe.factura_id = p.factura_id
+            $where";
         $rowSums = $this->select($sqlSums, $params);
 
         $totals = [
-        'total_cajas'       => (int)($rowSums['total_cajas'] ?? 0),
-        'total_piezas'      => (int)($rowSums['total_piezas'] ?? 0),
-        'total_pallets_rcv' => (int)($rowSums['total_pallets_rcv'] ?? 0),
+            'total_cajas'           => (int)($rowSums['total_cajas'] ?? 0),
+            'total_piezas'          => (int)($rowSums['total_piezas'] ?? 0),
+            'total_pallets_rcv'     => (int)($rowSums['total_pallets_rcv'] ?? 0),
+            'total_cajas_enviadas'  => (int)($rowSums['total_cajas_enviadas'] ?? 0),
+            'total_cajas_restantes' => (int)($rowSums['total_cajas_restantes'] ?? 0),
         ];
 
 
-            // ===== Rows =====
-            $sqlRows = "SELECT
-                            p.id_producto,
-                            p.factura_id,
-                            p.descripcion,
-                            p.upc,
-                            p.marca,
-                            p.expiracion,
-                            p.inner_pack,
-                            p.case_pack,
-                            p.pallets_rcv,
-                            p.cajas,
-                            p.piezas,
-                            p.creado_en,
-                            p.actualizado_en
-                        FROM op_partida_productos p
-                        $where
-                        ORDER BY p.id_producto DESC
-                        LIMIT $perPage OFFSET $offset";
+        // ===== Rows =====
+        $sqlRows = "SELECT
+                p.id_producto,
+                p.factura_id,
+                p.descripcion,
+                p.item,
+                p.upc,
+                p.marca,
+                p.expiracion,
+                p.inner_pack,
+                p.case_pack,
+                p.pallets_rcv,
+                p.cajas,
+                p.piezas,
+                p.observaciones,
+                p.creado_en,
+                p.actualizado_en,
+                COALESCE(pe.cajas_enviadas, 0) AS cajas_enviadas,
+                CASE
+                    WHEN (p.cajas - COALESCE(pe.cajas_enviadas, 0)) < 0 THEN 0
+                    ELSE (p.cajas - COALESCE(pe.cajas_enviadas, 0))
+                END AS cajas_restantes
+            FROM op_partida_productos p
+            LEFT JOIN (
+                SELECT
+                    d.producto_id,
+                    d.factura_id,
+                    SUM(d.cajas_enviadas) AS cajas_enviadas
+                FROM operaciones_partida_envio_detalle d
+                INNER JOIN operaciones_partida_envios e
+                    ON e.id_envio = d.envio_id
+                WHERE d.estatus = 1
+                  AND e.estatus = 1
+                GROUP BY d.producto_id, d.factura_id
+            ) pe
+                ON pe.producto_id = p.id_producto
+               AND pe.factura_id = p.factura_id
+            $where
+            ORDER BY p.id_producto DESC
+            LIMIT $perPage OFFSET $offset";
 
-            $rows = $this->selectAll($sqlRows, $params);
-            if ($rows === false) $rows = [];
-
-            return [
-                'rows'   => $rows,
-                'total'  => $total,
-                'totals' => $totals
-            ];
+        $rows = $this->selectAll($sqlRows, $params);
+        if ($rows === false) $rows = [];
+        foreach ($rows as &$row) {
+            $row['cajas']           = (int)($row['cajas'] ?? 0);
+            $row['piezas']          = (int)($row['piezas'] ?? 0);
+            $row['pallets_rcv']     = (int)($row['pallets_rcv'] ?? 0);
+            $row['cajas_enviadas']  = (int)($row['cajas_enviadas'] ?? 0);
+            $row['cajas_restantes'] = max(0, (int)($row['cajas_restantes'] ?? 0));
+        }
+        unset($row);
+        return [
+            'rows'   => $rows,
+            'total'  => $total,
+            'totals' => $totals
+        ];
     }
 
 
-/**
- * Lista bodegas activas (para selects).
- * Devuelve id y nombre.
- */
+    /**
+     * Lista bodegas activas (para selects).
+     * Devuelve id y nombre.
+     */
     public function listarBodegasActivas(): array
     {
         $sql = "SELECT id_bodega, nombre
@@ -214,15 +318,16 @@ class Operaciones_por_partidaModel extends Query
         return ($rows === false || empty($rows)) ? [] : $rows;
     }
 
- 
+
     public function registrarFactura(array $data): array
     {
         $bodegaId      = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
+        $clienteId     = isset($data['cliente_id']) && $data['cliente_id'] !== '' ? (int)$data['cliente_id'] : 0;
         $numeroFactura = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
         $proveedor     = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
-        $revisionPasa  = !empty($data['revision_pasa']) ? 1 : 0;
+        $revisionEstatus = isset($data['revision_estatus']) ? (int)$data['revision_estatus'] : 0;
         $palletsRcv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
-        $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
+        $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null;
         $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
         $creadoPor     = isset($data['creado_por']) && $data['creado_por'] !== '' ? (int)$data['creado_por'] : null;
 
@@ -230,53 +335,83 @@ class Operaciones_por_partidaModel extends Query
         if ($bodegaId <= 0) {
             return ['ok' => false, 'msg' => 'Selecciona una bodega válida.', 'id_factura' => null];
         }
+
+        if ($clienteId <= 0) {
+            return ['ok' => false, 'msg' => 'Selecciona un cliente válido.', 'id_factura' => null];
+        }
+
         if ($numeroFactura === '') {
             return ['ok' => false, 'msg' => 'El número de factura es obligatorio.', 'id_factura' => null];
         }
+
         if ($proveedor === '') {
             return ['ok' => false, 'msg' => 'El proveedor es obligatorio.', 'id_factura' => null];
         }
 
-        // (Opcional recomendado) Validar bodega activa
+        if ($palletsRcv < 0) {
+            return ['ok' => false, 'msg' => 'Pallets INV (Factura) debe ser 0 o mayor.', 'id_factura' => null];
+        }
+
+        // ===== Validar bodega activa =====
         $bodega = $this->select(
-            "SELECT id_bodega FROM bodegas WHERE id_bodega = ? AND estatus = 1 LIMIT 1",
+            "SELECT id_bodega
+         FROM bodegas
+         WHERE id_bodega = ?
+           AND estatus = 1
+         LIMIT 1",
             [$bodegaId]
         );
+
         if (!$bodega) {
             return ['ok' => false, 'msg' => 'La bodega seleccionada no existe o está inactiva.', 'id_factura' => null];
         }
 
-        // ===== Evitar duplicado por UNIQUE (bodega_id, numero_factura, proveedor) =====
+        // ===== Validar cliente activo =====
+        $cliente = $this->select(
+            "SELECT id_cliente
+         FROM clientes
+         WHERE id_cliente = ?
+           AND estatus = 1
+         LIMIT 1",
+            [$clienteId]
+        );
+
+        if (!$cliente) {
+            return ['ok' => false, 'msg' => 'El cliente seleccionado no existe o está inactivo.', 'id_factura' => null];
+        }
+
+        // ===== Evitar duplicado =====
         $dup = $this->select(
             "SELECT id_factura, estatus
-            FROM op_partida_facturas
-            WHERE bodega_id = ?
-            AND numero_factura = ?
-            AND proveedor = ?
-            LIMIT 1",
-            [$bodegaId, $numeroFactura, $proveedor]
+         FROM op_partida_facturas
+         WHERE bodega_id = ?
+           AND cliente_id = ?
+           AND numero_factura = ?
+           AND proveedor = ?
+         LIMIT 1",
+            [$bodegaId, $clienteId, $numeroFactura, $proveedor]
         );
 
         if ($dup) {
-            // Si quieres permitir “reactivar” cuando estatus=0, aquí es donde se decide.
             return [
                 'ok' => false,
-                'msg' => 'Ya existe una factura con esa bodega, número y proveedor.',
+                'msg' => 'Ya existe una factura con esa bodega, cliente, número y proveedor.',
                 'id_factura' => (int)$dup['id_factura']
             ];
         }
 
         // ===== Insert =====
         $sql = "INSERT INTO op_partida_facturas
-                (bodega_id, numero_factura, proveedor, revision_pasa, pallets_inv, fecha_recibido, notas, estatus, creado_por)
-                VALUES
-                (?, ?, ?, ?, ?, ?, ?, 1, ?)";
+            (bodega_id, cliente_id, numero_factura, proveedor, revision_estatus, pallets_inv, fecha_recibido, notas, estatus, creado_por)
+            VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
 
         $params = [
             $bodegaId,
+            $clienteId,
             $numeroFactura,
             $proveedor,
-            $revisionPasa,
+            $revisionEstatus,
             $palletsRcv,
             ($fechaRecibido === '' ? null : $fechaRecibido),
             ($notas === '' ? null : $notas),
@@ -292,128 +427,170 @@ class Operaciones_por_partidaModel extends Query
         return ['ok' => true, 'msg' => 'Factura registrada correctamente.', 'id_factura' => (int)$id];
     }
 
-//obtener factura para editar
+    // obtener factura para editar
     public function getFacturaByIdEditar(int $idFactura)
     {
         $sql = "SELECT
                 f.id_factura,
                 f.bodega_id,
                 b.nombre AS bodega_nombre,
+                f.cliente_id,
+                c.nombre AS cliente_nombre,
                 f.numero_factura,
                 f.proveedor,
-                f.revision_pasa,
+                f.revision_estatus,
                 f.pallets_inv,
                 DATE_FORMAT(f.fecha_recibido, '%Y-%m-%d') AS fecha_recibido,
                 f.notas,
                 f.estatus
-                FROM op_partida_facturas f
-                LEFT JOIN bodegas b
+            FROM op_partida_facturas f
+            LEFT JOIN bodegas b
                 ON b.id_bodega = f.bodega_id
-                WHERE f.id_factura = ?
-                AND f.estatus = 1
-                LIMIT 1";
+               AND b.estatus = 1
+            LEFT JOIN clientes c
+                ON c.id_cliente = f.cliente_id
+               AND c.estatus = 1
+            WHERE f.id_factura = ?
+              AND f.estatus = 1
+            LIMIT 1";
 
         return $this->select($sql, [$idFactura]);
     }
 
     public function actualizarFactura(int $idFactura, array $data): array
     {
-        $bodegaId      = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
-        $numeroFactura = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
-        $proveedor     = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
-        $revisionPasa  = !empty($data['revision_pasa']) ? 1 : 0;
-        $palletsInv    = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
-        $fechaRecibido = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
-        $notas         = isset($data['notas']) ? trim((string)$data['notas']) : null;
-        $actualizadoPor= isset($data['actualizado_por']) && $data['actualizado_por'] !== '' ? (int)$data['actualizado_por'] : null;
+        $bodegaId       = isset($data['bodega_id']) ? (int)$data['bodega_id'] : 0;
+        $clienteId      = isset($data['cliente_id']) && $data['cliente_id'] !== '' ? (int)$data['cliente_id'] : 0;
+        $numeroFactura  = isset($data['numero_factura']) ? trim((string)$data['numero_factura']) : '';
+        $proveedor      = isset($data['proveedor']) ? trim((string)$data['proveedor']) : '';
+        $revisionEstatus = isset($data['revision_estatus']) ? (int)$data['revision_estatus'] : 0;
+        $palletsInv     = isset($data['pallets_inv']) ? (int)$data['pallets_inv'] : 0;
+        $fechaRecibido  = isset($data['fecha_recibido']) ? trim((string)$data['fecha_recibido']) : null; // YYYY-MM-DD o null
+        $notas          = isset($data['notas']) ? trim((string)$data['notas']) : null;
+        $actualizadoPor = isset($data['actualizado_por']) && $data['actualizado_por'] !== '' ? (int)$data['actualizado_por'] : null;
 
         // ===== Validaciones =====
         if ($idFactura <= 0) {
-            return ['ok'=>false,'msg'=>'Factura inválida.'];
+            return ['ok' => false, 'msg' => 'Factura inválida.'];
         }
+
         if ($bodegaId <= 0) {
-            return ['ok'=>false,'msg'=>'Selecciona una bodega válida.'];
+            return ['ok' => false, 'msg' => 'Selecciona una bodega válida.'];
         }
+
+        if ($clienteId <= 0) {
+            return ['ok' => false, 'msg' => 'Selecciona un cliente válido.'];
+        }
+
         if ($numeroFactura === '') {
-            return ['ok'=>false,'msg'=>'El número de factura es obligatorio.'];
+            return ['ok' => false, 'msg' => 'El número de factura es obligatorio.'];
         }
+
         if ($proveedor === '') {
-            return ['ok'=>false,'msg'=>'El proveedor es obligatorio.'];
+            return ['ok' => false, 'msg' => 'El proveedor es obligatorio.'];
         }
+
         if ($palletsInv < 0) {
-            return ['ok'=>false,'msg'=>'Pallets INV (Factura) debe ser 0 o mayor.'];
+            return ['ok' => false, 'msg' => 'Pallets INV (Factura) debe ser 0 o mayor.'];
         }
 
         // Validar que exista factura activa
         $exists = $this->select(
-            "SELECT id_factura FROM op_partida_facturas WHERE id_factura = ? AND estatus = 1 LIMIT 1",
+            "SELECT id_factura
+         FROM op_partida_facturas
+         WHERE id_factura = ?
+           AND estatus = 1
+         LIMIT 1",
             [$idFactura]
         );
+
         if (!$exists) {
-            return ['ok'=>false,'msg'=>'La factura no existe o está inactiva.'];
+            return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
         }
 
         // Validar bodega activa
         $bodega = $this->select(
-            "SELECT id_bodega FROM bodegas WHERE id_bodega = ? AND estatus = 1 LIMIT 1",
+            "SELECT id_bodega
+         FROM bodegas
+         WHERE id_bodega = ?
+           AND estatus = 1
+         LIMIT 1",
             [$bodegaId]
         );
+
         if (!$bodega) {
-            return ['ok'=>false,'msg'=>'La bodega seleccionada no existe o está inactiva.'];
+            return ['ok' => false, 'msg' => 'La bodega seleccionada no existe o está inactiva.'];
         }
 
-        // Evitar duplicado (si tienes UNIQUE por bodega/numero/proveedor)
+        // Validar cliente activo
+        $cliente = $this->select(
+            "SELECT id_cliente
+         FROM clientes
+         WHERE id_cliente = ?
+           AND estatus = 1
+         LIMIT 1",
+            [$clienteId]
+        );
+
+        if (!$cliente) {
+            return ['ok' => false, 'msg' => 'El cliente seleccionado no existe o está inactivo.'];
+        }
+
+        // Evitar duplicado
         $dup = $this->select(
             "SELECT id_factura
-            FROM op_partida_facturas
-            WHERE bodega_id = ?
-            AND numero_factura = ?
-            AND proveedor = ?
-            AND id_factura <> ?
-            LIMIT 1",
-            [$bodegaId, $numeroFactura, $proveedor, $idFactura]
+         FROM op_partida_facturas
+         WHERE bodega_id = ?
+           AND cliente_id = ?
+           AND numero_factura = ?
+           AND proveedor = ?
+           AND id_factura <> ?
+         LIMIT 1",
+            [$bodegaId, $clienteId, $numeroFactura, $proveedor, $idFactura]
         );
+
         if ($dup) {
-            return ['ok'=>false,'msg'=>'Ya existe otra factura con esa bodega, número y proveedor.'];
+            return ['ok' => false, 'msg' => 'Ya existe otra factura con esa bodega, cliente, número y proveedor.'];
         }
 
         $sql = "UPDATE op_partida_facturas
-                SET bodega_id = ?,
-                    numero_factura = ?,
-                    proveedor = ?,
-                    revision_pasa = ?,
-                    pallets_inv = ?,
-                    fecha_recibido = ?,
-                    notas = ?,
-                    actualizado_en = NOW()
-                WHERE id_factura = ?
-                AND estatus = 1";
+            SET bodega_id = ?,
+                cliente_id = ?,
+                numero_factura = ?,
+                proveedor = ?,
+                revision_estatus = ?,
+                pallets_inv = ?,
+                fecha_recibido = ?,
+                notas = ?,
+                actualizado_en = NOW()
+            WHERE id_factura = ?
+              AND estatus = 1";
 
         $params = [
             $bodegaId,
+            $clienteId,
             $numeroFactura,
             $proveedor,
-            $revisionPasa,
+            $revisionEstatus,
             $palletsInv,
             ($fechaRecibido === '' ? null : $fechaRecibido),
             ($notas === '' ? null : $notas),
-        
             $idFactura
         ];
 
         $ok = $this->save($sql, $params);
 
         if (!$ok) {
-            return ['ok'=>false,'msg'=>'No se pudo actualizar la factura.'];
+            return ['ok' => false, 'msg' => 'No se pudo actualizar la factura.'];
         }
 
-        return ['ok'=>true,'msg'=>'Factura actualizada correctamente.'];
+        return ['ok' => true, 'msg' => 'Factura actualizada correctamente.'];
     }
 
-/**
- * Baja lógica de factura (no elimina productos).
- * Cambia estatus a 0.
- */
+    /**
+     * Baja lógica de factura (no elimina productos).
+     * Cambia estatus a 0.
+     */
     public function bajaFactura(int $idFactura, ?int $usuarioId = null): array
     {
         if ($idFactura <= 0) {
@@ -434,14 +611,14 @@ class Operaciones_por_partidaModel extends Query
             return ['ok' => false, 'msg' => 'La factura no existe o ya está dada de baja.'];
         }
 
-        
+
         $sql = "UPDATE op_partida_facturas
                 SET estatus = 0,
                     actualizado_en = NOW()
                 WHERE id_factura = ?
                 AND estatus = 1";
 
-        $ok = $this->save($sql, [ $idFactura]);
+        $ok = $this->save($sql, [$idFactura]);
 
         if (!$ok) {
             return ['ok' => false, 'msg' => 'No se pudo dar de baja la factura.'];
@@ -451,7 +628,7 @@ class Operaciones_por_partidaModel extends Query
     }
 
 
-//registrar productos
+    //registrar productos
     public function existeFacturaActiva(int $factura_id): bool
     {
         $sql = "SELECT id_factura
@@ -464,49 +641,73 @@ class Operaciones_por_partidaModel extends Query
 
     public function insertarProductoFactura(array $d): int
     {
+        $observaciones = trim((string)($d["observaciones"] ?? ""));
+        if ($observaciones === '') {
+            $observaciones = null;
+        }
+
         $sql = "INSERT INTO op_partida_productos
-                (factura_id, descripcion, upc, marca, expiracion, inner_pack, case_pack, pallets_rcv, cajas, piezas, estatus)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+            (
+                factura_id,
+                descripcion,
+                item,
+                upc,
+                marca,
+                expiracion,
+                inner_pack,
+                case_pack,
+                pallets_rcv,
+                cajas,
+                piezas,
+                observaciones,
+                estatus
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+
         $params = [
-            $d["factura_id"],
-            $d["descripcion"],
-            $d["upc"],
-            $d["marca"],
-            $d["expiracion"],
-            $d["inner_pack"],
-            $d["case_pack"],
-            $d["pallets_rcv"],
-            $d["cajas"],
-            $d["piezas"]
+            (int)$d["factura_id"],
+            ($d["descripcion"] ?? null),
+            trim((string)($d["item"] ?? "")),
+            trim((string)($d["upc"] ?? "")),
+            ($d["marca"] ?? null),
+            ($d["expiracion"] ?? null),
+            (int)($d["inner_pack"] ?? 0),
+            (int)($d["case_pack"] ?? 0),
+            (int)($d["pallets_rcv"] ?? 0),
+            (int)($d["cajas"] ?? 0),
+            (int)($d["piezas"] ?? 0),
+            $observaciones
         ];
 
         $res = $this->insertar($sql, $params);
-        // Ajusta según tu Query: si insertar() retorna ID, regresa eso; si retorna bool, usa lastInsertId()
         return (int)$res;
     }
 
     public function getProductoById(int $idProducto, int $facturaId)
     {
         $sql = "SELECT
-                p.id_producto,
-                p.factura_id,
-                p.descripcion,
-                p.upc,
-                p.marca,
-                p.expiracion,
-                p.inner_pack,
-                p.case_pack,
-                p.pallets_rcv,
-                p.cajas,
-                p.piezas,
-                p.estatus,
-                p.creado_en,
-                p.actualizado_en
-                FROM op_partida_productos p
-                WHERE p.id_producto = ?
-                AND p.factura_id = ?
-                AND p.estatus = 1
-                LIMIT 1";
+            p.id_producto,
+            p.factura_id,
+            p.descripcion,
+            p.item,
+            p.upc,
+            p.marca,
+            p.expiracion,
+            p.inner_pack,
+            p.case_pack,
+            p.pallets_rcv,
+            p.cajas,
+            p.piezas,
+            p.observaciones,
+            p.estatus,
+            p.creado_en,
+            p.actualizado_en
+            FROM op_partida_productos p
+            WHERE p.id_producto = ?
+            AND p.factura_id = ?
+            AND p.estatus = 1
+            LIMIT 1";
+
         return $this->select($sql, [$idProducto, $facturaId]);
     }
 
@@ -532,6 +733,11 @@ class Operaciones_por_partidaModel extends Query
             return ['ok' => false, 'msg' => 'El UPC es obligatorio.'];
         }
 
+        $item = trim((string)($d['item'] ?? ''));
+        if ($item === '') {
+            return ['ok' => false, 'msg' => 'El item es obligatorio.'];
+        }
+
         $inner = (int)($d['inner_pack'] ?? 0);
         $case  = (int)($d['case_pack'] ?? 0);
         $pal   = (int)($d['pallets_rcv'] ?? 0);
@@ -542,23 +748,31 @@ class Operaciones_por_partidaModel extends Query
             return ['ok' => false, 'msg' => 'Los campos numéricos no pueden ser negativos.'];
         }
 
+        $observaciones = trim((string)($d['observaciones'] ?? ''));
+        if ($observaciones === '') {
+            $observaciones = null;
+        }
+
         $sql = "UPDATE op_partida_productos
-                SET descripcion   = ?,
-                    upc           = ?,
-                    marca         = ?,
-                    expiracion    = ?,
-                    inner_pack    = ?,
-                    case_pack     = ?,
-                    pallets_rcv   = ?,
-                    cajas         = ?,
-                    piezas        = ?,
-                    actualizado_en = NOW()
-                WHERE id_producto = ?
-                AND factura_id  = ?
-                AND estatus     = 1";
+            SET descripcion    = ?,
+                item           = ?,
+                upc            = ?,
+                marca          = ?,
+                expiracion     = ?,
+                inner_pack     = ?,
+                case_pack      = ?,
+                pallets_rcv    = ?,
+                cajas          = ?,
+                piezas         = ?,
+                observaciones  = ?,
+                actualizado_en = NOW()
+            WHERE id_producto = ?
+            AND factura_id    = ?
+            AND estatus       = 1";
 
         $params = [
             ($d['descripcion'] ?? null),
+            $item,
             $upc,
             ($d['marca'] ?? null),
             ($d['expiracion'] ?? null),
@@ -567,6 +781,7 @@ class Operaciones_por_partidaModel extends Query
             $pal,
             $caj,
             $pzs,
+            $observaciones,
             $idProducto,
             $facturaId
         ];
@@ -585,9 +800,11 @@ class Operaciones_por_partidaModel extends Query
         if ($facturaId <= 0) {
             return ['ok' => false, 'msg' => 'Factura inválida.'];
         }
+
         if (!$this->existeFacturaActiva($facturaId)) {
             return ['ok' => false, 'msg' => 'La factura no existe o está inactiva.'];
         }
+
         if (!is_array($items) || empty($items)) {
             return ['ok' => false, 'msg' => 'No hay productos para guardar.'];
         }
@@ -597,28 +814,30 @@ class Operaciones_por_partidaModel extends Query
         $idsInsertados = [];
 
         foreach ($items as $i => $d) {
-            // Normaliza factura_id desde backend (no confíes 100% en el front)
             $d['factura_id'] = $facturaId;
+
+            // Normalización mínima del nuevo campo
+            $d['observaciones'] = trim((string)($d['observaciones'] ?? ''));
 
             $idProducto = (int)($d['id_producto'] ?? 0);
 
             if ($idProducto > 0) {
                 $r = $this->actualizarProductoFactura($idProducto, $facturaId, $d);
                 if (!$r['ok']) {
-                    return ['ok' => false, 'msg' => "Error en producto #".($i+1).": ".$r['msg']];
+                    return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": " . $r['msg']];
                 }
                 $actualizados++;
             } else {
-                // Validaciones mínimas para insert
                 $upc = trim((string)($d['upc'] ?? ''));
                 if ($upc === '') {
-                    return ['ok' => false, 'msg' => "Error en producto #".($i+1).": El UPC es obligatorio."];
+                    return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": El UPC es obligatorio."];
                 }
 
                 $newId = $this->insertarProductoFactura($d);
                 if ($newId <= 0) {
-                    return ['ok' => false, 'msg' => "Error en producto #".($i+1).": No se pudo insertar."];
+                    return ['ok' => false, 'msg' => "Error en producto #" . ($i + 1) . ": No se pudo insertar."];
                 }
+
                 $insertados++;
                 $idsInsertados[] = $newId;
             }
@@ -694,230 +913,215 @@ class Operaciones_por_partidaModel extends Query
     }
 
 
+    public function listarTransportistas(): array
+    {
+        $sql = "SELECT 
+                    t.id_transportista ,
+                    t.nombre,
+                    t.tipo
+                FROM transportistas t
+                WHERE t.estatus = 1
+                ORDER BY t.nombre ASC";
 
-
-
-    //rutas
-    /*
-public function sugerirFacturas(string $term, int $limit = 10): array
-{
-    $term  = trim((string)$term);
-    $limit = (int)$limit;
-    if ($limit < 1)  $limit = 10;
-    if ($limit > 25) $limit = 25;
-
-    // Si no hay term, no regreses “todo” (evita carga y UX rara)
-    if ($term === '') return [];
-
-    $like = '%' . $term . '%';
-
-    // Nota: LIMIT no se puede bindear en MySQL con PDO en muchos setups,
-    // por eso se fuerza a int arriba y se inyecta como número seguro.
-    $sql = "SELECT
-                f.id_factura,
-                f.numero_factura,
-                f.proveedor,
-                b.nombre AS bodega_nombre
-            FROM op_partida_facturas f
-            INNER JOIN bodegas b ON b.id_bodega = f.bodega_id
-            WHERE f.estatus = 1
-              AND (
-                f.numero_factura LIKE ?
-                OR IFNULL(f.proveedor,'') LIKE ?
-              )
-            ORDER BY f.id_factura DESC
-            LIMIT $limit";
-
-    $rows = $this->selectAll($sql, [$like, $like]);
-    return ($rows === false) ? [] : $rows;
-}
-public function listarProductosRutas(int $facturaId, string $term = ''): array
-{
-    $facturaId = (int)$facturaId;
-    $term      = trim($term);
-
-    $where  = " WHERE p.estatus = 1 AND p.factura_id = ? ";
-    $params = [$facturaId];
-
-    if ($term !== '') {
-        $where .= " AND (
-            p.descripcion LIKE ?
-            OR IFNULL(p.upc,'') LIKE ?
-            OR IFNULL(p.marca,'') LIKE ?
-        ) ";
-        $like = '%' . $term . '%';
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
+        $rows = $this->selectAll($sql);
+        return is_array($rows) ? $rows : [];
     }
 
-    // IMPORTANTE:
-    // Ajusta nombres de columnas de envíos según tu BD final:
-    // - e.cajas_enviadas
-    // - e.estatus
-    // - e.producto_id
-    // - e.factura_id
-    $sql = "SELECT
-                p.id_producto,
-                p.factura_id,
-                p.descripcion,
-                p.upc,
-                p.marca,
-                p.cajas AS cajas_total,
-                COALESCE(SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END), 0) AS cajas_enviadas,
-                (p.cajas - COALESCE(SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END), 0)) AS cajas_restantes
-            FROM op_partida_productos p
-            LEFT JOIN op_partida_envios e
-              ON e.factura_id  = p.factura_id
-             AND e.producto_id = p.id_producto
-            $where
-            GROUP BY
-                p.id_producto, p.factura_id, p.descripcion, p.upc, p.marca, p.cajas
-            ORDER BY p.id_producto DESC";
+    function listarCiudades(): array
+    {
+        $sql = "SELECT 
+                    c.id_ciudad,
+                    c.nombre_ciudad
+                FROM ciudades c
+                WHERE c.estatus = 1
+                ORDER BY c.nombre_ciudad ASC";
+        $rows = $this->selectAll($sql);
+        return is_array($rows) ? $rows : [];
+    }
+    public function listarClientes(): array
+    {
+        $sql = "SELECT id_cliente, nombre
+                FROM clientes
+                WHERE estatus = 1
+                ORDER BY nombre ASC";
+        $rows = $this->selectAll($sql);
+        return ($rows === false || empty($rows)) ? [] : $rows;
+    }
 
-    $rows = $this->selectAll($sql, $params);
-    return ($rows === false) ? [] : $rows;
-}
+// ============================================================
+// FOTOS DE PRODUCTOS
+// ============================================================
 
-public function listarEnviosProducto(int $facturaId, int $productoId): array
-{
-    $facturaId  = (int)$facturaId;
-    $productoId = (int)$productoId;
+    /**
+     * Obtiene las fotos de un producto (máx 3), ordenadas por posición.
+     */
+    public function getFotosByProducto(int $productoId): array
+    {
+        $sql = "SELECT
+                id_foto,
+                producto_id,
+                factura_id,
+                orden,
+                nombre_archivo,
+                ruta_archivo,
+                mime_type,
+                tamano_bytes,
+                creado_en
+            FROM op_partida_producto_fotos
+            WHERE producto_id = ?
+              AND estatus = 1
+            ORDER BY orden ASC";
 
-    // Ajusta nombres reales:
-    // e.destino (o ciudad_destino_id)
-    // e.fecha_envio
-    // e.caja_ferro (o id_fisico si ya decidiste guardar eso)
-    // e.notas
-    $sql = "SELECT
-                e.id_envio,
-                e.factura_id,
-                e.producto_id,
-                e.destino,
-                e.fecha_envio,
-                e.caja_ferro,
-                e.cajas_enviadas,
-                e.notas,
-                e.estatus,
-                e.creado_en
-            FROM op_partida_envios e
-            WHERE e.factura_id = ?
-              AND e.producto_id = ?
-            ORDER BY e.fecha_envio DESC, e.id_envio DESC";
+        $rows = $this->selectAll($sql, [$productoId]);
+        return is_array($rows) ? $rows : [];
+    }
 
-    $rows = $this->selectAll($sql, [$facturaId, $productoId]);
-    return ($rows === false) ? [] : $rows;
-}
-public function resumenEnviosProducto(int $facturaId, int $productoId): array
-{
-    $facturaId  = (int)$facturaId;
-    $productoId = (int)$productoId;
+    /**
+     * Obtiene todas las fotos de todos los productos de una factura.
+     * Útil para cargarlas todas en una sola query al abrir el modal.
+     */
+    public function getFotosByFactura(int $facturaId): array
+    {
+        $sql = "SELECT
+                f.id_foto,
+                f.producto_id,
+                f.factura_id,
+                f.orden,
+                f.nombre_archivo,
+                f.ruta_archivo,
+                f.mime_type,
+                f.tamano_bytes,
+                f.creado_en
+            FROM op_partida_producto_fotos f
+            WHERE f.factura_id = ?
+              AND f.estatus = 1
+            ORDER BY f.producto_id ASC, f.orden ASC";
 
-    $sql = "SELECT
-                e.destino,
-                SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END) AS cajas_enviadas
-            FROM op_partida_envios e
-            WHERE e.factura_id = ?
-              AND e.producto_id = ?
-            GROUP BY e.destino
-            ORDER BY e.destino ASC";
+        $rows = $this->selectAll($sql, [$facturaId]);
+        return is_array($rows) ? $rows : [];
+    }
 
-    $rows = $this->selectAll($sql, [$facturaId, $productoId]);
-    return ($rows === false) ? [] : $rows;
-}
-public function getCajasRestantesProducto(int $facturaId, int $productoId): int
-{
-    $facturaId  = (int)$facturaId;
-    $productoId = (int)$productoId;
+    /**
+     * Inserta o reemplaza una foto en una posición (orden 1, 2 o 3).
+     * Si ya existe foto en esa posición para ese producto, la sobreescribe en BD.
+     * El archivo físico anterior debe borrarse desde el controlador antes de llamar esto.
+     * Retorna el id_foto insertado o 0 si falla.
+     */
+    public function upsertFotoProducto(array $d): int
+    {
+        $productoId   = (int)($d['producto_id']    ?? 0);
+        $facturaId    = (int)($d['factura_id']      ?? 0);
+        $orden        = (int)($d['orden']           ?? 1);
+        $nombreArch   = trim((string)($d['nombre_archivo'] ?? ''));
+        $rutaArch     = trim((string)($d['ruta_archivo']   ?? ''));
+        $mimeType     = trim((string)($d['mime_type']      ?? ''));
+        $tamano       = (int)($d['tamano_bytes']    ?? 0);
+        $subidoPor    = isset($d['subido_por']) && $d['subido_por'] !== '' ? (int)$d['subido_por'] : null;
 
-    $sql = "SELECT
-                (p.cajas - COALESCE(SUM(CASE WHEN e.estatus = 1 THEN e.cajas_enviadas ELSE 0 END), 0)) AS restantes
-            FROM op_partida_productos p
-            LEFT JOIN op_partida_envios e
-              ON e.factura_id = p.factura_id
-             AND e.producto_id = p.id_producto
-            WHERE p.factura_id = ?
-              AND p.id_producto = ?
-              AND p.estatus = 1
-            GROUP BY p.cajas
+        if ($productoId <= 0 || $facturaId <= 0 || $orden < 1 || $orden > 3 || $rutaArch === '') {
+            return 0;
+        }
+
+        // INSERT ... ON DUPLICATE KEY UPDATE aprovecha el UNIQUE KEY (producto_id, orden)
+        $sql = "INSERT INTO op_partida_producto_fotos
+                (producto_id, factura_id, orden, nombre_archivo, ruta_archivo, mime_type, tamano_bytes, subido_por, estatus)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE
+                nombre_archivo = VALUES(nombre_archivo),
+                ruta_archivo   = VALUES(ruta_archivo),
+                mime_type      = VALUES(mime_type),
+                tamano_bytes   = VALUES(tamano_bytes),
+                subido_por     = VALUES(subido_por),
+                estatus        = 1
+              ";
+
+        $params = [
+            $productoId,
+            $facturaId,
+            $orden,
+            $nombreArch,
+            $rutaArch,
+            ($mimeType !== '' ? $mimeType : null),
+            ($tamano > 0 ? $tamano : null),
+            $subidoPor
+        ];
+
+        $id = $this->insertar($sql, $params);
+        return (int)$id;
+    }
+
+    /**
+     * Obtiene una foto por su ID (para validar antes de eliminar).
+     */
+    public function getFotoById(int $idFoto): ?array
+    {
+        $sql = "SELECT
+                id_foto,
+                producto_id,
+                factura_id,
+                orden,
+                nombre_archivo,
+                ruta_archivo,
+                estatus
+            FROM op_partida_producto_fotos
+            WHERE id_foto = ?
             LIMIT 1";
 
-    $row = $this->select($sql, [$facturaId, $productoId]);
-    return (int)($row['restantes'] ?? 0);
-}
-
-// ===== RUTAS: CIUDADES =====
-public function listarCiudadesActivas(): array
-{
-    // AJUSTA: nombre de tabla/campos según tu BD real
-    $sql = "SELECT
-                c.id_ciudad,
-                c.nombre
-            FROM ciudades c
-            WHERE c.estatus = 1
-            ORDER BY c.nombre ASC";
-
-    $rows = $this->selectAll($sql);
-    return ($rows === false || empty($rows)) ? [] : $rows;
-}
-
-
-// ===== RUTAS: SUGERIR CAJA / FERRO =====
-public function sugerirCajaFerro(string $term, int $limit = 10): array
-{
-    $term  = trim((string)$term);
-    $limit = (int)$limit;
-
-    if ($limit < 1) $limit = 10;
-    if ($limit > 25) $limit = 25;
-    if ($term === '' || mb_strlen($term) < 2) return [];
-
-    $like = '%' . $term . '%';
-
-    // ==========================
-    // AJUSTA ESTOS SELECTS A TU BD REAL
-    // ==========================
-
-    // (1) CAJAS
-    // Ejemplo supuestos: tabla cajas_fisicas (id_caja, folio, estatus)
-    $sqlCajas = "SELECT
-                    c.id_caja AS id,
-                    'CAJA'    AS tipo,
-                    c.folio   AS texto
-                 FROM cajas_fisicas c
-                 WHERE c.estatus = 1
-                   AND c.folio LIKE ?
-                 ORDER BY c.id_caja DESC
-                 LIMIT $limit";
-
-    $cajas = $this->selectAll($sqlCajas, [$like]);
-    if ($cajas === false) $cajas = [];
-
-    // (2) FERROS
-    // Ejemplo supuestos: tabla ferros (id_ferro, folio, estatus)
-    $sqlFerros = "SELECT
-                    f.id_ferro AS id,
-                    'FERRO'    AS tipo,
-                    f.folio    AS texto
-                  FROM ferros f
-                  WHERE f.estatus = 1
-                    AND f.folio LIKE ?
-                  ORDER BY f.id_ferro DESC
-                  LIMIT $limit";
-
-    $ferros = $this->selectAll($sqlFerros, [$like]);
-    if ($ferros === false) $ferros = [];
-
-    // Mezcla (prioriza coincidencias, luego por id)
-    $rows = array_merge($cajas, $ferros);
-
-    // Opcional: recortar a limit global
-    if (count($rows) > $limit) {
-        $rows = array_slice($rows, 0, $limit);
+        $row = $this->select($sql, [$idFoto]);
+        return $row ?: null;
     }
 
-    return $rows;
-}
-*/
+    /**
+     * Elimina físicamente el registro de la foto en BD (hard delete).
+     * El archivo físico se borra desde el controlador.
+     */
+    public function eliminarFotoProducto(int $idFoto): bool
+    {
+        if ($idFoto <= 0) return false;
 
+        $ok = $this->save(
+            "DELETE FROM op_partida_producto_fotos
+         WHERE id_foto = ?",
+            [$idFoto]
+        );
+
+        return (bool)$ok;
+    }
+
+    /**
+     * Modifica listarProductos para incluir las fotos de cada producto.
+     * Llama al método existente y luego adjunta las fotos por producto_id.
+     * 
+     * NOTA: Este método REEMPLAZA la llamada a listarProductos en el controlador,
+     * o puedes llamar a listarProductos y luego a este para enriquecer el resultado.
+     */
+    public function listarProductosConFotos(int $facturaId, array $filters = []): array
+    {
+        // Reutiliza el método existente
+        $result = $this->listarProductos($facturaId, $filters);
+
+        if (empty($result['rows'])) {
+            return $result;
+        }
+
+        // Obtener todas las fotos de la factura en una sola query
+        $todasLasFotos = $this->getFotosByFactura($facturaId);
+
+        // Indexar fotos por producto_id para asignación rápida
+        $fotosPorProducto = [];
+        foreach ($todasLasFotos as $foto) {
+            $pid = (int)$foto['producto_id'];
+            $fotosPorProducto[$pid][] = $foto;
+        }
+
+        // Adjuntar fotos a cada producto
+        foreach ($result['rows'] as &$row) {
+            $pid = (int)$row['id_producto'];
+            $row['fotos'] = $fotosPorProducto[$pid] ?? [];
+        }
+        unset($row);
+
+        return $result;
+    }
 }

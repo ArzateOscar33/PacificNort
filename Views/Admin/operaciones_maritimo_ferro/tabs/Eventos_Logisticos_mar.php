@@ -1,10 +1,10 @@
 <div class="container py-4 col-md-12">
   <div class="card shadow-sm">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center d-none">
       <h5 class="mb-0">
         <i data-feather="file-text" class="me-1"></i> Eventos Marítimos
       </h5>
-      <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos"
+      <button class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalDetallesLogisticos"
         id="btnAbrirModalDetalles">
         <i data-feather="plus-circle" class="me-1"></i> Añadir / Editar Evento
       </button>
@@ -15,7 +15,7 @@
       <!-- Filtros superiores -->
       <div class="row g-3 align-items-end mb-3">
         <!-- Operación con sugerencias -->
-        <div class="col-md-8">
+        <div class="col-md-4 d-none">
           <label for="eventosFiltroOpNombre" class="form-label mb-1">Operación</label>
           <div class="position-relative">
             <input type="hidden" id="eventosFiltroOpId">
@@ -26,19 +26,37 @@
           </div>
           <div class="form-text" id="eventosFiltroOpMeta"></div>
         </div>
+        <div class="col-md-2">
+          <label for="eventosFiltroFerro">Contenedor Maritimo</label>
+          <input type="text" id="eventosFiltroFerro" class="form-control" placeholder="Escribe para buscar" autocomplete="off">
+        </div>
+        <div class="col-md-2">
+          <label for="eventosFiltroCliente">Cliente</label>
+          <select class="form-control" id="eventosFiltroCliente" name="eventosFiltroCliente">
+            <option value="">Cliente (Todos)</option>
+            <?php if (!empty($data['clientes'])): ?>
+              <?php foreach ($data['clientes'] as $cl): ?>
+                <option value="<?= (int)$cl['id_cliente']; ?>">
+                  <?= htmlspecialchars($cl['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
 
-<!-- Rango de fechas 
-<div class="col-md-4">
-  <label class="form-label mb-1">Rango de fechas</label>
-  <div class="d-flex align-items-center gap-2">
-    <input type="date" id="fechaDesdeEventosMar" class="form-control" style="min-width: 0;" title="Fecha desde">
-    <span class="text-muted">—</span>
-    <input type="date" id="fechaHastaEventosMar" class="form-control" style="min-width: 0;" title="Fecha hasta">
-  </div>
- 
-</div>-->
+        <!-- Rango de fechas -->
 
- 
+        <!-- <div class="col-md-4">
+          <label class="form-label mb-1">Rango de fechas</label>
+          <div class="d-flex align-items-center gap-2">
+            <input type="date" id="fechaDesdeEventosMar" class="form-control" style="min-width: 0;" title="Fecha desde">
+            <span class="text-muted">—</span>
+            <input type="date" id="fechaHastaEventosMar" class="form-control" style="min-width: 0;" title="Fecha hasta">
+          </div>
+
+        </div>-->
+
+
 
         <!-- Exportaciones -->
         <div class="col-md-4 d-flex gap-2">
@@ -58,6 +76,10 @@
             <option value="25">25</option>
             <option value="50">50</option>
             <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+            <option value="10000000">Todos</option>
           </select>
           <span class="small text-muted">por página</span>
         </div>
@@ -65,12 +87,13 @@
 
       <!-- Tabla de eventos por contenedor marítimo -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle" id="tablaEventosMar">
+        <table class="table table-hover table-bordered-pacific align-middle" id="tablaEventosMar">
           <thead class="table-primary">
             <tr id="theadEventosMar" class="text-center">
               <!-- Fijos -->
               <th style="min-width: 140px;">Operación</th>
               <th style="min-width: 180px;">Contenedor marítimo</th>
+              <th style="min-width: 180px;">Cliente</th>
               <!-- Dinámicos (JS): una <th> por cada tipo de evento marítimo -->
               <!-- Ejemplo inyectado por JS:
                    <th data-evt-id="8">Arribo A Puerto</th>
@@ -154,8 +177,8 @@
               <label for="tipo_evento_id" class="form-label">Tipo de evento</label>
               <select id="tipoEventoId" name="tipoEventoId" class="form-control">
                 <option value="">Selecciona...</option>
-                 
-            
+
+
               </select>
             </div>
 
@@ -236,21 +259,21 @@
 <script>
   feather.replace();
 </script>
- 
+
 <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/eventos_logisticos_mar.js"></script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
 
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
 
-// Uso
-forzarMayusculas("eventoOperacionNombre"); 
+  // Uso
+  forzarMayusculas("eventoOperacionNombre");
 </script>

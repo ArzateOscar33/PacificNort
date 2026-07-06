@@ -34,6 +34,7 @@
                                     <th>Departamento</th>
                                     <th>Puesto</th>
                                     <th>Rol</th>
+                                    <th>Cliente</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -101,7 +102,7 @@
                             <select name="departamento_id" id="departamento_id" class="form-control" required>
                                 <option value="">Seleccione</option>
                                 <?php foreach ($data['departamentos'] as $dep): ?>
-                                <option value="<?= $dep['id_departamento'] ?>"><?= $dep['nombre'] ?></option>
+                                    <option value="<?= $dep['id_departamento'] ?>"><?= $dep['nombre'] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -118,10 +119,26 @@
                             <select name="rol_id" id="rol_id" class="form-control" required>
                                 <option value="">Seleccione</option>
                                 <?php foreach ($data['roles'] as $dep): ?>
-                                <option value="<?= $dep['id_rol'] ?>"><?= $dep['nombre'] ?></option>
+                                    <option value="<?= $dep['id_rol'] ?>"><?= $dep['nombre'] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
+
+                        <div class="mb-3 col-md-6 d-none" id="wrap_cliente">
+                            <label for="cliente_id" class="form-label">Cliente (solo si aplica)</label>
+                            <select name="cliente_id" id="cliente_id" class="form-control">
+                                <option value="">Seleccione</option>
+                                <?php foreach ($data['clientes'] as $c): ?>
+                                    <option value="<?= (int)$c['id_cliente'] ?>">
+                                        <?= htmlspecialchars($c['nombre']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">
+                                Este campo es obligatorio cuando el rol es <b>Cliente</b>.
+                            </div>
+                        </div>
+
                         <div class="mb-3 col-md-6">
                             <label for="active" class="form-label">Estado</label>
                             <select name="active" class="form-control" required>
@@ -130,27 +147,27 @@
                             </select>
                         </div>
                     </div>
-                   <div id="wrapToggleCambiarClave" class="row d-none">
-  <div class="mb-3 col-md-12">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="toggleCambiarClave">
-      <label class="form-check-label" for="toggleCambiarClave">
-        Cambiar contraseña
-      </label>
-    </div>
-  </div>
-</div>
+                    <div id="wrapToggleCambiarClave" class="row d-none">
+                        <div class="mb-3 col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="toggleCambiarClave">
+                                <label class="form-check-label" for="toggleCambiarClave">
+                                    Cambiar contraseña
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 
-<div class="row">
-  <div class="mb-3 col-md-6 d-none" id="wrapNuevaClave">
-    <label for="nueva_clave" class="form-label">Nueva contraseña</label>
-    <input type="password" id="nueva_clave" name="nueva_clave" class="form-control">
-  </div>
-  <div class="mb-3 col-md-6 d-none" id="wrapConfirmarClave">
-    <label for="confirmar_clave" class="form-label">Confirmar contraseña</label>
-    <input type="password" id="confirmar_clave" name="confirmar_clave" class="form-control">
-  </div>
-</div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6 d-none" id="wrapNuevaClave">
+                            <label for="nueva_clave" class="form-label">Nueva contraseña</label>
+                            <input type="password" id="nueva_clave" name="nueva_clave" class="form-control">
+                        </div>
+                        <div class="mb-3 col-md-6 d-none" id="wrapConfirmarClave">
+                            <label for="confirmar_clave" class="form-label">Confirmar contraseña</label>
+                            <input type="password" id="confirmar_clave" name="confirmar_clave" class="form-control">
+                        </div>
+                    </div>
 
 
                     <!-- Footer -->

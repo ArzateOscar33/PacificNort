@@ -17,10 +17,11 @@
         <select id="OperacionesFFiltroSubtipo" name="OperacionesFFiltroSubtipo" class="form-control" style="max-width:240px;">
           <option value="">Subtipo (Todos)</option>
           <?php if (!empty($data['subtiposF'])): foreach ($data['subtiposF'] as $st): ?>
-            <option value="<?= (int)$st['id_subtipo']; ?>">
-              <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-            </option>
-          <?php endforeach; endif; ?>
+              <option value="<?= (int)$st['id_subtipo']; ?>">
+                <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+              </option>
+          <?php endforeach;
+          endif; ?>
         </select>
 
         <input id="OperacionesFBuscar" class="form-control" style="max-width:260px;"
@@ -116,10 +117,11 @@
               <select id="OperacionesFEstatusId" name="OperacionesFEstatusId" class="form-control" required>
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['estatusF'])): foreach ($data['estatusF'] as $es): ?>
-                  <option value="<?= (int)$es['id_estatus']; ?>">
-                    <?= htmlspecialchars($es['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                  </option>
-                <?php endforeach; endif; ?>
+                    <option value="<?= (int)$es['id_estatus']; ?>">
+                      <?= htmlspecialchars($es['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endforeach;
+                endif; ?>
               </select>
             </div>
 
@@ -140,10 +142,11 @@
               <select id="OperacionesFNoFerro" name="OperacionesFNoFerro" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['ferros'])): foreach ($data['ferros'] as $fx): ?>
-                  <option value="<?= (int)$fx['id_fisico']; ?>">
-                    <?= htmlspecialchars($fx['numero_ferro'], ENT_QUOTES, 'UTF-8'); ?>
-                  </option>
-                <?php endforeach; endif; ?>
+                    <option value="<?= (int)$fx['id_fisico']; ?>">
+                      <?= htmlspecialchars($fx['numero_ferro'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endforeach;
+                endif; ?>
               </select>
               <small class="text-muted">Primero selecciona el ferro; luego añade los contenedores marítimos.</small>
             </div>
@@ -154,10 +157,11 @@
               <select id="OperacionesFOrigen" name="OperacionesFOrigen" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['ciudades'])): foreach ($data['ciudades'] as $c): ?>
-                  <option value="<?= (int)$c['id_ciudad']; ?>">
-                    <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
-                  </option>
-                <?php endforeach; endif; ?>
+                    <option value="<?= (int)$c['id_ciudad']; ?>">
+                      <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endforeach;
+                endif; ?>
               </select>
             </div>
             <div class="col-md-3">
@@ -165,10 +169,11 @@
               <select id="OperacionesFDestino" name="OperacionesFDestino" class="form-control">
                 <option value="">Seleccione...</option>
                 <?php if (!empty($data['ciudades'])): foreach ($data['ciudades'] as $c): ?>
-                  <option value="<?= (int)$c['id_ciudad']; ?>">
-                    <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
-                  </option>
-                <?php endforeach; endif; ?>
+                    <option value="<?= (int)$c['id_ciudad']; ?>">
+                      <?= htmlspecialchars($c['nombre_ciudad'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endforeach;
+                endif; ?>
               </select>
             </div>
 
@@ -290,21 +295,22 @@
   </div>
 </div>
 
-<script>feather.replace();</script>
 <script>
-function forzarMayusculas(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return;
-
-  input.addEventListener("input", function () {
-    const start = this.selectionStart;
-    const end   = this.selectionEnd;
-    this.value  = this.value.toUpperCase();
-    this.setSelectionRange(start, end);
-  });
-}
-
-// Uso
-forzarMayusculas("costosOperacionFiltroOpNombre"); 
+  feather.replace();
 </script>
+<script>
+  function forzarMayusculas(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
 
+    input.addEventListener("input", function() {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(start, end);
+    });
+  }
+
+  // Uso
+  forzarMayusculas("costosOperacionFiltroOpNombre");
+</script>

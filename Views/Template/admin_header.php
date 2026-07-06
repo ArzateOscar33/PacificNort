@@ -1,5 +1,3 @@
-
-
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
- 
-    <link rel="manifest" href="<?php echo BASE_URL; ?>/favicon/manifest.json">
+
+    <link rel="manifest" href="<?php echo BASE_URL; ?>favicon/manifest.json">
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="<?php echo BASE_URL; ?>/favicon/ms-icon-144x144.png">
+    <meta name="msapplication-TileImage" content="<?php echo BASE_URL; ?>favicon/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
     <title><?php echo $data['title']; ?></title>
     <!-- Custom CSS -->
@@ -18,10 +16,10 @@
     <link href="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
     <!-- Custom CSS -->
-   <!-- <script src="https://unpkg.com/feather-icons"></script>  -->
+    <!-- <script src="https://unpkg.com/feather-icons"></script>  -->
     <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/feather.min.js"></script>
 
-    <link href="<?php echo BASE_URL; ?>/dist/css/style.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>dist/css/style.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 
@@ -29,6 +27,143 @@
     <!--<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>-->
     <!-- SweetAlert2 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> -->
+
+    <style>
+        @media (min-width: 768px) {
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar {
+                transition: width .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .page-wrapper {
+                transition: margin-left .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .sidebar-nav #sidebarnav .sidebar-item .sidebar-link {
+                align-items: center;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar:hover {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .sidebar-nav #sidebarnav .sidebar-item .sidebar-link i,
+            #main-wrapper[data-sidebartype="mini-sidebar"] .sidebar-nav #sidebarnav .sidebar-item .sidebar-link .feather-icon {
+                min-width: 20px;
+                min-height: 20px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar {
+                width: 65px;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .page-wrapper {
+                margin-left: 65px !important;
+                transition: margin-left .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .topbar .top-navbar .navbar-header {
+                width: 65px !important;
+                transition: width .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .topbar .top-navbar .navbar-collapse {
+                margin-left: 65px !important;
+                transition: margin-left .25s ease;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar:hover {
+                width: 260px !important;
+            }
+
+            #main-wrapper[data-sidebartype="mini-sidebar"] .left-sidebar:hover~.page-wrapper {
+                margin-left: 260px !important;
+            }
+        }
+
+
+        /*tablas*/
+        /* ==========================================================
+   TABLAS CON BORDES PERSONALIZADOS - PACIFICNORT
+   Usar manualmente agregando: table-bordered-pacific
+========================================================== */
+
+        .table-bordered-pacific {
+            border-collapse: collapse !important;
+            border: 1.5px solid #b8c2d6 !important;
+        }
+
+        /* Todas las celdas */
+        .table-bordered-pacific> :not(caption)>*>* {
+            border: 1.5px solid #b8c2d6 !important;
+        }
+
+        /* Encabezado */
+        .table-bordered-pacific thead th {
+            border: 1.5px solid #a8b5d6 !important;
+            background-color: #dfe6ff !important;
+            color: #56627a !important;
+            font-weight: 700;
+            text-transform: uppercase;
+            vertical-align: middle;
+        }
+
+        /* Celdas del cuerpo */
+        .table-bordered-pacific tbody td {
+            border: 1.5px solid #c4ccdc !important;
+            vertical-align: middle;
+        }
+
+        /* Hover compatible con Bootstrap */
+        .table-hover.table-bordered-pacific tbody tr:hover td {
+            background-color: #f4f7ff !important;
+        }
+
+        /* Evita que se corte visualmente dentro del responsive */
+        .table-responsive .table-bordered-pacific {
+            margin-bottom: 0;
+        }
+
+
+        /* ==========================================================
+   BORDES PARA TABLAS OSCURAS - OPERACIONES POR PARTIDA
+   Usar manualmente agregando: table-bordered-pacific-p
+   Solo agrega bordes, no modifica colores
+========================================================== */
+
+        .table-bordered-pacific-p {
+            border-collapse: collapse !important;
+            border: 1.5px solid #9aa8b8 !important;
+        }
+
+        /* Todas las celdas */
+        .table-bordered-pacific-p> :not(caption)>*>* {
+            border: 1.5px solid #b8c2d0 !important;
+        }
+
+        /* Encabezado oscuro */
+        .table-bordered-pacific-p thead th {
+            border: 1.5px solid #6f7f92 !important;
+            vertical-align: middle;
+        }
+
+        /* Celdas del cuerpo */
+        .table-bordered-pacific-p tbody td {
+            border: 1.5px solid #c9d1dc !important;
+            vertical-align: middle;
+        }
+
+        /* Respeta el hover que ya tengas */
+        .table-hover.table-bordered-pacific-p tbody tr:hover td {
+            border-color: #aeb8c6 !important;
+        }
+
+        /* Evita espacios raros dentro del responsive */
+        .table-responsive .table-bordered-pacific-p {
+            margin-bottom: 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -39,7 +174,7 @@
             <div class="lds-pos"></div>
         </div>
     </div>
-    <div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    <div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="mini-sidebar"
         data-sidebar-position="fixed" data-header-position="fixed" data-boxed-layout="full">
 
         <header class="topbar" data-navbarbg="skin6">
@@ -111,11 +246,11 @@
                                         data-feather="chevron-down" class="svg-icon"></i></span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-right user-dd animated flipInY">
- 
+
                                 <a class="dropdown-item" href="<?php echo BASE_URL . 'admin/salir'; ?>"><i
                                         data-feather="power" class="svg-icon mr-2 ml-1"></i>
                                     Cerrar Sesion</a>
-                                  
+
 
                             </div>
                         </li>
@@ -153,41 +288,44 @@
                                 <span class="hide-menu">Catálogos</span>
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
-                                  <?php if ($_SESSION['rol_usuario'] == 1): ?>
-                            <li class="sidebar-item"><a href="<?= BASE_URL ?>departamentos" class="sidebar-link"><i
-                                            data-feather="grid"></i><span class="hide-menu">Departamentos</span></a>
-                                </li>
-                                 <?php endif; ?>
-                                   <?php if ($_SESSION['rol_usuario'] == 1): ?>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>puestos" class="sidebar-link"><i
-                                            data-feather="briefcase"></i><span class="hide-menu">Puestos</span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>departamentos" class="sidebar-link"><i
+                                                data-feather="grid"></i><span class="hide-menu">Departamentos</span></a>
+                                    </li>
                                 <?php endif; ?>
-                                   <?php if ($_SESSION['rol_usuario'] == 1): ?>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>roles" class="sidebar-link"><i
-                                            data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
-                                            <?php endif; ?>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
-                                        class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
-                                            de Operación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>subtipoOperacion"
-                                        class="sidebar-link"><i data-feather="refresh-cw"></i><span class="hide-menu">Tipos
-                                            de SubOperación</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
-                                        class="sidebar-link"><i data-feather="repeat"></i><span class="hide-menu">Tipos
-                                            de Movimiento</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_eventos_logisticos"
-                                        class="sidebar-link"><i data-feather="activity"></i><span
-                                            class="hide-menu">Tipos de Evento Logístico</span></a></li>                               
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Tipos_documentos"
-                                        class="sidebar-link"><i data-feather="file-text"></i><span
-                                            class="hide-menu">Tipos de Documento</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
-                                            data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
-                                          <?php if ($_SESSION['rol_usuario'] == 1): ?>   
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>permisos" class="sidebar-link"><i
-                                            data-feather="key"></i><span class="hide-menu">Permisos de
-                                            Operación</span></a></li>
-                                            <?php endif; ?>
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>puestos" class="sidebar-link"><i
+                                                data-feather="briefcase"></i><span class="hide-menu">Puestos</span></a></li>
+                                <?php endif; ?>
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>roles" class="sidebar-link"><i
+                                                data-feather="shield"></i><span class="hide-menu">Roles</span></a></li>
+                                <?php endif; ?>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_operacion"
+                                            class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
+                                                de Operación</span></a></li>
+
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>subtipoOperacion"
+                                            class="sidebar-link"><i data-feather="refresh-cw"></i><span class="hide-menu">Tipos
+                                                de SubOperación</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"
+                                            class="sidebar-link"><i data-feather="dollar-sign"></i><span class="hide-menu">Tipos
+                                                de Costo</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>tipos_eventos_logisticos"
+                                            class="sidebar-link"><i data-feather="activity"></i><span
+                                                class="hide-menu">Tipos de Evento Logístico</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>Tipos_documentos"
+                                            class="sidebar-link"><i data-feather="file-text"></i><span
+                                                class="hide-menu">Tipos de Documento</span></a></li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>estatus" class="sidebar-link"><i
+                                                data-feather="tag"></i><span class="hide-menu">Estatus</span></a></li>
+                                <?php endif; ?>
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>permisos" class="sidebar-link"><i
+                                                data-feather="key"></i><span class="hide-menu">Permisos de
+                                                Operación</span></a></li>
+                                <?php endif; ?>
                             </ul>
                         </li>
 
@@ -215,9 +353,9 @@
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
                                 <?php if ($_SESSION['rol_usuario'] == 1): ?>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>usuarios" class="sidebar-link"><i
-                                            data-feather="user"></i><span class="hide-menu">Usuarios</span></a></li>
-                                            <?php endif; ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>usuarios" class="sidebar-link"><i
+                                                data-feather="user"></i><span class="hide-menu">Usuarios</span></a></li>
+                                <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>clientes" class="sidebar-link"><i
                                             data-feather="users"></i><span class="hide-menu">Clientes</span></a></li>
                             </ul>
@@ -232,20 +370,24 @@
                             <ul aria-expanded="false" class="collapse first-level">
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>bodegas" class="sidebar-link"><i
                                             data-feather="package"></i><span class="hide-menu">Bodegas</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>brokers" class="sidebar-link"><i
-                                            data-feather="user-check"></i><span class="hide-menu">Brokers</span></a>
-                                </li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>brokers" class="sidebar-link"><i
+                                                data-feather="user-check"></i><span class="hide-menu">Brokers</span></a>
+                                    </li>
+                                <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>transportistas" class="sidebar-link"><i
                                             data-feather="truck"></i><span class="hide-menu">Transportistas</span></a>
                                 </li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>navieras" class="sidebar-link"><i
-                                            data-feather="navigation"></i><span class="hide-menu">Navieras</span></a>
-                                </li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>shippers" class="sidebar-link"><i
-                                            data-feather="send"></i><span class="hide-menu">Shippers</span></a></li>
-                                            
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>forwarders" class="sidebar-link"><i
-                                            data-feather="send"></i><span class="hide-menu">Forwarders</span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>navieras" class="sidebar-link"><i
+                                                data-feather="navigation"></i><span class="hide-menu">Navieras</span></a>
+                                    </li>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>shippers" class="sidebar-link"><i
+                                                data-feather="send"></i><span class="hide-menu">Shippers</span></a></li>
+
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>forwarders" class="sidebar-link"><i
+                                                data-feather="send"></i><span class="hide-menu">Forwarders</span></a></li>
+                                <?php endif; ?>
                             </ul>
                         </li>
 
@@ -258,15 +400,17 @@
                             <ul aria-expanded="false" class="collapse first-level">
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_fisicos"
                                         class="sidebar-link"><i data-feather="box"></i><span
-                                            class="hide-menu">Contenedores Físicos</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_maritimos"
-                                        class="sidebar-link"><i data-feather="package"></i><span
-                                            class="hide-menu">Contenedores Marítimos</span></a></li>
-                          <!--      <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
+                                            class="hide-menu">Cajas/Ferros</span></a></li>
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_maritimos"
+                                            class="sidebar-link"><i data-feather="package"></i><span
+                                                class="hide-menu">Contenedores Marítimos</span></a></li>
+                                <?php endif; ?>
+                                <!--      <li class="sidebar-item"><a href="<?= BASE_URL ?>contenedores_en_operacion"
                                         class="sidebar-link"><i data-feather="layers"></i><span
                                             class="hide-menu">Contenedores en Operación</span></a></li> -->
-                              
-                               <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>trazabilidad" class="sidebar-link"><i
+
+                                <!-- <li class="sidebar-item"><a href="<?= BASE_URL ?>trazabilidad" class="sidebar-link"><i
                                             data-feather="trending-up"></i><span
                                             class="hide-menu">Trazabilidad</span></a></li> -->
                             </ul>
@@ -279,30 +423,78 @@
                                 <span class="hide-menu">Operaciones</span>
                             </a>
                             <ul aria-expanded="false" class="collapse first-level">
-                                <li class="sidebar-item"><a href="<?= BASE_URL .'operaciones_maritimas/ver' ?>" class="sidebar-link"><i
+                                <!--   <li class="sidebar-item"><a href="<? //= BASE_URL . 'operaciones_maritimas/ver' 
+                                                                            ?>" class="sidebar-link"><i
                                             data-feather="anchor"></i><span class="hide-menu">
-                                            Operaciones Maritimas</span></a></li>
-                                <li class="sidebar-item"><a href="<?= BASE_URL ?>Operaciones_maritimo_ferro/ver"
-                                        class="sidebar-link"><i data-feather="truck"></i><span
-                                            class="hide-menu">Operaciones Maritimo-Ferro</span></a></li>
+                                            Operaciones Maritimas</span></a></li>-->
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>Operaciones_maritimo_ferro/ver"
+                                            class="sidebar-link"><i data-feather="truck"></i><span
+                                                class="hide-menu">Operaciones </span></a></li>
+                                <?php endif; ?>
                                 <li class="sidebar-item"><a href="<?= BASE_URL ?>operaciones_por_partida"
                                         class="sidebar-link"><i data-feather="navigation"></i><span
-                                            class="hide-menu">Operaciones Por Partida</span></a></li> 
+                                            class="hide-menu">Operaciones Por Partida</span></a></li>
                             </ul>
                         </li>
 
-                           
-                        
 
-                        <!-- AUDITORÍA -->
-                         <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                        <!-- Finanzas -->
                         <li class="sidebar-item">
-                            <a class="sidebar-link" href="<?= BASE_URL ?>bitacora">
-                                <i data-feather="clipboard" class="feather-icon"></i>
-                                <span class="hide-menu">Bitácora</span>
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="bar-chart"></i>
+                                <span class="hide-menu">Finanzas</span>
                             </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+
+                                <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>Finanzas/index"
+                                            class="sidebar-link"><i data-feather="dollar-sign"></i><span
+                                                class="hide-menu">Finanzas </span></a></li>
+                                <?php endif; ?>
+                            </ul>
+
                         </li>
-                        <?php endif; ?>
+                        <!-- Auditoria -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="book"></i>
+                                <span class="hide-menu">Auditoria</span>
+                            </a>
+                            <ul aria-expanded="false" class="collapse first-level">
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>bitacora" class="sidebar-link"><i data-feather="clipboard"></i><span
+                                            class="hide-menu">Bitacora Operaciones</span></a></li>
+                                <li class="sidebar-item"><a href="<?= BASE_URL ?>BitacoraOpPartida" class="sidebar-link"><i data-feather="book-open"></i><span
+                                            class="hide-menu">Bitacora Operaciones Por Partida</span></a></li>
+                            </ul>
+                        </li>
+                        <!-- REPORTAR ERRORES -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow" href="#" aria-expanded="false">
+                                <i data-feather="alert-octagon"></i>
+                                <span class="hide-menu">Errores</span>
+                            </a>
+                            <!-- USUARIO -->
+                            <?php if ($_SESSION['rol_usuario'] == 1 || $_SESSION['rol_usuario'] == 2 || $_SESSION['rol_usuario'] == 11 || $_SESSION['rol_usuario'] == 15): ?>
+                                <ul aria-expanded="false" class="collapse first-level">
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>ErroresUsuario/index" class="sidebar-link"><i data-feather="alert-circle"></i><span
+                                                class="hide-menu">Reportar Errores</span></a></li>
+                                <?php endif; ?>
+                                <!-- ADMINISTRADOR -->
+                                <?php if ($_SESSION['rol_usuario'] == 1): ?>
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>ErroresAdmin/index" class="sidebar-link"><i data-feather="alert-triangle"></i><span
+                                                class="hide-menu">Solucionar Errores</span></a></li>
+
+                                </ul>
+                            <?php endif; ?>
+
+
+                        </li>
+
+                    </ul>
+                    </li>
+
+
 
                     </ul>
                 </nav>
@@ -409,48 +601,48 @@
                 });
             </script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const currentPath = window.location.pathname;
-        const links = document.querySelectorAll(".sidebar-link");
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const currentPath = window.location.pathname;
+                    const links = document.querySelectorAll(".sidebar-link");
 
-        links.forEach(link => {
-            const href = link.getAttribute("href");
+                    links.forEach(link => {
+                        const href = link.getAttribute("href");
 
-            if (href && currentPath.includes(href)) {
-                // Activar hijo
-                link.classList.add("active-link"); // color especial para link actual
-                const li = link.closest("li");
-                if (li) li.classList.add("active-item");
+                        if (href && currentPath.includes(href)) {
+                            // Activar hijo
+                            link.classList.add("active-link"); // color especial para link actual
+                            const li = link.closest("li");
+                            if (li) li.classList.add("active-item");
 
-                // Si es parte de submenú, activa el padre también
-                const submenu = link.closest("ul.collapse");
-                if (submenu) {
-                    submenu.classList.add("in");
-                    const parentLi = submenu.closest("li.sidebar-item");
-                    if (parentLi) {
-                        parentLi.classList.add("active-parent"); // padre resaltado diferente
-                        const parentLink = parentLi.querySelector(".has-arrow");
-                        if (parentLink) parentLink.setAttribute("aria-expanded", "true");
-                    }
-                }
-            }
-        });
-    });
-</script>
+                            // Si es parte de submenú, activa el padre también
+                            const submenu = link.closest("ul.collapse");
+                            if (submenu) {
+                                submenu.classList.add("in");
+                                const parentLi = submenu.closest("li.sidebar-item");
+                                if (parentLi) {
+                                    parentLi.classList.add("active-parent"); // padre resaltado diferente
+                                    const parentLink = parentLi.querySelector(".has-arrow");
+                                    if (parentLink) parentLink.setAttribute("aria-expanded", "true");
+                                }
+                            }
+                        }
+                    });
+                });
+            </script>
 
-<!-- Chartist CSS -->
-<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css"> -->
-<link href="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.css" rel="stylesheet">
+            <!-- Chartist CSS -->
+            <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css"> -->
+            <link href="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.css" rel="stylesheet">
 
 
-<!-- Chartist JS -->
-<!--<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script> -->
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.js"></script>
+            <!-- Chartist JS -->
+            <!--<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script> -->
+            <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.js"></script>
 
-<!-- Luego tu dashboard -->
-<script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script>
- 
- <script>
-     const base_url = '<?php echo BASE_URL; ?>';
- </script>
+            <!-- Luego tu dashboard -->
+            <script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script>
+
+            <script>
+                const base_url = '<?php echo BASE_URL; ?>';
+            </script>

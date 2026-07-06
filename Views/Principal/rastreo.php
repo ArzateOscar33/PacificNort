@@ -28,7 +28,7 @@
             type="text"
             class="form-control"
             id="inputNumeroGuia"
-            placeholder="Ingresa tu número de operación (ej. FO-03, LBMF-01, LC-02)">
+            placeholder="Ingresa tu número de operación ">
 
           <button class="btn btn-primary d-flex align-items-center" type="button" id="btnRastrearEnvio">
             <i class="bi bi-search me-1"></i> Rastrear
@@ -36,7 +36,7 @@
         </div>
 
         <small class="text-muted d-block mt-2">
-          Puedes buscar operaciones FO (ferro/terrestre) o marítimas (LBMF, LC, etc.).
+          Puedes buscar operaciones Marítimas (LBMF, LC, etc.).
         </small>
 
       </div>
@@ -111,7 +111,7 @@
                 <th style="width: 160px;">Operación</th>
                 <th style="width: 180px;">Contenedor</th>
                 <th style="width: 180px;">Estatus actual</th>
-                <th>Comentario</th> 
+                <th>Comentario</th>
               </tr>
             </thead>
             <tbody id="tbodyOperacionMaritima">
@@ -139,22 +139,22 @@
 </section>
 
 <style>
-/* Asegura que todos los elementos del input-group tengan la misma altura */
-.input-group .input-group-text,
-.input-group .form-control,
-.input-group .btn {
-  height: 48px;
-  display: flex;
-  align-items: center;
-}
+  /* Asegura que todos los elementos del input-group tengan la misma altura */
+  .input-group .input-group-text,
+  .input-group .form-control,
+  .input-group .btn {
+    height: 48px;
+    display: flex;
+    align-items: center;
+  }
 
-.input-group .input-group-text {
-  padding: 0 1rem;
-}
+  .input-group .input-group-text {
+    padding: 0 1rem;
+  }
 
-.input-group .btn {
-  padding: 0 1.5rem;
-  white-space: nowrap;
-}
+  .input-group .btn {
+    padding: 0 1.5rem;
+    white-space: nowrap;
+  }
 </style>
 <script src="<?php echo BASE_URL; ?>Assets/Js/rastreo.js"></script>

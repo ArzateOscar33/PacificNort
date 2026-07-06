@@ -11,6 +11,8 @@ class Piso extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     /**
@@ -48,7 +50,7 @@ class Piso extends Controller
         if ($per_page > 200) $per_page = 200;
 
         // Validar bodega (si viene algo raro lo ignoramos)
-        if ($bodega !== '' && !in_array($bodega, ['BODEGA TJ', 'BODEGA SD'], true)) {
+        if ($bodega !== '' && !in_array($bodega, ['BODEGA MX', 'BODEGA USA'], true)) {
             $bodega = '';
         }
 
@@ -76,7 +78,6 @@ class Piso extends Controller
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode($out, JSON_UNESCAPED_UNICODE);
             die();
-
         } catch (Throwable $e) {
             error_log('Piso/listar error: ' . $e->getMessage());
 
@@ -88,7 +89,4 @@ class Piso extends Controller
             die();
         }
     }
-
-
 }
-

@@ -9,6 +9,8 @@ class Estados extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2, 15]);
     }
 
     public function index()
@@ -59,36 +61,42 @@ class Estados extends Controller
         $nombre = trim($_POST['nombre'] ?? '');
 
         if ($nombre === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'El nombre es obligatorio'], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         // CREAR
         if ($id === '') {
             if ($this->model->existe($nombre)) {
-                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un estado con ese nombre'], JSON_UNESCAPED_UNICODE); die();
+                echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un estado con ese nombre'], JSON_UNESCAPED_UNICODE);
+                die();
             }
             $ok = $this->model->registrar($nombre);
             echo json_encode([
                 'status' => $ok ? 'success' : 'error',
                 'msg'    => $ok ? 'Estado registrado' : 'Error al registrar'
-            ], JSON_UNESCAPED_UNICODE); die();
+            ], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         // EDITAR
         $idInt = (int)$id;
         if ($idInt <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'ID inválido'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'ID inválido'], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         if (method_exists($this->model, 'existeEnOtro') && $this->model->existeEnOtro($nombre, $idInt)) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe otro estado con ese nombre'], JSON_UNESCAPED_UNICODE); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe otro estado con ese nombre'], JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         $ok = $this->model->actualizar($idInt, $nombre);
         echo json_encode([
             'status' => $ok ? 'success' : 'error',
             'msg'    => $ok ? 'Estado actualizado' : 'Error al actualizar'
-        ], JSON_UNESCAPED_UNICODE); die();
+        ], JSON_UNESCAPED_UNICODE);
+        die();
     }
 
     public function editar(int $id)

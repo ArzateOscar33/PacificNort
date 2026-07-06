@@ -28,7 +28,7 @@ class PisoModel extends Query
         $argsBodega = [];
         $whereBodega = "";
 
-        if ($bodega !== '' && in_array($bodega, ['BODEGA TJ', 'BODEGA SD'], true)) {
+        if ($bodega !== '' && in_array($bodega, ['BODEGA MX', 'BODEGA USA'], true)) {
             $whereBodega = " AND es.nombre = ? ";
             $argsBodega[] = $bodega;
         }
@@ -62,7 +62,7 @@ class PisoModel extends Query
                 ON es.id_estatus = o.estatus_id
             LEFT JOIN contenedor_maritimo_ferro cmf
                 ON cmf.cont_maritimo_operacion_id = cmo.id
-            WHERE es.nombre IN ('BODEGA TJ','BODEGA SD')
+            WHERE es.nombre IN ('BODEGA MX','BODEGA USA')
             {$whereBusq}
             {$whereBodega}
             GROUP BY
@@ -94,8 +94,8 @@ class PisoModel extends Query
         $bad = $this->select("
             SELECT
                 COUNT(*) AS total,
-                SUM(CASE WHEN bodega = 'BODEGA TJ' THEN 1 ELSE 0 END) AS total_tj,
-                SUM(CASE WHEN bodega = 'BODEGA SD' THEN 1 ELSE 0 END) AS total_sd
+                SUM(CASE WHEN bodega = 'BODEGA MX' THEN 1 ELSE 0 END) AS total_tj,
+                SUM(CASE WHEN bodega = 'BODEGA USA' THEN 1 ELSE 0 END) AS total_sd
             FROM ({$sub}) x
         ", $allArgs) ?: [];
 

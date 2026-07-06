@@ -16,11 +16,11 @@
          <div id="contenidoOperacion" style="display:block;">
              <div class="row g-3">
                  <!-- Contenedor Info -->
-                 <div class="col-md-4"  >
+                 <div class="col-md-4">
                      <div class="mb-2">
-                         <label for="selectContenedorResumen" class="form-label">Seleccionar Contenedor:</label>
+                         <label for="selectContenedorResumen" class="form-label">Contenedor Maritimo:</label>
                          <div class="d-flex gap-2">
-                             <select class="form-control" id="selectContenedorResumen" readonly disabled>
+                             <select class="form-control" id="selectContenedorResumen" disabled readonly>
                                  <option value="">-- Selecciona una Operación --</option>
                              </select>
                              <button class="btn btn-outline-secondary" id="btnRefrescarResumen" title="Refrescar">
@@ -30,13 +30,7 @@
                      </div>
 
                      <div class="border rounded p-3" id="cardInfoContenedor">
-                         <div class="d-flex justify-content-between align-items-start mb-2">
-                             <div>
-                                 <div class="small text-muted">Contenedor</div>
-                                 <div id="nombreContenedorResumen">—</div>
-                             </div>
 
-                         </div>
 
                          <!-- ===== Vista MARÍTIMO ===== -->
                          <div id="bloqueMaritimo" class="mt-2">
@@ -45,41 +39,46 @@
                                  <div id="puertoResumen">—</div>
                              </div>
                              <div class="mb-2">
-                                 <div class="small text-muted">ETA</div>
-                                 <div id="etaContenedor">—</div>
-                             </div>
-                             <div class="mb-2">
                                  <div class="small text-muted">ETD</div>
                                  <div id="etdContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">ETA</div>
+                                 <div id="etaContenedor">—</div>
                              </div>
                              <div class="mb-2">
                                  <div class="small text-muted">No. BL</div>
                                  <div id="blContenedor">—</div>
                              </div>
                              <div class="mb-2">
+                                 <div class="small text-muted">ISF</div>
+                                 <div id="isfContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">Cita Puerto</div>
+                                 <div id="citaPuertoContenedor"> </div>
+                             </div>
+
+                             <div class="mb-2">
+                                 <div class="small text-muted">Broker</div>
+                                 <div id="brokerContenedor">—</div>
+                             </div>
+                             <div class="mb-2">
+                                 <div class="small text-muted">Tansportista</div>
+                                 <div id="transportistaContenedor">—</div>
+                             </div>
+                             <div class="mt-2">
+                                 <div class="small text-muted mb-1">Ferros / Cajas vinculadas</div>
+                                 <div id="ferrosCajasVinculadasBadges" class="d-flex flex-column gap-1"> -</div>
+                             </div>
+
+
+                             <div class="mb-2">
                                  <div class="small text-muted">Comentarios</div>
                                  <div id="comentarioContenedor">—</div>
                              </div>
                          </div>
 
-<div id="bloqueFerro" class="mt-2 d-none">
-    <div class="mb-2">
-        <div class="small text-muted">Arribo a puerto</div>
-        <div id="arriboPuerto">—</div>
-    </div>
-    <div class="mb-2">
-        <div class="small text-muted">Bultos (total en ferro)</div>
-        <div id="bultos">—</div>
-    </div>
-
-    <!-- NUEVO: contenedores marítimos que van en este ferro -->
-    <div class="mb-2">
-        <div class="small text-muted">Contenedores marítimos en este ferro</div>
-        <div id="ferroMaritimosWrap">
-            <span class="text-muted small">Sin información…</span>
-        </div>
-    </div>
-</div>
 
                          <div class="d-flex flex-wrap gap-2 mt-3">
                              <button class="btn btn-sm btn-outline-warning" id="btnExportPdfResumen">
@@ -92,7 +91,7 @@
 
                  <div class="row g-3 col-md-8">
                      <!-- Docs pendientes -->
-                     <div class="col-md-4">
+                     <div class="col-md-6">
                          <div
                              class="bg-warning text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="file-text" class="mb-1"></i>
@@ -102,7 +101,7 @@
                      </div>
 
                      <!-- Costos -->
-                     <div class="col-md-4">
+                     <div class="col-md-6">
                          <div
                              class="bg-danger text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="dollar-sign" class="mb-1"></i>
@@ -111,10 +110,10 @@
                          </div>
                      </div>
 
-              
+
 
                      <!-- Eventos completados -->
-                     <div class="col-md-4">
+                     <div class="col-md-1 d-none">
                          <div
                              class="bg-info text-white rounded p-3 text-center h-100 d-flex flex-column justify-content-center">
                              <i data-feather="check-circle" class="mb-1"></i>
@@ -130,7 +129,7 @@
              <!-- Avance + Costos -->
              <div class="row mt-4 g-3">
                  <!-- Avance -->
-                 <div class="col-md-6"  >
+                 <div class="col-md-1 d-none">
                      <div class="col-md-12">
                          <h6 class="fw-bold mb-2"><i data-feather="clock" class="me-1"></i> Línea de tiempo</h6>
                          <canvas id="timelineChart" class="w-100 h-100"></canvas>
@@ -139,7 +138,7 @@
                  </div>
 
                  <!-- Costos -->
-                 <div class="col-md-6"  >
+                 <div class="col-md-12">
                      <h6 class="fw-bold mb-2"><i data-feather="dollar-sign" class="me-1"></i> Costos del contenedor</h6>
                      <div class="row flex-wrap gap-2 justify-content-end align-items-center mb-2">
                          <div class="d-flex flex-wrap align-items-end mb-2">
@@ -175,7 +174,7 @@
              <div class="row mt-4 g-3">
                  <!-- Checklist de Documentos -->
                  <!-- ===== Documentos faltantes por contenedor ===== -->
-                 <div class="col-md-6">
+                 <div class="col-md-12">
                      <div class="card h-100">
                          <div class="card-header d-flex justify-content-between align-items-center">
                              <div>
@@ -209,7 +208,7 @@
                  <input type="hidden" id="dfContenedorTipo" value=""> <!-- 'F' o 'M' -->
 
                  <!-- Trazabilidad (tabla) -->
-                 <div class="col-md-6">
+                 <div class="col-md-6 d-none">
                      <div class="border rounded p-3">
                          <h6 class="mb-2"><i data-feather="clock" class="me-1"></i> Trazabilidad</h6>
                          <div class="table-responsive">
@@ -221,15 +220,15 @@
                                      </tr>
                                  </thead>
                                  <tbody id="tablaEventosLogisticos">
-                                        <tr>
-                                            <td colspan="2" class="text-center text-muted py-4">
-                                                Seleccione un contenedor para ver su trazabilidad.
-                                            </td>
-                                        </tr>
+                                     <tr>
+                                         <td colspan="2" class="text-center text-muted py-4">
+                                             Seleccione un contenedor para ver su trazabilidad.
+                                         </td>
+                                     </tr>
                                  </tbody>
                              </table>
                          </div>
-                   
+
                      </div>
                  </div>
 
@@ -242,19 +241,19 @@
  <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>-->
 
-  <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chart.js"></script> 
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartjs-adapter-date-fns.js"></script> 
- 
- 
- 
+ <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chart.js"></script>
+ <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartjs-adapter-date-fns.js"></script>
 
-<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_graficos.js"></script>
-<!-- Librerías requeridas para exportar a PDF (cargar después de Chart.js) 
+
+
+
+ <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_graficos.js"></script>
+ <!-- Librerías requeridas para exportar a PDF (cargar después de Chart.js) 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>-->
 
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/html2canvas.min.js"></script>
-<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
+ <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/html2canvas.min.js"></script>
+ <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/jspdf.umd.min.js"></script>
 
-<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_exportar.js"></script>
+ <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen.js"></script>
+ <script src="<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/resumen_exportar.js"></script>

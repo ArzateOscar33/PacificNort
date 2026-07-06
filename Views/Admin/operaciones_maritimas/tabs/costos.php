@@ -124,7 +124,6 @@
                 class="form-control" placeholder="Escribe para buscar contenedor..." autocomplete="off">
               <div id="sugerenciasCostosContenedor" class="list-group"
                 style="position:absolute; z-index:1061; width:100%; display:none;"></div>
-              <small class="text-muted">Sugerencia: escribe parte del número (ej. FXE...).</small>
             </div>
           </div>
 

@@ -9,6 +9,8 @@ class Tipos_eventos_logisticos extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     public function index()
@@ -20,7 +22,8 @@ class Tipos_eventos_logisticos extends Controller
         $this->views->getView('admin/tipos_eventos_logisticos', "index", $data);
     }
 
-    public function listar(){
+    public function listar()
+    {
         $data = $this->model->listar();
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
@@ -46,10 +49,10 @@ class Tipos_eventos_logisticos extends Controller
         }
 
         // Si quieres forzar selección, descomenta:
-         if ($tipo_operacion_id === '') {
-             echo json_encode(['status' => 'warning', 'msg' => 'El tipo de operación es obligatorio']);
+        if ($tipo_operacion_id === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'El tipo de operación es obligatorio']);
             return;
-         }
+        }
 
         if ($id === '') {
             // validar duplicado por nombre + tipo

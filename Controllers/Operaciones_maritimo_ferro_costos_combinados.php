@@ -9,10 +9,14 @@ class Operaciones_maritimo_ferro_costos_combinados extends Controller
     {
         parent::__construct();
 
-        if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
 
         require_once "Models/OperacionesLogModel.php";
         $this->opLog = new OperacionesLogModel();
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
 
     private function logOp(int $operacionId, string $accion, string $descripcion): void
@@ -22,7 +26,9 @@ class Operaciones_maritimo_ferro_costos_combinados extends Controller
         try {
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
             $id = $this->opLog->crear($operacionId, $usuarioId, $accion, $descripcion);
-            if (!$id) { error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}"); }
+            if (!$id) {
+                error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}");
+            }
         } catch (\Throwable $e) {
             error_log("operaciones_log error: " . $e->getMessage());
         }
@@ -135,10 +141,16 @@ class Operaciones_maritimo_ferro_costos_combinados extends Controller
                 'ok' => true,
                 'data' => $res['data'] ?? [],
                 'meta' => $res['meta'] ?? [
-                    'total' => 0, 'page' => $page, 'per_page' => $per_page, 'total_pages' => 0
+                    'total' => 0,
+                    'page' => $page,
+                    'per_page' => $per_page,
+                    'total_pages' => 0
                 ],
                 'totals' => $res['totals'] ?? [
-                    'total_pesos' => 0, 'total_dlls' => 0, 'total_mxn' => 0, 'total_usd' => 0
+                    'total_pesos' => 0,
+                    'total_dlls' => 0,
+                    'total_mxn' => 0,
+                    'total_usd' => 0
                 ]
             ]);
         } catch (\Throwable $e) {

@@ -9,6 +9,8 @@ class Brokers extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
     }
     public function index()
     {
@@ -16,8 +18,9 @@ class Brokers extends Controller
 
         $this->views->getView('admin/Brokers', "index", $data);
     }
-    public function listar(){
-        $data=$this->model->listar();
+    public function listar()
+    {
+        $data = $this->model->listar();
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         die();
     }
@@ -26,29 +29,30 @@ class Brokers extends Controller
     {
         // Campos desde el form
         $nombre     = trim($_POST['nombre']     ?? '');
-        $contacto  = trim($_POST['contacto']  ?? ''); 
+        $contacto  = trim($_POST['contacto']  ?? '');
 
         // Validaciones básicas
-        if ($nombre === '' || $contacto === ''   ) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']); die();
+        if ($nombre === '' || $contacto === '') {
+            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']);
+            die();
         }
 
         // ¿Existe ya una bodega con el mismo nombre en la misma ciudad?
         $existe = $this->model->existeNombre($nombre);
-        if ($existe) { 
-        echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un Broker con ese nombre ']); 
-        die();
+        if ($existe) {
+            echo json_encode(['status' => 'warning', 'msg' => 'Ya existe un Broker con ese nombre ']);
+            die();
         }
 
         // Registrar nueva
         $nuevoId = $this->model->registrar($nombre, $contacto);
         if (!$nuevoId) {
             echo json_encode(['status' => 'error', 'msg' => 'No se pudo registrar el broker']);
-             die();
+            die();
         }
 
         echo json_encode(['status' => 'success', 'msg' => 'Broker registrado correctamente']);
-         die();
+        die();
     }
 
     public function editar($id)
@@ -59,12 +63,12 @@ class Brokers extends Controller
     }
 
 
-        public function buscar()
+    public function buscar()
     {
         $term = isset($_GET['term']) ? trim($_GET['term']) : '';
-        if ($term === '') { 
-            echo json_encode([]); 
-            die(); 
+        if ($term === '') {
+            echo json_encode([]);
+            die();
         }
         $data = $this->model->buscar($term);
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -75,32 +79,33 @@ class Brokers extends Controller
     {
         $id         = (int)($_POST['id'] ?? 0);
         $nombre     = trim($_POST['nombre'] ?? '');
-        $contacto  = trim($_POST['contacto'] ?? ''); 
+        $contacto  = trim($_POST['contacto'] ?? '');
 
         if ($id <= 0 || $nombre === '' || $contacto === '') {
-            echo json_encode(['status'=>'warning','msg'=>'Campos obligatorios faltantes']); die();
+            echo json_encode(['status' => 'warning', 'msg' => 'Campos obligatorios faltantes']);
+            die();
         }
 
- 
+
 
         $ok = $this->model->actualizar($id, $nombre, $contacto);
         if (!$ok) {
-            echo json_encode(['status'=>'error','msg'=>'No se pudo actualizar el broker']); die();
+            echo json_encode(['status' => 'error', 'msg' => 'No se pudo actualizar el broker']);
+            die();
         }
 
-        echo json_encode(['status'=>'success','msg'=>'Bodega actualizada correctamente']); die();
+        echo json_encode(['status' => 'success', 'msg' => 'Bodega actualizada correctamente']);
+        die();
     }
 
-    public function eliminar($id){
-        $res =$this->model->eliminar($id);       
-        
+    public function eliminar($id)
+    {
+        $res = $this->model->eliminar($id);
+
         echo json_encode([
             'status' => $res ? 'success' : 'error',
             'msg'    => $res ? 'Broker Eliminado' : 'Error al eliminar'
         ]);
         die();
     }
-
-    }
-
- 
+}

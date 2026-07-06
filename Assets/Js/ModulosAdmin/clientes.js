@@ -1,9 +1,9 @@
- const tabla= document.getElementById("tablaClientes");
+const tabla = document.getElementById("tablaClientes");
 listar();
 // Listar
 function listar() {
   const http = new XMLHttpRequest();
-  const url=base_url + "Clientes/listar";
+  const url = base_url + "Clientes/listar";
   http.open("GET", url, true);
   http.send();
   http.onreadystatechange = function () {
@@ -18,7 +18,8 @@ function listar() {
 function renderTabla(data) {
   tabla.innerHTML = "";
   if (!Array.isArray(data) || data.length === 0) {
-    tabla.innerHTML = "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
+    tabla.innerHTML =
+      "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
     return;
   }
   data.forEach((item) => {
@@ -41,29 +42,32 @@ function renderTabla(data) {
 
 //dar de alta y actualizar
 
-const form  = document.getElementById("formClientes");
-const modal = new bootstrap.Modal(document.getElementById("modalRegistrarCliente"));
+const form = document.getElementById("formClientes");
+const modal = new bootstrap.Modal(
+  document.getElementById("modalRegistrarCliente"),
+);
 const btnAgregarCliente = document.getElementById("btnAgregarCliente");
 
 btnAgregarCliente.addEventListener("click", () => {
   form.reset();
   document.getElementById("id_cliente").value = "";
-  document.getElementById("modalRegistrarClienteLabel").textContent = "Registrar Cliente";
-  document.getElementById("btnSubmit").innerHTML='<i data-feather="check-circle" class="me-1"></i> Agregar';
+  document.getElementById("modalRegistrarClienteLabel").textContent =
+    "Registrar Cliente";
+  document.getElementById("btnSubmit").innerHTML =
+    '<i data-feather="check-circle" class="me-1"></i> Agregar';
   feather.replace();
 });
-
 
 // Submit (registrar)
 form.addEventListener("submit", function (e) {
   e.preventDefault();
   const http = new XMLHttpRequest();
-  const url =base_url + "Clientes/registrar";
+  const url = base_url + "Clientes/registrar";
   http.open("POST", url, true);
   http.send(new FormData(form)); // incluye id_estatus + nombre
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-      console.log(this.responseText);
+      // console.log(this.responseText);
       const res = JSON.parse(this.responseText);
       if (res.status === "success") {
         modal.hide();
@@ -75,24 +79,25 @@ form.addEventListener("submit", function (e) {
   };
 });
 
- 
 function editarCliente(id) {
   const http = new XMLHttpRequest();
-  const url= base_url + "Clientes/editar/" + id;
-  http.open("GET",url, true);
+  const url = base_url + "Clientes/editar/" + id;
+  http.open("GET", url, true);
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-        console.log(this.responseText);
+      //console.log(this.responseText);
       const data = JSON.parse(this.responseText);
-      document.getElementById("id_cliente").value = data.id_cliente;   
+      document.getElementById("id_cliente").value = data.id_cliente;
       form.nombre.value = data.nombre || "";
       //form.rfc.value  = data.rfc || "";
-      form.correo.value    = data.correo || "";
-      form.telefono.value  = data.telefono || "";
+      form.correo.value = data.correo || "";
+      form.telefono.value = data.telefono || "";
       //form.direccion.value = data.direccion || "";
-      document.getElementById("modalRegistrarClienteLabel").textContent = "Editar Cliente";
-      document.getElementById("btnSubmit").innerHTML = '<i data-feather="check-circle" class="me-1"></i> Actualizar';
+      document.getElementById("modalRegistrarClienteLabel").textContent =
+        "Editar Cliente";
+      document.getElementById("btnSubmit").innerHTML =
+        '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
       modal.show();
     }
@@ -100,7 +105,7 @@ function editarCliente(id) {
 }
 
 // Eliminar
-function eliminarCliente(id) {    
+function eliminarCliente(id) {
   Swal.fire({
     title: "¿Estás seguro?",
     text: "Esta acción no se puede deshacer.",
@@ -111,12 +116,12 @@ function eliminarCliente(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      const url=base_url + "Clientes/eliminar/" + id;
+      const url = base_url + "Clientes/eliminar/" + id;
       http.open("GET", url, true);
       http.send();
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-          console.log(this.responseText);
+          //console.log(this.responseText);
           const res = JSON.parse(this.responseText);
           if (res.status === "success") listar();
           Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
@@ -141,13 +146,21 @@ inputBuscarCliente?.addEventListener("keyup", function () {
   }
 
   const http = new XMLHttpRequest();
-  http.open("GET", base_url + "Clientes/buscar?term=" + encodeURIComponent(term), true);
+  http.open(
+    "GET",
+    base_url + "Clientes/buscar?term=" + encodeURIComponent(term),
+    true,
+  );
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       let data;
-      try { data = JSON.parse(this.responseText); }
-      catch (e) { console.error("JSON inválido:", this.responseText); return; }
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        console.error("JSON inválido:", this.responseText);
+        return;
+      }
 
       // refresca tabla con resultados
       renderTabla(data);
@@ -178,7 +191,10 @@ inputBuscarCliente?.addEventListener("keyup", function () {
 
 // Cerrar sugerencias si clic fuera
 document.addEventListener("click", function (e) {
-  if (!inputBuscarCliente?.contains(e.target) && !sugerenciasCliente?.contains(e.target)) {
+  if (
+    !inputBuscarCliente?.contains(e.target) &&
+    !sugerenciasCliente?.contains(e.target)
+  ) {
     sugerenciasCliente.innerHTML = "";
     sugerenciasCliente.style.display = "none";
   }

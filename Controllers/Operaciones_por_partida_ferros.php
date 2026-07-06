@@ -1,8 +1,11 @@
 <?php
+require_once "Models/BitacoraOpPartidaModel.php";
 class Operaciones_por_partida_ferros extends Controller
 {
+    protected $bitacoraOpPartida;
     public function __construct()
     {
+
         parent::__construct();
         session_start();
 
@@ -10,8 +13,34 @@ class Operaciones_por_partida_ferros extends Controller
             header('Location: ' . BASE_URL . 'admin');
             exit;
         }
-    }
+        // Solo sin rol cliente
+        $this->requireRoles([1, 11, 2]);
 
+        $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
+    }
+    private function registrarBitacoraPartida(
+        string $modulo,
+        string $accion,
+        string $entidad,
+        ?int $entidadId = null,
+        ?string $detalle = null
+    ) {
+        try {
+            $usuarioId = $_SESSION['id_usuario'] ?? null;
+
+            return $this->bitacoraOpPartida->crear(
+                $usuarioId,
+                $modulo,
+                $accion,
+                $entidad,
+                $entidadId,
+                $detalle
+            );
+        } catch (Exception $e) {
+            error_log('[BITACORA OP PARTIDA EVENTOS] ' . $e->getMessage());
+            return false;
+        }
+    }
     public function index()
     {
         $data['title'] = 'Revisión de Ferros y Envíos';
