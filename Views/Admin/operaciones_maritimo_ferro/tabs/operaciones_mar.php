@@ -264,6 +264,74 @@
     min-width: 180px;
     font-size: .82rem;
   }
+
+  /* ===== Selects con apariencia igual a filtros dropdown ===== */
+  .mf-filter-select-wrapper {
+    position: relative;
+    min-width: 240px;
+    max-width: 260px;
+  }
+
+  .mf-filter-select-wrapper.mf-filter-sm {
+    min-width: 90px;
+    max-width: 110px;
+  }
+
+  .mf-filter-select-wrapper .mf-filter-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #6c757d;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .mf-filter-select-wrapper .mf-filter-chevron {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #6c757d;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .mf-filter-select {
+    min-height: 38px;
+    width: 100%;
+    border-radius: 8px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding-left: 38px;
+    padding-right: 38px;
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+
+  .mf-filter-select:hover {
+    background-color: #f8fafc;
+  }
+
+  .mf-filter-select:focus {
+    border-color: rgba(25, 135, 84, .45);
+    box-shadow: 0 0 0 .2rem rgba(25, 135, 84, .12);
+  }
+
+  .mf-filter-select-wrapper.mf-filter-sm .mf-filter-select {
+    padding-left: 12px;
+    padding-right: 30px;
+    text-align: center;
+  }
 </style>
 
 <div class="container py-4 col-md-12">
@@ -380,18 +448,24 @@
         <!-- ===== FILA 2: Catálogos principales ===== -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
 
-          <!-- Subtipo -->
-          <select id="maritimo_ferro_filtroSubtipo" name="maritimo_ferro_filtroSubtipo" class="form-control"
-            style="max-width:240px;">
-            <option value="">Subtipo (Todos)</option>
-            <?php if (!empty($data['subtipos'])): ?>
-              <?php foreach ($data['subtipos'] as $st): ?>
-                <option value="<?= (int)$st['id_subtipo']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
+          <div class="mf-filter-select-wrapper">
+            <i data-feather="layers" class="mf-filter-icon"></i>
+
+            <select id="maritimo_ferro_filtroSubtipo"
+              name="maritimo_ferro_filtroSubtipo"
+              class="form-control mf-filter-select">
+              <option value="">Subtipo (Todos)</option>
+              <?php if (!empty($data['subtipos'])): ?>
+                <?php foreach ($data['subtipos'] as $st): ?>
+                  <option value="<?= (int)$st['id_subtipo']; ?>">
+                    <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </select>
+
+            <i data-feather="chevron-down" class="mf-filter-chevron"></i>
+          </div>
 
           <!-- Filtro Estatus múltiple -->
           <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
@@ -576,18 +650,24 @@
               </div>
             </div>
           </div>
-          <!-- Medida contenedor -->
-          <select id="maritimo_ferro_filtroMedidaContenedor" name="maritimo_ferro_filtroMedidaContenedor"
-            class="form-control" style="max-width:240px;">
-            <option value="">Medida del Contenedor (Todas)</option>
-            <option value="20GP">20GP</option>
-            <option value="20HQ">20HQ</option>
-            <option value="40GP">40GP</option>
-            <option value="40HC">40HC</option>
-            <option value="40HQ">40HQ</option>
-            <option value="45HC">45HC</option>
-            <option value="45HQ">45HQ</option>
-          </select>
+          <div class="mf-filter-select-wrapper">
+            <i data-feather="box" class="mf-filter-icon"></i>
+
+            <select id="maritimo_ferro_filtroMedidaContenedor"
+              name="maritimo_ferro_filtroMedidaContenedor"
+              class="form-control mf-filter-select">
+              <option value="">Medida del Contenedor (Todas)</option>
+              <option value="20GP">20GP</option>
+              <option value="20HQ">20HQ</option>
+              <option value="40GP">40GP</option>
+              <option value="40HC">40HC</option>
+              <option value="40HQ">40HQ</option>
+              <option value="45HC">45HC</option>
+              <option value="45HQ">45HQ</option>
+            </select>
+
+            <i data-feather="chevron-down" class="mf-filter-chevron"></i>
+          </div>
 
         </div>
 
@@ -613,17 +693,21 @@
           <!-- Paginación -->
           <div class="d-flex align-items-end   gap-2">
             <label for="maritimo_ferro_perPage" class="mb-0 small text-muted">Mostrar</label>
-            <select id="maritimo_ferro_perPage" name="maritimo_ferro_perPage" class="form-control" style="width:90px;">
+            <div class="mf-filter-select-wrapper mf-filter-sm">
+              <select id="maritimo_ferro_perPage"
+                name="maritimo_ferro_perPage"
+                class="form-control mf-filter-select">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="10000000">Todos</option>
+              </select>
 
-              <option value="10" selected>10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="500">500</option>
-              <option value="1000">1000</option>
-              <option value="10000000">Todos</option>
-
-            </select>
+              <i data-feather="chevron-down" class="mf-filter-chevron"></i>
+            </div>
             <span class="small text-muted">por página</span>
           </div>
         </div>
