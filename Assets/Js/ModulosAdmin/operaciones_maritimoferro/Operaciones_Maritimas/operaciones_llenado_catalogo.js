@@ -15,9 +15,6 @@
   // ===== NUEVOS FILTROS =====
   const selectEstatus = document.getElementById("maritimo_ferro_filtroEstatus");
 
-  const selectTransportista = document.getElementById(
-    "maritimo_ferro_filtroTransportista",
-  );
   const selectMedida = document.getElementById(
     "maritimo_ferro_filtroMedidaContenedor",
   );
@@ -28,6 +25,16 @@
   const txtFiltroEstatus = document.getElementById("txtFiltroEstatus");
   const btnLimpiarFiltroEstatus = document.getElementById(
     "btnLimpiarFiltroEstatus",
+  );
+
+  const checksTransportista = document.querySelectorAll(
+    ".chkFiltroTransportista",
+  );
+  const txtFiltroTransportista = document.getElementById(
+    "txtFiltroTransportista",
+  );
+  const btnLimpiarFiltroTransportista = document.getElementById(
+    "btnLimpiarFiltroTransportista",
   );
   let currentPage = 1;
   let perPage = (selectPerPage?.value || "10").toString(); // "10" | "25" | ... | "todos"
@@ -472,7 +479,12 @@
       .map((chk) => (chk.value || "").trim())
       .filter((v) => v !== "");
 
-    const transportista = (selectTransportista?.value || "").trim();
+    const transportistasSeleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroTransportista:checked"),
+    )
+      .map((chk) => (chk.value || "").trim())
+      .filter((v) => v !== "");
+
     const medida = (selectMedida?.value || "").trim();
 
     if (subtipo !== "") params.append("maritimo_ferro_filtroSubtipo", subtipo);
@@ -483,8 +495,9 @@
       params.append("maritimo_ferro_filtroEstatus[]", id);
     });
 
-    if (transportista !== "")
-      params.append("maritimo_ferro_filtroTransportista", transportista);
+    transportistasSeleccionados.forEach((id) => {
+      params.append("maritimo_ferro_filtroTransportista[]", id);
+    });
     if (medida !== "")
       params.append("maritimo_ferro_filtroMedidaContenedor", medida);
     const isAll = String(perPage).toLowerCase() === "todos";
@@ -725,15 +738,13 @@
   }
 
   // ===== Eventos de filtros/listado =====
-  // Refrescar al cambiar cualquier filtro nuevo
-  [selectEstatus, selectTransportista, selectMedida, selectSubtipo].forEach(
-    (sel) => {
-      sel?.addEventListener("change", () => {
-        currentPage = 1;
-        listar();
-      });
-    },
-  );
+  // Refrescar al cambiar filtros tipo select
+  [selectMedida, selectSubtipo].forEach((sel) => {
+    sel?.addEventListener("change", () => {
+      currentPage = 1;
+      listar();
+    });
+  });
   inputBuscar?.addEventListener("keyup", () => {
     clearTimeout(debounceId);
     debounceId = setTimeout(() => {
@@ -759,7 +770,12 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     perPage = (selectPerPage?.value || "10").toString();
+
+    actualizarTextoFiltroEstatus();
+    actualizarTextoFiltroTransportista();
+
     listar();
+
     if (window.feather) feather.replace();
   });
 
@@ -1254,6 +1270,28 @@
     txtFiltroEstatus.textContent = `${seleccionados.length} estatus seleccionados`;
   }
 
+  function actualizarTextoFiltroTransportista() {
+    const seleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroTransportista:checked"),
+    );
+
+    if (!txtFiltroTransportista) return;
+
+    if (seleccionados.length === 0) {
+      txtFiltroTransportista.textContent = "Transportista";
+      return;
+    }
+
+    if (seleccionados.length === 1) {
+      const label = seleccionados[0].closest("label");
+      const texto = label ? label.innerText.trim() : "1 seleccionado";
+      txtFiltroTransportista.textContent = texto;
+      return;
+    }
+
+    txtFiltroTransportista.textContent = `${seleccionados.length} transportistas seleccionados`;
+  }
+
   checksEstatus.forEach((chk) => {
     chk.addEventListener("change", () => {
       currentPage = 1;
@@ -1270,6 +1308,25 @@
 
       currentPage = 1;
       actualizarTextoFiltroEstatus();
+      listar();
+    });
+  }
+  checksTransportista.forEach((chk) => {
+    chk.addEventListener("change", () => {
+      currentPage = 1;
+      actualizarTextoFiltroTransportista();
+      listar();
+    });
+  });
+
+  if (btnLimpiarFiltroTransportista) {
+    btnLimpiarFiltroTransportista.addEventListener("click", () => {
+      checksTransportista.forEach((chk) => {
+        chk.checked = false;
+      });
+
+      currentPage = 1;
+      actualizarTextoFiltroTransportista();
       listar();
     });
   }

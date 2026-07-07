@@ -72,10 +72,26 @@ class Operaciones_maritimo_ferro extends Controller
 
             $estatusIds = array_values(array_unique($estatusIds));
         }
-        /*$navieraId       = isset($_GET['maritimo_ferro_filtroNaviera']) ? (int)$_GET['maritimo_ferro_filtroNaviera'] : 0;
-        $forwarderId     = isset($_GET['maritimo_ferro_filtroForwarder']) ? (int)$_GET['maritimo_ferro_filtroForwarder'] : 0;
-        $shipperId       = isset($_GET['maritimo_ferro_filtroShipper']) ? (int)$_GET['maritimo_ferro_filtroShipper'] : 0;*/
-        $transportistaId = isset($_GET['maritimo_ferro_filtroTransportista']) ? (int)$_GET['maritimo_ferro_filtroTransportista'] : 0;
+
+        $transportistaIds = [];
+
+        if (isset($_GET['maritimo_ferro_filtroTransportista'])) {
+            $rawTransportista = $_GET['maritimo_ferro_filtroTransportista'];
+
+            if (!is_array($rawTransportista)) {
+                $rawTransportista = explode(',', (string)$rawTransportista);
+            }
+
+            foreach ($rawTransportista as $idTrans) {
+                $idTrans = (int)$idTrans;
+                if ($idTrans > 0) {
+                    $transportistaIds[] = $idTrans;
+                }
+            }
+
+            $transportistaIds = array_values(array_unique($transportistaIds));
+        }
+
         $medida          = isset($_GET['maritimo_ferro_filtroMedidaContenedor']) ? trim($_GET['maritimo_ferro_filtroMedidaContenedor']) : '';
         if ($page < 1) $page = 1;
         $allowedPer = [10, 25, 50, 100, 200, 500, 1000, 10000000];
@@ -84,10 +100,7 @@ class Operaciones_maritimo_ferro extends Controller
         $filters = [
             'filtroSubtipo'         => $subtipoId,
             'filtroEstatus'         => $estatusIds,
-            /*'filtroNaviera'         => $navieraId,
-            'filtroForwarder'       => $forwarderId,
-            'filtroShipper'         => $shipperId,*/
-            'filtroTransportista'   => $transportistaId,
+            'filtroTransportista'   => $transportistaIds,
             'filtroMedidaContenedor' => $medida,
 
             'term'                  => mb_strtolower($term, 'UTF-8'),

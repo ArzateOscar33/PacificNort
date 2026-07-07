@@ -208,18 +208,21 @@
     box-shadow: 0 0 0 2px rgba(0, 0, 0, .05);
   }
 
-  #btnFiltroEstatus {
+  #btnFiltroEstatus,
+  #btnFiltroTransportista {
     min-height: 38px;
     border-radius: 8px;
     background-color: #fff;
     font-size: 0.875rem;
   }
 
-  #btnFiltroEstatus:hover {
+  #btnFiltroEstatus:hover,
+  #btnFiltroTransportista:hover {
     background-color: #f8fafc;
   }
 
-  #txtFiltroEstatus {
+  #txtFiltroEstatus,
+  #txtFiltroTransportista {
     font-weight: 500;
   }
 </style>
@@ -333,18 +336,50 @@
           </div>
 
 
-          <!-- Transportista -->
-          <select id="maritimo_ferro_filtroTransportista" name="maritimo_ferro_filtroTransportista" class="form-control"
-            style="max-width:240px;">
-            <option value="">Transportista (Todos)</option>
-            <?php if (!empty($data['transportistas'])): ?>
-              <?php foreach ($data['transportistas'] as $st): ?>
-                <option value="<?= (int)$st['id_transportista']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
+          <!-- Filtro Transportista múltiple -->
+          <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
+            <button
+              class="btn btn-light border w-100 d-flex justify-content-between align-items-center"
+              type="button"
+              id="btnFiltroTransportista"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <span>
+                <i data-feather="truck" class="me-1" style="width:16px;height:16px;"></i>
+                <span id="txtFiltroTransportista">Transportista</span>
+              </span>
+              <i data-feather="chevron-down" style="width:16px;height:16px;"></i>
+            </button>
+
+            <div class="dropdown-menu p-2 shadow filtro-estatus-menu" aria-labelledby="btnFiltroTransportista">
+              <div class="px-2 pb-2 border-bottom mb-2">
+                <strong class="small text-muted">Filtrar por transportista</strong>
+                <div class="small text-muted">Puedes seleccionar uno o varios</div>
+              </div>
+
+              <?php if (!empty($data['transportistas'])): ?>
+                <?php foreach ($data['transportistas'] as $t): ?>
+                  <label class="dropdown-item d-flex align-items-center gap-2  filtro-estatus-item">
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0 chkFiltroTransportista"
+                      name="maritimo_ferro_filtroTransportista[]"
+                      value="<?= (int)$t['id_transportista']; ?>">
+
+                    <span class="ml-4">
+                      <?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </label>
+                <?php endforeach; ?>
+              <?php endif; ?>
+
+              <div class="border-top mt-2 pt-2 px-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btnLimpiarFiltroTransportista">
+                  Limpiar transportista
+                </button>
+              </div>
+            </div>
+          </div>
           <!-- Medida contenedor -->
           <select id="maritimo_ferro_filtroMedidaContenedor" name="maritimo_ferro_filtroMedidaContenedor"
             class="form-control" style="max-width:240px;">

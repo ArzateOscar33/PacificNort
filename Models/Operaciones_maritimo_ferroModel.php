@@ -537,11 +537,26 @@ class Operaciones_maritimo_ferroModel extends Query
         }
 
 
-        // Transportista (⚠️ actualmente filtra el transportista de la operación marítima)
-        $transportistaId = isset($filters['filtroTransportista']) ? (int)$filters['filtroTransportista'] : 0;
-        if ($transportistaId > 0) {
-            $where .= " AND o.transportista_id = ? ";
-            $args[] = $transportistaId;
+        // Transportista múltiple:
+        // Filtra únicamente el transportista principal de la operación marítima.
+        // Campo: operaciones.transportista_id
+        $transportistaIds = $filters['filtroTransportista'] ?? [];
+
+        if (!is_array($transportistaIds)) {
+            $transportistaIds = explode(',', (string)$transportistaIds);
+        }
+
+        $transportistaIds = array_values(array_unique(array_filter(array_map('intval', $transportistaIds), function ($id) {
+            return $id > 0;
+        })));
+
+        if (!empty($transportistaIds)) {
+            $placeholders = implode(',', array_fill(0, count($transportistaIds), '?'));
+            $where .= " AND o.transportista_id IN ($placeholders) ";
+
+            foreach ($transportistaIds as $idTransportista) {
+                $args[] = $idTransportista;
+            }
         }
 
         // Medida contenedor (20GP/40GP/40HC/45HC)
