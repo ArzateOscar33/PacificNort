@@ -1,4 +1,5 @@
 <?php
+
 require_once "Models/BitacoraOpPartidaModel.php";
 require_once "Models/OperacionesLogModel.php";
 
@@ -7,7 +8,9 @@ class Operaciones_por_partida_eventos extends Controller
     /** @var OperacionesLogModel */
     private $opLog;
 
+    /** @var BitacoraOpPartidaModel */
     protected $bitacoraOpPartida;
+
     public function __construct()
     {
         parent::__construct();
@@ -25,20 +28,76 @@ class Operaciones_por_partida_eventos extends Controller
         $this->bitacoraOpPartida = new BitacoraOpPartidaModel();
 
         header_remove('X-Powered-By');
-        // Solo usuarios internos
-        $this->requireRoles([1, 2, 11, 15]); //1=admin, 11=supervisor, 2=operador, 15=revisor
+
+        // Roles internos permitidos:
+        // 1 = admin, 2 = operador, 11 = supervisor, 15 = revisor
+        $this->requireRoles([1, 2, 11, 15]);
     }
+
+
+    /* =============================================================
+       HELPERS GENERALES
+       ============================================================= */
+
+    private function jsonResponse(array $payload, int $httpCode = 200): void
+    {
+        http_response_code($httpCode);
+        header('Content-Type: application/json; charset=UTF-8');
+
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        die();
+    }
+
+
+    private function methodNotAllowed(): void
+    {
+        $this->jsonResponse([
+            'status' => 'error',
+            'msg'    => 'Método no permitido.'
+        ], 405);
+    }
+
+
+    private function getIntFromRequest(array $source, array $keys): ?int
+    {
+        foreach ($keys as $key) {
+            if (isset($source[$key]) && $source[$key] !== '') {
+                $value = (int)$source[$key];
+                return $value > 0 ? $value : null;
+            }
+        }
+
+        return null;
+    }
+
+
+    private function makeDesc(string $titulo, array $data = []): string
+    {
+        $parts = [];
+
+        foreach ($data as $k => $v) {
+            if ($v === null || $v === '') {
+                continue;
+            }
+
+            $parts[] = $k . '=' . $v;
+        }
+
+        return $titulo . (empty($parts) ? '' : ' (' . implode(', ', $parts) . ')');
+    }
+
+
     private function registrarBitacoraPartida(
         string $modulo,
         string $accion,
         string $entidad,
         ?int $entidadId = null,
         ?string $detalle = null
-    ) {
+    ): bool {
         try {
             $usuarioId = $_SESSION['id_usuario'] ?? null;
 
-            return $this->bitacoraOpPartida->crear(
+            return (bool)$this->bitacoraOpPartida->crear(
                 $usuarioId,
                 $modulo,
                 $accion,
@@ -51,503 +110,803 @@ class Operaciones_por_partida_eventos extends Controller
             return false;
         }
     }
-    /* ======================
+
+
+    private function logOpPartida(
+        ?int $envioId,
+        string $accion,
+        string $detalle
+    ): void {
+        try {
+            $this->registrarBitacoraPartida(
+                'op_partida_eventos',
+                $accion,
+                'eventos_operacion_partida_ferro',
+                $envioId,
+                $detalle
+            );
+        } catch (Throwable $e) {
+            error_log('[LOG OP PARTIDA EVENTOS] ' . $e->getMessage());
+        }
+    }
+
+
+    private function slug(string $s): string
+    {
+        $s = mb_strtolower($s, 'UTF-8');
+        $s = preg_replace('/[^a-z0-9]+/u', '_', $s);
+        return trim($s, '_');
+    }
+
+
+    private function normalizarRowsListado(array $result): array
+    {
+        /*
+          El modelo nuevo regresa:
+          [
+            rows,
+            total,
+            page,
+            per_page
+          ]
+
+          El JS anterior puede esperar "data".
+          Por eso regresamos ambos: rows y data.
+        */
+        $rows = [];
+
+        if (isset($result['rows']) && is_array($result['rows'])) {
+            $rows = $result['rows'];
+        } elseif (isset($result['data']) && is_array($result['data'])) {
+            $rows = $result['data'];
+        }
+
+        return $rows;
+    }
+
+
+    /* =============================================================
        VISTA
-       ====================== */
+       ============================================================= */
+
     public function index()
     {
-        $data['title'] = 'Eventos terrestres por operación de partida';
+        $data['title'] = 'Eventos operaciones por partida';
+
+        /*
+          Tu vista usa:
+          $data['transportistas']
+          $data['ciudades']
+
+          Si después agregas estos métodos al modelo, los toma.
+          Si no existen, no rompe la vista.
+        */
+        $data['transportistas'] = [];
+        $data['ciudades'] = [];
+
+        try {
+            if (method_exists($this->model, 'listarTransportistas')) {
+                $data['transportistas'] = $this->model->listarTransportistas();
+            }
+
+            if (method_exists($this->model, 'listarCiudades')) {
+                $data['ciudades'] = $this->model->listarCiudades();
+            }
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS INDEX] ' . $e->getMessage());
+        }
+
         $this->views->getView($this, "index", $data);
     }
 
-    /* ======================
-       LISTAR (Paginado)
-       ====================== */
+
+    /* =============================================================
+       LISTAR PAGINADO
+       GET:
+       - page
+       - per_page
+       - op_id / envio_partida_id / operacion_ferro_id
+       - factura
+       - ferro
+       - transportista_id
+       - destino_id
+
+       Respuesta compatible:
+       {
+         status,
+         total,
+         page,
+         per_page,
+         rows,
+         data
+       }
+       ============================================================= */
+
     public function listar()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             $this->methodNotAllowed();
         }
 
-        $page    = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $perPage = isset($_GET['per_page']) ? min(100, max(1, (int)$_GET['per_page'])) : 10;
+        try {
+            $page = isset($_GET['page'])
+                ? max(1, (int)$_GET['page'])
+                : 1;
 
-        $opId = null;
-        if (isset($_GET['op_id']) && $_GET['op_id'] !== '') {
-            $opId = (int)$_GET['op_id'];
-            if ($opId <= 0) {
-                $opId = null;
-            }
+            $perPage = isset($_GET['per_page'])
+                ? min(1000000, max(1, (int)$_GET['per_page']))
+                : 10;
+
+            $opId = $this->getIntFromRequest($_GET, [
+                'op_id',
+                'envio_partida_id',
+                'operacion_ferro_id'
+            ]);
+
+            $factura = isset($_GET['factura'])
+                ? trim((string)$_GET['factura'])
+                : '';
+
+            $ferro = isset($_GET['ferro'])
+                ? trim((string)$_GET['ferro'])
+                : '';
+
+            $transportistaId = $this->getIntFromRequest($_GET, [
+                'transportista_id'
+            ]);
+
+            $destinoId = $this->getIntFromRequest($_GET, [
+                'destino_id'
+            ]);
+
+            $result = $this->model->listarPaginado(
+                $page,
+                $perPage,
+                $opId,
+                $factura,
+                $ferro,
+                $transportistaId,
+                $destinoId
+            );
+
+            $rows = $this->normalizarRowsListado($result);
+
+            $this->jsonResponse([
+                'status'   => 'success',
+                'total'    => (int)($result['total'] ?? 0),
+                'page'     => (int)($result['page'] ?? $page),
+                'per_page' => (int)($result['per_page'] ?? $perPage),
+
+                // Compatibilidad doble
+                'rows'     => $rows,
+                'data'     => $rows
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS LISTAR] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'No fue posible listar los eventos por partida.',
+                'total'  => 0,
+                'rows'   => [],
+                'data'   => []
+            ], 500);
         }
-
-        $factura = isset($_GET['factura']) ? trim($_GET['factura']) : '';
-        $ferro   = isset($_GET['ferro']) ? trim($_GET['ferro']) : '';
-
-        $transportistaId = null;
-        if (isset($_GET['transportista_id']) && $_GET['transportista_id'] !== '') {
-            $transportistaId = (int)$_GET['transportista_id'];
-            if ($transportistaId <= 0) {
-                $transportistaId = null;
-            }
-        }
-
-        $destinoId = null;
-        if (isset($_GET['destino_id']) && $_GET['destino_id'] !== '') {
-            $destinoId = (int)$_GET['destino_id'];
-            if ($destinoId <= 0) {
-                $destinoId = null;
-            }
-        }
-
-        $result = $this->model->listarPaginado(
-            $page,
-            $perPage,
-            $opId,
-            $factura,
-            $ferro,
-            $transportistaId,
-            $destinoId
-        );
-
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'total'    => (int)($result['total'] ?? 0),
-            'page'     => $page,
-            'per_page' => $perPage,
-            'data'     => $result['data'] ?? []
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
     }
 
+
     /* =============================================================
-       COLUMNAS (catálogo de tipos de evento TERRESTRES)
-       Normaliza a [{id, nombre, key}]
+       COLUMNAS DINÁMICAS
+       Catálogo de tipos de evento terrestre.
+       Lo mantenemos con el mismo nombre que usa tu JS:
+       Operaciones_por_partida_eventos/eventos_ferro_columnas
        ============================================================= */
+
     public function eventos_ferro_columnas()
     {
-        header('Content-Type: application/json; charset=UTF-8');
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->methodNotAllowed();
+        }
 
         try {
             $rows = $this->model->listarTiposEventoTerrestre();
 
-            $slug = function (string $s): string {
-                $s = mb_strtolower($s, 'UTF-8');
-                $s = preg_replace('/[^a-z0-9]+/u', '_', $s);
-                return trim($s, '_');
-            };
-
-            $out = array_map(function ($r) use ($slug) {
+            $out = array_map(function ($r) {
                 $id  = (int)($r['id_tipo_evento'] ?? $r['id'] ?? 0);
                 $nom = (string)($r['nombre'] ?? '');
 
                 return [
                     'id'     => $id,
                     'nombre' => $nom,
-                    'key'    => $slug($nom)
+                    'key'    => $this->slug($nom)
                 ];
             }, is_array($rows) ? $rows : []);
 
-            echo json_encode([
+            $this->jsonResponse([
+                'status'  => 'success',
                 'ok'      => true,
                 'count'   => count($out),
-                'columns' => $out
-            ], JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            error_log('eventos_ferro_columnas partida: ' . $e->getMessage());
-            http_response_code(500);
+                'columns' => $out,
+                'data'    => $out
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS COLUMNAS] ' . $e->getMessage());
 
-            echo json_encode([
-                'ok'    => false,
-                'error' => 'No fue posible obtener las columnas de eventos'
-            ], JSON_UNESCAPED_UNICODE);
+            $this->jsonResponse([
+                'status'  => 'error',
+                'ok'      => false,
+                'msg'     => 'No fue posible obtener las columnas de eventos.',
+                'columns' => [],
+                'data'    => []
+            ], 500);
         }
-
-        die();
     }
 
-    /* =============================================================
-       AUTOCOMPLETE: ENVÍOS / FERRO / FACTURA / CLIENTE
-       ============================================================= */
-    public function sugerir_operaciones()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
 
-        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
-        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 8;
-
-        if ($term === '') {
-            echo json_encode([], JSON_UNESCAPED_UNICODE);
-            die();
-        }
-
-        try {
-            $rows = $this->model->sugerirOperacionesPartidaOFerro($term, $limit);
-
-            $out = array_map(function ($r) {
-                return [
-                    'id'         => (int)($r['id'] ?? 0),        // id_envio
-                    'label'      => (string)($r['label'] ?? ''), // ENV-{id}
-                    'ferro'      => (string)($r['ferro'] ?? ''),
-                    'contenedor' => (string)($r['factura'] ?? '') // compat con frontend viejo
-                ];
-            }, is_array($rows) ? $rows : []);
-
-            echo json_encode($out, JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            error_log('sugerir_operaciones partida: ' . $e->getMessage());
-            echo json_encode([], JSON_UNESCAPED_UNICODE);
-        }
-
-        die();
-    }
-
-    /* =============================================================
-       AUTOCOMPLETE: FERROS DE UN ENVÍO
-       GET ?operacion_id=123[&term=FX...&limit=10]
-       ============================================================= */
-    public function buscar_ferros()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        $opId  = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-        if ($opId <= 0 && isset($_GET['envio_id'])) {
-            $opId = (int)$_GET['envio_id'];
-        }
-
-        $term  = isset($_GET['term']) ? trim((string)$_GET['term']) : '';
-        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10;
-
-        if ($opId <= 0) {
-            echo json_encode([], JSON_UNESCAPED_UNICODE);
-            die();
-        }
-
-        try {
-            $rows = $this->model->buscarFerrosDeOperacion($opId, $term, $limit);
-
-            $out = array_map(function ($r) {
-                return [
-                    'id'    => (int)($r['id'] ?? 0),
-                    'label' => (string)($r['label'] ?? ''),
-                    'tipo'  => (string)($r['tipo'] ?? 'FERRO')
-                ];
-            }, is_array($rows) ? $rows : []);
-
-            echo json_encode($out, JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            error_log('buscar_ferros partida: ' . $e->getMessage());
-            echo json_encode([], JSON_UNESCAPED_UNICODE);
-        }
-
-        die();
-    }
-
-    /* =============================================================
-       OBTENER FERRO PRINCIPAL (1:1) DE UN ENVÍO
-       GET ?operacion_id=123  -> {id,label} | null
-       ============================================================= */
-    public function ferro_de_operacion()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        $opId = isset($_GET['operacion_id']) ? (int)$_GET['operacion_id'] : 0;
-        if ($opId <= 0 && isset($_GET['envio_id'])) {
-            $opId = (int)$_GET['envio_id'];
-        }
-
-        if ($opId <= 0) {
-            echo json_encode(null, JSON_UNESCAPED_UNICODE);
-            die();
-        }
-
-        $row = $this->model->getFerroDeOperacion($opId);
-        echo json_encode($row ?: null, JSON_UNESCAPED_UNICODE);
-        die();
-    }
-
-    /* =============================================================
-       CATÁLOGO DE TIPOS DE EVENTO TERRESTRES
-       GET -> [{id, nombre}]
-       ============================================================= */
     public function tipos_evento()
     {
-        header('Content-Type: application/json; charset=UTF-8');
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->methodNotAllowed();
+        }
 
         try {
             $rows = $this->model->listarTiposEventoTerrestre();
 
             $out = array_map(function ($r) {
                 return [
-                    'id'     => (int)($r['id_tipo_evento'] ?? 0),
-                    'nombre' => (string)($r['nombre'] ?? '')
+                    'id_tipo_evento' => (int)($r['id_tipo_evento'] ?? $r['id'] ?? 0),
+                    'id'             => (int)($r['id_tipo_evento'] ?? $r['id'] ?? 0),
+                    'nombre'         => (string)($r['nombre'] ?? '')
                 ];
             }, is_array($rows) ? $rows : []);
 
-            echo json_encode($out, JSON_UNESCAPED_UNICODE);
-        } catch (\Throwable $e) {
-            error_log('tipos_evento partida: ' . $e->getMessage());
-            echo json_encode([], JSON_UNESCAPED_UNICODE);
-        }
-
-        die();
-    }
-
-    /* ======================
-       REGISTRAR EVENTO
-       ====================== */
-    public function registrar()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        $evento = [
-            'operacion_ferro_id'    => (int)($_POST['operacion_ferro_id'] ?? $_POST['envio_partida_id'] ?? 0),
-            'contenedor_fisico_id'  => (int)($_POST['contenedor_fisico_id'] ?? 0),
-            'tipo_evento_id'        => (int)($_POST['tipo_evento_id'] ?? 0),
-            'fecha'                 => trim($_POST['fecha'] ?? ''),
-            'comentario'            => trim($_POST['comentario'] ?? '')
-        ];
-
-        if ($evento['operacion_ferro_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un envío por partida.']);
-            die();
-        }
-        if ($evento['contenedor_fisico_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Falta el ferro/caja ligado al envío.']);
-            die();
-        }
-        if ($evento['tipo_evento_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento terrestre.']);
-            die();
-        }
-        if ($evento['fecha'] === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']);
-            die();
-        }
-
-        $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
-        $id = $this->model->registrar($evento, $usuarioId);
-
-        if ($id > 0) {
-            $desc = $this->makeDesc('Evento PARTIDA creado', [
-                'id_evento' => $id,
-                'envio'     => $evento['operacion_ferro_id'],
-                'ferro_id'  => $evento['contenedor_fisico_id'],
-                'tipo_evt'  => $evento['tipo_evento_id'],
-                'fecha'     => $evento['fecha']
-            ]);
-            $this->registrarBitacoraPartida(
-                'op_partida_eventos',
-                'crear',
-                'operaciones_partida_eventos',
-                (int)$id,
-                $this->bitacoraOpPartida->desc('evento', 'creado', [
-                    'id_evento' => (int)$id,
-                    'envio_id' => (int)$evento['operacion_ferro_id'],
-                    'contenedor_fisico_id' => (int)$evento['contenedor_fisico_id'],
-                    'tipo_evento_id' => (int)$evento['tipo_evento_id'],
-                    'fecha' => (string)$evento['fecha']
-                ])
-            );
-
-            echo json_encode([
+            $this->jsonResponse([
                 'status' => 'success',
-                'msg'    => 'Evento registrado',
-                'id'     => $id
+                'data'   => $out
             ]);
-        } else {
-            echo json_encode([
-                'status' => 'error',
-                'msg'    => 'No fue posible registrar el evento (valida envío, ferro activo/pertenencia, tipo terrestre y duplicados).'
-            ]);
-        }
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS TIPOS] ' . $e->getMessage());
 
-        die();
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'No fue posible obtener los tipos de evento.',
+                'data'   => []
+            ], 500);
+        }
     }
+
 
     /* =============================================================
-       OBTENER EVENTO POR (ENVÍO, Ferro, Tipo)
-       GET ?operacion_ferro_id=&contenedor_fisico_id=&tipo_evento_id=
+       NUEVO ENDPOINT PRINCIPAL - GUARDAR CELDA TIPO EXCEL
+
+       POST:
+       - envio_partida_id u operacion_ferro_id
+       - contenedor_fisico_id
+       - tipo_evento_id
+       - fecha
+       - comentario opcional
+
+       Comportamiento:
+       - Si no existe evento: inserta.
+       - Si ya existe: actualiza.
+       - Si fecha viene vacía: limpia/baja lógica.
        ============================================================= */
-    public function obtener_por_clave()
+
+    public function guardar_celda()
     {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        $opId  = (int)($_GET['operacion_ferro_id'] ?? $_GET['envio_partida_id'] ?? 0);
-        $ferId = (int)($_GET['contenedor_fisico_id'] ?? 0);
-        $evtId = (int)($_GET['tipo_evento_id'] ?? 0);
-
-        if ($opId <= 0 || $ferId <= 0 || $evtId <= 0) {
-            echo json_encode(null, JSON_UNESCAPED_UNICODE);
-            die();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->methodNotAllowed();
         }
 
-        $row = $this->model->obtenerEventoPorClave($opId, $ferId, $evtId);
-        echo json_encode($row ?: null, JSON_UNESCAPED_UNICODE);
-        die();
-    }
+        $envioId = (int)(
+            $_POST['envio_partida_id']
+            ?? $_POST['operacion_ferro_id']
+            ?? $_POST['op_id']
+            ?? 0
+        );
 
-    /* ======================
-       ACTUALIZAR EVENTO
-       ====================== */
-    public function actualizar()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        $evento = [
-            'id_evento'            => (int)($_POST['id_evento'] ?? 0),
-            'operacion_ferro_id'   => (int)($_POST['operacion_ferro_id'] ?? $_POST['envio_partida_id'] ?? 0),
+        $data = [
+            'envio_partida_id'     => $envioId,
+            'operacion_ferro_id'   => $envioId, // alias para compatibilidad
             'contenedor_fisico_id' => (int)($_POST['contenedor_fisico_id'] ?? 0),
             'tipo_evento_id'       => (int)($_POST['tipo_evento_id'] ?? 0),
-            'fecha'                => trim($_POST['fecha'] ?? ''),
-            'comentario'           => trim($_POST['comentario'] ?? '')
+            'fecha'                => trim((string)($_POST['fecha'] ?? '')),
+            'comentario'           => trim((string)($_POST['comentario'] ?? ''))
         ];
 
-        if ($evento['id_evento'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Falta id_evento']);
-            die();
-        }
-        if ($evento['operacion_ferro_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un envío por partida.']);
-            die();
-        }
-        if ($evento['contenedor_fisico_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Falta el ferro/caja ligado al envío.']);
-            die();
-        }
-        if ($evento['tipo_evento_id'] <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Selecciona un tipo de evento terrestre.']);
-            die();
-        }
-        if ($evento['fecha'] === '') {
-            echo json_encode(['status' => 'warning', 'msg' => 'Indica la fecha del evento.']);
-            die();
-        }
-
-        try {
-            $ok = $this->model->actualizar($evento);
-
-            if ($ok) {
-                $desc = $this->makeDesc('Evento PARTIDA actualizado', [
-                    'id_evento' => $evento['id_evento'],
-                    'envio'     => $evento['operacion_ferro_id'],
-                    'ferro_id'  => $evento['contenedor_fisico_id'],
-                    'tipo_evt'  => $evento['tipo_evento_id'],
-                    'fecha'     => $evento['fecha']
-                ]);
-
-                // $this->logOp($evento['operacion_ferro_id'], 'actualizacion', $desc);
-                $this->registrarBitacoraPartida(
-                    'op_partida_eventos',
-                    'actualizacion',
-                    'operaciones_partida_eventos',
-                    (int)$evento['id_evento'],
-                    $this->bitacoraOpPartida->desc('evento', 'actualizado', [
-                        'id_evento' => (int)$evento['id_evento'],
-                        'envio_id' => (int)$evento['operacion_ferro_id'],
-                        'contenedor_fisico_id' => (int)$evento['contenedor_fisico_id'],
-                        'tipo_evento_id' => (int)$evento['tipo_evento_id'],
-                        'fecha' => (string)$evento['fecha']
-                    ])
-                );
-                echo json_encode([
-                    'status' => 'success',
-                    'msg'    => 'Evento actualizado'
-                ]);
-            } else {
-                echo json_encode([
-                    'status' => 'error',
-                    'msg'    => 'No fue posible actualizar (valida envío, ferro activo/pertenencia, tipo terrestre y duplicados).'
-                ]);
-            }
-        } catch (\Throwable $e) {
-            error_log('actualizar evento partida: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'msg' => 'Error interno al actualizar.']);
-        }
-
-        die();
-    }
-
-    /* ======================
-       ELIMINAR (baja lógica)
-       ====================== */
-    public function eliminar()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        $id = (int)($_POST['id_evento'] ?? 0);
-        if ($id <= 0) {
-            echo json_encode(['status' => 'warning', 'msg' => 'Falta id_evento']);
-            die();
-        }
-
-        try {
-            $ok = $this->model->eliminar($id);
-            if ($ok) {
-                $this->registrarBitacoraPartida(
-                    'op_partida_eventos',
-                    'baja_logica',
-                    'operaciones_partida_eventos',
-                    (int)$id,
-                    $this->bitacoraOpPartida->desc('evento', 'eliminado', [
-                        'id_evento' => (int)$id
-                    ])
-                );
-            }
-            echo json_encode([
-                'status' => $ok ? 'success' : 'error',
-                'msg'    => $ok ? 'Evento eliminado' : 'No se pudo eliminar'
+        if ($data['envio_partida_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el envío de operación por partida.'
             ]);
-        } catch (\Throwable $e) {
-            error_log('eliminar evento partida: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'msg' => 'Error interno al eliminar.']);
         }
 
-        die();
-    }
+        if ($data['contenedor_fisico_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el ferro/caja de la celda.'
+            ]);
+        }
 
-    /* ==========================
-       Helpers de auditoría
-       ========================== */
-    private function logOp(int $operacionId, string $accion, string $descripcion): void
-    {
+        if ($data['tipo_evento_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el tipo de evento de la celda.'
+            ]);
+        }
+
+        /*
+          OJO:
+          La fecha puede venir vacía. Eso significa borrar/limpiar celda.
+          No se debe validar como requerida aquí.
+        */
+
         try {
             $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
-            $id = $this->opLog->crear($operacionId, $usuarioId, $accion, $descripcion);
 
-            if (!$id) {
-                error_log("operaciones_log: insert falló ({$accion}) op={$operacionId}");
+            $res = $this->model->guardarCeldaEvento($data, $usuarioId);
+
+            if (!is_array($res)) {
+                $this->jsonResponse([
+                    'status'    => 'error',
+                    'msg'       => 'Respuesta inválida del modelo.',
+                    'accion'    => 'error',
+                    'id_evento' => null,
+                    'fecha'     => $data['fecha']
+                ], 500);
             }
-        } catch (\Throwable $e) {
-            error_log("operaciones_log error: " . $e->getMessage());
+
+            $ok     = (bool)($res['ok'] ?? false);
+            $accion = (string)($res['accion'] ?? 'error');
+
+            if ($ok) {
+                $tipoLog = 'actualizacion';
+
+                if ($accion === 'insertado') {
+                    $tipoLog = 'creacion';
+                } elseif ($accion === 'eliminado') {
+                    $tipoLog = 'eliminacion';
+                } elseif ($accion === 'sin_cambios') {
+                    $tipoLog = 'consulta';
+                }
+
+                $desc = $this->makeDesc('Celda de evento por partida guardada', [
+                    'accion'              => $accion,
+                    'id_evento'           => $res['id_evento'] ?? '',
+                    'envio_partida_id'    => $data['envio_partida_id'],
+                    'contenedor_fisico'   => $data['contenedor_fisico_id'],
+                    'tipo_evento'         => $data['tipo_evento_id'],
+                    'fecha'               => $res['fecha'] ?? $data['fecha']
+                ]);
+
+                $this->logOpPartida($data['envio_partida_id'], $tipoLog, $desc);
+
+                $this->jsonResponse([
+                    'status'              => 'success',
+                    'msg'                 => (string)($res['msg'] ?? 'Celda guardada correctamente.'),
+                    'accion'              => $accion,
+                    'id_evento'           => $res['id_evento'] ?? null,
+                    'fecha'               => (string)($res['fecha'] ?? $data['fecha']),
+                    'envio_partida_id'    => $data['envio_partida_id'],
+                    'operacion_ferro_id'  => $data['envio_partida_id'], // alias para JS actual
+                    'contenedor_fisico_id' => $data['contenedor_fisico_id'],
+                    'tipo_evento_id'      => $data['tipo_evento_id']
+                ]);
+            }
+
+            $this->jsonResponse([
+                'status'    => 'error',
+                'msg'       => (string)($res['msg'] ?? 'No fue posible guardar la celda.'),
+                'accion'    => $accion,
+                'id_evento' => $res['id_evento'] ?? null,
+                'fecha'     => (string)($res['fecha'] ?? $data['fecha'])
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS GUARDAR CELDA] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status'    => 'error',
+                'msg'       => 'Error interno al guardar la celda.',
+                'accion'    => 'error',
+                'id_evento' => null,
+                'fecha'     => $data['fecha']
+            ], 500);
         }
     }
 
-    private function makeDesc(string $base, array $info = []): string
-    {
-        if (empty($info)) return $base;
 
-        $kv = [];
-        foreach ($info as $k => $v) {
-            $kv[] = "$k=$v";
+    /* =============================================================
+       OBTENER POR CLAVE
+       Se conserva por compatibilidad con tu JS actual/modal.
+       POST o GET:
+       - envio_partida_id u operacion_ferro_id
+       - contenedor_fisico_id
+       - tipo_evento_id
+       ============================================================= */
+
+    public function obtener_por_clave()
+    {
+        if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'POST'], true)) {
+            $this->methodNotAllowed();
         }
 
-        return $base . ' (' . implode(', ', $kv) . ')';
+        $source = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
+
+        $envioId = (int)(
+            $source['envio_partida_id']
+            ?? $source['operacion_ferro_id']
+            ?? $source['op_id']
+            ?? 0
+        );
+
+        $ferroId = (int)($source['contenedor_fisico_id'] ?? 0);
+        $evtId   = (int)($source['tipo_evento_id'] ?? 0);
+
+        if ($envioId <= 0 || $ferroId <= 0 || $evtId <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Faltan datos para consultar el evento.',
+                'data'   => null
+            ]);
+        }
+
+        try {
+            $row = $this->model->obtenerEventoActivoPorClave(
+                $envioId,
+                $ferroId,
+                $evtId
+            );
+
+            $this->jsonResponse([
+                'status' => 'success',
+                'data'   => $row ?: null
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS OBTENER CLAVE] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'No fue posible consultar el evento.',
+                'data'   => null
+            ], 500);
+        }
     }
 
-    private function methodNotAllowed(): void
+
+    /* =============================================================
+       REGISTRAR
+       Compatibilidad con JS anterior.
+       Internamente usa guardar_celda vía modelo.
+       ============================================================= */
+
+    public function registrar()
     {
-        $this->jsonResponse([
-            'ok'  => false,
-            'msg' => 'Método no permitido.'
-        ], 405);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->methodNotAllowed();
+        }
+
+        $envioId = (int)(
+            $_POST['envio_partida_id']
+            ?? $_POST['operacion_ferro_id']
+            ?? $_POST['op_id']
+            ?? 0
+        );
+
+        $data = [
+            'envio_partida_id'     => $envioId,
+            'operacion_ferro_id'   => $envioId,
+            'contenedor_fisico_id' => (int)($_POST['contenedor_fisico_id'] ?? 0),
+            'tipo_evento_id'       => (int)($_POST['tipo_evento_id'] ?? 0),
+            'fecha'                => trim((string)($_POST['fecha'] ?? '')),
+            'comentario'           => trim((string)($_POST['comentario'] ?? ''))
+        ];
+
+        if ($data['envio_partida_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el envío de operación por partida.'
+            ]);
+        }
+
+        if ($data['contenedor_fisico_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el ferro/caja.'
+            ]);
+        }
+
+        if ($data['tipo_evento_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el tipo de evento.'
+            ]);
+        }
+
+        if ($data['fecha'] === '') {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Debes capturar la fecha del evento.'
+            ]);
+        }
+
+        try {
+            $usuarioId = (int)($_SESSION['id_usuario'] ?? 0);
+            $res = $this->model->guardarCeldaEvento($data, $usuarioId);
+
+            if (!empty($res['ok'])) {
+                $desc = $this->makeDesc('Evento por partida registrado/actualizado', [
+                    'accion'              => $res['accion'] ?? '',
+                    'id_evento'           => $res['id_evento'] ?? '',
+                    'envio_partida_id'    => $data['envio_partida_id'],
+                    'contenedor_fisico'   => $data['contenedor_fisico_id'],
+                    'tipo_evento'         => $data['tipo_evento_id'],
+                    'fecha'               => $res['fecha'] ?? $data['fecha']
+                ]);
+
+                $this->logOpPartida(
+                    $data['envio_partida_id'],
+                    ($res['accion'] ?? '') === 'insertado' ? 'creacion' : 'actualizacion',
+                    $desc
+                );
+
+                $this->jsonResponse([
+                    'status'    => 'success',
+                    'msg'       => (string)($res['msg'] ?? 'Evento guardado correctamente.'),
+                    'id_evento' => $res['id_evento'] ?? null,
+                    'accion'    => $res['accion'] ?? '',
+                    'fecha'     => $res['fecha'] ?? $data['fecha']
+                ]);
+            }
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => (string)($res['msg'] ?? 'No fue posible guardar el evento.')
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS REGISTRAR] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'Error interno al registrar el evento.'
+            ], 500);
+        }
     }
-    private function jsonResponse($data, int $statusCode = 200): void
+
+
+    /* =============================================================
+       ACTUALIZAR
+       Compatibilidad con JS anterior.
+       ============================================================= */
+
+    public function actualizar()
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=UTF-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        exit;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->methodNotAllowed();
+        }
+
+        $idEvento = (int)($_POST['id_evento'] ?? 0);
+
+        $envioId = (int)(
+            $_POST['envio_partida_id']
+            ?? $_POST['operacion_ferro_id']
+            ?? $_POST['op_id']
+            ?? 0
+        );
+
+        $data = [
+            'id_evento'            => $idEvento,
+            'envio_partida_id'     => $envioId,
+            'operacion_ferro_id'   => $envioId,
+            'contenedor_fisico_id' => (int)($_POST['contenedor_fisico_id'] ?? 0),
+            'tipo_evento_id'       => (int)($_POST['tipo_evento_id'] ?? 0),
+            'fecha'                => trim((string)($_POST['fecha'] ?? '')),
+            'comentario'           => trim((string)($_POST['comentario'] ?? ''))
+        ];
+
+        if ($idEvento <= 0) {
+            /*
+              Si no viene id_evento, no fallamos: usamos el flujo nuevo.
+              Esto ayuda cuando el JS todavía no tiene id_evento cargado.
+            */
+            $res = $this->model->guardarCeldaEvento(
+                $data,
+                (int)($_SESSION['id_usuario'] ?? 0)
+            );
+
+            if (!empty($res['ok'])) {
+                $this->jsonResponse([
+                    'status'    => 'success',
+                    'msg'       => (string)($res['msg'] ?? 'Evento guardado correctamente.'),
+                    'id_evento' => $res['id_evento'] ?? null,
+                    'accion'    => $res['accion'] ?? '',
+                    'fecha'     => $res['fecha'] ?? $data['fecha']
+                ]);
+            }
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => (string)($res['msg'] ?? 'No fue posible actualizar el evento.')
+            ]);
+        }
+
+        if ($data['envio_partida_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el envío de operación por partida.'
+            ]);
+        }
+
+        if ($data['contenedor_fisico_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el ferro/caja.'
+            ]);
+        }
+
+        if ($data['tipo_evento_id'] <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el tipo de evento.'
+            ]);
+        }
+
+        if ($data['fecha'] === '') {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Debes capturar la fecha del evento.'
+            ]);
+        }
+
+        try {
+            $ok = $this->model->actualizar($data);
+
+            if ($ok) {
+                $desc = $this->makeDesc('Evento por partida actualizado', [
+                    'id_evento'           => $idEvento,
+                    'envio_partida_id'    => $data['envio_partida_id'],
+                    'contenedor_fisico'   => $data['contenedor_fisico_id'],
+                    'tipo_evento'         => $data['tipo_evento_id'],
+                    'fecha'               => $data['fecha']
+                ]);
+
+                $this->logOpPartida($data['envio_partida_id'], 'actualizacion', $desc);
+
+                $this->jsonResponse([
+                    'status'    => 'success',
+                    'msg'       => 'Evento actualizado correctamente.',
+                    'id_evento' => $idEvento
+                ]);
+            }
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'No fue posible actualizar el evento.'
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS ACTUALIZAR] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'Error interno al actualizar el evento.'
+            ], 500);
+        }
+    }
+
+
+    /* =============================================================
+       ELIMINAR POR ID
+       Compatibilidad con JS anterior/modal.
+       ============================================================= */
+
+    public function eliminar()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->methodNotAllowed();
+        }
+
+        $idEvento = (int)($_POST['id_evento'] ?? 0);
+
+        if ($idEvento <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Falta el ID del evento.'
+            ]);
+        }
+
+        try {
+            $ok = $this->model->eliminarEventoPorId($idEvento);
+
+            if ($ok) {
+                $desc = $this->makeDesc('Evento por partida eliminado', [
+                    'id_evento' => $idEvento
+                ]);
+
+                $this->logOpPartida(null, 'eliminacion', $desc);
+
+                $this->jsonResponse([
+                    'status' => 'success',
+                    'msg'    => 'Evento eliminado correctamente.'
+                ]);
+            }
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'No fue posible eliminar el evento.'
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS ELIMINAR] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'Error interno al eliminar el evento.'
+            ], 500);
+        }
+    }
+
+
+    /* =============================================================
+       ELIMINAR POR CLAVE
+       Este endpoint será útil para Delete/Backspace desde JS nuevo.
+       También puede usarse mandando fecha vacía a guardar_celda.
+       ============================================================= */
+
+    public function eliminar_por_clave()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->methodNotAllowed();
+        }
+
+        $envioId = (int)(
+            $_POST['envio_partida_id']
+            ?? $_POST['operacion_ferro_id']
+            ?? $_POST['op_id']
+            ?? 0
+        );
+
+        $ferroId = (int)($_POST['contenedor_fisico_id'] ?? 0);
+        $evtId   = (int)($_POST['tipo_evento_id'] ?? 0);
+
+        if ($envioId <= 0 || $ferroId <= 0 || $evtId <= 0) {
+            $this->jsonResponse([
+                'status' => 'warning',
+                'msg'    => 'Faltan datos para eliminar la celda.'
+            ]);
+        }
+
+        try {
+            $res = $this->model->eliminarEventoPorClave($envioId, $ferroId, $evtId);
+
+            if (!empty($res['ok'])) {
+                $desc = $this->makeDesc('Celda de evento por partida eliminada', [
+                    'accion'              => $res['accion'] ?? '',
+                    'id_evento'           => $res['id_evento'] ?? '',
+                    'envio_partida_id'    => $envioId,
+                    'contenedor_fisico'   => $ferroId,
+                    'tipo_evento'         => $evtId
+                ]);
+
+                $this->logOpPartida($envioId, 'eliminacion', $desc);
+
+                $this->jsonResponse([
+                    'status'    => 'success',
+                    'msg'       => (string)($res['msg'] ?? 'Evento eliminado correctamente.'),
+                    'accion'    => $res['accion'] ?? '',
+                    'id_evento' => $res['id_evento'] ?? null,
+                    'fecha'     => ''
+                ]);
+            }
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => (string)($res['msg'] ?? 'No fue posible eliminar la celda.')
+            ]);
+        } catch (Throwable $e) {
+            error_log('[OP PARTIDA EVENTOS ELIMINAR CLAVE] ' . $e->getMessage());
+
+            $this->jsonResponse([
+                'status' => 'error',
+                'msg'    => 'Error interno al eliminar la celda.'
+            ], 500);
+        }
     }
 }
