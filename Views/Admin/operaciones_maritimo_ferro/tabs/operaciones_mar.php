@@ -332,44 +332,7 @@
             </div>
           </div>
 
-          <!-- Naviera -->
-          <select id="maritimo_ferro_filtroNaviera" name="maritimo_ferro_filtroNaviera" class="form-control"
-            style="max-width:240px;">
-            <option value="">Naviera (Todas)</option>
-            <?php if (!empty($data['navieras'])): ?>
-              <?php foreach ($data['navieras'] as $st): ?>
-                <option value="<?= (int)$st['id_naviera']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
 
-          <!-- Forwarder -->
-          <select id="maritimo_ferro_filtroForwarder" name="maritimo_ferro_filtroForwarder" class="form-control"
-            style="max-width:240px;">
-            <option value="">Forwarder (Todas)</option>
-            <?php if (!empty($data['forwarders'])): ?>
-              <?php foreach ($data['forwarders'] as $st): ?>
-                <option value="<?= (int)$st['id_forwarder']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
-
-          <!-- Shipper -->
-          <select id="maritimo_ferro_filtroShipper" name="maritimo_ferro_filtroShipper" class="form-control"
-            style="max-width:240px;">
-            <option value="">Shipper (Todas)</option>
-            <?php if (!empty($data['shippers'])): ?>
-              <?php foreach ($data['shippers'] as $st): ?>
-                <option value="<?= (int)$st['id_shipper']; ?>">
-                  <?= htmlspecialchars($st['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
           <!-- Transportista -->
           <select id="maritimo_ferro_filtroTransportista" name="maritimo_ferro_filtroTransportista" class="form-control"
             style="max-width:240px;">

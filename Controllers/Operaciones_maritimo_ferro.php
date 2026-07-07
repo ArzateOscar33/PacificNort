@@ -72,9 +72,9 @@ class Operaciones_maritimo_ferro extends Controller
 
             $estatusIds = array_values(array_unique($estatusIds));
         }
-        $navieraId       = isset($_GET['maritimo_ferro_filtroNaviera']) ? (int)$_GET['maritimo_ferro_filtroNaviera'] : 0;
+        /*$navieraId       = isset($_GET['maritimo_ferro_filtroNaviera']) ? (int)$_GET['maritimo_ferro_filtroNaviera'] : 0;
         $forwarderId     = isset($_GET['maritimo_ferro_filtroForwarder']) ? (int)$_GET['maritimo_ferro_filtroForwarder'] : 0;
-        $shipperId       = isset($_GET['maritimo_ferro_filtroShipper']) ? (int)$_GET['maritimo_ferro_filtroShipper'] : 0;
+        $shipperId       = isset($_GET['maritimo_ferro_filtroShipper']) ? (int)$_GET['maritimo_ferro_filtroShipper'] : 0;*/
         $transportistaId = isset($_GET['maritimo_ferro_filtroTransportista']) ? (int)$_GET['maritimo_ferro_filtroTransportista'] : 0;
         $medida          = isset($_GET['maritimo_ferro_filtroMedidaContenedor']) ? trim($_GET['maritimo_ferro_filtroMedidaContenedor']) : '';
         if ($page < 1) $page = 1;
@@ -84,9 +84,9 @@ class Operaciones_maritimo_ferro extends Controller
         $filters = [
             'filtroSubtipo'         => $subtipoId,
             'filtroEstatus'         => $estatusIds,
-            'filtroNaviera'         => $navieraId,
+            /*'filtroNaviera'         => $navieraId,
             'filtroForwarder'       => $forwarderId,
-            'filtroShipper'         => $shipperId,
+            'filtroShipper'         => $shipperId,*/
             'filtroTransportista'   => $transportistaId,
             'filtroMedidaContenedor' => $medida,
 

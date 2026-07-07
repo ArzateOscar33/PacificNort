@@ -14,11 +14,7 @@
   const inpFechaFin = document.getElementById("maritimo_ferro_fechaFin");
   // ===== NUEVOS FILTROS =====
   const selectEstatus = document.getElementById("maritimo_ferro_filtroEstatus");
-  const selectNaviera = document.getElementById("maritimo_ferro_filtroNaviera");
-  const selectForwarder = document.getElementById(
-    "maritimo_ferro_filtroForwarder",
-  );
-  const selectShipper = document.getElementById("maritimo_ferro_filtroShipper");
+
   const selectTransportista = document.getElementById(
     "maritimo_ferro_filtroTransportista",
   );
@@ -475,9 +471,7 @@
     )
       .map((chk) => (chk.value || "").trim())
       .filter((v) => v !== "");
-    const naviera = (selectNaviera?.value || "").trim();
-    const forwarder = (selectForwarder?.value || "").trim();
-    const shipper = (selectShipper?.value || "").trim();
+
     const transportista = (selectTransportista?.value || "").trim();
     const medida = (selectMedida?.value || "").trim();
 
@@ -488,10 +482,7 @@
     estatusSeleccionados.forEach((id) => {
       params.append("maritimo_ferro_filtroEstatus[]", id);
     });
-    if (naviera !== "") params.append("maritimo_ferro_filtroNaviera", naviera);
-    if (forwarder !== "")
-      params.append("maritimo_ferro_filtroForwarder", forwarder);
-    if (shipper !== "") params.append("maritimo_ferro_filtroShipper", shipper);
+
     if (transportista !== "")
       params.append("maritimo_ferro_filtroTransportista", transportista);
     if (medida !== "")
@@ -735,20 +726,14 @@
 
   // ===== Eventos de filtros/listado =====
   // Refrescar al cambiar cualquier filtro nuevo
-  [
-    selectEstatus,
-    selectNaviera,
-    selectForwarder,
-    selectShipper,
-    selectTransportista,
-    selectMedida,
-    selectSubtipo,
-  ].forEach((sel) => {
-    sel?.addEventListener("change", () => {
-      currentPage = 1;
-      listar();
-    });
-  });
+  [selectEstatus, selectTransportista, selectMedida, selectSubtipo].forEach(
+    (sel) => {
+      sel?.addEventListener("change", () => {
+        currentPage = 1;
+        listar();
+      });
+    },
+  );
   inputBuscar?.addEventListener("keyup", () => {
     clearTimeout(debounceId);
     debounceId = setTimeout(() => {

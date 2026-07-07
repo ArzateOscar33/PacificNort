@@ -536,26 +536,6 @@ class Operaciones_maritimo_ferroModel extends Query
             $where .= " AND o.estatus_id NOT IN (7, 13) ";
         }
 
-        // Naviera
-        $navieraId = isset($filters['filtroNaviera']) ? (int)$filters['filtroNaviera'] : 0;
-        if ($navieraId > 0) {
-            $where .= " AND o.naviera_id = ? ";
-            $args[] = $navieraId;
-        }
-
-        // Forwarder
-        $forwarderId = isset($filters['filtroForwarder']) ? (int)$filters['filtroForwarder'] : 0;
-        if ($forwarderId > 0) {
-            $where .= " AND o.forwarder_id = ? ";
-            $args[] = $forwarderId;
-        }
-
-        // Shipper
-        $shipperId = isset($filters['filtroShipper']) ? (int)$filters['filtroShipper'] : 0;
-        if ($shipperId > 0) {
-            $where .= " AND o.shipper_id = ? ";
-            $args[] = $shipperId;
-        }
 
         // Transportista (⚠️ actualmente filtra el transportista de la operación marítima)
         $transportistaId = isset($filters['filtroTransportista']) ? (int)$filters['filtroTransportista'] : 0;
@@ -595,8 +575,7 @@ class Operaciones_maritimo_ferroModel extends Query
             OR LOWER(o.numero_bl)     LIKE ?
             OR LOWER(p.nombre)        LIKE ?
             OR LOWER(e.nombre)        LIKE ?
-            OR LOWER(c.nombre)        LIKE ?
-            OR LOWER(s.nombre)        LIKE ?
+            OR LOWER(c.nombre)        LIKE ? 
 
             OR EXISTS (
                 SELECT 1
@@ -626,8 +605,7 @@ class Operaciones_maritimo_ferroModel extends Query
                     $needle, // o.numero_bl
                     $needle, // p.nombre
                     $needle, // e.nombre
-                    $needle, // c.nombre
-                    $needle, // s.nombre
+                    $needle, // c.nombre 
                     $needle, // cm2.numero_contenedor
                     $needle  // cf3.numero_ferro
                 );
@@ -664,8 +642,7 @@ class Operaciones_maritimo_ferroModel extends Query
             LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
             LEFT JOIN puertos p           ON p.id_puerto = st.puerto_arribo_default_id
             LEFT JOIN clientes c          ON c.id_cliente = o.cliente_id
-            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id
-            LEFT JOIN shippers s          ON s.id_shipper = o.shipper_id
+            LEFT JOIN estatus e           ON e.id_estatus = o.estatus_id 
             $where
         ";
         $rowCount = $this->select($sqlCount, $args) ?: ['total' => 0];
@@ -722,12 +699,9 @@ class Operaciones_maritimo_ferroModel extends Query
 
     FROM operaciones o
     LEFT JOIN subtipos_operacion st ON st.id_subtipo = o.subtipo_operacion_id
-    LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id
-    LEFT JOIN navieras n            ON n.id_naviera = o.naviera_id
-    LEFT JOIN forwarders f          ON f.id_forwarder = o.forwarder_id
+    LEFT JOIN puertos p             ON p.id_puerto = st.puerto_arribo_default_id 
     LEFT JOIN clientes c            ON c.id_cliente = o.cliente_id
-    LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id
-    LEFT JOIN shippers s            ON s.id_shipper = o.shipper_id
+    LEFT JOIN estatus e             ON e.id_estatus = o.estatus_id 
     LEFT JOIN transportistas tr     ON tr.id_transportista = o.transportista_id
 
             /* ===== contenedores + bultos (1 fila por operación) ===== */
