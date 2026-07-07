@@ -234,6 +234,36 @@
   #txtOrdenEta {
     font-weight: 500;
   }
+
+  /* ===== Edición rápida tipo Excel ===== */
+  .mf-cell-editable {
+    cursor: cell;
+    position: relative;
+  }
+
+  .mf-cell-editable:hover {
+    outline: 2px solid rgba(13, 110, 253, .45);
+    outline-offset: -2px;
+    filter: brightness(0.96);
+  }
+
+  .mf-cell-editable.mf-editing {
+    padding: .2rem !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    min-width: 180px;
+  }
+
+  .mf-cell-editable.mf-saving {
+    opacity: .65;
+    pointer-events: none;
+  }
+
+  .mf-cell-editable .form-control,
+  .mf-cell-editable .form-select {
+    min-width: 180px;
+    font-size: .82rem;
+  }
 </style>
 
 <div class="container py-4 col-md-12">
@@ -1283,7 +1313,12 @@
     </div>
   </div>
 </div>
-
+<script>
+  window.MF_CATALOGOS = {
+    estatus: <?= json_encode($data['estatus'] ?? [], JSON_UNESCAPED_UNICODE); ?>,
+    transportistas: <?= json_encode($data['transportistas'] ?? [], JSON_UNESCAPED_UNICODE); ?>
+  };
+</script>
 <script
   src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js">
 </script>

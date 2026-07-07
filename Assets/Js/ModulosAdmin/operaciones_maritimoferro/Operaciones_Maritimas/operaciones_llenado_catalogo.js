@@ -56,6 +56,9 @@
   let perPage = (selectPerPage?.value || "10").toString(); // "10" | "25" | ... | "todos"
   let currentListXHR = null;
   let debounceId = null;
+  // ===== Edición rápida tipo Excel =====
+  let celdaEditandoMF = null;
+  let inlineEditandoMF = false;
 
   // ===== Refs del modal =====
   const modalEl = document.getElementById("modalMaritimoFerro");
@@ -117,6 +120,23 @@
 
     return s;
   };
+  function escapeHtmlMF(v) {
+    return String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function attrMF(v) {
+    return escapeHtmlMF(v);
+  }
+
+  function textoCeldaMF(v) {
+    const s = String(v ?? "").trim();
+    return s === "" ? "-" : escapeHtmlMF(s);
+  }
   const show = (el) => el?.classList.remove("d-none");
   const hide = (el) => el?.classList.add("d-none");
   const enable = (el) => el?.removeAttribute("disabled");
@@ -295,21 +315,72 @@
       <td>${safe(item.peso_total)} Kg</td>
       <td>${safe(item.bultos_total)}</td>
       <td>${safe(item.tipo_contenedor)}</td>
-      <td>${safe(item.mercancia) ? item.mercancia : "-"}</td>
-<td>${opcional(item.transportista)}</td>
-<td>${opcional(item.brokers)}</td>
+      <td class="mf-cell-editable"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="descripcion_mercancia"
+          data-tipo="text"
+          data-value="${attrMF(item.mercancia || "")}"
+          title="Doble clic para editar mercancía">
+        ${textoCeldaMF(item.mercancia)}
+      </td>
+
+      <td class="mf-cell-editable"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="transportista_id"
+          data-tipo="select-transportista"
+          data-value="${attrMF(item.transportista_id || "")}"
+          title="Doble clic para cambiar transportista">
+        ${textoCeldaMF(opcional(item.transportista))}
+      </td>
+
+      <td>${opcional(item.brokers)}</td>
       <td>${safe(item.numero_bl)}</td>
       <td>${safe(item.puerto_arribo)}</td>
       <td>${safe(item.cliente)}</td> 
-      <td>${safe(item.estatus)}</td>
-      <td>${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}</td> 
-      <td>${safe(item.cita_puerto) || "-"}</td>
-      <td class="col-ellipsis" title="${safe(item.ubicacion_actual || "")}">
-        ${safe(item.ubicacion_actual || "-")}
+
+      <td class="mf-cell-editable"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="estatus_id"
+          data-tipo="select-estatus"
+          data-value="${attrMF(item.estatus_id || "")}"
+          title="Doble clic para cambiar estatus">
+        ${textoCeldaMF(item.estatus)}
       </td>
 
-      <td class="col-wrap" title="${safe(item.observaciones || "")}">
-        ${safe(item.observaciones || "-")}
+      <td class="mf-cell-editable"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="isf"
+          data-tipo="bool"
+          data-value="${Number(item.isf) === 1 ? "1" : "0"}"
+          title="Doble clic para alternar ISF">
+        ${Number(item.isf) === 1 ? '<span class="badge bg-success text-white">Si</span>' : '<span class="badge bg-secondary text-white">No</span>'}
+      </td>
+
+      <td class="mf-cell-editable"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="cita_puerto"
+          data-tipo="date"
+          data-value="${attrMF(item.cita_puerto || "")}"
+          title="Doble clic para editar cita en puerto">
+        ${textoCeldaMF(item.cita_puerto)}
+      </td>
+
+      <td class="mf-cell-editable col-ellipsis"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="ubicacion_actual"
+          data-tipo="text"
+          data-value="${attrMF(item.ubicacion_actual || "")}"
+          title="${attrMF(item.ubicacion_actual || "Doble clic para editar ubicación actual")}">
+        ${textoCeldaMF(item.ubicacion_actual)}
+      </td>
+
+      <td class="mf-cell-editable col-wrap"
+          data-id="${attrMF(item.id_operacion)}"
+          data-campo="notas"
+          data-tipo="textarea"
+          data-value="${attrMF(item.observaciones || "")}"
+          title="${attrMF(item.observaciones || "Doble clic para editar observaciones")}">
+        ${textoCeldaMF(item.observaciones)}
       </td>
 
       <td>${asig.ferros}</td>
@@ -340,7 +411,323 @@
 
     if (window.feather) feather.replace();
   }
+  function obtenerCatalogoEditableMF(tipo) {
+    const cats = window.MF_CATALOGOS || {};
 
+    if (tipo === "select-estatus") {
+      return (cats.estatus || []).map((x) => ({
+        id: x.id_estatus,
+        nombre: x.nombre,
+      }));
+    }
+
+    if (tipo === "select-transportista") {
+      return (cats.transportistas || []).map((x) => ({
+        id: x.id_transportista,
+        nombre: x.nombre,
+      }));
+    }
+
+    return [];
+  }
+
+  function renderValorEditableMF(campo, valor, texto) {
+    if (campo === "isf") {
+      return String(valor) === "1"
+        ? '<span class="badge bg-success text-white">Si</span>'
+        : '<span class="badge bg-secondary text-white">No</span>';
+    }
+
+    const txt = String(texto ?? valor ?? "").trim();
+    return txt === "" ? "-" : escapeHtmlMF(txt);
+  }
+
+  function guardarCeldaEditableMF(td, nuevoValor, textoMostrar = null) {
+    const idOperacion = String(td.dataset.id || "").trim();
+    const campo = String(td.dataset.campo || "").trim();
+    const valorAnterior = td.dataset.value ?? "";
+    const htmlAnterior = td.innerHTML;
+
+    if (!idOperacion || !campo) return;
+
+    const fd = new FormData();
+    fd.append("id_operacion", idOperacion);
+    fd.append("campo", campo);
+    fd.append("valor", nuevoValor ?? "");
+
+    td.classList.add("mf-saving");
+
+    const x = new XMLHttpRequest();
+    x.open(
+      "POST",
+      base_url + "Operaciones_maritimo_ferro/actualizar_celda",
+      true,
+    );
+
+    x.onerror =
+      x.onabort =
+      x.ontimeout =
+        function () {
+          td.classList.remove("mf-saving");
+          td.dataset.value = valorAnterior;
+          td.innerHTML = htmlAnterior;
+
+          Swal?.fire(
+            "Error de red",
+            "No se pudo actualizar la celda.",
+            "error",
+          );
+        };
+
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+
+      td.classList.remove("mf-saving");
+
+      let res = {};
+      try {
+        res = JSON.parse(x.responseText || "{}");
+      } catch (e) {
+        res = {};
+      }
+
+      if (x.status !== 200 || res.status !== "success") {
+        td.dataset.value = valorAnterior;
+        td.innerHTML = htmlAnterior;
+
+        Swal?.fire(
+          "Error",
+          res.msg || "No se pudo actualizar la celda.",
+          "error",
+        );
+        return;
+      }
+
+      /*
+       * Según tu jsonOk(), la respuesta puede venir anidada:
+       * res.data.data.valor / res.data.data.texto
+       */
+      const payload = res.data?.data || res.data || {};
+      const valorFinal = payload.valor ?? nuevoValor ?? "";
+      const textoFinal = payload.texto ?? textoMostrar ?? valorFinal ?? "";
+
+      td.dataset.value = String(valorFinal ?? "");
+      td.innerHTML = renderValorEditableMF(campo, valorFinal, textoFinal);
+
+      if (
+        campo === "ubicacion_actual" ||
+        campo === "notas" ||
+        campo === "descripcion_mercancia"
+      ) {
+        td.setAttribute("title", String(textoFinal || ""));
+      }
+
+      /*
+       * Si cambia estatus, refrescamos porque también cambia el color del renglón.
+       */
+      if (campo === "estatus_id") {
+        listar(true);
+      }
+    };
+
+    x.send(fd);
+  }
+
+  function cerrarEdicionMF(td, htmlOriginal) {
+    td.classList.remove("mf-editing");
+    td.innerHTML = htmlOriginal;
+    celdaEditandoMF = null;
+    inlineEditandoMF = false;
+  }
+
+  function activarEdicionCeldaMF(td) {
+    if (!td || td.classList.contains("mf-editing")) return;
+
+    if (celdaEditandoMF && celdaEditandoMF !== td) {
+      return;
+    }
+
+    celdaEditandoMF = td;
+    inlineEditandoMF = true;
+
+    td.classList.add("mf-editing");
+
+    const tipo = td.dataset.tipo || "text";
+    const campo = td.dataset.campo || "";
+    const valorActual = td.dataset.value ?? "";
+    const htmlOriginal = td.innerHTML;
+
+    let finalizado = false;
+
+    function cancelar() {
+      if (finalizado) return;
+      finalizado = true;
+      cerrarEdicionMF(td, htmlOriginal);
+    }
+
+    function terminar(nuevoValor, textoMostrar = null) {
+      if (finalizado) return;
+      finalizado = true;
+
+      td.classList.remove("mf-editing");
+      celdaEditandoMF = null;
+      inlineEditandoMF = false;
+
+      const valAnt = String(valorActual ?? "");
+      const valNvo = String(nuevoValor ?? "");
+
+      if (valAnt === valNvo) {
+        td.innerHTML = htmlOriginal;
+        return;
+      }
+
+      td.innerHTML = renderValorEditableMF(campo, nuevoValor, textoMostrar);
+      guardarCeldaEditableMF(td, nuevoValor, textoMostrar);
+    }
+
+    if (tipo === "bool") {
+      const nuevo = String(valorActual) === "1" ? "0" : "1";
+
+      td.classList.remove("mf-editing");
+      celdaEditandoMF = null;
+      inlineEditandoMF = false;
+
+      td.innerHTML = renderValorEditableMF(
+        campo,
+        nuevo,
+        nuevo === "1" ? "SI" : "NO",
+      );
+      guardarCeldaEditableMF(td, nuevo, nuevo === "1" ? "SI" : "NO");
+      return;
+    }
+
+    if (tipo === "select-estatus" || tipo === "select-transportista") {
+      const select = document.createElement("select");
+      select.className = "form-control form-control-sm";
+
+      if (tipo === "select-transportista") {
+        const optVacio = document.createElement("option");
+        optVacio.value = "";
+        optVacio.textContent = "SIN TRANSPORTISTA";
+        select.appendChild(optVacio);
+      }
+
+      obtenerCatalogoEditableMF(tipo).forEach((row) => {
+        const opt = document.createElement("option");
+        opt.value = String(row.id ?? "");
+        opt.textContent = String(row.nombre ?? "");
+        select.appendChild(opt);
+      });
+
+      select.value = String(valorActual || "");
+
+      td.innerHTML = "";
+      td.appendChild(select);
+      select.focus();
+
+      select.addEventListener("change", () => {
+        const selected = select.options[select.selectedIndex];
+        terminar(select.value, selected ? selected.textContent : "-");
+      });
+
+      select.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cancelar();
+        }
+
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const selected = select.options[select.selectedIndex];
+          terminar(select.value, selected ? selected.textContent : "-");
+        }
+      });
+
+      select.addEventListener("blur", () => {
+        setTimeout(() => {
+          if (!finalizado) cancelar();
+        }, 120);
+      });
+
+      return;
+    }
+
+    if (tipo === "date") {
+      const input = document.createElement("input");
+      input.type = "date";
+      input.className = "form-control form-control-sm";
+      input.value = String(valorActual || "").slice(0, 10);
+
+      td.innerHTML = "";
+      td.appendChild(input);
+      input.focus();
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cancelar();
+        }
+
+        if (e.key === "Enter") {
+          e.preventDefault();
+          terminar(input.value, input.value || "-");
+        }
+      });
+
+      input.addEventListener("blur", () => {
+        terminar(input.value, input.value || "-");
+      });
+
+      return;
+    }
+
+    const input = document.createElement(
+      tipo === "textarea" ? "textarea" : "input",
+    );
+    input.className = "form-control form-control-sm input-uppercase";
+
+    if (tipo === "textarea") {
+      input.rows = 2;
+    } else {
+      input.type = "text";
+    }
+
+    input.value = String(valorActual || "");
+
+    td.innerHTML = "";
+    td.appendChild(input);
+    input.focus();
+    input.select?.();
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelar();
+      }
+
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        const val = String(input.value || "")
+          .trim()
+          .toUpperCase();
+        terminar(val, val || "-");
+      }
+    });
+
+    input.addEventListener("blur", () => {
+      const val = String(input.value || "")
+        .trim()
+        .toUpperCase();
+      terminar(val, val || "-");
+    });
+  }
+
+  tablaBody?.addEventListener("dblclick", (e) => {
+    const td = e.target.closest(".mf-cell-editable");
+    if (!td) return;
+
+    activarEdicionCeldaMF(td);
+  });
   (function bindAsignacionesHover() {
     let lastKey = null;
 
@@ -1804,7 +2191,7 @@
     function iniciar() {
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
       autoRefreshTimer = setInterval(function () {
-        if (!pausado) listar(true);
+        if (!pausado && !inlineEditandoMF) listar(true);
       }, INTERVALO_MS);
     }
 

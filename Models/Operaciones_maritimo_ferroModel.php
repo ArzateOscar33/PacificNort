@@ -801,6 +801,7 @@ class Operaciones_maritimo_ferroModel extends Query
         o.ubicacion_actual,
         o.descripcion_mercancia AS mercancia,
 
+        o.estatus_id,
         e.nombre   AS estatus,
         e.color_hex AS estatus_color,
 
@@ -816,6 +817,7 @@ class Operaciones_maritimo_ferroModel extends Query
         bro.brokers,
 
         o.peso_total,
+        o.transportista_id,
         tr.nombre AS transportista,
 
         /* ===== TODOS los ferros/cajas vinculados ===== */
@@ -1451,6 +1453,349 @@ class Operaciones_maritimo_ferroModel extends Query
         }
     }
 
+
+    public function actualizarCeldaOperacion(int $opId, string $campo, $valor, int $usuarioId = 0): array
+    {
+        try {
+            if ($opId <= 0) {
+                return [
+                    'status' => 'error',
+                    'msg'    => 'ID de operación inválido.'
+                ];
+            }
+
+            $operacionActual = $this->getOperacionById($opId);
+
+            if (!$operacionActual) {
+                return [
+                    'status' => 'error',
+                    'msg'    => 'La operación no existe.'
+                ];
+            }
+
+            /*
+         * Whitelist real.
+         * No se permite actualizar cualquier columna que venga del JS.
+         * Esto evita inyección SQL y evita romper reglas internas.
+         */
+            $camposPermitidos = [
+                'estatus_id'            => [
+                    'columna' => 'estatus_id',
+                    'tipo'    => 'int_obligatorio',
+                    'label'   => 'estatus'
+                ],
+                'isf'                   => [
+                    'columna' => 'isf',
+                    'tipo'    => 'booleano',
+                    'label'   => 'ISF'
+                ],
+                'cita_puerto'           => [
+                    'columna' => 'cita_puerto',
+                    'tipo'    => 'fecha_nullable',
+                    'label'   => 'cita en puerto'
+                ],
+                'notas'                 => [
+                    'columna' => 'notas',
+                    'tipo'    => 'texto_nullable',
+                    'max'     => 300,
+                    'label'   => 'observaciones'
+                ],
+                'descripcion_mercancia' => [
+                    'columna' => 'descripcion_mercancia',
+                    'tipo'    => 'texto_nullable',
+                    'max'     => 255,
+                    'label'   => 'mercancía'
+                ],
+                'ubicacion_actual'      => [
+                    'columna' => 'ubicacion_actual',
+                    'tipo'    => 'texto_nullable',
+                    'max'     => 250,
+                    'label'   => 'ubicación actual'
+                ],
+                'transportista_id'      => [
+                    'columna' => 'transportista_id',
+                    'tipo'    => 'int_nullable',
+                    'label'   => 'transportista'
+                ],
+            ];
+
+            if (!isset($camposPermitidos[$campo])) {
+                return [
+                    'status' => 'error',
+                    'msg'    => 'Campo no permitido para edición rápida.'
+                ];
+            }
+
+            $config = $camposPermitidos[$campo];
+            $columna = $config['columna'];
+            $tipo = $config['tipo'];
+            $label = $config['label'];
+
+            $valorNormalizado = $this->normalizarValorCeldaMF($valor, $tipo, $config);
+
+            if (($valorNormalizado['status'] ?? '') !== 'success') {
+                return $valorNormalizado;
+            }
+
+            $valorFinal = $valorNormalizado['valor'];
+
+            /*
+         * Validaciones contra catálogos.
+         * Aquí evitamos que el JS mande IDs que no existen.
+         */
+            if ($campo === 'estatus_id') {
+                if (!$this->existeEstatusActivo((int)$valorFinal)) {
+                    return [
+                        'status' => 'warning',
+                        'msg'    => 'El estatus seleccionado no existe o está inactivo.'
+                    ];
+                }
+            }
+
+            if ($campo === 'transportista_id' && $valorFinal !== null) {
+                if (!$this->existeTransportistaActivo((int)$valorFinal)) {
+                    return [
+                        'status' => 'warning',
+                        'msg'    => 'El transportista seleccionado no existe o está inactivo.'
+                    ];
+                }
+            }
+
+            $valorAnterior = $operacionActual[$columna] ?? null;
+
+            if ($this->valorComparable($valorAnterior) === $this->valorComparable($valorFinal)) {
+                return [
+                    'status' => 'success',
+                    'msg'    => 'Sin cambios.',
+                    'data'   => [
+                        'campo' => $campo,
+                        'valor' => $valorFinal
+                    ]
+                ];
+            }
+
+            $this->save("START TRANSACTION", []);
+
+            $sql = "UPDATE operaciones
+                SET {$columna} = ?
+                WHERE id_operacion = ?
+                LIMIT 1";
+
+            $ok = $this->save($sql, [$valorFinal, $opId]);
+
+            if ($ok === false) {
+                $this->save("ROLLBACK", []);
+                return [
+                    'status' => 'error',
+                    'msg'    => 'No se pudo actualizar la celda.'
+                ];
+            }
+
+            if ($usuarioId > 0) {
+                $antes = $this->resolverValorAuditoria($columna, $valorAnterior);
+                $despues = $this->resolverValorAuditoria($columna, $valorFinal);
+
+                /*
+             * IMPORTANTE:
+             * operaciones_log.accion es ENUM.
+             * Usamos 'actualizacion' porque ya existe en tu BD.
+             */
+                $logId = $this->crearLog(
+                    $opId,
+                    $usuarioId,
+                    'actualizacion',
+                    "Edición rápida: {$label} [{$antes} → {$despues}]"
+                );
+
+                if ($logId <= 0) {
+                    $this->save("ROLLBACK", []);
+                    return [
+                        'status' => 'error',
+                        'msg'    => 'No se pudo registrar la bitácora de edición.'
+                    ];
+                }
+            }
+
+            $this->save("COMMIT", []);
+
+            return [
+                'status' => 'success',
+                'msg'    => 'Celda actualizada correctamente.',
+                'data'   => [
+                    'id_operacion' => $opId,
+                    'campo'        => $campo,
+                    'valor'        => $valorFinal,
+                    'texto'        => $this->resolverTextoCeldaMF($campo, $valorFinal)
+                ]
+            ];
+        } catch (\Throwable $e) {
+            try {
+                $this->save("ROLLBACK", []);
+            } catch (\Throwable $e2) {
+            }
+
+            return [
+                'status' => 'error',
+                'msg'    => 'Error inesperado al actualizar la celda.'
+            ];
+        }
+    }
+    private function normalizarValorCeldaMF($valor, string $tipo, array $config = []): array
+    {
+        switch ($tipo) {
+            case 'int_obligatorio':
+                $valor = (int)$valor;
+
+                if ($valor <= 0) {
+                    return [
+                        'status' => 'warning',
+                        'msg'    => 'Selecciona un valor válido.'
+                    ];
+                }
+
+                return [
+                    'status' => 'success',
+                    'valor'  => $valor
+                ];
+
+            case 'int_nullable':
+                $valor = trim((string)$valor);
+
+                if ($valor === '' || $valor === '0') {
+                    return [
+                        'status' => 'success',
+                        'valor'  => null
+                    ];
+                }
+
+                $valor = (int)$valor;
+
+                if ($valor <= 0) {
+                    return [
+                        'status' => 'warning',
+                        'msg'    => 'Selecciona un valor válido.'
+                    ];
+                }
+
+                return [
+                    'status' => 'success',
+                    'valor'  => $valor
+                ];
+
+            case 'booleano':
+                return [
+                    'status' => 'success',
+                    'valor'  => ((int)$valor === 1) ? 1 : 0
+                ];
+
+            case 'fecha_nullable':
+                $valor = trim((string)$valor);
+
+                if ($valor === '') {
+                    return [
+                        'status' => 'success',
+                        'valor'  => null
+                    ];
+                }
+
+                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
+                    return [
+                        'status' => 'warning',
+                        'msg'    => 'La fecha no tiene un formato válido.'
+                    ];
+                }
+
+                return [
+                    'status' => 'success',
+                    'valor'  => $valor
+                ];
+
+            case 'texto_nullable':
+                $valor = trim((string)$valor);
+                $valor = $valor !== '' ? mb_strtoupper($valor, 'UTF-8') : null;
+
+                $max = (int)($config['max'] ?? 0);
+
+                if ($valor !== null && $max > 0 && mb_strlen($valor, 'UTF-8') > $max) {
+                    return [
+                        'status' => 'warning',
+                        'msg'    => "El texto no puede superar {$max} caracteres."
+                    ];
+                }
+
+                return [
+                    'status' => 'success',
+                    'valor'  => $valor
+                ];
+
+            default:
+                return [
+                    'status' => 'error',
+                    'msg'    => 'Tipo de dato no soportado.'
+                ];
+        }
+    }
+
+    private function existeEstatusActivo(int $estatusId): bool
+    {
+        if ($estatusId <= 0) return false;
+
+        $row = $this->select(
+            "SELECT id_estatus
+         FROM estatus
+         WHERE id_estatus = ?
+           AND estatus = 1
+         LIMIT 1",
+            [$estatusId]
+        );
+
+        return !empty($row);
+    }
+
+    private function existeTransportistaActivo(int $transportistaId): bool
+    {
+        if ($transportistaId <= 0) return false;
+
+        $row = $this->select(
+            "SELECT id_transportista
+         FROM transportistas
+         WHERE id_transportista = ?
+           AND estatus = 1
+         LIMIT 1",
+            [$transportistaId]
+        );
+
+        return !empty($row);
+    }
+
+    private function resolverTextoCeldaMF(string $campo, $valor): string
+    {
+        if ($valor === null || $valor === '') {
+            return '-';
+        }
+
+        switch ($campo) {
+            case 'estatus_id':
+                $row = $this->select(
+                    "SELECT nombre FROM estatus WHERE id_estatus = ? LIMIT 1",
+                    [(int)$valor]
+                );
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'transportista_id':
+                $row = $this->select(
+                    "SELECT nombre FROM transportistas WHERE id_transportista = ? LIMIT 1",
+                    [(int)$valor]
+                );
+                return $row['nombre'] ?? (string)$valor;
+
+            case 'isf':
+                return ((int)$valor === 1) ? 'SI' : 'NO';
+
+            default:
+                return (string)$valor;
+        }
+    }
     /* =========================
        ===  BAJA LÓGICA      ===
        ========================= */

@@ -598,6 +598,40 @@ class Operaciones_maritimo_ferro extends Controller
         }
     }
 
+
+
+    public function actualizar_celda()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->jsonError('Método no permitido', 405);
+        }
+
+        $idOperacion = (int)($_POST['id_operacion'] ?? 0);
+        $campo = trim((string)($_POST['campo'] ?? ''));
+        $valor = $_POST['valor'] ?? null;
+
+        if ($idOperacion <= 0) {
+            return $this->jsonWarning('Operación inválida.');
+        }
+
+        if ($campo === '') {
+            return $this->jsonWarning('Campo requerido.');
+        }
+
+        $usuarioId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
+
+        $res = $this->model->actualizarCeldaOperacion($idOperacion, $campo, $valor, $usuarioId);
+
+        if (($res['status'] ?? '') === 'success') {
+            return $this->jsonOk($res);
+        }
+
+        if (($res['status'] ?? '') === 'warning') {
+            return $this->jsonWarning($res['msg'] ?? 'Revisa los datos.');
+        }
+
+        return $this->jsonError($res['msg'] ?? 'No se pudo actualizar la celda.', 200);
+    }
     /* =============================
        ========== HELPERS JSON ======
        ============================= */
