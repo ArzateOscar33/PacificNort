@@ -708,6 +708,67 @@ class Operaciones_maritimo_ferroModel extends Query
             $args[] = $ff;
         }
 
+
+        // Ordenamiento por ETA
+        // asc  = más antiguas primero
+        // desc = más recientes primero
+        // ''   = orden anterior del sistema
+        $ordenEta = array_key_exists('ordenEta', $filters)
+            ? strtolower(trim((string)$filters['ordenEta']))
+            : 'asc';
+
+        if (!in_array($ordenEta, ['asc', 'desc', ''], true)) {
+            $ordenEta = 'asc';
+        }
+
+        if ($ordenEta === 'desc') {
+            $orderBy = "
+        ORDER BY
+            CASE
+                WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 1
+                ELSE 0
+            END ASC,
+            DATE(o.eta) DESC,
+            o.id_operacion DESC
+    ";
+        } elseif ($ordenEta === 'asc') {
+            $orderBy = "
+        ORDER BY
+            CASE
+                WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 1
+                ELSE 0
+            END ASC,
+            DATE(o.eta) ASC,
+            o.id_operacion DESC
+    ";
+        } else {
+            // Orden anterior del sistema, por si el usuario elige "Sin orden ETA"
+            $orderBy = "
+        ORDER BY
+            CASE
+                WHEN o.estatus_id = 9 THEN 1
+                WHEN o.estatus_id IN (1, 5, 6, 11) THEN 2
+                WHEN o.estatus_id IN (7, 13) THEN 4
+                ELSE 3
+            END ASC,
+
+            CASE
+                WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 3
+                WHEN DATE(o.eta) >= CURDATE() THEN 1
+                ELSE 2
+            END ASC,
+
+            CASE
+                WHEN DATE(o.eta) >= CURDATE() THEN DATE(o.eta)
+            END ASC,
+
+            CASE
+                WHEN DATE(o.eta) < CURDATE() THEN DATE(o.eta)
+            END DESC,
+
+            o.id_operacion DESC
+    ";
+        }
         // COUNT
         $sqlCount = "
             SELECT COUNT(DISTINCT o.id_operacion) AS total
@@ -891,42 +952,7 @@ class Operaciones_maritimo_ferroModel extends Query
             ) asig ON asig.operacion_id = o.id_operacion
 
             $where
-            /*ORDENAMIENTO DE OPERACIONES*/
-ORDER BY
-    /* 1) PRIORIDAD POR GRUPO DE ESTATUS (Usa IDs numéricos, es mucho más rápido) */
-    CASE
-        /* Grupo 1: En camino / Crítico */
-        WHEN o.estatus_id = 9 THEN 1 -- 'EN AGUA'
-
-        /* Grupo 2: Operaciones activas en proceso */
-        WHEN o.estatus_id IN (1, 5, 6, 11) THEN 2 -- 'CAMINO A DESTINO', 'BODEGA MX', 'BODEGA USA', 'PUERTO'
-
-        /* Grupo 4: Operaciones finalizadas o canceladas (Al final) */
-        WHEN o.estatus_id IN (7, 13) THEN 4 -- 'ENTRINCADO', 'CANCELADO'
-
-        /* Grupo 3: Cualquier otro estatus intermedio */
-        ELSE 3
-    END ASC,
-
-    /* 2) CONDICIÓN DE ETA (Futuro, Pasado o Sin Fecha) */
-    CASE
-        WHEN o.eta IS NULL OR o.eta = '0000-00-00' THEN 3
-        WHEN DATE(o.eta) >= CURDATE() THEN 1
-        ELSE 2
-    END ASC,
-
-    /* 3) ETAs próximas (Orden cronológico: la más cercana primero) */
-    CASE
-        WHEN DATE(o.eta) >= CURDATE() THEN DATE(o.eta)
-    END ASC,
-
-    /* 4) ETAs vencidas (La retrasada más reciente primero) */
-    CASE
-        WHEN DATE(o.eta) < CURDATE() THEN DATE(o.eta)
-    END DESC,
-
-    /* 5) Desempate final */
-    o.id_operacion DESC
+            $orderBy
 
             LIMIT $limit OFFSET $off
         ";

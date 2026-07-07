@@ -12,6 +12,10 @@
   const metaResumen = document.getElementById("maritimo_ferro_metaResumen");
   const inpFechaIni = document.getElementById("maritimo_ferro_fechaInicio");
   const inpFechaFin = document.getElementById("maritimo_ferro_fechaFin");
+
+  const inputOrdenEta = document.getElementById("maritimo_ferro_ordenEta");
+  const txtOrdenEta = document.getElementById("txtOrdenEta");
+  const opcionesOrdenEta = document.querySelectorAll(".opcionOrdenEta");
   // ===== NUEVOS FILTROS =====
   const selectEstatus = document.getElementById("maritimo_ferro_filtroEstatus");
 
@@ -485,6 +489,7 @@
     const term = (inputBuscar?.value || "").trim();
     const fi = (inpFechaIni?.value || "").trim();
     const ff = (inpFechaFin?.value || "").trim();
+    const ordenEta = (inputOrdenEta?.value ?? "asc").trim();
     const estatusSeleccionados = Array.from(
       document.querySelectorAll(".chkFiltroEstatus:checked"),
     )
@@ -514,6 +519,7 @@
     if (term !== "") params.append("maritimo_ferro_buscarOperacion", term);
     if (fi !== "") params.append("maritimo_ferro_fechaInicio", fi);
     if (ff !== "") params.append("maritimo_ferro_fechaFin", ff);
+    params.append("maritimo_ferro_ordenEta", ordenEta);
     estatusSeleccionados.forEach((id) => {
       params.append("maritimo_ferro_filtroEstatus[]", id);
     });
@@ -805,6 +811,7 @@
     actualizarTextoFiltroTransportista();
     actualizarTextoFiltroCliente();
     actualizarTextoFiltroBroker();
+    actualizarTextoOrdenEta();
 
     listar();
 
@@ -1368,6 +1375,24 @@
     txtFiltroBroker.textContent = `${seleccionados.length} brokers seleccionados`;
   }
 
+  function actualizarTextoOrdenEta() {
+    if (!txtOrdenEta || !inputOrdenEta) return;
+
+    const valor = (inputOrdenEta.value ?? "asc").trim();
+
+    if (valor === "desc") {
+      txtOrdenEta.textContent = "ETA: Recientes primero";
+      return;
+    }
+
+    if (valor === "") {
+      txtOrdenEta.textContent = "Orden ETA";
+      return;
+    }
+
+    txtOrdenEta.textContent = "ETA: Antiguas primero";
+  }
+
   checksEstatus.forEach((chk) => {
     chk.addEventListener("change", () => {
       currentPage = 1;
@@ -1446,6 +1471,29 @@
       listar();
     });
   }
+  opcionesOrdenEta.forEach((opcion) => {
+    opcion.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const valor = (opcion.dataset.value ?? "asc").trim();
+      const texto = (opcion.dataset.text ?? "").trim();
+
+      if (inputOrdenEta) {
+        inputOrdenEta.value = valor;
+      }
+
+      if (txtOrdenEta) {
+        if (texto !== "") {
+          txtOrdenEta.textContent = texto;
+        } else {
+          actualizarTextoOrdenEta();
+        }
+      }
+
+      currentPage = 1;
+      listar();
+    });
+  });
   // Delegación: click en botón Editar de la tabla
   tablaBody?.addEventListener("click", (e) => {
     const btn = e.target.closest(".btn-edit-mf");

@@ -211,7 +211,8 @@
   #btnFiltroEstatus,
   #btnFiltroTransportista,
   #btnFiltroCliente,
-  #btnFiltroBroker {
+  #btnFiltroBroker,
+  #btnOrdenEta {
     min-height: 38px;
     border-radius: 8px;
     background-color: #fff;
@@ -221,14 +222,16 @@
   #btnFiltroEstatus:hover,
   #btnFiltroTransportista:hover,
   #btnFiltroCliente:hover,
-  #btnFiltroBroker:hover {
+  #btnFiltroBroker:hover,
+  #btnOrdenEta:hover {
     background-color: #f8fafc;
   }
 
   #txtFiltroEstatus,
   #txtFiltroTransportista,
   #txtFiltroCliente,
-  #txtFiltroBroker {
+  #txtFiltroBroker,
+  #txtOrdenEta {
     font-weight: 500;
   }
 </style>
@@ -260,18 +263,87 @@
           <!-- Búsqueda global (DEJAR AL FINAL, sin cambiar id/name) -->
           <input id="maritimo_ferro_buscarOperacion" class="form-control col-md-9"
             placeholder="Buscar por código, BL o contenedor">
-          <!-- Rango de fechas -->
+          <!-- Rango de fechas + Orden ETA -->
           <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+
             <div class="d-flex align-items-end gap-2">
               <i data-feather="calendar"></i>
-              <span class="small text-muted">Rango:</span>
+              <span class="small text-muted">Rango ETA:</span>
             </div>
 
-            <input type="date" id="maritimo_ferro_fechaInicio" name="maritimo_ferro_fechaInicio" class="form-control"
-              style="max-width:165px;" aria-label="Fecha inicio" />
+            <input
+              type="date"
+              id="maritimo_ferro_fechaInicio"
+              name="maritimo_ferro_fechaInicio"
+              class="form-control"
+              style="max-width:165px;"
+              aria-label="Fecha inicio ETA" />
 
-            <input type="date" id="maritimo_ferro_fechaFin" name="maritimo_ferro_fechaFin" class="form-control"
-              style="max-width:165px;" aria-label="Fecha fin" />
+            <input
+              type="date"
+              id="maritimo_ferro_fechaFin"
+              name="maritimo_ferro_fechaFin"
+              class="form-control"
+              style="max-width:165px;"
+              aria-label="Fecha fin ETA" />
+
+            <!-- Orden ETA -->
+            <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
+              <button
+                class="btn btn-light border w-100 d-flex justify-content-between align-items-center"
+                type="button"
+                id="btnOrdenEta"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <span>
+                  <i data-feather="repeat" class="me-1" style="width:16px;height:16px;"></i>
+                  <span id="txtOrdenEta">ETA: Antiguas primero</span>
+                </span>
+                <i data-feather="chevron-down" style="width:16px;height:16px;"></i>
+              </button>
+
+              <div class="dropdown-menu p-2 shadow filtro-estatus-menu" aria-labelledby="btnOrdenEta">
+                <div class="px-2 pb-2 border-bottom mb-2">
+                  <strong class="small text-muted">Ordenar por ETA</strong>
+                  <div class="small text-muted">Selecciona cómo ordenar las fechas</div>
+                </div>
+
+                <button
+                  type="button"
+                  class="dropdown-item d-flex align-items-center gap-2 filtro-estatus-item opcionOrdenEta"
+                  data-value="asc"
+                  data-text="ETA: Antiguas primero">
+                  <i data-feather="arrow-down" style="width:16px;height:16px;"></i>
+                  <span>Más antiguas primero</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dropdown-item d-flex align-items-center gap-2 filtro-estatus-item opcionOrdenEta"
+                  data-value="desc"
+                  data-text="ETA: Recientes primero">
+                  <i data-feather="arrow-up" style="width:16px;height:16px;"></i>
+                  <span>Más recientes primero</span>
+                </button>
+
+                <div class="border-top mt-2 pt-2 px-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary w-100 opcionOrdenEta"
+                    data-value=""
+                    data-text="Orden ETA">
+                    Sin orden ETA
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="hidden"
+              id="maritimo_ferro_ordenEta"
+              name="maritimo_ferro_ordenEta"
+              value="asc">
+
           </div>
         </div>
 

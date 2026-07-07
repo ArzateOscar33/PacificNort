@@ -53,6 +53,13 @@ class Operaciones_maritimo_ferro extends Controller
         $term        = isset($_GET['q']) ? trim($_GET['q']) : (isset($_GET['maritimo_ferro_buscarOperacion']) ? trim($_GET['maritimo_ferro_buscarOperacion']) : '');
         $fechaInicio = isset($_GET['maritimo_ferro_fechaInicio']) ? trim($_GET['maritimo_ferro_fechaInicio']) : '';
         $fechaFin    = isset($_GET['maritimo_ferro_fechaFin'])    ? trim($_GET['maritimo_ferro_fechaFin'])    : '';
+        $ordenEta = isset($_GET['maritimo_ferro_ordenEta'])
+            ? strtolower(trim((string)$_GET['maritimo_ferro_ordenEta']))
+            : 'asc';
+
+        if (!in_array($ordenEta, ['asc', 'desc', ''], true)) {
+            $ordenEta = 'asc';
+        }
         $page        = isset($_GET['page'])    ? (int)$_GET['page']    : 1;
         $perPage     = isset($_GET['perPage']) ? (int)$_GET['perPage'] : (isset($_GET['maritimo_ferro_perPage']) ? (int)$_GET['maritimo_ferro_perPage'] : 10);
         $estatusIds = [];
@@ -143,6 +150,7 @@ class Operaciones_maritimo_ferro extends Controller
             'filtroCliente'          => $clienteIds,
             'filtroBroker'           => $brokerIds,
             'filtroMedidaContenedor' => $medida,
+            'ordenEta'               => $ordenEta,
 
             'term'                   => mb_strtolower($term, 'UTF-8'),
             'fecha_inicio'           => $fechaInicio,
