@@ -37,6 +37,7 @@ class Operaciones_maritimo_ferro extends Controller
         $data['brokers']        = $this->model->getBrokers();
         $data['transportistas'] = $this->model->getTransportistas();
         $data['ciudades']       = $this->model->listarDestinos();
+        $data['clientes']       = $this->model->catalogoClientes();
 
 
         $this->views->getView($this, "Operaciones_maritimo_ferro", $data);
@@ -92,20 +93,60 @@ class Operaciones_maritimo_ferro extends Controller
             $transportistaIds = array_values(array_unique($transportistaIds));
         }
 
+
+        $clienteIds = [];
+
+        if (isset($_GET['maritimo_ferro_filtroCliente'])) {
+            $rawCliente = $_GET['maritimo_ferro_filtroCliente'];
+
+            if (!is_array($rawCliente)) {
+                $rawCliente = explode(',', (string)$rawCliente);
+            }
+
+            foreach ($rawCliente as $idCliente) {
+                $idCliente = (int)$idCliente;
+                if ($idCliente > 0) {
+                    $clienteIds[] = $idCliente;
+                }
+            }
+
+            $clienteIds = array_values(array_unique($clienteIds));
+        }
+        $brokerIds = [];
+
+        if (isset($_GET['maritimo_ferro_filtroBroker'])) {
+            $rawBroker = $_GET['maritimo_ferro_filtroBroker'];
+
+            if (!is_array($rawBroker)) {
+                $rawBroker = explode(',', (string)$rawBroker);
+            }
+
+            foreach ($rawBroker as $idBroker) {
+                $idBroker = (int)$idBroker;
+                if ($idBroker > 0) {
+                    $brokerIds[] = $idBroker;
+                }
+            }
+
+            $brokerIds = array_values(array_unique($brokerIds));
+        }
+
         $medida          = isset($_GET['maritimo_ferro_filtroMedidaContenedor']) ? trim($_GET['maritimo_ferro_filtroMedidaContenedor']) : '';
         if ($page < 1) $page = 1;
         $allowedPer = [10, 25, 50, 100, 200, 500, 1000, 10000000];
         if (!in_array($perPage, $allowedPer, true)) $perPage = 10;
 
         $filters = [
-            'filtroSubtipo'         => $subtipoId,
-            'filtroEstatus'         => $estatusIds,
-            'filtroTransportista'   => $transportistaIds,
+            'filtroSubtipo'          => $subtipoId,
+            'filtroEstatus'          => $estatusIds,
+            'filtroTransportista'    => $transportistaIds,
+            'filtroCliente'          => $clienteIds,
+            'filtroBroker'           => $brokerIds,
             'filtroMedidaContenedor' => $medida,
 
-            'term'                  => mb_strtolower($term, 'UTF-8'),
-            'fecha_inicio'          => $fechaInicio,
-            'fecha_fin'             => $fechaFin,
+            'term'                   => mb_strtolower($term, 'UTF-8'),
+            'fecha_inicio'           => $fechaInicio,
+            'fecha_fin'              => $fechaFin,
         ];
 
         $res = $this->model->listarPaginado($filters, $page, $perPage);

@@ -209,7 +209,9 @@
   }
 
   #btnFiltroEstatus,
-  #btnFiltroTransportista {
+  #btnFiltroTransportista,
+  #btnFiltroCliente,
+  #btnFiltroBroker {
     min-height: 38px;
     border-radius: 8px;
     background-color: #fff;
@@ -217,12 +219,16 @@
   }
 
   #btnFiltroEstatus:hover,
-  #btnFiltroTransportista:hover {
+  #btnFiltroTransportista:hover,
+  #btnFiltroCliente:hover,
+  #btnFiltroBroker:hover {
     background-color: #f8fafc;
   }
 
   #txtFiltroEstatus,
-  #txtFiltroTransportista {
+  #txtFiltroTransportista,
+  #txtFiltroCliente,
+  #txtFiltroBroker {
     font-weight: 500;
   }
 </style>
@@ -335,7 +341,50 @@
             </div>
           </div>
 
+          <!-- Filtro Cliente múltiple -->
+          <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
+            <button
+              class="btn btn-light border w-100 d-flex justify-content-between align-items-center"
+              type="button"
+              id="btnFiltroCliente"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <span>
+                <i data-feather="users" class="me-1" style="width:16px;height:16px;"></i>
+                <span id="txtFiltroCliente">Cliente</span>
+              </span>
+              <i data-feather="chevron-down" style="width:16px;height:16px;"></i>
+            </button>
 
+            <div class="dropdown-menu p-2 shadow filtro-estatus-menu" aria-labelledby="btnFiltroCliente">
+              <div class="px-2 pb-2 border-bottom mb-2">
+                <strong class="small text-muted">Filtrar por cliente</strong>
+                <div class="small text-muted">Puedes seleccionar uno o varios</div>
+              </div>
+
+              <?php if (!empty($data['clientes'])): ?>
+                <?php foreach ($data['clientes'] as $c): ?>
+                  <label class="dropdown-item d-flex align-items-center gap-2 filtro-estatus-item">
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0 chkFiltroCliente"
+                      name="maritimo_ferro_filtroCliente[]"
+                      value="<?= (int)$c['id_cliente']; ?>">
+
+                    <span class="ml-4">
+                      <?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </label>
+                <?php endforeach; ?>
+              <?php endif; ?>
+
+              <div class="border-top mt-2 pt-2 px-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btnLimpiarFiltroCliente">
+                  Limpiar cliente
+                </button>
+              </div>
+            </div>
+          </div>
           <!-- Filtro Transportista múltiple -->
           <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
             <button
@@ -376,6 +425,51 @@
               <div class="border-top mt-2 pt-2 px-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btnLimpiarFiltroTransportista">
                   Limpiar transportista
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtro Broker múltiple -->
+          <div class="dropdown filtro-estatus-wrapper" style="max-width: 260px;">
+            <button
+              class="btn btn-light border w-100 d-flex justify-content-between align-items-center"
+              type="button"
+              id="btnFiltroBroker"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <span>
+                <i data-feather="briefcase" class="me-1" style="width:16px;height:16px;"></i>
+                <span id="txtFiltroBroker">Broker</span>
+              </span>
+              <i data-feather="chevron-down" style="width:16px;height:16px;"></i>
+            </button>
+
+            <div class="dropdown-menu p-2 shadow filtro-estatus-menu" aria-labelledby="btnFiltroBroker">
+              <div class="px-2 pb-2 border-bottom mb-2">
+                <strong class="small text-muted">Filtrar por broker</strong>
+                <div class="small text-muted">Puedes seleccionar uno o varios</div>
+              </div>
+
+              <?php if (!empty($data['brokers'])): ?>
+                <?php foreach ($data['brokers'] as $b): ?>
+                  <label class="dropdown-item d-flex align-items-center gap-2 filtro-estatus-item">
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0 chkFiltroBroker"
+                      name="maritimo_ferro_filtroBroker[]"
+                      value="<?= (int)$b['id_broker']; ?>">
+
+                    <span class="ml-4">
+                      <?= htmlspecialchars($b['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </label>
+                <?php endforeach; ?>
+              <?php endif; ?>
+
+              <div class="border-top mt-2 pt-2 px-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btnLimpiarFiltroBroker">
+                  Limpiar broker
                 </button>
               </div>
             </div>

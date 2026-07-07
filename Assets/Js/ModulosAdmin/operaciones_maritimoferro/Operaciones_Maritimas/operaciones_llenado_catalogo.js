@@ -36,6 +36,18 @@
   const btnLimpiarFiltroTransportista = document.getElementById(
     "btnLimpiarFiltroTransportista",
   );
+
+  const checksCliente = document.querySelectorAll(".chkFiltroCliente");
+  const txtFiltroCliente = document.getElementById("txtFiltroCliente");
+  const btnLimpiarFiltroCliente = document.getElementById(
+    "btnLimpiarFiltroCliente",
+  );
+
+  const checksBroker = document.querySelectorAll(".chkFiltroBroker");
+  const txtFiltroBroker = document.getElementById("txtFiltroBroker");
+  const btnLimpiarFiltroBroker = document.getElementById(
+    "btnLimpiarFiltroBroker",
+  );
   let currentPage = 1;
   let perPage = (selectPerPage?.value || "10").toString(); // "10" | "25" | ... | "todos"
   let currentListXHR = null;
@@ -484,6 +496,17 @@
     )
       .map((chk) => (chk.value || "").trim())
       .filter((v) => v !== "");
+    const clientesSeleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroCliente:checked"),
+    )
+      .map((chk) => (chk.value || "").trim())
+      .filter((v) => v !== "");
+
+    const brokersSeleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroBroker:checked"),
+    )
+      .map((chk) => (chk.value || "").trim())
+      .filter((v) => v !== "");
 
     const medida = (selectMedida?.value || "").trim();
 
@@ -497,6 +520,13 @@
 
     transportistasSeleccionados.forEach((id) => {
       params.append("maritimo_ferro_filtroTransportista[]", id);
+    });
+    clientesSeleccionados.forEach((id) => {
+      params.append("maritimo_ferro_filtroCliente[]", id);
+    });
+
+    brokersSeleccionados.forEach((id) => {
+      params.append("maritimo_ferro_filtroBroker[]", id);
     });
     if (medida !== "")
       params.append("maritimo_ferro_filtroMedidaContenedor", medida);
@@ -773,6 +803,8 @@
 
     actualizarTextoFiltroEstatus();
     actualizarTextoFiltroTransportista();
+    actualizarTextoFiltroCliente();
+    actualizarTextoFiltroBroker();
 
     listar();
 
@@ -1292,6 +1324,50 @@
     txtFiltroTransportista.textContent = `${seleccionados.length} transportistas seleccionados`;
   }
 
+  function actualizarTextoFiltroCliente() {
+    const seleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroCliente:checked"),
+    );
+
+    if (!txtFiltroCliente) return;
+
+    if (seleccionados.length === 0) {
+      txtFiltroCliente.textContent = "Cliente";
+      return;
+    }
+
+    if (seleccionados.length === 1) {
+      const label = seleccionados[0].closest("label");
+      const texto = label ? label.innerText.trim() : "1 seleccionado";
+      txtFiltroCliente.textContent = texto;
+      return;
+    }
+
+    txtFiltroCliente.textContent = `${seleccionados.length} clientes seleccionados`;
+  }
+
+  function actualizarTextoFiltroBroker() {
+    const seleccionados = Array.from(
+      document.querySelectorAll(".chkFiltroBroker:checked"),
+    );
+
+    if (!txtFiltroBroker) return;
+
+    if (seleccionados.length === 0) {
+      txtFiltroBroker.textContent = "Broker";
+      return;
+    }
+
+    if (seleccionados.length === 1) {
+      const label = seleccionados[0].closest("label");
+      const texto = label ? label.innerText.trim() : "1 seleccionado";
+      txtFiltroBroker.textContent = texto;
+      return;
+    }
+
+    txtFiltroBroker.textContent = `${seleccionados.length} brokers seleccionados`;
+  }
+
   checksEstatus.forEach((chk) => {
     chk.addEventListener("change", () => {
       currentPage = 1;
@@ -1327,6 +1403,46 @@
 
       currentPage = 1;
       actualizarTextoFiltroTransportista();
+      listar();
+    });
+  }
+
+  checksCliente.forEach((chk) => {
+    chk.addEventListener("change", () => {
+      currentPage = 1;
+      actualizarTextoFiltroCliente();
+      listar();
+    });
+  });
+
+  if (btnLimpiarFiltroCliente) {
+    btnLimpiarFiltroCliente.addEventListener("click", () => {
+      checksCliente.forEach((chk) => {
+        chk.checked = false;
+      });
+
+      currentPage = 1;
+      actualizarTextoFiltroCliente();
+      listar();
+    });
+  }
+
+  checksBroker.forEach((chk) => {
+    chk.addEventListener("change", () => {
+      currentPage = 1;
+      actualizarTextoFiltroBroker();
+      listar();
+    });
+  });
+
+  if (btnLimpiarFiltroBroker) {
+    btnLimpiarFiltroBroker.addEventListener("click", () => {
+      checksBroker.forEach((chk) => {
+        chk.checked = false;
+      });
+
+      currentPage = 1;
+      actualizarTextoFiltroBroker();
       listar();
     });
   }

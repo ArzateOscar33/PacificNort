@@ -558,6 +558,64 @@ class Operaciones_maritimo_ferroModel extends Query
                 $args[] = $idTransportista;
             }
         }
+        // Cliente múltiple:
+        // Filtra por cliente principal de la operación marítima.
+        // Campo: operaciones.cliente_id
+        $clienteIds = $filters['filtroCliente'] ?? [];
+
+        if (!is_array($clienteIds)) {
+            $clienteIds = explode(',', (string)$clienteIds);
+        }
+
+        $clienteIds = array_values(array_unique(array_filter(array_map('intval', $clienteIds), function ($id) {
+            return $id > 0;
+        })));
+
+        if (!empty($clienteIds)) {
+            $placeholders = implode(',', array_fill(0, count($clienteIds), '?'));
+            $where .= " AND o.cliente_id IN ($placeholders) ";
+
+            foreach ($clienteIds as $idCliente) {
+                $args[] = $idCliente;
+            }
+        }
+
+
+        // Broker múltiple:
+        // Se filtra usando operaciones.broker_id y también la tabla pivote operacion_brokers
+        // para mantener compatibilidad con operaciones antiguas o registros ligados por relación.
+        $brokerIds = $filters['filtroBroker'] ?? [];
+
+        if (!is_array($brokerIds)) {
+            $brokerIds = explode(',', (string)$brokerIds);
+        }
+
+        $brokerIds = array_values(array_unique(array_filter(array_map('intval', $brokerIds), function ($id) {
+            return $id > 0;
+        })));
+
+        if (!empty($brokerIds)) {
+            $placeholdersBrokerDirecto = implode(',', array_fill(0, count($brokerIds), '?'));
+            $placeholdersBrokerPivot   = implode(',', array_fill(0, count($brokerIds), '?'));
+
+            $where .= " AND (
+        o.broker_id IN ($placeholdersBrokerDirecto)
+        OR EXISTS (
+            SELECT 1
+            FROM operacion_brokers obFiltro
+            WHERE obFiltro.operacion_id = o.id_operacion
+              AND obFiltro.broker_id IN ($placeholdersBrokerPivot)
+        )
+    ) ";
+
+            foreach ($brokerIds as $idBroker) {
+                $args[] = $idBroker;
+            }
+
+            foreach ($brokerIds as $idBroker) {
+                $args[] = $idBroker;
+            }
+        }
 
         // Medida contenedor (20GP/40GP/40HC/45HC)
         $medida = trim((string)($filters['filtroMedidaContenedor'] ?? ''));
