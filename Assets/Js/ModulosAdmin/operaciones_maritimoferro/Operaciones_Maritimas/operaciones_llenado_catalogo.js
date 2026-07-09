@@ -287,7 +287,7 @@
 
     if (!Array.isArray(rows) || rows.length === 0) {
       tablaBody.innerHTML =
-        "<tr><td colspan='25' class='text-center'>No se encontraron resultados</td></tr>";
+        "<tr><td colspan='24' class='text-center'>No se encontraron resultados</td></tr>";
       return;
     }
 
@@ -308,7 +308,7 @@
       tr.innerHTML = `
       <td class="sticky-col sticky-col-1 text-center">${safe(item.numero_operacion)}</td>
       <td class="sticky-col sticky-col-2 text-center">${safe(item.contenedores)}</td>
-      <td>${safe(item.subtipo || item.subtipo_operacion)}</td>
+     <!-- <td>${safe(item.subtipo || item.subtipo_operacion)}</td> -->
       <td>${safe(item.etd)}</td>
       <td>${safe(item.eta)}</td>
 

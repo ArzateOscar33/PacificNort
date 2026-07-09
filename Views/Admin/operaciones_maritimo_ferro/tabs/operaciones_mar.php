@@ -726,7 +726,7 @@
             <tr class="text-center">
               <th class="col-md sticky-col sticky-col-1">Código</th>
               <th class="col-md sticky-col sticky-col-2">Contenedor</th>
-              <th class="col-md">Subtipo</th>
+              <!-- <th class="col-md">Subtipo</th> -->
               <th>ETD</th>
               <th>ETA</th>
 
