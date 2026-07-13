@@ -12,7 +12,7 @@ class Rastreo extends Controller
     public function index()
     {
         $data['title'] = 'Rastreo de Carga';
-        $this->views->getView($this, "rastreo", $data);
+        $this->views->getView('principal', 'rastreo', $data);
     }
 
     /**

@@ -29,7 +29,7 @@ class Operaciones_por_partida extends Controller
 
         // Si en tu vista el filtro de bodegas se llena con PHP:
         // $data['bodegas'] = $this->model->getBodegasActivas();  (opcional, después)
-        $this->views->getView('admin/Operaciones_por_partida', "ver", $data);
+        $this->views->getView('admin/operaciones_por_partida', "ver", $data);
     }
     private function registrarBitacoraPartida(
         string $modulo,

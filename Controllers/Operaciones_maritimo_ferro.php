@@ -26,21 +26,7 @@ class Operaciones_maritimo_ferro extends Controller
 
     public function index()
     {
-        $data['title']          = 'Operaciones Marítimas-Ferroviarias';
-        // ✅ La vista que pegaste necesita estos catálogos:
-        $data['subtipos']       = $this->model->subtiposMaritimoFerro();
-        $data['estatus']        = $this->model->catalogoEstatus();
-        $data['navieras']       = $this->model->catalogoNavieras();
-        $data['forwarders']     = $this->model->catalogoForwarders();
-        $data['shippers']       = $this->model->catalogoShippers();
-        $data['puertos']        = $this->model->catalogoPuertos();
-        $data['brokers']        = $this->model->getBrokers();
-        $data['transportistas'] = $this->model->getTransportistas();
-        $data['ciudades']       = $this->model->listarDestinos();
-        $data['clientes']       = $this->model->catalogoClientes();
-
-
-        $this->views->getView($this, "Operaciones_maritimo_ferro", $data);
+        $this->ver(0);
     }
 
     /* ==========================================
@@ -737,60 +723,60 @@ class Operaciones_maritimo_ferro extends Controller
 
         $data['clientes']       = $this->model->catalogoClientes();
 
-        $this->views->getView('admin/Operaciones_maritimo_ferro', "ver", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro', "ver", $data);
     }
 
     public function crear_operacion($id)
     {
         $data['title'] = 'Crear Operación';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/operaciones_terrestres', "crear_operacion", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/operaciones_terrestres', "crear_operacion", $data);
     }
 
     public function detalles($id)
     {
         $data['title'] = 'Detalles Operacion';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/detalles_generales', "detalles", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/detalles_generales', "detalles", $data);
     }
 
     public function contenedores($id)
     {
         $data['title'] = 'Contenedores';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/contenedores', "contenedores", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/contenedores', "contenedores", $data);
     }
 
     public function costos($id)
     {
         $data['title'] = 'Costos por Contenedor';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/costos', "costos", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/costos', "costos", $data);
     }
 
     public function trazabilidad($id)
     {
         $data['title'] = 'Trazabilidad';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/trazabilidad', "trazabilidad", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/trazabilidad', "trazabilidad", $data);
     }
 
     public function documentos($id)
     {
         $data['title'] = 'Documentos';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/documentos', "documentos", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/documentos', "documentos", $data);
     }
 
     public function costos_operacion($id)
     {
         $data['title'] = 'Costos por Operación';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/costos_operacion', "costos", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/costos_operacion', "costos", $data);
     }
 
     public function log($id)
     {
         $data['title'] = 'Bitácora';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/log', "log", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/log', "log", $data);
     }
 
     public function detalles_logisticos($id)
     {
         $data['title'] = 'Detalles Logísticos';
-        $this->views->getView('admin/Operaciones_maritimo_ferro/tabs/detalles_logisticos', "detalles_logisticos", $data);
+        $this->views->getView('admin/operaciones_maritimo_ferro/tabs/detalles_logisticos', "detalles_logisticos", $data);
     }
 }

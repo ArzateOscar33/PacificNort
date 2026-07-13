@@ -21,7 +21,7 @@ class Dashboard extends Controller
     public function index()
     {
         $data['title'] = 'Dashboard';
-        $this->views->getView('admin/Dashboard', 'index', $data);
+        $this->views->getView('admin/administracion', 'index', $data);
     }
 
     /**
