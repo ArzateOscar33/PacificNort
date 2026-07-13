@@ -12,7 +12,7 @@
     (typeof BASE_URL !== "undefined" && BASE_URL) ||
     "";
 
-  console.log("BASE_URL:", base);
+  //console.log("BASE_URL:", base);
 
   const api =
     base + "Operaciones_maritimo_ferro_costos_clientes/listarPaginado";
@@ -405,7 +405,7 @@
           pagados: {},
         });
 
-        console.log("Error al listar:", json);
+        // console.log("Error al listar:", json);
 
         if (pagUl) pagUl.innerHTML = "";
         if (pagInfo) pagInfo.textContent = "Mostrando 0 de 0";

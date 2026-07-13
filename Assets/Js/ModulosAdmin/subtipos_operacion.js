@@ -73,13 +73,13 @@ form.addEventListener("submit", function (e) {
   http.send(new FormData(form));
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-      console.log(this.responseText);
+      //console.log(this.responseText);
       let res;
       try {
         res = JSON.parse(this.responseText);
       } catch {
         Swal.fire("Aviso", "Respuesta inválida del servidor", "error");
-        console.log(this.responseText);
+        //console.log(this.responseText);
         return;
       }
       if (res.status === true || res.status === "success") {

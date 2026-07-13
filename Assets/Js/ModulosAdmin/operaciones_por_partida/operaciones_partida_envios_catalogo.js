@@ -227,14 +227,14 @@
           const resp = JSON.parse(xhr.responseText);
           onSuccess(resp);
         } catch (e) {
-          console.log("JSON inválido:", xhr.responseText);
+          //console.log("JSON inválido:", xhr.responseText);
           if (typeof onError === "function") {
             onError("La respuesta del servidor no es JSON válido.");
           }
         }
       } else {
-        console.log("STATUS ERROR:", xhr.status);
-        console.log("RESPUESTA ERROR:", xhr.responseText);
+        //console.log("STATUS ERROR:", xhr.status);
+        // console.log("RESPUESTA ERROR:", xhr.responseText);
         if (typeof onError === "function") {
           onError("Ocurrió un error al consultar el servidor.");
         }
@@ -463,12 +463,12 @@
             Number(resp.total_pages || 1),
           );
         } catch (e) {
-          console.log("Respuesta inválida:", xhr.responseText);
+          // console.log("Respuesta inválida:", xhr.responseText);
           mostrarVacio("La respuesta del servidor no es JSON válido.");
         }
       } else {
-        console.log("STATUS ERROR:", xhr.status);
-        console.log("RESPUESTA ERROR:", xhr.responseText);
+        //console.log("STATUS ERROR:", xhr.status);
+        //console.log("RESPUESTA ERROR:", xhr.responseText);
         mostrarVacio("Error al cargar los envíos.");
       }
     };
