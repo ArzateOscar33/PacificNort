@@ -3,3 +3,6 @@ vendor/
 Uploads/
 BDD/
 Documents/
+Config/Config.local.php
+.env
+.env.*

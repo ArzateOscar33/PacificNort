@@ -1,47 +1,58 @@
 <?php
+
+// ======================================================
+// CONFIGURACIÓN PRIVADA DEL ENTORNO
+// ======================================================
+
+$configLocal = __DIR__ . '/Config.local.php';
+
+if (!is_file($configLocal)) {
+    throw new RuntimeException(
+        'Falta el archivo privado Config/Config.local.php'
+    );
+}
+
+require_once $configLocal;
+
 // ======================================================
 // CONFIGURACIÓN DINÁMICA DE BASE_URL
 // ======================================================
+
 $esHttps = (
     (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+    || (
+        isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
+        && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'
+    )
+    || (
+        isset($_SERVER['SERVER_PORT'])
+        && (int) $_SERVER['SERVER_PORT'] === 443
+    )
 );
 
 $protocolo = $esHttps ? 'https://' : 'http://';
-
-// HTTP_HOST suele traer: 192.168.1.200, 100.x.x.x, localhost, dominio, etc.
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-// Carpeta del proyecto
-$carpetaProyecto = '/PacificNort/';
+$rutaBase = defined('APP_PATH') ? APP_PATH : '/';
 
-// Definir BASE_URL dinámica
-define('BASE_URL', $protocolo . $host . $carpetaProyecto);
+// Garantiza una diagonal inicial y final.
+$rutaBase = '/' . trim($rutaBase, '/') . '/';
 
-// ======================================================
-// BASE DE DATOS
-// ======================================================
-const HOST = "localhost";
-const USER = "root";
-const PASS = "@Osc4r4rz4t3";
-const DB = "p_nort";
-const CHARSET = "charset=utf8";
+// Para la raíz evita generar "//".
+if ($rutaBase === '//') {
+    $rutaBase = '/';
+}
+
+define('BASE_URL', $protocolo . $host . $rutaBase);
 
 // ======================================================
-// GENERALES
+// CONFIGURACIÓN GENERAL
 // ======================================================
-const TITLE = "PacificNort Agencia Aduanal";
-const MONEDA = "USD";
 
-// ======================================================
-// SMTP
-// ======================================================
-const USER_SMTP = "sistemas@pacificnort.com";
-const PASS_SMTP = "Pacific2025.";
-const PUERTO_SMTP = 465;
-const HOST_SMTP = "mailc75.carrierzone.com";
+const TITLE = 'PacificNort Agencia Aduanal';
+const MONEDA = 'USD';
 
-// ======================================================
-// RUTA FÍSICA DEL PROYECTO
-// ======================================================
-define('UPLOAD_ROOT', rtrim(dirname(__DIR__), "/\\"));
+define(
+    'UPLOAD_ROOT',
+    rtrim(dirname(__DIR__), '/\\')
+);
