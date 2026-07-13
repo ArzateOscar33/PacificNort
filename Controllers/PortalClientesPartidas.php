@@ -21,8 +21,8 @@ class PortalClientesPartidas extends Controller
         $accion = trim($_GET['url'] ?? '', '/');
 
         $permitidasSinCliente = [
-            'PortalClientesPartida/pendiente',
-            'PortalClientesPartida/salir',
+            'PortalClientesPartidas/pendiente',
+            'PortalClientesPartidas/salir',
         ];
 
         $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
@@ -85,7 +85,7 @@ class PortalClientesPartidas extends Controller
         $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
 
         if ($clienteId <= 0) {
-            header('Location: ' . BASE_URL . 'PortalClientesPartida/pendiente');
+            header('Location: ' . BASE_URL . 'PortalClientesPartidas    /pendiente');
             exit;
         }
 

@@ -10,10 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora&family=Montserrat:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- 
-    <link rel="manifest" href="<?php echo BASE_URL; ?>/favicon/manifest.json">
+
+    <link rel="manifest" href="<?php echo BASE_URL; ?>favicon/manifest.json">
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="<?php echo BASE_URL; ?>/favicon/ms-icon-144x144.png">
+    <meta name="msapplication-TileImage" content="<?php echo BASE_URL; ?>favicon/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
 
 </head>
@@ -21,7 +21,7 @@
 <nav>
     <div class="wrapper">
         <div class="logo"><a href="<?php echo BASE_URL; ?>"><img class="img-fluid"
-                    src="<?php echo BASE_URL; ?>Assets/img/logo.png" alt="logo"></a></div>
+                    src="<?php echo BASE_URL; ?>Assets/img/logo.PNG" alt="logo"></a></div>
         <input type="radio" name="slider" id="menu-btn">
         <input type="radio" name="slider" id="close-btn">
         <ul class="nav-links">
@@ -32,10 +32,10 @@
             <li><a href="#galeria">Galería</a></li>
             <li><a href="#contacto">Contacto</a></li>
             <li><a href="#ubicacion">Ubicación</a></li>
-            
+
             <li><a href="#rastreo">Rastreo</a></li>
 
-            <li><a href="<?php echo BASE_URL.'admin'; ?>">Iniciar Sesión</a></li>
+            <li><a href="<?php echo BASE_URL . 'admin'; ?>">Iniciar Sesión</a></li>
         </ul>
         <label for="menu-btn" class="btn menu-btn" id="menu-btn"><i class="fas fa-bars fa-2x"></i></label>
     </div>

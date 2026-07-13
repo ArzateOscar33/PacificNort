@@ -1,35 +1,68 @@
 <?php
-require_once 'Config/Config.php';
-$ruta = !empty($_GET['url']) ? $_GET['url'] : "home/index";
-$array = explode("/", $ruta);
-$controller = ucfirst($array[0]);
-$metodo = "index";
-$parametro = "";
-if (!empty($array[1])) {
-    if (!empty($array[1] != "")) {
-        $metodo = $array[1];
-    }
-}
-if (!empty($array[2])) {
-    if (!empty($array[2] != "")) {
-        for ($i = 2; $i < count($array); $i++) {
-            $parametro .= $array[$i] . ",";
-        }
-        $parametro = trim($parametro, ",");
-    }
-}
-require_once 'Config/App/Autoload.php';
-require_once 'Config/Helpers.php';
-$dirControllers = "Controllers/" . $controller . ".php";
-if (file_exists($dirControllers)) {
-    require_once $dirControllers;
-    $controller = new $controller();
-    if (method_exists($controller, $metodo)) {
-        $controller->$metodo($parametro);
-    } else {
-        header('Location: '.BASE_URL.'errors');
-    }
-} else {
+
+require_once __DIR__ . '/Config/Config.php';
+
+$ruta = trim($_GET['url'] ?? 'home/index', '/');
+
+$segmentos = array_values(
+    array_filter(
+        explode('/', $ruta),
+        static fn($valor) => $valor !== ''
+    )
+);
+
+$controladorSolicitado = $segmentos[0] ?? 'home';
+$metodo = $segmentos[1] ?? 'index';
+$parametro = implode(',', array_slice($segmentos, 2));
+
+// Evita intentar cargar rutas arbitrarias.
+if (
+    !preg_match('/^[A-Za-z0-9_]+$/', $controladorSolicitado)
+    || !preg_match('/^[A-Za-z0-9_]+$/', $metodo)
+) {
     header('Location: ' . BASE_URL . 'errors');
+    exit;
 }
-?>
+
+require_once __DIR__ . '/Config/App/Autoload.php';
+require_once __DIR__ . '/Config/Helpers.php';
+
+$archivoControlador = null;
+$nombreControlador = null;
+$directorioControladores = __DIR__ . '/Controllers';
+
+// Busca el controlador sin depender de mayúsculas o minúsculas.
+foreach (glob($directorioControladores . '/*.php') ?: [] as $archivo) {
+    $nombreArchivo = pathinfo($archivo, PATHINFO_FILENAME);
+
+    if (strcasecmp($nombreArchivo, $controladorSolicitado) === 0) {
+        $archivoControlador = $archivo;
+        $nombreControlador = $nombreArchivo;
+        break;
+    }
+}
+
+if ($archivoControlador === null) {
+    header('Location: ' . BASE_URL . 'errors');
+    exit;
+}
+
+require_once $archivoControlador;
+
+if (!class_exists($nombreControlador, false)) {
+    error_log(
+        "La clase {$nombreControlador} no existe en {$archivoControlador}"
+    );
+
+    header('Location: ' . BASE_URL . 'errors');
+    exit;
+}
+
+$controlador = new $nombreControlador();
+
+if (!is_callable([$controlador, $metodo])) {
+    header('Location: ' . BASE_URL . 'errors');
+    exit;
+}
+
+$controlador->$metodo($parametro);

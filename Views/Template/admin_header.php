@@ -191,10 +191,10 @@
                         <a href="<?php echo BASE_URL . 'admin'; ?>">
                             <b class="logo-icon">
                                 <!-- Dark Logo icon -->
-                                <img src="<?php echo BASE_URL; ?>Assets/img/logo.png" alt="homepage"
+                                <img src="<?php echo BASE_URL; ?>Assets/img/logo.PNG" alt="homepage"
                                     class="dark-logo img-fluid" />
                                 <!-- Light Logo icon -->
-                                <img src="<?php echo BASE_URL; ?>Assets/img/logo.png" alt="homepage"
+                                <img src="<?php echo BASE_URL; ?>Assets/img/logo.PNG" alt="homepage"
                                     class="light-logo" />
                             </b>
                             <!--End Logo icon -->
@@ -306,7 +306,7 @@
                                             class="sidebar-link"><i data-feather="shuffle"></i><span class="hide-menu">Tipos
                                                 de Operación</span></a></li>
 
-                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>subtipoOperacion"
+                                    <li class="sidebar-item"><a href="<?= BASE_URL ?>SubTipoOperacion"
                                             class="sidebar-link"><i data-feather="refresh-cw"></i><span class="hide-menu">Tipos
                                                 de SubOperación</span></a></li>
                                     <li class="sidebar-item"><a href="<?= BASE_URL ?>movimiento_logistico"

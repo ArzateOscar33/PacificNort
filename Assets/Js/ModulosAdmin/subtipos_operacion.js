@@ -142,7 +142,7 @@ function eliminar(id) {
   }).then((r) => {
     if (r.isConfirmed) {
       const http = new XMLHttpRequest();
-      const url = base_url + "subtipooperacion/eliminar/" + id;
+      const url = base_url + "SubTipoOperacion/eliminar/" + id;
       http.open("GET", url, true);
       http.send();
       http.onreadystatechange = function () {
@@ -173,7 +173,7 @@ inputBuscar?.addEventListener("keyup", function () {
   const http = new XMLHttpRequest();
   http.open(
     "GET",
-    base_url + "subtipooperacion/buscar?term=" + encodeURIComponent(term),
+    base_url + "SubTipoOperacion/buscar?term=" + encodeURIComponent(term),
     true,
   );
   http.send();

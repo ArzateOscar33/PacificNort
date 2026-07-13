@@ -1,5 +1,6 @@
 <?php
-class Controller {
+class Controller
+{
     //esta linea no lo veras en el video es necesario para solucionar las advertencias
     protected $views, $model;
     //
@@ -9,13 +10,26 @@ class Controller {
         $this->cargarModel();
     }
 
-    public function cargarModel()
+    public function cargarModel(): void
     {
-        $model = get_class($this) . "Model";
-        $ruta = "Models/" . $model . ".php";
-        if (file_exists($ruta)) {
-            require_once $ruta;
-            $this->model = new $model();
+        $modeloSolicitado = get_class($this) . 'Model';
+        $directorioModelos = __DIR__ . '/../../Models';
+
+        foreach (glob($directorioModelos . '/*.php') ?: [] as $archivo) {
+            $nombreModelo = pathinfo($archivo, PATHINFO_FILENAME);
+
+            if (strcasecmp($nombreModelo, $modeloSolicitado) === 0) {
+                require_once $archivo;
+
+                if (!class_exists($nombreModelo, false)) {
+                    throw new RuntimeException(
+                        "La clase {$nombreModelo} no existe en {$archivo}"
+                    );
+                }
+
+                $this->model = new $nombreModelo();
+                return;
+            }
         }
     }
 
@@ -29,7 +43,7 @@ class Controller {
             exit;
         }
 
-        require_once 'Models/SesionModel.php';
+        require_once __DIR__ . '/../../Models/SesionModel.php';
         $sesionModel = new SesionModel();
 
         $userId = $_SESSION['id_usuario'];
@@ -84,4 +98,3 @@ class Controller {
         $this->requireRoles([1]);
     }
 }
-?>
