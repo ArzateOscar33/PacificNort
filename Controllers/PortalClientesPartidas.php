@@ -85,7 +85,7 @@ class PortalClientesPartidas extends Controller
         $clienteId = (int)($_SESSION['cliente_id'] ?? 0);
 
         if ($clienteId <= 0) {
-            header('Location: ' . BASE_URL . 'PortalClientesPartidas    /pendiente');
+            header('Location: ' . BASE_URL . 'PortalClientesPartidas/pendiente');
             exit;
         }
 
