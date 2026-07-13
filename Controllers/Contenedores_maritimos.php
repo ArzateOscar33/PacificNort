@@ -16,7 +16,7 @@ class Contenedores_maritimos extends Controller
     public function index()
     {
         $data['title'] = 'Contenedores Maritimos';
-        $this->views->getView('admin/Contenedores_maritimos', "index", $data);
+        $this->views->getView('admin/contenedores_maritimos', "index", $data);
     }
 
     /**

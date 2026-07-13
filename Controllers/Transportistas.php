@@ -16,7 +16,7 @@ class Transportistas extends Controller
     public function index()
     {
         $data['title'] = 'Transportistas';
-        $this->views->getView('admin/Transportistas', "index", $data);
+        $this->views->getView('admin/transportistas', "index", $data);
     }
 
     /* ===== LISTAR ===== */

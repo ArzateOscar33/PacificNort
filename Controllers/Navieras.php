@@ -16,7 +16,7 @@ class Navieras extends Controller
     public function index()
     {
         $data['title'] = 'Navieras';
-        $this->views->getView('admin/Navieras', "index", $data);
+        $this->views->getView('admin/navieras', "index", $data);
     }
 
     /* ===== LISTAR ===== */

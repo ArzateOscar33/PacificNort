@@ -16,7 +16,7 @@ class Brokers extends Controller
     {
         $data['title'] = 'Brokers';
 
-        $this->views->getView('admin/Brokers', "index", $data);
+        $this->views->getView('admin/brokers', "index", $data);
     }
     public function listar()
     {

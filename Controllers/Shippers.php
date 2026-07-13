@@ -16,7 +16,7 @@ class Shippers extends Controller
     public function index()
     {
         $data['title'] = 'Shippers';
-        $this->views->getView('admin/Shippers', "index", $data);
+        $this->views->getView('admin/shippers', "index", $data);
     }
 
     /* ===== LISTAR ===== */

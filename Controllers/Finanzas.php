@@ -36,7 +36,7 @@ class Finanzas extends Controller
             ['id' => 'PARTIDA/DOMESTICO',  'nombre' => 'Partida / Doméstico'],
         ];
 
-        $this->views->getView('admin/Finanzas', "ver", $data);
+        $this->views->getView('admin/finanzas', "ver", $data);
     }
 
     public function costos_logisticos()

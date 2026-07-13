@@ -17,7 +17,7 @@ class Bodegas extends Controller
         $data['title'] = 'Bodegas';
         $data['ciudades'] = $this->model->listarCiudades();
 
-        $this->views->getView('admin/Bodegas', "index", $data);
+        $this->views->getView('admin/bodegas', "index", $data);
     }
 
     public function listar()

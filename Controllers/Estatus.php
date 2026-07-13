@@ -16,7 +16,7 @@ class Estatus extends Controller
     {
         $data['title'] = 'Estatus';
 
-        $this->views->getView('admin/Estatus', "index", $data);
+        $this->views->getView('admin/estatus', "index", $data);
     }
 
     public function listar()

@@ -22,7 +22,7 @@ class ErroresAdmin extends Controller
         $data['tipos_error'] = $this->model->getTiposError();
         $data['modulos_error'] = $this->model->getModulosError();
 
-        $this->views->getView('admin/Errores', "admin", $data);
+        $this->views->getView('admin/errores', "admin", $data);
     }
 
     public function listar()

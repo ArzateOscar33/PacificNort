@@ -17,7 +17,7 @@ class Ciudades extends Controller
     {
         $data['title']   = 'Ciudades';
         $data['estados'] = $this->model->listarEstados();
-        $this->views->getView('admin/Ciudades', "index", $data);
+        $this->views->getView('admin/ciudades', "index", $data);
     }
 
     /**

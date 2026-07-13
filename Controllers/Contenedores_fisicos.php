@@ -16,7 +16,7 @@ class Contenedores_fisicos extends Controller
     public function index()
     {
         $data['title'] = 'Contenedores_fisicos';
-        $this->views->getView('admin/Contenedores_fisicos', "index", $data);
+        $this->views->getView('admin/contenedores_fisicos', "index", $data);
     }
 
 

@@ -22,7 +22,7 @@ class ErroresUsuario extends Controller
         $data['tipos_error'] = $this->model->getTiposError();
         $data['modulos_error'] = $this->model->getModulosError();
 
-        $this->views->getView('admin/Errores', "index", $data);
+        $this->views->getView('admin/errores', "index", $data);
     }
 
     public function registrar()

@@ -16,7 +16,7 @@ class Estados extends Controller
     public function index()
     {
         $data['title'] = 'Estados';
-        $this->views->getView('admin/Estados', "index", $data);
+        $this->views->getView('admin/estados', "index", $data);
     }
 
     /**

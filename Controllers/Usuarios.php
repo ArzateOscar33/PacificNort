@@ -24,7 +24,7 @@ class Usuarios extends Controller
         $data['departamentos'] = $this->model->listarDepartamentos();
         $data['roles'] = $this->model->listarRoles();
         $data['clientes'] = $this->model->listarClientes(); // ✅ NUEVO
-        $this->views->getView('admin/Usuarios', "index", $data);
+        $this->views->getView('admin/usuarios', "index", $data);
     }
 
     public function listar()

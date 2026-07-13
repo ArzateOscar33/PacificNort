@@ -16,7 +16,7 @@ class Clientes extends Controller
     {
         $data['title'] = 'Clientes';
 
-        $this->views->getView('admin/Clientes', "index", $data);
+        $this->views->getView('admin/clientes', "index", $data);
     }
 
     public function listar()

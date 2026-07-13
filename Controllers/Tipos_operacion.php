@@ -16,7 +16,7 @@ class Tipos_operacion extends Controller
     {
         $data['title'] = 'Tipos De Operacion';
 
-        $this->views->getView('admin/Tipos_operacion', "index", $data);
+        $this->views->getView('admin/tipos_operacion', "index", $data);
     }
     public function listar()
     {

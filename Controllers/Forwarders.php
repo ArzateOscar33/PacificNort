@@ -17,7 +17,7 @@ class Forwarders extends Controller
     public function index()
     {
         $data['title'] = 'Forwarders';
-        $this->views->getView('admin/Forwarders', "index", $data);
+        $this->views->getView('admin/forwarders', "index", $data);
     }
 
     /* ===== LISTAR ===== */
