@@ -9,6 +9,7 @@
   <!-- Bootstrap 5.3.x -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
+  <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/sidebar.css" rel="stylesheet">
   <style>
     .badge-asignacion {
       padding: .45rem .6rem;
@@ -525,12 +526,161 @@
       </div>
     </div>
 
+
+    <div id="tracking_system_root" data-filter='{"platform":PLATFORM_ID, "lang": "en"}'></div>
+    <script src="https://www.searates.com/container/widget"></script>
     </div>
   </main>
+  <!-- BOTÓN FLOTANTE: RASTREAR CONTENEDOR -->
+  <button
+    type="button"
+    class="btn btn-primary pn-tracking-fab"
+    data-bs-toggle="offcanvas"
+    data-bs-target="#offcanvasTracking"
+    aria-controls="offcanvasTracking"
+    aria-label="Abrir rastreo de contenedor">
+    <i data-feather="navigation"></i>
+    <span>Rastrear contenedor</span>
+  </button>
+
+  <!-- PANEL LATERAL DERECHO: SEARATES -->
+  <div
+    class="offcanvas offcanvas-end pn-tracking-panel"
+    tabindex="-1"
+    id="offcanvasTracking"
+    aria-labelledby="offcanvasTrackingLabel"
+    data-bs-scroll="true"
+    data-bs-backdrop="true">
+    <div class="offcanvas-header pn-tracking-header">
+      <div class="d-flex align-items-center gap-3">
+        <div class="pn-tracking-icon">
+          <i data-feather="anchor"></i>
+        </div>
+
+        <div>
+          <h5 class="offcanvas-title mb-0" id="offcanvasTrackingLabel">
+            Rastreo marítimo
+          </h5>
+
+          <div class="small text-white-50">
+            Consulta por contenedor, BL o booking
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="offcanvas"
+        aria-label="Cerrar"></button>
+    </div>
+
+    <div class="offcanvas-body p-0">
+      <div class="pn-tracking-notice">
+        <i data-feather="info" class="flex-shrink-0"></i>
+
+        <div>
+          Ingresa el número de contenedor, Bill of Lading o booking para consultar
+          la ruta y el historial de eventos.
+        </div>
+      </div>
+
+      <!-- SeaRates se cargará aquí -->
+      <div id="seaRatesWidgetContainer">
+        <div class="pn-tracking-loading" id="seaRatesLoading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+
+          <div>
+            <div class="fw-semibold">Cargando rastreo marítimo</div>
+            <div class="small text-secondary">
+              Preparando el servicio de SeaRates…
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="tracking_system_root"
+          data-filter='{
+          "platform": "TU_PLATFORM_ID",
+          "lang": "es",
+          "height": "760px"
+        }'></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Bootstrap + Feather -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const trackingOffcanvas =
+        document.getElementById('offcanvasTracking');
+
+      const loading =
+        document.getElementById('seaRatesLoading');
+
+      let seaRatesLoaded = false;
+
+      function loadSeaRatesWidget() {
+        if (seaRatesLoaded) {
+          return;
+        }
+
+        seaRatesLoaded = true;
+
+        const script = document.createElement('script');
+
+        script.src = 'https://www.searates.com/container/widget';
+        script.async = true;
+
+        script.onload = function() {
+          if (loading) {
+            loading.classList.add('d-none');
+          }
+        };
+
+        script.onerror = function() {
+          if (!loading) {
+            return;
+          }
+
+          loading.innerHTML = `
+          <div class="alert alert-danger m-3" role="alert">
+            <div class="fw-semibold">
+              No fue posible cargar el rastreo
+            </div>
+
+            <div class="small mt-1">
+              Verifica tu conexión o la configuración proporcionada
+              por SeaRates.
+            </div>
+          </div>
+        `;
+        };
+
+        document.body.appendChild(script);
+      }
+
+      if (trackingOffcanvas) {
+        trackingOffcanvas.addEventListener(
+          'shown.bs.offcanvas',
+          function() {
+            loadSeaRatesWidget();
+
+            setTimeout(function() {
+              window.dispatchEvent(new Event('resize'));
+            }, 250);
+          }
+        );
+      }
+
+      feather.replace();
+    });
+  </script>
 
   <script>
     feather.replace();
@@ -894,7 +1044,7 @@
 
 </body>
 
-</html>
+
 <!-- JS del portal -->
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/Kpis.js"></script>
 <script src="<?php echo BASE_URL; ?>Assets/Js/PortalClientes/OperacionesMaritimas.js"></script>
@@ -907,8 +1057,8 @@
   feather.replace();
 
   // Sidebar mobile toggle
-  const sidebar = document.getElementById('pnSidebar');
-  const overlay = document.getElementById('pnOverlay');
+  //const sidebar = document.getElementById('pnSidebar');
+  //const overlay = document.getElementById('pnOverlay');
   const btnOpen = document.getElementById('btnOpenSidebar');
   const btnClose = document.getElementById('btnCloseSidebar');
 
@@ -926,3 +1076,5 @@
   if (btnClose) btnClose.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
 </script>
+
+</html>

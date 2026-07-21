@@ -1,0 +1,185 @@
+
+/* =========================================================
+   BOTÓN FLOTANTE DE RASTREO
+   ========================================================= */
+
+.pn-tracking-fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 1035;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  min-height: 52px;
+  padding: 0 20px;
+
+  border: 0;
+  border-radius: 999px;
+
+  font-weight: 600;
+  letter-spacing: 0.1px;
+
+  box-shadow:
+    0 12px 30px rgba(13, 110, 253, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.14);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.pn-tracking-fab:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 16px 36px rgba(13, 110, 253, 0.32),
+    0 6px 16px rgba(0, 0, 0, 0.17);
+}
+
+.pn-tracking-fab:active {
+  transform: translateY(-1px);
+}
+
+.pn-tracking-fab svg {
+  width: 19px;
+  height: 19px;
+}
+
+
+/* =========================================================
+   PANEL LATERAL
+   ========================================================= */
+
+.pn-tracking-panel {
+  width: min(760px, 94vw) !important;
+  border-left: 0;
+
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.18);
+}
+
+.pn-tracking-header {
+  min-height: 82px;
+  padding: 18px 22px;
+
+  color: #fff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0d6efd 0%,
+      #0756c9 55%,
+      #063b88 100%
+    );
+}
+
+.pn-tracking-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+}
+
+.pn-tracking-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.pn-tracking-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  margin: 16px;
+  padding: 12px 14px;
+
+  border: 1px solid #cfe2ff;
+  border-radius: 12px;
+
+  color: #084298;
+  background: #e7f1ff;
+
+  font-size: 0.875rem;
+}
+
+.pn-tracking-notice svg {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+#seaRatesWidgetContainer {
+  position: relative;
+  width: 100%;
+  min-height: 700px;
+  overflow: hidden;
+}
+
+#tracking_system_root {
+  width: 100%;
+  min-height: 700px;
+}
+
+.pn-tracking-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  min-height: 280px;
+  padding: 30px;
+
+  text-align: left;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 767.98px) {
+  .pn-tracking-panel {
+    width: 100vw !important;
+  }
+
+  .pn-tracking-fab {
+    right: 16px;
+    bottom: 16px;
+
+    width: 54px;
+    height: 54px;
+    min-height: 54px;
+    padding: 0;
+
+    border-radius: 50%;
+  }
+
+  .pn-tracking-fab span {
+    display: none;
+  }
+
+  .pn-tracking-header {
+    min-height: 74px;
+    padding: 14px 16px;
+  }
+
+  .pn-tracking-notice {
+    margin: 12px;
+  }
+
+  #seaRatesWidgetContainer,
+  #tracking_system_root {
+    min-height: calc(100vh - 150px);
+  }
+}
