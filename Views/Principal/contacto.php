@@ -21,7 +21,7 @@
             </div>
             <div class="contact-text">
               <h5>Ubicación</h5>
-              <p>Av. Alejandro Von Humboldt, Garita de Otay, 22430 Tijuana, B.C., México</p>
+              <p>Blvd. Agua Caliente 10535, Chapultepec, 22020 Tijuana, B.C.</p>
             </div>
           </div>
           <div class="contact-item">
@@ -30,7 +30,7 @@
             </div>
             <div class="contact-text">
               <h5>Teléfono</h5>
-              <p>+52 (646) 123-4567</p>
+              <p>+1 (619) 751-2720</p>
             </div>
           </div>
           <div class="contact-item">
@@ -39,7 +39,7 @@
             </div>
             <div class="contact-text">
               <h5>Email</h5>
-              <p>info@pacificnort.com</p>
+              <p>juanjejr@pacificnort.com</p>
             </div>
           </div>
           <div class="contact-item">
@@ -48,7 +48,7 @@
             </div>
             <div class="contact-text">
               <h5>Horario</h5>
-              <p>Lunes a Viernes: 9:00 AM - 6:00 PM</p>
+              <p>Lunes a Viernes: 9:00 AM - 5:00 PM</p>
             </div>
           </div>
         </div>
