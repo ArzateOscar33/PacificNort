@@ -314,7 +314,7 @@
     if (!rows || rows.length === 0) {
       tb.innerHTML = `
       <tr>
-        <td colspan="18" class="text-center py-4 pn-muted">
+        <td colspan="15" class="text-center py-4 pn-muted">
           No hay operaciones para mostrar con los filtros actuales.
         </td>
       </tr>

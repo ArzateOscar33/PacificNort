@@ -77,7 +77,7 @@
     /* Medida */
     #tblOpsMar td:nth-child(12),
     /* Cita Puerto */
-    #tblOpsMar td:nth-child(18)
+    #tblOpsMar td:nth-child(15)
 
     /* Acciones */
       {
@@ -112,6 +112,48 @@
     td,
     th {
       text-transform: uppercase;
+    }
+
+    /* Contenedor de la tabla marítima */
+    .portal-table-responsive {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* La tabla mantiene un ancho legible */
+    #tblOpsMar {
+      width: 100%;
+      min-width: 1450px;
+    }
+
+    /* Columna Acciones fija a la derecha */
+    #tblOpsMar th:last-child,
+    #tblOpsMar td:last-child {
+      position: sticky;
+      right: 0;
+      white-space: nowrap;
+      min-width: 85px;
+      background-color: #ffffff;
+      box-shadow: -8px 0 12px -12px rgba(15, 23, 42, 0.5);
+    }
+
+    /* Encabezado de Acciones */
+    #tblOpsMar thead th:last-child {
+      z-index: 3;
+      background-color: #f8f9fa;
+    }
+
+    /* Celdas de Acciones */
+    #tblOpsMar tbody td:last-child {
+      z-index: 2;
+    }
+
+    /* Mantener el color cuando se pasa el cursor por una fila */
+    #tblOpsMar tbody tr:hover td:last-child {
+      background-color: #f7faff;
     }
   </style>
 
@@ -348,34 +390,37 @@
         </div>
 
         <div class="card-body px-4 pb-4">
-          <table class="table table-spacious align-middle mb-0" id="tblOpsMar">
-            <thead>
-              <tr>
-                <th>Operación</th>
-                <th>Contenedor Martimo</th>
-                <th>BL</th>
-                <th>ETD</th>
-                <th>ETA</th>
-                <th>Estatus</th>
-                <th>Peso</th>
-                <th>Medida</th>
-                <th>Mercancia</th>
-                <th>Cita Puerto</th>
-                <th>Caja/Ferro</th>
-                <th>Destino</th>
-                <th>Fecha salida</th>
-                <th>Ubicacion Actual</th>
 
+          <div class="table-responsive portal-table-responsive">
 
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
+            <table class="table table-spacious align-middle mb-0" id="tblOpsMar">
+              <thead>
+                <tr>
+                  <th>Operación</th>
+                  <th>Contenedor Marítimo</th>
+                  <th>BL</th>
+                  <th>ETD</th>
+                  <th>ETA</th>
+                  <th>Estatus</th>
+                  <th>Peso</th>
+                  <th>Medida</th>
+                  <th>Mercancía</th>
+                  <th>Cita Puerto</th>
+                  <th>Caja/Ferro</th>
+                  <th>Destino</th>
+                  <th>Fecha salida</th>
+                  <th>Ubicación actual</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
 
-            <!-- ✅ tbody con ID para render dinámico -->
-            <tbody id="tbOpsMar">
-              <!-- Render JS -->
-            </tbody>
-          </table>
+              <tbody id="tbOpsMar">
+                <!-- Render JS -->
+              </tbody>
+            </table>
+
+          </div>
+
         </div>
 
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="marPagingWrap">
