@@ -39,7 +39,7 @@
             </div>
             <div class="contact-text">
               <h5>Email</h5>
-              <p>juanjejr@pacificnort.com</p>
+              <p>operaciones@pacificnort.com</p>
             </div>
           </div>
           <div class="contact-item">
