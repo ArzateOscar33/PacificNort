@@ -1,4 +1,4 @@
-// assets/js/modulosAdmin/bodegas.js
+// Assets/Js/ModulosAdmin/bodegas.js
 
 const tabla = document.getElementById("tablaBodegas");
 const formBodega = document.getElementById("formBodega");
@@ -14,6 +14,43 @@ const fldId = document.getElementById("id");
 const fldNombre = document.getElementById("nombre");
 const fldDireccion = document.getElementById("direccion");
 const fldCiudad = document.getElementById("ciudad_id");
+const fldCodigo = document.getElementById("codigo");
+const fldTipo = document.getElementById("tipo_ubicacion");
+
+const prefijosBodega = {
+  BODEGA: "BD",
+  YARDA: "YD",
+  ESTACIONAMIENTO: "ES",
+};
+
+// Evita insertar contenido de la BD como HTML ejecutable en la tabla.
+function escBodega(v) {
+  return String(v ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[c],
+  );
+}
+
+// Generar nomenclatura del tipo seleccionado, conservando las dos letras finales.
+fldTipo.addEventListener("change", function () {
+  const actual = fldCodigo.value.trim().toUpperCase();
+  const final = /^(BD|YD|ES)/.test(actual) ? actual.slice(2, 4) : "";
+  fldCodigo.value = (prefijosBodega[fldTipo.value] || "") + final;
+});
+
+fldCodigo.addEventListener("input", function () {
+  this.value = this.value
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 4);
+});
 
 // ===================== LISTAR =====================
 window.addEventListener("DOMContentLoaded", listar);
@@ -44,19 +81,30 @@ function renderTabla(data) {
   tabla.innerHTML = "";
   if (!Array.isArray(data) || data.length === 0) {
     tabla.innerHTML =
-      "<tr><td colspan='4' class='text-center'>No se encontraron resultados</td></tr>";
+      "<tr><td colspan='6' class='text-center'>No se encontraron resultados</td></tr>";
     return;
   }
   data.forEach((item) => {
     const row = document.createElement("tr");
     row.classList.add("text-center");
+    const tipo =
+      {
+        BODEGA: "Bodega",
+        YARDA: "Yarda",
+        ESTACIONAMIENTO: "Estacionamiento",
+      }[item.tipo_ubicacion] ||
+      item.tipo_ubicacion ||
+      "Bodega";
+
     row.innerHTML = `
-      <td>${item.nombre}</td>
-      <td>${item.direccion}</td>
-      <td>${item.nombre_ciudad}</td> 
+      <td><strong>${escBodega(item.codigo || "—")}</strong></td>
+      <td>${escBodega(tipo)}</td>
+      <td>${escBodega(item.nombre)}</td>
+      <td>${escBodega(item.direccion)}</td>
+      <td>${escBodega(item.nombre_ciudad)}</td>
       <td>
-        <button class="btn btn-sm btn-info" onclick="editarBodega(${item.id_bodega})"><i class="fas fa-edit"></i> Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="eliminarBodega(${item.id_bodega})"><i class="fas fa-trash-alt"></i> Eliminar</button>
+        <button class="btn btn-sm btn-info" onclick="editarBodega(${Number(item.id_bodega)})"><i class="fas fa-edit"></i> Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminarBodega(${Number(item.id_bodega)})"><i class="fas fa-trash-alt"></i> Eliminar</button>
       </td>
     `;
     tabla.appendChild(row);
@@ -67,8 +115,10 @@ function renderTabla(data) {
 btnAgregarBodega.addEventListener("click", () => {
   formBodega.reset();
   fldId.value = "";
+  fldTipo.value = "BODEGA";
+  fldCodigo.value = "BD";
   document.getElementById("modalRegistrarBodegaLabel").textContent =
-    "Registrar Bodega";
+    "Registrar Ubicación";
   const btnSubmit = formBodega.querySelector('button[type="submit"]');
   btnSubmit.innerHTML =
     '<i data-feather="check-circle" class="me-1"></i> Agregar';
@@ -82,21 +132,36 @@ formBodega.addEventListener("submit", function (e) {
   const nombre = fldNombre.value.trim();
   const direccion = fldDireccion.value.trim();
   const ciudad_id = fldCiudad.value.trim();
+  const codigo = fldCodigo.value.trim().toUpperCase();
+  const tipo_ubicacion = fldTipo.value;
 
-  if (!nombre || !direccion || !ciudad_id) {
+  if (!nombre || !direccion || !ciudad_id || !codigo || !tipo_ubicacion) {
     Swal.fire(
       "Campos requeridos",
-      "Completa nombre, dirección y ciudad",
+      "Completa tipo, código, nombre, dirección y ciudad",
+      "warning",
+    );
+    return;
+  }
+
+  // Validación sencilla adicional. El controlador también valida.
+  const prefijo = prefijosBodega[tipo_ubicacion];
+  if (!prefijo || !new RegExp(`^${prefijo}[A-Z]{2}$`).test(codigo)) {
+    Swal.fire(
+      "Código inválido",
+      `Para ${tipo_ubicacion.toLowerCase()} escribe ${prefijo || "BD/YD/ES"} y dos letras (ej. YDTE)`,
       "warning",
     );
     return;
   }
 
   const fd = new FormData();
-  if (id !== "") fd.append("id", id); // <-- si hay id, será actualización
+  if (id !== "") fd.append("id", id);
   fd.append("nombre", nombre);
   fd.append("direccion", direccion);
   fd.append("ciudad_id", ciudad_id);
+  fd.append("codigo", codigo);
+  fd.append("tipo_ubicacion", tipo_ubicacion);
 
   const url =
     base_url + (id === "" ? "Bodegas/registrar" : "Bodegas/actualizar");
@@ -130,9 +195,8 @@ formBodega.addEventListener("submit", function (e) {
         fldId.value = "";
         modalBodega.hide();
         listar();
-
         document.getElementById("modalRegistrarBodegaLabel").textContent =
-          "Registrar Bodega";
+          "Registrar Ubicación";
         const btnSubmit = formBodega.querySelector('button[type="submit"]');
         btnSubmit.innerHTML =
           '<i data-feather="check-circle" class="me-1"></i> Agregar';
@@ -149,14 +213,34 @@ function editarBodega(id) {
   http.send();
   http.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
-      //console.log(this.responseText);
-      const data = JSON.parse(this.responseText);
-      document.getElementById("id").value = data.id_bodega;
-      formBodega.nombre.value = data.nombre || "";
-      formBodega.direccion.value = data.direccion || "";
-      formBodega.ciudad_id.value = data.ciudad_id || "";
+      let data;
+      try {
+        data = JSON.parse(this.responseText);
+      } catch (e) {
+        Swal.fire("Error", "Respuesta no válida", "error");
+        return;
+      }
+      if (!data || !data.id_bodega) {
+        Swal.fire("Error", "Ubicación no encontrada", "error");
+        return;
+      }
+      fldId.value = data.id_bodega;
+      fldNombre.value = data.nombre || "";
+      fldDireccion.value = data.direccion || "";
+      fldCiudad.value = data.ciudad_id || "";
+      // Recuperar tipo y código de la ubicación.
+      const tipoGuardado = String(
+        data.tipo_ubicacion || "BODEGA",
+      ).toUpperCase();
+
+      fldTipo.value = prefijosBodega[tipoGuardado] ? tipoGuardado : "BODEGA";
+
+      fldCodigo.value =
+        String(data.codigo || "")
+          .trim()
+          .toUpperCase() || prefijosBodega[fldTipo.value];
       document.getElementById("modalRegistrarBodegaLabel").textContent =
-        "Editar Bodega";
+        "Editar Ubicación";
       document.getElementById("btnSubmit").innerHTML =
         '<i data-feather="check-circle" class="me-1"></i> Actualizar';
       feather.replace();
@@ -165,7 +249,7 @@ function editarBodega(id) {
   };
 }
 
-// Eliminar
+// Eliminar (baja lógica original)
 function eliminarBodega(id) {
   Swal.fire({
     title: "¿Estás seguro?",
@@ -182,8 +266,13 @@ function eliminarBodega(id) {
       http.send();
       http.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-          //console.log(this.responseText);
-          const res = JSON.parse(this.responseText);
+          let res;
+          try {
+            res = JSON.parse(this.responseText);
+          } catch (e) {
+            Swal.fire("Error", "Respuesta no válida", "error");
+            return;
+          }
           if (res.status === "success") listar();
           Swal.fire("Aviso", res.msg.toUpperCase(), res.status);
         }
@@ -191,6 +280,7 @@ function eliminarBodega(id) {
     }
   });
 }
+
 // === BÚSQUEDA + SUGERENCIAS ===
 inputBuscar.addEventListener("keyup", function () {
   const term = this.value.trim();
@@ -225,10 +315,8 @@ inputBuscar.addEventListener("keyup", function () {
         return;
       }
 
-      // refresca la tabla con resultados
       renderTabla(data);
 
-      // sugerencias (opcional)
       if (!sugerenciasBox) return;
       sugerenciasBox.innerHTML = "";
       if (!Array.isArray(data) || data.length === 0) {
@@ -240,12 +328,12 @@ inputBuscar.addEventListener("keyup", function () {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "list-group-item list-group-item-action";
-        btn.textContent = `${b.nombre} — ${b.nombre_ciudad}`;
+        btn.textContent = `${b.codigo || "—"} — ${b.nombre} — ${b.nombre_ciudad}`;
         btn.onclick = () => {
-          inputBuscar.value = b.nombre;
+          inputBuscar.value = b.codigo || b.nombre;
           sugerenciasBox.innerHTML = "";
           sugerenciasBox.style.display = "none";
-          listarBodegasFiltradas(b.nombre);
+          listarBodegasFiltradas(b.codigo || b.nombre);
         };
         sugerenciasBox.appendChild(btn);
       });
@@ -263,7 +351,6 @@ document.addEventListener("click", function (e) {
   }
 });
 
-// Helper para filtrar por término seleccionado (usa la misma ruta)
 function listarBodegasFiltradas(termino) {
   const http = new XMLHttpRequest();
   http.open(

@@ -1,7 +1,7 @@
 <?php include 'Views/Template/admin_header.php';
 ?>
 <div class="container col-md-12">
- 
+
     <div class="row">
         <div class="col-md-12">
             <div class="card">
@@ -13,9 +13,9 @@
                     <div class="d-flex justify-content-between mb-3">
                         <div class="col-md-10">
                             <input type="text" class="form-control " id="buscarTransportista" name="buscarTransportista" placeholder="Buscar Transportista">
-                              <div id="sugerenciasTransportistas" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
+                            <div id="sugerenciasTransportistas" class="list-group position-absolute w-100 z-3" style="z-index:999;"></div>
                         </div>
-                        <div class="  d-flex justify-content-end  col-md-2">
+                        <div class="d-flex justify-content-end col-md-2">
                             <button href="#" id="btnAgregarTransportista" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#modalRegistrarTransportista"><i class="fas fa-plus"></i> Agregar Transportista</button>
                         </div>
@@ -25,13 +25,14 @@
                         <table class="table table-hover">
                             <thead class="table-primary text-center">
                                 <tr>
+                                    <th>Código</th>
                                     <th>Nombre</th>
                                     <th>Tipo</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaTransportistas">
-                                
+
                             </tbody>
                         </table>
                     </div>
@@ -46,7 +47,6 @@
     <!-- /.row -->
 </div>
 
- 
 <div class="modal fade" id="modalRegistrarTransportista" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="modalRegistrarTransportistaLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -64,10 +64,20 @@
             <!-- Cuerpo -->
             <div class="modal-body">
                 <form id="formTransportista" method="POST" action="#">
-                <input type="hidden" name="id_transportista" id="id_transportista">
+                    <input type="hidden" name="id_transportista" id="id_transportista">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del Transportista</label>
                         <input type="text" name="nombre" id="nombre" class="form-control" required>
+                    </div>
+
+                    <!-- NUEVO: nomenclatura del transportista -->
+                    <div class="mb-3">
+                        <label for="codigo" class="form-label">Código del Transportista</label>
+                        <input type="text" name="codigo" id="codigo" class="form-control"
+                            maxlength="4" pattern="[A-Za-z]{4}" placeholder="Ej. TSAN"
+                            title="El código debe contener exactamente 4 letras"
+                            style="text-transform: uppercase;" autocomplete="off" required>
+                        <small class="text-muted">Nomenclatura única de cuatro letras, por ejemplo TSAN.</small>
                     </div>
 
                     <div class="mb-3">
@@ -95,7 +105,6 @@
         </div>
     </div>
 </div>
-
 
 <?php include 'Views/Template/admin_footer.php'; ?>
 <script src='<?php echo BASE_URL; ?>Assets/Js/ModulosAdmin/transportistas.js'></script>
