@@ -1397,6 +1397,9 @@
     </div>
   </div>
 </div>
+
+<?php include __DIR__ . '/modal_traslados.php'; ?>
+
 <script>
   window.MF_CATALOGOS = {
     estatus: <?= json_encode($data['estatus'] ?? [], JSON_UNESCAPED_UNICODE); ?>,
@@ -1406,6 +1409,9 @@
 <script
   src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_llenado_catalogo.js">
 </script>
+
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/traslados_mercancia.js"></script>
+
 <script
   src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/Operaciones_Maritimas/operaciones_registrar.js">
 </script>
