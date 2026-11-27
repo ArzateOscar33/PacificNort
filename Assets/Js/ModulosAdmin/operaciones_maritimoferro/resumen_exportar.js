@@ -156,7 +156,11 @@
       }
 
       try {
-        await exportPDF();
+        await window.PNMFExport.run("resumen", async () => {
+          try { await exportPDF(); } finally {
+            [sugBoxResumen, document.getElementById("btnRefrescarResumen"), btnPdfResumen].forEach(el => el?.classList.remove("_ocultar-en-export"));
+          }
+        }, btnPdfResumen);
       } catch (err) {
         console.error("[Resumen] Error exportando PDF:", err);
         alert("No fue posible generar el PDF.");

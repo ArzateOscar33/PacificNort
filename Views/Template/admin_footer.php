@@ -22,15 +22,15 @@
             <!-- apps -->
             <!-- apps -->
             <script src="<?php echo BASE_URL; ?>dist/js/app-style-switcher.js"></script>
-            <script src="<?php echo BASE_URL; ?>dist/js/feather.min.js"></script>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>dist/js/feather.min.js"></script><?php endif; ?>
             <script src="<?php echo BASE_URL; ?>Assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js"></script>
             <script src="<?php echo BASE_URL; ?>dist/js/sidebarmenu.js"></script>
             <!--Custom JavaScript -->
             <script src="<?php echo BASE_URL; ?>dist/js/custom.min.js"></script>
             <!--This page JavaScript -->
-            <script src="<?php echo BASE_URL; ?>Assets/extra-libs/c3/d3.min.js"></script>
-            <script src="<?php echo BASE_URL; ?>Assets/extra-libs/c3/c3.min.js"></script>
-            <script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script>
-            <script src="<?php echo BASE_URL; ?>Assets/libs/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script>
-            <script src="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-2.0.2.min.js"></script>
-            <script src="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-world-mill-en.js"></script>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/extra-libs/c3/d3.min.js"></script><?php endif; ?>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/extra-libs/c3/c3.min.js"></script><?php endif; ?>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script><?php endif; ?>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/libs/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script><?php endif; ?>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-2.0.2.min.js"></script><?php endif; ?>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-world-mill-en.js"></script><?php endif; ?>

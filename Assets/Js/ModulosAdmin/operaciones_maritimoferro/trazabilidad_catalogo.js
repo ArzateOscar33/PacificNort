@@ -267,6 +267,8 @@
 
   // ========= LISTAR =========
   function listar() {
+    // Los cambios en otra pestana se reflejan al regresar a Trazabilidad.
+    if (window.PNMF02Tabs && !window.PNMF02Tabs.isActive("trazabilidad")) return;
     const params = new URLSearchParams();
 
     const term = (inputBuscar?.value || "").trim();
@@ -647,11 +649,13 @@
   });
 
   // ========= INIT =========
-  window.addEventListener("DOMContentLoaded", () => {
+  function initTrazabilidadMF() {
     perPage = (selectPerPage?.value || "10").toString();
     listar();
     if (window.feather) feather.replace();
-  });
+  }
+  if (window.PNMF02Tabs) window.PNMF02Tabs.register("trazabilidad", initTrazabilidadMF, listar);
+  else window.addEventListener("DOMContentLoaded", initTrazabilidadMF);
 
   function onFiltroChange() {
     currentPage = 1;
@@ -668,6 +672,7 @@
     let to = null;
     function refresh() {
       clearTimeout(to);
+      if (window.PNMF02Tabs && !window.PNMF02Tabs.isActive("trazabilidad")) return;
       to = setTimeout(() => listar(), 120);
     }
     document.addEventListener("mf:trazabilidad-updated", refresh);

@@ -270,6 +270,6 @@
 
   btn.addEventListener("click", function (e) {
     e.preventDefault();
-    exportExcel();
+    window.PNMFExport.run("styled", exportExcel, btn);
   });
 })();

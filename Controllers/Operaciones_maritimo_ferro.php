@@ -708,6 +708,52 @@ class Operaciones_maritimo_ferro extends Controller
 
     public function ver($id)
     {
+        // MF.02.4 D: solo fragmentos permitidos de la misma vista autenticada.
+        if (array_key_exists('mf_panel', $_GET)) {
+            $panel = $_GET['mf_panel'];
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET' || !is_string($panel) ||
+                !in_array($panel, ['en-piso', 'costos_operacion_clientes', 'Eventos_Logisticos', 'Eventos_Logisticos_ferro', 'trazabilidad', 'documentos', 'costos_operacion', 'resumen'], true)) {
+                http_response_code(400);
+                header('Cache-Control: private, no-store');
+                return;
+            }
+            $fragmentData = ['id_operacion' => (int)$id];
+            if ($panel === 'costos_operacion_clientes') {
+                $fragmentData['clientes'] = $this->model->catalogoClientes();
+                $fragmentData['brokers'] = $this->model->getBrokers();
+                $fragmentData['transportistas'] = $this->model->getTransportistas();
+                $fragmentData['categoriasCostos'] = $this->model->listarCategoriasCostos();
+            }
+            if ($panel === 'Eventos_Logisticos' || $panel === 'Eventos_Logisticos_ferro') {
+                $fragmentData['clientes'] = $this->model->catalogoClientes();
+            }
+            if ($panel === 'Eventos_Logisticos_ferro') {
+                $fragmentData['transportistas'] = $this->model->getTransportistas();
+                $fragmentData['ciudades'] = $this->model->listarDestinos();
+            }
+            if ($panel === 'trazabilidad') {
+                $fragmentData['clientes'] = $this->model->catalogoClientes();
+                $fragmentData['puertos'] = $this->model->catalogoPuertos();
+                $fragmentData['ciudades'] = $this->model->listarDestinos();
+            }
+            header('Content-Type: text/html; charset=UTF-8');
+            header('Cache-Control: private, no-store');
+            header('X-PN-MF-Panel: ' . $panel);
+            $vistasPermitidas = [
+                'en-piso' => 'en_piso',
+                'costos_operacion_clientes' => 'costos_cliente',
+                'Eventos_Logisticos' => 'Eventos_Logisticos_mar',
+                'Eventos_Logisticos_ferro' => 'Eventos_Logisticos_ferro',
+                'trazabilidad' => 'trazabilidad',
+                'documentos' => 'documentos',
+                'costos_operacion' => 'costos_operacion',
+                'resumen' => 'resumen',
+            ];
+            $vista = $vistasPermitidas[$panel];
+            $this->views->getView('admin/operaciones_maritimo_ferro/tabs', $vista, $fragmentData);
+            return;
+        }
+
         $data['id_operacion']   = (int)$id;
         $data['title']          = 'Operaciones Maritimo-Ferroviarias';
         $data['subtipos']       = $this->model->subtiposMaritimoFerro();

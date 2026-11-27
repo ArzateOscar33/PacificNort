@@ -12,9 +12,9 @@
     <meta name="theme-color" content="#ffffff">
     <title><?php echo $data['title']; ?></title>
     <!-- Custom CSS -->
-    <link href="<?php echo BASE_URL; ?>Assets/extra-libs/c3/c3.min.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
+    <?php if (empty($pnMFCompactAssets)): ?><link href="<?php echo BASE_URL; ?>Assets/extra-libs/c3/c3.min.css" rel="stylesheet"><?php endif; ?>
+    <?php if (empty($pnMFCompactAssets)): ?><link href="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.css" rel="stylesheet"><?php endif; ?>
+    <?php if (empty($pnMFCompactAssets)): ?><link href="<?php echo BASE_URL; ?>Assets/extra-libs/jvector/jquery-jvectormap-2.0.2.css" rel="stylesheet" /><?php endif; ?>
     <!-- Custom CSS -->
     <!-- <script src="https://unpkg.com/feather-icons"></script>  -->
     <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/feather.min.js"></script>
@@ -633,15 +633,15 @@
 
             <!-- Chartist CSS -->
             <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.css"> -->
-            <link href="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.css" rel="stylesheet">
+            <?php if (empty($pnMFCompactAssets)): ?><link href="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.css" rel="stylesheet"><?php endif; ?>
 
 
             <!-- Chartist JS -->
             <!--<script src="https://cdn.jsdelivr.net/npm/chartist@0.11.4/dist/chartist.min.js"></script> -->
-            <script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.js"></script>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/librerias/chartist.min.js"></script><?php endif; ?>
 
             <!-- Luego tu dashboard -->
-            <script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script>
+            <?php if (empty($pnMFCompactAssets)): ?><script src="<?php echo BASE_URL; ?>Assets/libs/chartist/dist/chartist.min.js"></script><?php endif; ?>
 
             <script>
                 const base_url = '<?php echo BASE_URL; ?>';

@@ -49,12 +49,13 @@
   }
 
   // ===== Init =====
-  window.addEventListener("DOMContentLoaded", function () {
+  function bootPisoMF() {
     // Seguridad: si falta algo, no explotar silenciosamente
     if (!tbody || !ulPaginacion || !metaResumen) return;
 
-    // Listar al cargar
-    listar();
+    // MF.02.2: primera consulta solo al abrir En Bodega.
+    if (window.PNMF02Tabs) window.PNMF02Tabs.register("en-piso", listar);
+    else listar();
 
     // Eventos filtros
     if (inputBuscar) {
@@ -105,7 +106,12 @@
         listar();
       });
     }
-  });
+  }
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", bootPisoMF, { once: true });
+  } else {
+    bootPisoMF();
+  }
 
   // ===== Helper: construir querystring =====
   function buildQuery() {

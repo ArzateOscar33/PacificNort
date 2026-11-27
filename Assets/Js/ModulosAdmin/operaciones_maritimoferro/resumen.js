@@ -71,7 +71,7 @@
   // -------------------------
   // Init charts + PDF btn
   // -------------------------
-  document.addEventListener("DOMContentLoaded", function () {
+  function initResumenMF() {
     if (window.CostosChart) CostosChart.init("costosChart", "costosLeyenda");
     if (window.TimelineChart) TimelineChart.init("timelineChart");
     setExportPdfEnabledResumen(false);
@@ -85,7 +85,9 @@
         CostosChart.setDisplayCurrency(selMoneda.value, Number(inpTC.value));
       });
     }
-  });
+  }
+  if (window.PNMF02Tabs) window.PNMF02Tabs.register("resumen", initResumenMF);
+  else document.addEventListener("DOMContentLoaded", initResumenMF);
 
   function setExportPdfEnabledResumen(enabled) {
     if (!btnPdfResumen) return;

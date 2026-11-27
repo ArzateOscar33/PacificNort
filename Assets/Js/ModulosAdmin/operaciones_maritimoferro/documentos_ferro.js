@@ -535,8 +535,8 @@
     });
   };
 
-  // Boot
-  (async () => {
+  // MF.02.2: boot al abrir Documentos.
+  async function initDocumentosMF() {
     const opIdBoot = (opIdInput?.value || "").trim();
     if (opIdBoot) {
       await autollenarContenedorPorOperacion(opIdBoot);
@@ -546,7 +546,9 @@
       limpiarContenedorVista();
       renderListadoVacio();
     }
-  })();
+  }
+  if (window.PNMF02Tabs) window.PNMF02Tabs.register("documentos", initDocumentosMF);
+  else initDocumentosMF();
 })();
 
 // ============================================================

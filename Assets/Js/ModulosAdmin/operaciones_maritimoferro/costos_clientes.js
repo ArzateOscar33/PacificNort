@@ -489,6 +489,7 @@
     });
   }
 
-  // Carga inicial
-  listar(1);
+  // MF.02.2: carga inicial bajo demanda.
+  if (window.PNMF02Tabs) window.PNMF02Tabs.register("costos_operacion_clientes", () => listar(1));
+  else listar(1);
 })();

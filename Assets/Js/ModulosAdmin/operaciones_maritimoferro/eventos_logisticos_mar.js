@@ -504,6 +504,7 @@
   }
 
   function listar() {
+    if (window.PNMF02Tabs && !window.PNMF02Tabs.isActive("Eventos_Logisticos")) return;
     cancelarEdicionActiva(false);
 
     const url =
@@ -1017,7 +1018,9 @@
   // =============================================================
   // Inicialización
   // =============================================================
+  let mfInitPending = false;
   function init() {
+    if (mfInitPending) return;
     if (Array.isArray(window.__evMarCols) && window.__evMarCols.length > 0) {
       COLS = window.__evMarCols;
       buildHead();
@@ -1025,9 +1028,11 @@
       return;
     }
 
+    mfInitPending = true;
     xhrGet(
       `${base_url}Operaciones_maritimo_ferro_eventos_mar/eventos_maritimos_columnas`,
       (json) => {
+        mfInitPending = false;
         const cols = json && json.columns ? json.columns : [];
         COLS = Array.isArray(cols) ? cols : [];
         window.__evMarCols = COLS;
@@ -1036,6 +1041,7 @@
         listar();
       },
       () => {
+        mfInitPending = false;
         COLS = [];
         buildHead();
         listar();
@@ -1043,7 +1049,8 @@
     );
   }
 
-  init();
+  if (window.PNMF02Tabs) window.PNMF02Tabs.register("Eventos_Logisticos", init, init);
+  else init();
 })();
 
 // ===============================================================

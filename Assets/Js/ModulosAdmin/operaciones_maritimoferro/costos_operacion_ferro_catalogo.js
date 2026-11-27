@@ -764,7 +764,7 @@
   });
 
   // ---------------------- Filtros / paginación ----------------------
-  document.addEventListener("DOMContentLoaded", () => {
+  function initCostosMF() {
     if (perPage < 1) perPage = 10;
 
     loadTiposMovimiento(selTipoModal);
@@ -784,7 +784,9 @@
     } else {
       renderVacio("Selecciona una operación para ver sus costos.");
     }
-  });
+  }
+  if (window.PNMF02Tabs) window.PNMF02Tabs.register("costos_operacion", initCostosMF);
+  else document.addEventListener("DOMContentLoaded", initCostosMF);
 
   selPerPage?.addEventListener("change", () => {
     perPage = parseInt(selPerPage.value || "10", 10) || 10;
@@ -800,7 +802,7 @@
     }
   });
 
-  selMonedaFiltro?.addEventListener("change", () => listar(1));
+
   selTipoFiltro?.addEventListener("change", () => listar(1));
   selMonedaFiltro?.addEventListener("change", () => listar(1));
 

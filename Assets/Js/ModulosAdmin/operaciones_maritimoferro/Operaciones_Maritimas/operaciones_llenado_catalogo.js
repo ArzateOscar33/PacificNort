@@ -526,7 +526,7 @@
        * Si cambia estatus, refrescamos porque también cambia el color del renglón.
        */
       if (campo === "estatus_id") {
-        listar(true);
+        mfAuto.invalidate();
       }
     };
 
@@ -549,6 +549,7 @@
 
     celdaEditandoMF = td;
     inlineEditandoMF = true;
+    mfAuto.beforeEdit();
 
     td.classList.add("mf-editing");
 
@@ -870,7 +871,8 @@
   }
 
   // ===== Listar (usa tu endpoint MF) =====
-  function listar(silencioso = false) {
+  function listar(silencioso = false, automatico = false) {
+    if (automatico && !mfAuto.canStart()) return;
     const params = new URLSearchParams();
     const subtipo = (selectSubtipo?.value || "").trim();
     const term = (inputBuscar?.value || "").trim();
@@ -934,21 +936,30 @@
       params.toString();
 
     if (currentListXHR && currentListXHR.readyState !== 4) {
-      currentListXHR.abort();
+      const anterior = currentListXHR;
+      currentListXHR = null;
+      anterior.abort();
     }
 
     if (!silencioso) renderCargando();
     const x = new XMLHttpRequest();
     currentListXHR = x;
+    x.pnMFAutomatico = automatico;
+    mfAuto.started();
     x.open("GET", url, true);
-    x.send();
+    if (automatico) x.timeout = 30000;
+    x.addEventListener("loadend", () => {
+      if (currentListXHR === x) mfAuto.schedule();
+    });
     x.onreadystatechange = function () {
       if (x.readyState !== 4) return;
 
       if (currentListXHR !== x) return; // descartar respuestas viejas
+      if (automatico && !mfAuto.canRender()) { mfAuto.invalidate(); return; }
 
       if (x.status !== 200) {
         console.error("listar_operaciones error:", x.responseText);
+        if (automatico) return; // conservar el ultimo listado valido
         renderTabla([]);
         renderPaginacion({ page: 1, total_pages: 1 });
         renderResumen({ total: 0, page: 1, per_page: perPage, total_pages: 1 });
@@ -964,7 +975,8 @@
 
       // Este endpoint NO devuelve {status, meta}. Devuelve:
       // { data, from, to, total, page, per_page, total_pages, pagination_html }
-      const rows = payload.data || [];
+      if (automatico && !Array.isArray(payload?.data)) return;
+      const rows = payload?.data || [];
       renderTabla(rows);
 
       const pp = payload.per_page ?? perPage;
@@ -979,6 +991,7 @@
       renderPaginacion(meta);
       renderResumen(meta);
     };
+    x.send();
   }
 
   // ===== Validaciones simples =====
@@ -2144,72 +2157,101 @@
     }
   });
 
-  // =========================================================
-  // ✅ Bridge: refrescar tabla cuando otro módulo actualiza
-  //    asignaciones o trazabilidad
-  // =========================================================
-  (function bindRefreshEvents() {
-    let refreshTO = null;
+  // MF.02.6: coordinador de refrescos automaticos (no modifica filtros).
+  const mfAuto = (function () {
+    const INTERVALO_MS = 15000;
+    const pane = document.getElementById("crear_operacions");
+    const tab = document.getElementById("crear_operacions-tab");
+    const nav = document.getElementById("operacionTabs");
+    let timer = null;
+    let lastStart = Date.now();
+    let pending = false;
+    let pageSuspended = false;
+    const modals = new Map();
 
-    function requestRefresh(detail) {
-      // opcional: si quieres forzar volver a página 1
-      // currentPage = 1;
-
-      // Debounce corto para evitar 2-3 refrescos seguidos
-      clearTimeout(refreshTO);
-      refreshTO = setTimeout(() => {
-        try {
-          listar();
-        } catch (e) {
-          console.warn("No se pudo refrescar MF listar()", e);
-        }
-      }, 120);
+    function visible() {
+      return !pageSuspended && !document.hidden &&
+        document.readyState !== "loading" &&
+        !!pane?.classList.contains("active") &&
+        !!tab?.classList.contains("active");
     }
-
-    // Evento único para todo MF
-    document.addEventListener("mf:refresh-list", (ev) => {
-      requestRefresh(ev.detail || {});
-    });
-
-    // (Opcional) si quieres diferenciar acciones
-    document.addEventListener("mf:asignacion-updated", (ev) => {
-      requestRefresh(ev.detail || {});
-    });
-    document.addEventListener("mf:trazabilidad-updated", (ev) => {
-      requestRefresh(ev.detail || {});
-    });
-  })();
-
-  // =========================================================
-  // AUTO-REFRESH: dentro del IIFE para poder acceder a listar()
-  // =========================================================
-  (function () {
-    var INTERVALO_MS = 15000;
-    var autoRefreshTimer = null;
-    var pausado = false;
-
-    function iniciar() {
-      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-      autoRefreshTimer = setInterval(function () {
-        if (!pausado && !inlineEditandoMF) listar(true);
-      }, INTERVALO_MS);
+    function blocked() {
+      return inlineEditandoMF || !!tablaBody?.querySelector(".mf-saving") ||
+        modals.size > 0 || !!document.querySelector(".modal.show, .modal[aria-modal='true']");
     }
-
-    var modalPrincipal = document.getElementById("modalMaritimoFerro");
-    var modalAsignacion = document.getElementById("modalAsignarFerroCaja");
-
-    [modalPrincipal, modalAsignacion].forEach(function (m) {
-      if (!m) return;
-      m.addEventListener("show.bs.modal", function () {
-        pausado = true;
-      });
-      m.addEventListener("hidden.bs.modal", function () {
-        pausado = false;
-        listar(true);
+    function busy() {
+      return !!currentListXHR && currentListXHR.readyState !== 4;
+    }
+    function canRender() { return visible() && !blocked(); }
+    function canStart() { return canRender() && !busy(); }
+    function stop() {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+    }
+    function schedule() {
+      stop();
+      if (!visible() || busy()) return;
+      const delay = blocked() ? 1000 : (pending ? 120 : Math.max(0, INTERVALO_MS - (Date.now() - lastStart)));
+      timer = setTimeout(function () {
+        timer = null;
+        if (!canStart()) { schedule(); return; }
+        listar(true, true);
+      }, delay);
+    }
+    function invalidate() {
+      pending = true;
+      schedule();
+    }
+    function started() {
+      lastStart = Date.now();
+      pending = false;
+      stop();
+    }
+    function discardAuto() {
+      if (!busy() || !currentListXHR.pnMFAutomatico) return;
+      const old = currentListXHR;
+      currentListXHR = null;
+      pending = true;
+      old.abort();
+    }
+    function suspend() { stop(); discardAuto(); }
+    function beforeEdit() { discardAuto(); schedule(); }
+    function onVisibility() {
+      if (!visible()) suspend();
+      else schedule();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", () => { pageSuspended = true; suspend(); });
+    window.addEventListener("pageshow", () => { pageSuspended = false; onVisibility(); });
+    nav?.addEventListener("hide.bs.tab", (e) => {
+      if (e.target !== tab) return;
+      suspend();
+      queueMicrotask(() => { if (e.defaultPrevented) onVisibility(); });
+    });
+    nav?.addEventListener("hidden.bs.tab", onVisibility);
+    nav?.addEventListener("shown.bs.tab", onVisibility);
+    document.addEventListener("show.bs.modal", (e) => {
+      const modal = e.target;
+      if (!modal?.classList?.contains("modal")) return;
+      modals.set(modal, lastStart);
+      suspend();
+      queueMicrotask(() => {
+        if (e.defaultPrevented) { modals.delete(modal); schedule(); }
       });
     });
-
-    iniciar();
+    document.addEventListener("hidden.bs.modal", (e) => {
+      if (!modals.has(e.target)) return;
+      const startAtOpen = modals.get(e.target);
+      modals.delete(e.target);
+      // Solo los modales de Operaciones pueden invalidar su listado al cerrar.
+      if (pane?.contains(e.target) && startAtOpen === lastStart) pending = true;
+      schedule();
+    });
+    ["mf:refresh-list", "mf:asignacion-updated", "mf:trazabilidad-updated", "mf:traslados-updated"]
+      .forEach(name => document.addEventListener(name, invalidate));
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", schedule, { once: true });
+    else schedule();
+    return { canStart, canRender, started, schedule, invalidate, beforeEdit };
   })();
 })();
 // ===============================
