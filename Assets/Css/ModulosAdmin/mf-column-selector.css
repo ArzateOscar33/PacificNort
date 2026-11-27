@@ -1,0 +1,24 @@
+/* MF.03.2 — Panel de columnas, aislado al componente. */
+.mf-columns { margin: 0 0 .75rem; min-width:0; max-width:100%; }
+.mf-columns-summary { display:list-item; width:fit-content; max-width:100%; min-height:38px; cursor:pointer; color:#253858; background:#fff; border:1px solid #a7b5c9; border-radius:.375rem; padding:.45rem .75rem; font-size:.875rem; font-weight:600; }
+.mf-columns-summary::marker { color:#40577b; }
+.mf-columns-count { margin-inline-start:.6rem; color:#3e526c; font-size:.78rem; font-weight:600; }
+.mf-columns-panel { border:1px solid #b8c2d6; background:#fff; border-radius:.375rem; margin-top:.4rem; padding:.75rem; max-width:100%; }
+.mf-columns-help { margin:0 0 .65rem; color:#42526b; font-size:.83rem; }
+.mf-columns-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(205px,100%),1fr)); gap:.3rem .65rem; max-height: min(44vh,22rem); overflow:auto; padding:.15rem; }
+.mf-columns-option { display:flex; align-items:center; gap:.5rem; min-width:0; min-height:38px; margin:0; padding:.35rem .4rem; border:1px solid #d9e1eb; border-radius:.25rem; cursor:pointer; color:#263a55; font-size:.83rem; line-height:1.25; }
+.mf-columns-option input { flex:0 0 auto; width:1rem; height:1rem; accent-color:#1b2256; margin:0; }
+.mf-columns-option span { overflow-wrap:anywhere; }
+.mf-columns-required { background:#f4f6fa; cursor:default; }
+.mf-columns-required-note { margin-inline-start:auto; color:#52627a; font-size:.68rem; }
+.mf-columns-actions { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.65rem; }
+.mf-columns-status { margin:.5rem 0 0; color:#864300; font-size:.8rem; }
+.mf-columns-status:empty { display:none; }
+.mf-columns summary:focus-visible,.mf-columns button:focus-visible,.mf-columns input:focus-visible { outline:2px solid #1b2256; outline-offset:2px; }
+@media(max-width:767.98px) { .mf-columns-summary { width:100%; min-height:44px; } .mf-columns-option { min-height:44px; } .mf-columns-actions button { min-height:44px; } }
+
+/* MF.03.3 — Perfiles de visualización */
+.mf-columns-mode { margin-inline-start:.5rem; font-weight:400; font-size:.75rem; color:#42526b; }
+.mf-columns-profiles { display:flex; flex-wrap:wrap; gap:.4rem; margin:0 0 .75rem; }
+.mf-columns-profile[aria-pressed="true"] { background:#1b2256; color:#fff; border-color:#1b2256; }
+@media(max-width:767.98px) { .mf-columns-profiles { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .mf-columns-profile { min-height:44px; white-space:normal; } }

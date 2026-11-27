@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="<?= BASE_URL ?>Assets/Css/ModulosAdmin/mf-responsive-filters.css?v=mf034">
 <style>
   /* ===== Sticky header (scroll vertical = página) ===== */
   :root {
@@ -334,35 +335,46 @@
   }
 </style>
 
-<div class="container py-4 col-md-12">
-  <div class="card shadow-sm">
+<div class="container py-4 col-md-12" id="mf-operations-container">
+  <div class="card shadow-sm" id="mf-operations-card">
 
     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
         <i data-feather="anchor" class="me-1"></i> Operaciones
       </h5>
+      <div class="pn-mf-header-actions">
+      <button type="button" id="mf-restore-table" class="btn btn-light btn-sm pn-mf-restore" hidden>Restaurar tabla</button>
       <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalMaritimoFerro"
         id="maritimo_ferro_btnNuevaOperacion">
         <i data-feather="plus-circle" class="me-1"></i> Nueva Operación
       </button>
+      </div>
     </div>
 
     <div class="card-body">
 
       <!-- Filtros -->
 
-      <div class="mb-3 col-md-12 ">
+      <div class="mb-3 col-md-12 " id="pn-mf-filters-operaciones">
 
 
         <!-- ===== FILA 1: Logística + rango de fechas ===== -->
-        <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2 ">
+        <div class="pn-mf-filter-quick">
 
 
           <!-- Búsqueda global (DEJAR AL FINAL, sin cambiar id/name) -->
           <input id="maritimo_ferro_buscarOperacion" class="form-control col-md-9"
-            placeholder="Buscar por código, BL o contenedor">
+            placeholder="Buscar por código, BL o contenedor" aria-label="Buscar operación">
+          <button type="button" class="pn-mf-filter-toggle" data-mf-filter-toggle aria-controls="pn-mf-filters-advanced" aria-expanded="false" hidden>
+            <i data-feather="filter" aria-hidden="true"></i>
+            <span>Filtros avanzados</span><span class="pn-mf-filter-count" data-mf-filter-count hidden>0</span>
+            <span class="pn-mf-filter-chevron" aria-hidden="true">▾</span>
+          </button>
+        </div>
+        <div id="pn-mf-filters-advanced" data-mf-advanced>
+
           <!-- Rango de fechas + Orden ETA -->
-          <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+          <div class="d-flex flex-wrap align-items-center gap-2 ms-auto pn-mf-filter-range">
 
             <div class="d-flex align-items-end gap-2">
               <i data-feather="calendar"></i>
@@ -443,10 +455,9 @@
               value="asc">
 
           </div>
-        </div>
 
         <!-- ===== FILA 2: Catálogos principales ===== -->
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pn-mf-filter-catalogs">
 
           <div class="mf-filter-select-wrapper">
             <i data-feather="layers" class="mf-filter-icon"></i>
@@ -673,8 +684,9 @@
 
 
 
+        </div><!-- fin filtros avanzados -->
         <!-- ===== FILA 3: Paginación + export + búsqueda global (último) ===== -->
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pn-mf-filter-tools">
 
 
           <!-- Export -->
@@ -685,6 +697,7 @@
             <button class="btn btn-sm btn-outline-warning" id="operaciones_mar_ExportarPDF" type="button">
               <i data-feather="file" class="me-1"></i> PDF
             </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary pn-mf-table-expand" id="mf-expand-table" aria-pressed="false"><i data-feather="maximize" aria-hidden="true"></i><span data-mf-expand-label>Ampliar</span></button>
           </div>
 
 
@@ -714,6 +727,7 @@
 
       </div>
 
+      <p id="mf-table-layout-status" class="small text-warning mb-0" role="status" aria-live="polite"></p>
       <!-- Tabla -->
       <!-- Scroll horizontal superior (sincronizado con la tabla) -->
       <div class="mf-top-scroll" id="mf_topScroll">
@@ -1511,3 +1525,4 @@
   forzarMayusculas("asigFerro_inputNumero");
   forzarMayusculas("ubicacionActual_mf");
 </script>
+<script src="<?= BASE_URL ?>Assets/Js/ModulosAdmin/operaciones_maritimoferro/mf-responsive-filters.js?v=mf034"></script>

@@ -1,0 +1,51 @@
+/* MF.03.6 — solo los tres modales de Operaciones MF. */
+/* Traslados: el form envuelve el body y el footer; mantener un único formulario. */
+#modalTrasladosMf #mfTrForm { display:flex; flex-direction:column; flex:1 1 auto; min-height:0; min-width:0; overflow:hidden; }
+#modalTrasladosMf #mfTrForm > .modal-body { flex:1 1 auto; min-height:0; overflow:auto; }
+#modalTrasladosMf #mfTrForm > .modal-footer { flex:0 0 auto; }
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-body { min-width:0; min-height:0; }
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-header,
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-footer { flex-shrink:0; }
+@media(max-width:1023.98px) {
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-dialog { width:calc(100% - 24px); max-width:calc(100% - 24px); margin:12px auto; height:calc(100% - 24px); }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-content { max-height:100%; min-width:0; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-body { padding:1rem; overflow:auto; overscroll-behavior-y:contain; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-header { padding:.8rem 3rem .8rem 1rem; position:relative; flex-wrap:wrap; gap:.45rem; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-title { font-size:1.05rem; min-width:0; overflow-wrap:anywhere; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-header .btn-close { position:absolute; inset-block-start:.45rem; inset-inline-end:.5rem; margin:0; box-sizing:border-box; width:44px; height:44px; padding:12px; }
+  #modalAsignarFerroCaja.modal .modal-header .modal-title { flex-wrap:wrap; }
+  #modalAsignarFerroCaja.modal .modal-header > .d-flex:not(.modal-title) { margin-inline-start:0!important; flex-wrap:wrap; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-footer { padding:.65rem 1rem; gap:.5rem; background:#fff; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) :is(.form-control,.form-select) { min-width:0; max-width:100%; min-height:44px; font-size:16px; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) textarea.form-control { min-height:90px; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) :is(.modal-footer .btn,.modal-body .btn) { min-height:44px; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) :is(.modal-footer > .d-flex, .modal-body .col-12.d-flex) { flex-wrap:wrap; }
+  #modalAsignarFerroCaja .modal-body .card { min-width:0; max-width:100%; }
+  #modalAsignarFerroCaja .modal-body .table-responsive { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
+  #modalAsignarFerroCaja .modal-body .card-body > .d-flex { flex-wrap:wrap; }
+  #modalTrasladosMf.modal .mf-tr-resumen { padding:.8rem!important; margin-bottom:.8rem!important; }
+  /* Las sugerencias permanecen dentro de su celda para que el scroll de la tabla no las recorte. */
+  #modalTrasladosMf.modal .mf-tr-tabla-contenedor { min-height:0; max-height:none; overflow-x:auto; overscroll-behavior-x:contain; }
+  #modalTrasladosMf.modal .mf-tr-sugerencias { position:static; max-height:210px; overflow-y:auto; }
+  #modalTrasladosMf.modal .mf-tr-sugerencias .list-group-item { white-space:normal; overflow-wrap:anywhere; }
+  #modalTrasladosMf.modal .mf-tr-tabla .form-control { min-width:96px; }
+  #modalTrasladosMf.modal .mf-tr-tabla .mf-tr-monto { min-width:112px; }
+}
+@media(min-width:768px) and (max-width:1023.98px) {
+  #formOperacionMaritimoFerro > .row > :is(.col-md-2,.col-md-3) { flex:0 0 50%; max-width:50%; width:50%; }
+}
+@media(max-width:767.98px) {
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-dialog { width:100%; max-width:100%; height:100%; height:100dvh; margin:0; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-content { height:100%; max-height:100%; border:0; border-radius:0; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-header { border-radius:0; padding-top:calc(.7rem + env(safe-area-inset-top,0px)); }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-header .btn-close { top:calc(.4rem + env(safe-area-inset-top,0px)); }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-body { padding:.8rem; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-footer { padding:.55rem .8rem calc(.55rem + env(safe-area-inset-bottom,0px)); border-radius:0; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-footer > .d-flex { width:100%; margin:0; }
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-footer > .d-flex > .btn { flex:1 1 auto; white-space:normal; }
+  #modalAsignarFerroCaja.modal .modal-footer > .btn { width:100%; margin:0; }
+  #modalAsignarFerroCaja.modal .card-body { padding:.7rem; }
+  #modalAsignarFerroCaja.modal .modal-body .col-12.d-flex > .btn { flex:1 1 auto; white-space:normal; }
+  #modalTrasladosMf.modal #mfTrMensaje:empty { display:none; }
+  #modalTrasladosMf.modal #mfTrMensaje { width:100%; overflow-wrap:anywhere; }
+}

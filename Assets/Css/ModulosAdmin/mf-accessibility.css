@@ -1,0 +1,47 @@
+/* MF.03.7 — alcance exclusivo de la vista MF; no altera colores por estatus. */
+#mf-module-root #operacionTabs .nav-link { color:#414f9e; }
+#mf-module-root #operacionTabs .nav-link.active { color:#26344b; }
+#main-wrapper.pn-mf-mobile-shell .sidebar-nav #sidebarnav .sidebar-item > .sidebar-link { color:#475569!important; opacity:1; }
+#main-wrapper.pn-mf-mobile-shell .sidebar-nav #sidebarnav .sidebar-link .hide-menu { color:inherit!important; }
+#main-wrapper.pn-mf-mobile-shell .sidebar-nav #sidebarnav .sidebar-link :is(i,.feather-icon) { color:inherit!important; }
+#main-wrapper.pn-mf-mobile-shell .sidebar-nav #sidebarnav .sidebar-item.selected > .sidebar-link,
+#main-wrapper.pn-mf-mobile-shell .sidebar-nav #sidebarnav .sidebar-item.active-parent > .sidebar-link { background:#4a4caa!important; color:#fff!important; }
+#main-wrapper.pn-mf-mobile-shell .sidebar-nav #sidebarnav .first-level .sidebar-item.active > .sidebar-link { color:#26344b!important; }
+#main-wrapper.pn-mf-mobile-shell .footer.text-muted { color:#475569!important; }
+#mf-module-root .text-muted:not(.row-estatus-color .text-muted) { color:#526176!important; }
+#mf-module-root :is(.form-control,.form-select)::placeholder { color:#64748b; opacity:1; }
+#mf-module-root .form-label { color:#36445b; }
+#mf-operations-card .mf-table thead th { color:#344155; }
+#mf-module-root :is(.btn-outline-success,.btn-outline-warning):not(:disabled) { color:#166534; border-color:#166534; }
+#mf-module-root .btn-outline-warning:not(:disabled) { color:#92400e; border-color:#92400e; }
+#mf-module-root .btn-outline-success:not(:disabled):hover { background:#166534; color:#fff; }
+#mf-module-root .btn-outline-warning:not(:disabled):hover { background:#92400e; color:#fff; }
+#mf-module-root :is(.btn-success,.bg-success.text-white) { background-color:#087747!important; border-color:#087747; color:#fff!important; }
+/* Botón de cierre independiente de las imágenes de fondo de Bootstrap. */
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-header .btn-close {
+  display:inline-flex; position:relative; align-items:center; justify-content:center; flex:0 0 44px;
+  width:44px; height:44px; box-sizing:border-box; padding:0!important;
+  background:transparent!important; border:1px solid rgba(255,255,255,.85)!important;
+  border-radius:.4rem; color:#fff!important; opacity:1!important; filter:none!important;
+}
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-header .btn-close::before {
+  content:""; position:absolute; width:20px; height:2px; background:currentColor; transform:rotate(45deg);
+}
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-header .btn-close::after {
+  content:""; position:absolute; width:20px; height:2px; background:currentColor; transform:rotate(-45deg);
+}
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-header .btn-close:hover { background:rgba(0,0,0,.15)!important; }
+:is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf) .modal-header .modal-title { min-width:0; white-space:normal; overflow-wrap:anywhere; line-height:1.25; }
+@media(max-width:1023.98px) {
+  :is(#modalMaritimoFerro,#modalAsignarFerroCaja,#modalTrasladosMf).modal .modal-header { padding-inline-end:4rem; }
+  #modalTrasladosMf .modal-header > div { min-width:0; }
+}
+#main-wrapper.pn-mf-mobile-shell :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible,
+#mf-skip-link:focus-visible { outline:3px solid #234bb2!important; outline-offset:2px; }
+#mf-module-root .bg-success.text-white :is(button,a):focus-visible { outline-color:#fff!important; outline-offset:2px; }
+#mf-module-root:focus { outline:none; }
+#mf-skip-link { position:fixed; top:8px; left:8px; z-index:11000; padding:12px 16px; color:#fff; background:#1b2256; border-radius:4px; transform:translateY(-200%); }
+#mf-skip-link:focus { transform:none; color:#fff; }
+@media(prefers-reduced-motion:reduce) {
+ #main-wrapper.pn-mf-mobile-shell .sidebar-item,#main-wrapper.pn-mf-mobile-shell .sidebar-link,#main-wrapper.pn-mf-mobile-shell .left-sidebar,#main-wrapper.pn-mf-mobile-shell .page-wrapper { transition:none!important; animation:none!important; }
+}

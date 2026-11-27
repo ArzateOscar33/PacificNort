@@ -1,0 +1,57 @@
+/* MF.03.5 — Exclusivo de Operaciones. */
+#mf-operations-container, #mf-operations-card, #mf-operations-card > .card-body { min-width:0; max-width:100%; }
+#mf-operations-card .mf-table-wrap { min-width:0; max-width:100%; overscroll-behavior-x:contain; }
+#mf-operations-card .pn-mf-table-expand { display:inline-flex; align-items:center; justify-content:center; gap:.3rem; white-space:nowrap; }
+#mf-operations-card .pn-mf-table-expand:focus-visible { outline:2px solid #1b2256; outline-offset:2px; }
+#mf-operations-card .pn-mf-table-expand[aria-pressed=true] { background:#1b2256; color:white; }
+/* Ampliar la misma tarjeta, sin clonar tablas ni mover formularios/modales. */
+body.pn-mf-table-expanded { overflow:hidden !important; }
+#mf-operations-card.pn-mf-expanded {
+  position:fixed!important; inset:8px!important; width:auto!important; max-width:none!important;
+  height:auto!important; margin:0!important; z-index:1020; background:#fff; border-radius:.5rem;
+  box-shadow:0 0 0 100vmax rgba(23,32,51,.40),0 8px 24px rgba(23,32,51,.18)!important;
+  overflow:auto; overscroll-behavior:contain; --mf-sticky-top:0px;
+}
+#mf-operations-card.pn-mf-expanded > .card-header { position:sticky; top:0; z-index:90; }
+/* Mantener una salida accesible aunque el usuario baje por la tabla. */
+#mf-operations-card .pn-mf-restore { display:none; }
+#mf-operations-card.pn-mf-expanded .pn-mf-restore { display:inline-flex; align-items:center; min-height:36px; }
+#mf-operations-card .pn-mf-header-actions { display:flex; align-items:center; flex-wrap:wrap; gap:.35rem; justify-content:flex-end; }
+@media(max-width:1023.98px) {
+  #mf-module-root > .tab-content { margin-top:.5rem!important; }
+  #mf-operations-container { padding: .55rem .25rem!important; }
+  #mf-operations-card > .card-body { padding:.65rem!important; }
+  #mf-operations-card > .card-header { padding:.6rem .65rem; gap:.35rem; flex-wrap:wrap; }
+  #mf-operations-card > .card-header h5 { font-size:1rem; }
+  #pn-mf-filters-operaciones { padding:0!important; margin-bottom:.55rem!important; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.4rem; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .pn-mf-filter-quick { display:contents; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools #maritimo_ferro_buscarOperacion { grid-column:1/-1; width:100%; max-width:100%; min-width:0; font-size:16px; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .pn-mf-filter-toggle { grid-column:1; min-width:0; padding:.35rem .45rem; font-size:.8rem; text-align:left; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .mf-columns { grid-column:2; margin:0; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .mf-columns[open] { grid-column:1/-1; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .mf-columns-summary { width:100%; min-height:44px; padding:.4rem .45rem; font-size:.8rem; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .mf-columns-count { margin-inline-start:.25rem; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools .mf-columns-mode { display:block; margin-inline-start:0; font-size:.68rem; }
+  #pn-mf-filters-operaciones.pn-mf-layout-tools [data-mf-advanced], #pn-mf-filters-operaciones.pn-mf-layout-tools .pn-mf-filter-tools { grid-column:1/-1; margin-bottom:0; }
+  #pn-mf-filters-operaciones .pn-mf-filter-tools > div:first-child { flex-wrap:wrap; gap:.3rem!important; }
+  #pn-mf-filters-operaciones .pn-mf-filter-tools > div:last-child { flex-wrap:wrap; }
+  #pn-mf-filters-operaciones .pn-mf-filter-tools button { min-height:36px; }
+  #mf-operations-card .mf-table th, #mf-operations-card .mf-table td { padding:.38rem .5rem; font-size:.78rem; }
+}
+@media(max-width:767.98px) {
+  #mf-module-root { margin-top:.5rem!important; padding-left:6px!important; padding-right:6px!important; }
+  #mf-operations-container { padding:.35rem 0!important; }
+  #mf-operations-card > .card-body { padding:.4rem!important; }
+  #mf-operations-card .mf-table { --mf-col1-w:92px; --mf-col2-w:145px; }
+  #mf-operations-card .mf-table .sticky-col-1 { min-width:92px; width:92px; left:0; }
+  #mf-operations-card .mf-table .sticky-col-2 { position:static; left:auto; min-width:145px; width:145px; z-index:auto; }
+  /* La barra superior es redundante con el desplazamiento táctil. No se elimina su DOM. */
+  #mf-operations-card #mf_topScroll { display:none!important; }
+  #mf-operations-card.pn-mf-expanded { inset:0!important; border-radius:0; padding-bottom:env(safe-area-inset-bottom,0px); }
+}
+@media(prefers-reduced-motion:reduce) { #mf-operations-card { scroll-behavior:auto; } }
+@media(min-width:768px) and (max-width:1023.98px) {
+  #mf-operations-card .mf-table { --mf-col1-w:125px; --mf-col2-w:155px; }
+}
+#mf-operations-card #mf-table-layout-status:empty { display:none; }
