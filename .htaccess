@@ -2,3 +2,29 @@ RewriteEngine on
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+# PacificNort - Fase 11.1: recursos estaticos publicos.
+# No modificar las reglas MVC anteriores.
+<IfModule mod_setenvif.c>
+    # Lista cerrada de rutas de recursos de la pagina comercial.
+    SetEnvIf Request_URI "(?:^|/)Assets/Css/(?:aos|style|pn-navbar|pn-suite|pn-gallery|pn-contact-footer)\.css$" PN_PUBLIC_ASSET=1
+    SetEnvIf Request_URI "(?:^|/)Assets/Js/(?:bootstrap\.bundle\.min|aos|servicios|sweetalert2\.all\.min|contactos|index|rastreo|pn-suite|pn-gallery)\.js$" PN_PUBLIC_ASSET=1
+    SetEnvIf Request_URI "(?:^|/)Assets/img/(?:log[1-5]\.jpg|equipo(?:01)?\.jpg|logo\.PNG|logo_fb\.png|diamante\.png|objetivo\.png|ojo\.png|servicio_(?:ferroviario|aereo|aduanal|rastreo)\.jpg)$" PN_PUBLIC_ASSET=1
+    SetEnvIf Request_URI "(?:^|/)Assets/img/portal/(?:operaciones-demo|partidas-demo|factura-demo|envio-demo|movil-demo|tablet-demo|operaciones-movil-demo|listado-movil-demo|factura-movil-demo|envio-movil-demo)\.webp$" PN_PUBLIC_ASSET=1
+    SetEnvIf Request_URI "(?:^|/)Assets/Videos/pacificnort(?:\.mp4|_poster\.jpg)$" PN_PUBLIC_ASSET=1
+    <IfModule mod_headers.c>
+        <FilesMatch "\.(?:css|js|jpg|png|PNG|webp|mp4)$">
+            # Una hora: evita conservar versiones antiguas durante el desarrollo.
+            Header set Cache-Control "public, max-age=3600" env=PN_PUBLIC_ASSET
+        </FilesMatch>
+    </IfModule>
+</IfModule>
+
+# Gzip para CSS/JS estaticos; no comprimir fotos, video ni HTML/PHP dinamico.
+<IfModule mod_deflate.c>
+    <IfModule mod_filter.c>
+        <FilesMatch "\.(?:css|js)$">
+            AddOutputFilterByType DEFLATE text/css text/javascript application/javascript application/x-javascript
+        </FilesMatch>
+    </IfModule>
+</IfModule>

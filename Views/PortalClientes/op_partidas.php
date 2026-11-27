@@ -8,6 +8,13 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>Assets/Css/PortalClientes/dashboard.css" rel="stylesheet">
+
+    <link href="<?= BASE_URL ?>Assets/Css/PortalClientes/tabla-responsive.css" rel="stylesheet">
+
+    <link href="<?= BASE_URL ?>Assets/Css/PortalClientes/partidas-responsive.css" rel="stylesheet">
+
+    <script src="<?= BASE_URL ?>Assets/Js/PortalClientes/TablaResponsive.js" defer></script>
 
     <style>
         /* =========================
@@ -352,115 +359,417 @@
             </div>
 
             <!-- FILTROS -->
-            <div class="card shadow-sm border-0 rounded-4 mb-3" id="cardFiltrosPartida">
+
+            <!-- FILTROS RESPONSIVE - PARTIDAS -->
+
+            <div class="card shadow-sm border-0 rounded-4 mb-3"
+                id="cardFiltrosPartida">
+
                 <div class="card-body">
-                    <div class="row g-3 align-items-end">
 
-                        <div class="col-12 col-md-2">
-                            <label class="form-label" for="partidaSearch">Buscar factura</label>
+                    <div id="pnPartidaFiltros">
+
+                        <!-- Buscador siempre visible -->
+
+                        <div class="pn-partida-search">
+
+                            <label class="form-label"
+                                for="partidaSearch">
+                                Buscar factura
+                            </label>
+
                             <div class="input-group">
-                                <span class="input-group-text"><i data-feather="search"></i></span>
-                                <input class="form-control" id="partidaSearch" placeholder="Factura, proveedor, ferro/caja..." />
+
+                                <span class="input-group-text">
+                                    <i data-feather="search"></i>
+                                </span>
+
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="partidaSearch"
+                                    placeholder="Factura, proveedor, ferro/caja..."
+                                    autocomplete="off">
+
                             </div>
+
                         </div>
 
-                        <div class="col-12 col-md-2">
-                            <label class="form-label" for="partidaEstatus">Estatus</label>
-                            <select class="form-select" id="partidaEstatus" name="estatus_envio">
-                                <option value="">Todos</option>
-                                <option value="PROGRAMADO">Programado</option>
-                                <option value="EN CAMINO">En camino</option>
-                                <option value="ENTREGADO">Entregado</option>
-                                <option value="DISPONIBLE EN DESTINO">Disponible en destino</option>
-                                <option value="CANCELADO">Cancelado</option>
-                            </select>
-                        </div>
+                        <!-- Botón responsive -->
 
-                        <div class="col-12 col-md-2">
-                            <label class="form-label" for="partidaDestino">Destino</label>
-                            <select class="form-select" id="partidaDestino" name="destino_id">
-                                <option value="">Todos</option>
-                                <?php if (!empty($data['ciudades'])): ?>
-                                    <?php foreach ($data['ciudades'] as $ciudad): ?>
-                                        <option value="<?php echo (int)$ciudad['id_ciudad']; ?>">
-                                            <?php echo htmlspecialchars($ciudad['nombre_ciudad']); ?>
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            id="pnBtnFiltrosPartida"
+                            aria-controls="pnPartidaFiltrosAvanzados"
+                            aria-expanded="false"
+                            hidden>
+
+                            <i data-feather="sliders"></i>
+
+                            Filtros
+
+                        </button>
+
+                        <!-- Filtros avanzados -->
+
+                        <div id="pnPartidaFiltrosAvanzados">
+
+                            <div>
+
+                                <label class="form-label"
+                                    for="partidaEstatus">
+                                    Estatus
+                                </label>
+
+                                <select
+                                    class="form-select"
+                                    id="partidaEstatus"
+                                    name="estatus_envio">
+
+                                    <option value="">Todos</option>
+                                    <option value="PROGRAMADO">Programado</option>
+                                    <option value="EN CAMINO">En camino</option>
+                                    <option value="ENTREGADO">Entregado</option>
+                                    <option value="DISPONIBLE EN DESTINO">
+                                        Disponible en destino
+                                    </option>
+                                    <option value="CANCELADO">Cancelado</option>
+
+                                </select>
+
+                            </div>
+
+                            <!-- Destino -->
+
+                            <div>
+
+                                <label class="form-label"
+                                    for="partidaDestino">
+                                    Destino
+                                </label>
+
+                                <select
+                                    class="form-select"
+                                    id="partidaDestino"
+                                    name="destino_id">
+
+                                    <option value="">Todos</option>
+
+                                    <?php foreach (($data['ciudades'] ?? []) as $ciudad): ?>
+
+                                        <option value="<?= (int)$ciudad['id_ciudad'] ?>">
+
+                                            <?= htmlspecialchars(
+                                                $ciudad['nombre_ciudad'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>
+
                                         </option>
+
                                     <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
 
-                        <div class="col-12 col-md-2">
-                            <label class="form-label" for="partidaFechaIni">Fecha inicial</label>
-                            <input type="date" class="form-control" id="partidaFechaIni" />
-                        </div>
+                                </select>
 
-                        <div class="col-12 col-md-2">
-                            <label class="form-label" for="partidaFechaFin">Fecha final</label>
-                            <input type="date" class="form-control" id="partidaFechaFin" />
-                        </div>
+                            </div>
 
-                        <div class="col-12 col-md-2">
-                            <label class="form-label" for="partidaTransportista">Transportista</label>
-                            <select class="form-select" id="partidaTransportista" name="transportista_id">
-                                <option value="">Todos</option>
-                                <?php if (!empty($data['transportistas'])): ?>
-                                    <?php foreach ($data['transportistas'] as $transportista): ?>
-                                        <option value="<?php echo (int)$transportista['id_transportista']; ?>">
-                                            <?php echo htmlspecialchars($transportista['nombre']); ?>
+                            <!-- Fecha inicial -->
+
+                            <div>
+
+                                <label class="form-label"
+                                    for="partidaFechaIni">
+                                    Fecha inicial
+                                </label>
+
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="partidaFechaIni">
+
+                            </div>
+
+                            <!-- Fecha final -->
+
+                            <div>
+
+                                <label class="form-label"
+                                    for="partidaFechaFin">
+                                    Fecha final
+                                </label>
+
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="partidaFechaFin">
+
+                            </div>
+
+                            <!-- Transportista -->
+
+                            <div>
+
+                                <label class="form-label"
+                                    for="partidaTransportista">
+                                    Transportista
+                                </label>
+
+                                <select
+                                    class="form-select"
+                                    id="partidaTransportista"
+                                    name="transportista_id">
+
+                                    <option value="">Todos</option>
+
+                                    <?php foreach (($data['transportistas'] ?? []) as $transportista): ?>
+
+                                        <option value="<?= (int)$transportista['id_transportista'] ?>">
+
+                                            <?= htmlspecialchars(
+                                                $transportista['nombre'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>
+
                                         </option>
+
                                     <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
-                        <div class="d-flex align-items-end justify-content-end ">
-                            <div class="col-12 col-md-1 d-grid ">
-                                <button class="btn btn-dark" type="button" id="btnPartidaFiltrar">
-                                    <i data-feather="filter" class="me-1"></i> Filtrar
-                                </button>
+
+                                </select>
+
                             </div>
 
-                            <div class="col-12 col-md-1 d-grid ">
-                                <button class="btn btn-outline-secondary" type="button" id="btnPartidaLimpiar">
-                                    <i data-feather="x-circle" class="me-1"></i> Limpiar
+                            <!-- Botones -->
+
+                            <div class="pn-partida-filter-actions">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-dark"
+                                    id="btnPartidaFiltrar">
+
+                                    <i data-feather="filter"></i>
+
+                                    Filtrar
+
                                 </button>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    id="btnPartidaLimpiar">
+
+                                    <i data-feather="x-circle"></i>
+
+                                    Limpiar
+
+                                </button>
+
                             </div>
+
                         </div>
+
                     </div>
 
-                    <hr class="my-3">
+                    <!-- Filtros activos -->
 
-                    <div class="d-flex flex-wrap align-items-center gap-2" id="partidaFiltrosActivosBar">
-                        <!-- chips dinámicos -->
+                    <div class="d-flex flex-wrap align-items-center gap-2"
+                        id="partidaFiltrosActivosBar">
                     </div>
+
                 </div>
+
             </div>
+
+            <script>
+                (function() {
+
+                    const card = document.getElementById(
+                        "cardFiltrosPartida"
+                    );
+
+                    const button = document.getElementById(
+                        "pnBtnFiltrosPartida"
+                    );
+
+                    if (!card || !button) return;
+
+                    card.classList.add("pn-filters-ready");
+
+                    button.hidden = false;
+
+                    button.addEventListener("click", function() {
+
+                        const expanded = card.classList.toggle(
+                            "is-expanded"
+                        );
+
+                        button.setAttribute(
+                            "aria-expanded",
+                            String(expanded)
+                        );
+
+                    });
+
+                })();
+            </script>
 
             <!-- TABLA -->
             <div class="card shadow-sm border-0 rounded-4" id="cardTablaPartida">
-                <div class="card-header bg-white border-0 pt-4 px-4 sticky-summary">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <div>
-                            <div class="fw-semibold">Listado de operaciones por partida</div>
-                            <div class="small pn-muted">
-                                Consulta facturas, productos, asignaciones de envío e imágenes relacionadas.
-                            </div>
+
+                <div class="card-header bg-white border-0 pt-4 px-4">
+
+                    <div class="pn-table-toolbar">
+
+                        <div class="pn-table-heading">
+
+                            <h5>Listado de operaciones por partida</h5>
+
+                            <small>
+                                Consulta facturas, productos y envíos.
+                            </small>
+
                         </div>
 
-                        <div class="d-flex align-items-center gap-2">
-                            <select class="form-select form-select-sm" id="partidaPageSize" style="width:auto;">
+                        <div class="pn-table-tools">
+
+                            <!-- Paginación -->
+
+                            <select
+                                class="form-select form-select-sm"
+                                id="partidaPageSize"
+                                aria-label="Registros por página">
+
                                 <option value="15">15 / pág</option>
                                 <option value="30">30 / pág</option>
                                 <option value="50">50 / pág</option>
                                 <option value="100">100 / pág</option>
                                 <option value="10000000">Todos</option>
+
                             </select>
+
+                            <!-- Columnas -->
+
+                            <button
+                                type="button"
+                                class="pn-table-button"
+                                id="pnBtnColumnas"
+                                aria-controls="pnColumnasPanel"
+                                aria-expanded="false"
+                                hidden>
+
+                                <i data-feather="columns"></i>
+
+                                <span id="pnColumnasTexto">
+                                    Columnas
+                                </span>
+
+                            </button>
+
+                            <!-- Ampliar -->
+
+                            <button
+                                type="button"
+                                class="pn-table-button"
+                                id="pnBtnAmpliarTabla"
+                                aria-pressed="false"
+                                hidden>
+
+                                <i data-feather="maximize"></i>
+
+                                <span id="pnAmpliarTexto">
+                                    Ampliar
+                                </span>
+
+                            </button>
+
                         </div>
+
                     </div>
+
+                    <!-- PANEL DE COLUMNAS -->
+
+                    <div id="pnColumnasPanel"
+                        class="pn-columns-panel"
+                        hidden>
+
+                        <div class="pn-columns-header">
+
+                            <div>
+
+                                <strong>Personalizar columnas</strong>
+
+                                <p>
+                                    Selecciona la información que deseas consultar.
+                                </p>
+
+                            </div>
+
+                            <button
+                                type="button"
+                                class="pn-table-button"
+                                id="pnCerrarColumnas"
+                                aria-label="Cerrar personalización">
+
+                                <i data-feather="x"></i>
+
+                            </button>
+
+                        </div>
+
+                        <div class="pn-columns-presets">
+
+                            <button
+                                type="button"
+                                class="pn-table-button"
+                                id="pnMostrarTodas">
+
+                                Mostrar todas
+
+                            </button>
+
+                            <button
+                                type="button"
+                                class="pn-table-button"
+                                id="pnVistaCompacta">
+
+                                Vista compacta
+
+                            </button>
+
+                        </div>
+
+                        <div id="pnColumnasLista"
+                            class="pn-columns-grid">
+                        </div>
+
+                        <div class="pn-columns-footer">
+
+                            <i data-feather="info"></i>
+
+                            Tus preferencias se guardan automáticamente
+                            en este navegador.
+
+                        </div>
+
+                    </div>
+
+                    <div class="pn-table-scroll-hint">
+
+                        <i data-feather="move"></i>
+
+                        <span>
+                            Desliza horizontalmente para consultar las demás columnas.
+                        </span>
+
+                    </div>
+
                 </div>
 
+
                 <div class="card-body px-4 pb-4">
-                    <div class="table-responsive">
+                    <div class="table-responsive portal-table-responsive">
                         <table class="table table-spacious align-middle mb-0" id="tblOpsPartida">
                             <thead class="text-center">
                                 <tr>
@@ -544,7 +853,10 @@
        MODAL FACTURA
        ========================================================= -->
     <div class="modal fade" id="modalPartidaFactura" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-xxl-wide">
+        <div class="modal-dialog
+            modal-dialog-scrollable
+            modal-xxl-wide
+            modal-fullscreen-lg-down">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header">
                     <div>
@@ -664,7 +976,10 @@
        MODAL ENVÍO
        ========================================================= -->
     <div class="modal fade" id="modalPartidaEnvio" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-xl-soft">
+        <div class="modal-dialog
+            modal-dialog-scrollable
+            modal-xl-soft
+            modal-fullscreen-lg-down">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header">
                     <div>
@@ -792,7 +1107,10 @@
        MODAL SOLO IMAGEN
        ========================================================= -->
     <div class="modal fade" id="modalVisorImagen" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-dialog
+            modal-dialog-centered
+            modal-xl
+            modal-fullscreen-sm-down">
             <div class="modal-content border-0 rounded-4 shadow">
                 <div class="modal-header">
                     <h5 class="modal-title">
@@ -812,26 +1130,131 @@
     <script>
         feather.replace();
 
-        // =========================================================
-        // VISOR BÁSICO DE IMÁGENES
-        // =========================================================
+
         (function() {
-            const modalVisorEl = document.getElementById('modalVisorImagen');
-            const visorImagenFull = document.getElementById('visorImagenFull');
-            const visorModal = modalVisorEl ? new bootstrap.Modal(modalVisorEl) : null;
 
-            document.addEventListener('click', function(e) {
-                const thumb = e.target.closest('.pn-thumb');
-                if (!thumb || !visorModal || !visorImagenFull) return;
+            const visor = document.getElementById(
+                "modalVisorImagen"
+            );
 
-                const img = thumb.querySelector('img');
-                const src = thumb.getAttribute('data-src') || (img ? img.getAttribute('src') : '');
+            const imagen = document.getElementById(
+                "visorImagenFull"
+            );
+
+            if (!visor || !imagen || !window.bootstrap) {
+                return;
+            }
+
+            const visorModal =
+                bootstrap.Modal.getOrCreateInstance(visor);
+
+            let modalOrigen = null;
+            let scrollOrigen = 0;
+            let procesando = false;
+
+            document.addEventListener("click", function(event) {
+
+                const thumb = event.target.closest(".pn-thumb");
+
+                if (!thumb || procesando) return;
+
+                const origen = thumb.closest(
+                    "#modalPartidaFactura, #modalPartidaEnvio"
+                );
+
+                if (!origen || !origen.classList.contains("show")) {
+                    return;
+                }
+
+                const img = thumb.querySelector("img");
+
+                const src =
+                    thumb.getAttribute("data-src") ||
+                    img?.getAttribute("src");
 
                 if (!src) return;
 
-                visorImagenFull.setAttribute('src', src);
-                visorModal.show();
+                procesando = true;
+
+                modalOrigen = origen;
+
+                scrollOrigen =
+                    origen.querySelector(".modal-body")?.scrollTop || 0;
+
+                imagen.src = src;
+
+                imagen.alt = img?.alt || "Imagen de operación";
+
+                const instanciaOrigen =
+                    bootstrap.Modal.getOrCreateInstance(origen);
+
+                origen.addEventListener(
+
+                    "hidden.bs.modal",
+
+                    function() {
+
+                        visorModal.show();
+
+                    },
+
+                    {
+                        once: true
+                    }
+
+                );
+
+                instanciaOrigen.hide();
+
             });
+
+            visor.addEventListener("hidden.bs.modal", function() {
+
+                imagen.removeAttribute("src");
+
+                if (!modalOrigen) {
+
+                    procesando = false;
+                    return;
+
+                }
+
+                const origen = modalOrigen;
+
+                modalOrigen = null;
+
+                origen.addEventListener(
+
+                    "shown.bs.modal",
+
+                    function() {
+
+                        const body = origen.querySelector(
+                            ".modal-body"
+                        );
+
+                        if (body) {
+
+                            body.scrollTop = scrollOrigen;
+
+                        }
+
+                        procesando = false;
+
+                    },
+
+                    {
+                        once: true
+                    }
+
+                );
+
+                bootstrap.Modal
+                    .getOrCreateInstance(origen)
+                    .show();
+
+            });
+
         })();
     </script>
 

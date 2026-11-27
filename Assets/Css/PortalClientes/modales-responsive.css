@@ -1,0 +1,673 @@
+
+/* ==========================================
+   PACIFICNORT SUITE
+   MODALES RESPONSIVE - FASE 7.4
+   ========================================== */
+
+#modalDetalleMaritima [hidden] {
+    display: none !important;
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+
+#modalDetalleMaritima .modal-dialog {
+    max-width: min(1200px, calc(100vw - 32px));
+}
+
+#modalDetalleMaritima .pn-detail-content {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+
+    box-shadow: 0 20px 65px rgba(15, 23, 42, .20);
+}
+
+/* ==========================================
+   ENCABEZADO
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+
+    padding: 20px 25px;
+
+    color: #ffffff;
+
+    background: linear-gradient(
+        135deg,
+        #0f172a,
+        #1e293b
+    );
+
+    border-bottom: none;
+}
+
+#modalDetalleMaritima .pn-detail-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    min-width: 0;
+}
+
+#modalDetalleMaritima .pn-detail-header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    border-radius: 12px;
+
+    background: rgba(56, 189, 248, .12);
+    color: #38bdf8;
+}
+
+#modalDetalleMaritima .pn-detail-header-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+#modalDetalleMaritima .pn-detail-heading-text {
+    min-width: 0;
+}
+
+#modalDetalleMaritima .pn-detail-eyebrow {
+    margin: 0 0 5px;
+
+    color: #a8b6c8;
+
+    font-size: .72rem;
+    font-weight: 600;
+
+    text-transform: uppercase;
+    letter-spacing: .8px;
+}
+
+#modalDetalleMaritima .pn-detail-operation {
+    color: #ffffff;
+
+    font-size: 1.35rem;
+    font-weight: 700;
+
+    overflow-wrap: anywhere;
+}
+
+#modalDetalleMaritima .btn-close {
+    flex-shrink: 0;
+
+    padding: 12px;
+    margin: 0;
+
+    opacity: .9;
+}
+
+/* ==========================================
+   CUERPO DEL MODAL
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-body {
+    padding: 24px;
+
+    background: #f4f7fa;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    overscroll-behavior: contain;
+}
+
+#modalDetalleMaritima .pn-detail-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1.65fr);
+
+    align-items: start;
+
+    gap: 18px;
+}
+
+/* ==========================================
+   SECCIONES DE INFORMACIÓN
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-card {
+    min-width: 0;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .04);
+}
+
+#modalDetalleMaritima .pn-detail-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 18px;
+
+    border-bottom: 1px solid #e8edf2;
+}
+
+#modalDetalleMaritima .pn-detail-card-header svg {
+    width: 20px;
+    height: 20px;
+
+    flex-shrink: 0;
+
+    color: #0284c7;
+}
+
+#modalDetalleMaritima .pn-detail-card-header h3 {
+    margin: 0;
+
+    color: #0f172a;
+
+    font-size: .95rem;
+    font-weight: 700;
+}
+
+#modalDetalleMaritima .pn-detail-card-body {
+    padding: 18px;
+}
+
+/* ==========================================
+   ESTATUS DE OPERACIÓN
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    padding: 14px;
+
+    margin-bottom: 15px;
+
+    background: #f8fafc;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+}
+
+#modalDetalleMaritima .pn-detail-status > span:first-child {
+    color: #64748b;
+
+    font-size: .8rem;
+    font-weight: 500;
+}
+
+#modalDetalleMaritima #mar_estatus {
+    max-width: 100%;
+
+    padding: 8px 13px;
+
+    border-radius: 50px;
+
+    font-size: .76rem;
+    font-weight: 600;
+
+    line-height: 1.4;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   RESUMEN
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-row {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(0, 3fr);
+
+    align-items: start;
+    gap: 15px;
+
+    padding: 13px 0;
+
+    border-bottom: 1px solid #edf2f7;
+}
+
+#modalDetalleMaritima .pn-detail-row span {
+    color: #64748b;
+    font-size: .8rem;
+}
+
+#modalDetalleMaritima .pn-detail-row strong {
+    color: #334155;
+
+    font-size: .84rem;
+    font-weight: 600;
+
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   ETD Y ETA
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-dates {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin: 20px 0;
+}
+
+#modalDetalleMaritima .pn-detail-date {
+    min-width: 0;
+
+    padding: 14px;
+
+    background: #f8fafc;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+#modalDetalleMaritima .pn-detail-date.is-eta {
+    background: #eff6ff;
+    border-color: #dbeafe;
+}
+
+#modalDetalleMaritima .pn-detail-date-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-bottom: 8px;
+
+    color: #64748b;
+
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+#modalDetalleMaritima .pn-detail-date-label svg {
+    width: 14px;
+    height: 14px;
+}
+
+#modalDetalleMaritima .pn-detail-date strong {
+    display: block;
+
+    color: #0f172a;
+
+    font-size: .95rem;
+    font-weight: 700;
+
+    overflow-wrap: anywhere;
+}
+
+#modalDetalleMaritima .pn-detail-date.is-eta strong {
+    color: #0369a1;
+}
+
+#modalDetalleMaritima .pn-detail-date small {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #64748b;
+    font-size: .69rem;
+}
+
+/* ==========================================
+   BILL OF LADING
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-bl {
+    padding: 14px;
+
+    background: #f8fafc;
+
+    border: 1px dashed #cbd5e1;
+    border-radius: 9px;
+}
+
+#modalDetalleMaritima .pn-detail-bl span {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #64748b;
+    font-size: .75rem;
+}
+
+#modalDetalleMaritima .pn-detail-bl strong {
+    display: block;
+
+    color: #0f172a;
+
+    font-size: .9rem;
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   CAMPOS DE INFORMACIÓN
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-fields {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+#modalDetalleMaritima .pn-detail-field {
+    min-width: 0;
+}
+
+#modalDetalleMaritima .pn-detail-field-full {
+    grid-column: 1 / -1;
+}
+
+#modalDetalleMaritima .pn-detail-field label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-bottom: 8px;
+
+    color: #475569;
+
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+#modalDetalleMaritima .pn-detail-field label svg {
+    width: 15px;
+    height: 15px;
+
+    color: #64748b;
+}
+
+#modalDetalleMaritima .pn-detail-field .form-control {
+    width: 100%;
+    min-height: 44px;
+
+    padding: 11px 12px;
+
+    background: #f8fafc;
+    color: #334155;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+
+    font-size: .85rem;
+    font-weight: 500;
+
+    line-height: 1.6;
+}
+
+#modalDetalleMaritima .pn-detail-field textarea {
+    resize: vertical;
+
+    min-height: 65px;
+    max-height: 240px;
+
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+}
+
+#modalDetalleMaritima .pn-detail-comment {
+    min-height: 110px !important;
+}
+
+#modalDetalleMaritima .pn-detail-field .form-control:focus {
+    border-color: #7dd3fc;
+
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, .10);
+}
+
+/* ==========================================
+   ESTADO DE CARGA Y ERROR
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    min-height: 110px;
+
+    padding: 20px;
+
+    color: #0369a1;
+    background: #eff6ff;
+
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+
+    font-size: .85rem;
+    font-weight: 500;
+
+    text-align: center;
+}
+
+#modalDetalleMaritima .pn-detail-message.is-error {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+/* ==========================================
+   PIE DEL MODAL
+   ========================================== */
+
+#modalDetalleMaritima .pn-detail-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+
+    gap: 15px;
+
+    padding: 15px 24px;
+
+    background: #ffffff;
+
+    border-top: 1px solid #e2e8f0;
+}
+
+#modalDetalleMaritima .pn-detail-readonly {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    margin: 0;
+
+    color: #64748b;
+    font-size: .75rem;
+}
+
+#modalDetalleMaritima .pn-detail-readonly svg {
+    width: 15px;
+    height: 15px;
+}
+
+#modalDetalleMaritima .pn-detail-close {
+    min-height: 42px;
+
+    padding: 10px 20px;
+
+    color: #ffffff;
+    background: #0f172a;
+
+    border: none;
+    border-radius: 8px;
+
+    font-size: .85rem;
+    font-weight: 600;
+
+    transition: background-color .2s ease;
+}
+
+#modalDetalleMaritima .pn-detail-close:hover {
+    background: #0369a1;
+}
+
+/* ==========================================
+   TABLETS Y TELÉFONOS
+   ========================================== */
+
+@media (max-width: 991.98px) {
+
+    #modalDetalleMaritima .modal-dialog {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+
+        margin: 0;
+    }
+
+    #modalDetalleMaritima .pn-detail-content {
+        height: 100%;
+        max-height: 100%;
+
+        border-radius: 0;
+    }
+
+    #modalDetalleMaritima .pn-detail-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 15px;
+    }
+
+    #modalDetalleMaritima .pn-detail-header {
+        padding: 16px;
+    }
+
+    #modalDetalleMaritima .pn-detail-body {
+        padding: 15px;
+    }
+
+    #modalDetalleMaritima .pn-detail-footer {
+        padding: 12px 16px;
+
+        padding-bottom: max(
+            12px,
+            env(safe-area-inset-bottom)
+        );
+    }
+
+}
+
+/* ==========================================
+   TELÉFONOS PEQUEÑOS
+   ========================================== */
+
+@media (max-width: 575.98px) {
+
+    #modalDetalleMaritima .pn-detail-header {
+        gap: 10px;
+        padding: 12px 15px;
+    }
+
+    #modalDetalleMaritima .pn-detail-header-icon {
+        width: 38px;
+        height: 38px;
+
+        border-radius: 9px;
+    }
+
+    #modalDetalleMaritima .pn-detail-header-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    #modalDetalleMaritima .pn-detail-heading {
+        gap: 10px;
+    }
+
+    #modalDetalleMaritima .pn-detail-eyebrow {
+        font-size: .6rem;
+        letter-spacing: .3px;
+    }
+
+    #modalDetalleMaritima .pn-detail-operation {
+        font-size: 1.1rem;
+    }
+
+    #modalDetalleMaritima .pn-detail-body {
+        padding: 12px;
+    }
+
+    #modalDetalleMaritima .pn-detail-card-header,
+    #modalDetalleMaritima .pn-detail-card-body {
+        padding: 14px;
+    }
+
+    #modalDetalleMaritima .pn-detail-fields {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 13px;
+    }
+
+    #modalDetalleMaritima .pn-detail-field .form-control {
+        font-size: 16px;
+    }
+
+    #modalDetalleMaritima .pn-detail-date {
+        padding: 10px;
+    }
+
+    #modalDetalleMaritima .pn-detail-date strong {
+        font-size: .85rem;
+    }
+
+    #modalDetalleMaritima .pn-detail-footer {
+        gap: 10px;
+    }
+
+    #modalDetalleMaritima .pn-detail-close {
+        width: 100%;
+        min-height: 44px;
+    }
+
+}
+
+/* ==========================================
+   ACCESIBILIDAD
+   ========================================== */
+
+#modalDetalleMaritima button:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    #modalDetalleMaritima * {
+        animation: none !important;
+        transition: none !important;
+    }
+
+}

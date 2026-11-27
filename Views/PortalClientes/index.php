@@ -9,6 +9,11 @@
   <!-- Bootstrap 5.3.x -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="<?php echo BASE_URL; ?>Assets/Css/PortalClientes/PortalClientes.css" rel="stylesheet">
+  <link href="<?= BASE_URL ?>Assets/Css/PortalClientes/dashboard.css" rel="stylesheet">
+  <link href="<?= BASE_URL ?>Assets/Css/PortalClientes/tabla-responsive.css" rel="stylesheet">
+  <link href="<?= BASE_URL ?>Assets/Css/PortalClientes/modales-responsive.css" rel="stylesheet">
+
+  <script src="<?= BASE_URL ?>Assets/Js/PortalClientes/TablaResponsive.js" defer></script>
   <style>
     .badge-asignacion {
       padding: .45rem .6rem;
@@ -294,100 +299,410 @@
 
 
       <!-- Filtros -->
-      <div class="card shadow-sm border-0 rounded-4 mb-3" id="cardFiltros">
+
+      <!-- ======================================
+     FILTROS RESPONSIVE
+     PACIFICNORT SUITE
+     ====================================== -->
+
+      <div class="card shadow-sm border-0 rounded-4 mb-3"
+        id="cardFiltros">
+
         <div class="card-body">
-          <div class="row g-3 align-items-end" id="rowFiltros">
-            <div class="col-12 col-md-3">
-              <label class="form-label" for="marSearch">Buscar</label>
+
+          <div id="rowFiltros">
+
+            <!-- Buscador siempre visible -->
+
+            <div class="pn-filter-field pn-filter-search">
+
+              <label class="form-label"
+                for="marSearch">
+
+                Buscar operación
+
+              </label>
+
               <div class="input-group">
-                <span class="input-group-text"><i data-feather="search"></i></span>
-                <input class="form-control" id="marSearch" placeholder="Operación, BL, contenedor..." />
+
+                <span class="input-group-text">
+
+                  <i data-feather="search"
+                    aria-hidden="true"></i>
+
+                </span>
+
+                <input
+                  type="text"
+                  class="form-control"
+                  id="marSearch"
+                  placeholder="Operación, BL, contenedor..."
+                  autocomplete="off">
+
               </div>
-            </div>
-
-
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="marEstatus">Estatus</label>
-              <select class="form-select" id="marEstatus" name="estatus">
-                <option value="0">Todos</option>
-
-                <?php if (!empty($data['estatus_op'])): ?>
-                  <?php foreach ($data['estatus_op'] as $estatus): ?>
-                    <option value="<?php echo (int)$estatus['id_estatus']; ?>">
-                      <?php echo htmlspecialchars($estatus['nombre']); ?>
-                    </option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-
-              </select>
-            </div>
-
-
-
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="marEtaIni">Rango (ETA)</label>
-              <input type="date" class="form-control" id="marEtaIni" />
-            </div>
-
-            <div class="col-12 col-md-2">
-              <label class="form-label" for="marEtaFin">&nbsp;</label>
-              <input type="date" class="form-control" id="marEtaFin" />
-            </div>
-
-            <div class="col-12 col-md-1 d-grid">
-              <button class="btn btn-dark" type="button" id="btnMarFiltrar">
-                <i data-feather="filter" class="me-1"></i> Filtrar
-              </button>
 
             </div>
-            <div class="col-12 col-md-1">
 
-              <button class="btn  btn-outline-secondary ms-auto" type="button" id="btnMarLimpiar">
-                <i data-feather="x-circle" class="me-1"></i> Limpiar
-              </button>
+            <!-- Botón de filtros para móviles -->
+
+            <button
+              type="button"
+              id="pnBtnFiltros"
+              aria-controls="pnFiltrosAvanzados"
+              aria-expanded="false">
+
+              <i data-feather="sliders"
+                aria-hidden="true"></i>
+
+              <span>Filtros</span>
+
+            </button>
+
+            <!-- Filtros avanzados -->
+
+            <div id="pnFiltrosAvanzados">
+
+              <!-- Estatus -->
+
+              <div class="pn-filter-field pn-filter-status">
+
+                <label class="form-label"
+                  for="marEstatus">
+
+                  Estatus
+
+                </label>
+
+                <select
+                  class="form-select"
+                  id="marEstatus"
+                  name="estatus">
+
+                  <option value="0">
+                    Todos
+                  </option>
+
+                  <?php if (!empty($data['estatus_op'])): ?>
+
+                    <?php foreach ($data['estatus_op'] as $estatus): ?>
+
+                      <option value="<?= (int)$estatus['id_estatus'] ?>">
+
+                        <?= htmlspecialchars(
+                          $estatus['nombre'],
+                          ENT_QUOTES,
+                          'UTF-8'
+                        ) ?>
+
+                      </option>
+
+                    <?php endforeach; ?>
+
+                  <?php endif; ?>
+
+                </select>
+
+              </div>
+
+              <!-- Fecha inicial -->
+
+              <div class="pn-filter-field">
+
+                <label class="form-label"
+                  for="marEtaIni">
+
+                  ETA desde
+
+                </label>
+
+                <input
+                  type="date"
+                  class="form-control"
+                  id="marEtaIni">
+
+              </div>
+
+              <!-- Fecha final -->
+
+              <div class="pn-filter-field">
+
+                <label class="form-label"
+                  for="marEtaFin">
+
+                  ETA hasta
+
+                </label>
+
+                <input
+                  type="date"
+                  class="form-control"
+                  id="marEtaFin">
+
+              </div>
+
+              <!-- Aplicar filtros -->
+
+              <div class="pn-filter-field">
+
+                <button
+                  class="btn btn-dark"
+                  type="button"
+                  id="btnMarFiltrar">
+
+                  <i data-feather="filter"
+                    class="me-1"
+                    aria-hidden="true"></i>
+
+                  Filtrar
+
+                </button>
+
+              </div>
+
+              <!-- Limpiar filtros -->
+
+              <div class="pn-filter-field">
+
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  id="btnMarLimpiar">
+
+                  <i data-feather="x-circle"
+                    class="me-1"
+                    aria-hidden="true"></i>
+
+                  Limpiar
+
+                </button>
+
+              </div>
+
             </div>
+
           </div>
 
-          <hr class="my-3">
+          <!-- Indicadores de filtros activos -->
 
-          <div class="d-flex flex-wrap align-items-center gap-2" id="filtrosActivosBar">
+          <div class="d-flex flex-wrap align-items-center gap-2"
+            id="filtrosActivosBar"></div>
 
-
-          </div>
         </div>
+
       </div>
+
+      <script>
+        (function() {
+
+          const card = document.getElementById("cardFiltros");
+
+          const button = document.getElementById("pnBtnFiltros");
+
+          if (!card || !button) return;
+
+          // Activar el comportamiento responsive.
+          card.classList.add("pn-filters-ready");
+
+          button.addEventListener("click", function() {
+
+            const expanded = card.classList.toggle(
+              "is-expanded"
+            );
+
+            button.setAttribute(
+              "aria-expanded",
+              String(expanded)
+            );
+
+          });
+
+        })();
+      </script>
+
 
       <!-- Tabla Marítimas/LBMF (misma tabla operaciones) -->
       <div class="card shadow-sm border-0 rounded-4" id="cardTablaMar">
+
         <div class="card-header bg-white border-0 pt-4 px-4">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div>
-              <div class="fw-semibold" id="lblListadoMar">Listado de operaciones</div>
+
+          <!-- Barra de herramientas -->
+
+          <div class="pn-table-toolbar">
+
+            <div class="pn-table-heading">
+
+              <h5 id="lblListadoMar">
+                Listado de operaciones
+              </h5>
+
+              <small>
+                Consulta y personaliza tu información.
+              </small>
+
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-              <select class="form-select form-select-sm" id="marPageSize" style="width:auto;">
+            <div class="pn-table-tools">
+
+              <!-- Cantidad de registros -->
+
+              <select
+                class="form-select form-select-sm"
+                id="marPageSize"
+                aria-label="Registros por página">
+
                 <option value="15">15 / pág</option>
                 <option value="30">30 / pág</option>
                 <option value="50">50 / pág</option>
-
                 <option value="100">100 / pág</option>
                 <option value="200">200 / pág</option>
                 <option value="1000">1000 / pág</option>
                 <option value="10000000">Todos</option>
+
               </select>
 
-              <div class="btn-group" role="group" aria-label="Exportaciones">
-                <button class="btn btn-sm btn-outline-success" id="btnExcelOpMar">
-                  <i data-feather="file-text" class="me-1"></i> Excel
-                </button>
-                <!--  <button class="btn btn-sm btn-outline-warning" id="btnPdfOpMar">
-                  <i data-feather="file" class="me-1"></i> PDF
-                </button> -->
-              </div>
+              <!-- Personalizar columnas -->
+
+              <button
+                type="button"
+                class="pn-table-button"
+                id="pnBtnColumnas"
+                aria-controls="pnColumnasPanel"
+                aria-expanded="false"
+                hidden>
+
+                <i data-feather="columns"
+                  aria-hidden="true"></i>
+
+                <span id="pnColumnasTexto">
+                  Columnas
+                </span>
+
+              </button>
+
+              <!-- Ampliar tabla -->
+
+              <button
+                type="button"
+                class="pn-table-button"
+                id="pnBtnAmpliarTabla"
+                aria-pressed="false"
+                hidden>
+
+                <i data-feather="maximize"
+                  aria-hidden="true"></i>
+
+                <span id="pnAmpliarTexto">
+                  Ampliar
+                </span>
+
+              </button>
+
+              <!-- Exportar Excel -->
+
+              <button
+                type="button"
+                class="pn-table-button pn-table-excel"
+                id="btnExcelOpMar">
+
+                <i data-feather="file-text"
+                  aria-hidden="true"></i>
+
+                <span>Excel</span>
+
+              </button>
+
             </div>
+
           </div>
+
+          <!-- Personalización de columnas -->
+
+          <div id="pnColumnasPanel"
+            class="pn-columns-panel"
+            hidden>
+
+            <div class="pn-columns-header">
+
+              <div>
+
+                <strong>Personalizar columnas</strong>
+
+                <p>
+                  Selecciona la información que deseas consultar.
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                class="pn-table-button"
+                id="pnCerrarColumnas"
+                aria-label="Cerrar personalización">
+
+                <i data-feather="x"
+                  aria-hidden="true"></i>
+
+              </button>
+
+            </div>
+
+            <!-- Vistas predeterminadas -->
+
+            <div class="pn-columns-presets">
+
+              <button
+                type="button"
+                id="pnMostrarTodas"
+                class="pn-table-button">
+
+                Mostrar todas
+
+              </button>
+
+              <button
+                type="button"
+                id="pnVistaCompacta"
+                class="pn-table-button">
+
+                Vista compacta
+
+              </button>
+
+            </div>
+
+            <!-- Columnas generadas desde JavaScript -->
+
+            <div id="pnColumnasLista"
+              class="pn-columns-grid">
+            </div>
+
+            <div class="pn-columns-footer">
+
+              <i data-feather="info"
+                aria-hidden="true"></i>
+
+              Tus preferencias se guardan automáticamente
+              en este navegador.
+
+            </div>
+
+          </div>
+
+          <!-- Indicaciones -->
+
+          <div class="pn-table-scroll-hint">
+
+            <i data-feather="move"
+              aria-hidden="true"></i>
+
+            <span>
+              Desliza la tabla para consultar todas las columnas.
+            </span>
+
+          </div>
+
         </div>
+
 
         <div class="card-body px-4 pb-4">
 
@@ -663,114 +978,382 @@
     </div>
   </div>
 
-  <!-- MODAL: Detalle Operación Marítima (Solo lectura) -->
-  <div class="modal fade" id="modalDetalleMaritima" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-xxl-wide">
-      <div class="modal-content rounded-4 border-0">
-        <div class="modal-header">
-          <div>
-            <h5 class="modal-title mb-0">Detalle de operación Marítima</h5>
-            <div class="small pn-muted">Solo lectura — <span id="mar_numero">PN-OP-2026-001</span></div>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
 
-        <div class="modal-body">
-          <div class="row g-3">
+  <!-- ==========================================
+     PACIFICNORT SUITE
+     MODAL DETALLE MARÍTIMO - FASE 7.4
+     ========================================== -->
 
-            <div class="col-12 col-lg-4">
-              <div class="card rounded-4 border-0 shadow-sm h-100">
-                <div class="card-body">
-                  <div class="fw-semibold mb-2">Resumen</div>
-                  <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between">
-                      <span class="pn-muted">Cliente</span> <span class="fw-semibold" id="mar_cliente">Andrea/Tommer</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                      <span class="pn-muted">Tipo</span> <span class="fw-semibold" id="mar_tipo">Marítimo</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                      <span class="pn-muted">Estatus</span> <span class="badge text-bg-success" id="mar_estatus">Abierta</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                      <span class="pn-muted">ETD</span> <span class="fw-semibold" id="mar_etd">2026-02-05</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                      <span class="pn-muted">ETA</span> <span class="fw-semibold" id="mar_eta">2026-02-12</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                      <span class="pn-muted">BL</span> <span class="fw-semibold" id="mar_bl">BL-883120</span>
-                    </li>
-                  </ul>
+  <div class="modal fade"
+    id="modalDetalleMaritima"
+    tabindex="-1"
+    aria-labelledby="pnMarModalTitle"
+    aria-hidden="true">
 
+    <div class="modal-dialog
+                modal-dialog-centered
+                modal-dialog-scrollable
+                modal-xl
+                modal-xxl-wide
+                modal-fullscreen-lg-down">
 
-                </div>
-              </div>
+      <div class="modal-content pn-detail-content">
+
+        <!-- ENCABEZADO -->
+
+        <div class="modal-header pn-detail-header">
+
+          <div class="pn-detail-heading">
+
+            <div class="pn-detail-header-icon">
+
+              <i data-feather="package"
+                aria-hidden="true"></i>
+
             </div>
 
-            <div class="col-12 col-lg-8">
-              <div class="card rounded-4 border-0 shadow-sm">
-                <div class="card-body">
-                  <div class="fw-semibold mb-2">Información</div>
+            <div class="pn-detail-heading-text">
 
-                  <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                      <label class="form-label pn-muted">Número de operación</label>
-                      <input class="form-control" id="mar_numero_input" value="PN-OP-2026-001" readonly>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <label class="form-label pn-muted">Puerto / Origen</label>
-                      <input class="form-control" id="mar_puerto" value="Lázaro Cárdenas" readonly>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <label class="form-label pn-muted">Naviera</label>
-                      <input class="form-control" id="mar_naviera" value="(Mock) Naviera X" readonly>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <label class="form-label pn-muted">Contenedor</label>
-                      <input class="form-control" id="mar_contenedor" value="MSCU1234567" readonly>
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label pn-muted">Comentario</label>
-                      <textarea class="form-control" id="mar_comentario" rows="3" readonly>(Mock) Comentario o notas visibles para cliente.</textarea>
-                    </div>
-                  </div>
+              <h2 id="pnMarModalTitle"
+                class="pn-detail-eyebrow">
 
-                  <hr class="my-3">
+                Detalle de operación marítima
 
-                  <div class="fw-semibold mb-2 d-none">Eventos (solo lectura)</div>
-                  <div class="table-responsive d-none">
-                    <table class="table table-sm align-middle">
-                      <thead>
-                        <tr>
-                          <th>Fecha</th>
-                          <th>Evento</th>
-                          <th>Comentario</th>
-                        </tr>
-                      </thead>
-                      <tbody id="mar_eventos">
-                        <tr>
-                          <td>2026-02-06</td>
-                          <td>Arribo</td>
-                          <td class="pn-muted">(Mock) Arribo registrado</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+              </h2>
 
-                </div>
+              <div id="mar_numero"
+                class="pn-detail-operation">
+
+                —
+
               </div>
+
             </div>
 
           </div>
+
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+            aria-label="Cerrar">
+
+          </button>
+
         </div>
 
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
+        <!-- CONTENIDO -->
+
+        <div class="modal-body pn-detail-body">
+
+          <!-- Estado de carga o error -->
+
+          <div id="pnMarDetalleEstado"
+            class="pn-detail-message"
+            role="status"
+            aria-live="polite"
+            hidden>
+
+            <span id="pnMarDetalleSpinner"
+              class="spinner-border spinner-border-sm"
+              aria-hidden="true">
+            </span>
+
+            <span id="pnMarDetalleMensaje">
+              Consultando operación...
+            </span>
+
+          </div>
+
+          <!-- Información de la operación -->
+
+          <div id="pnMarDetalleContenido"
+            class="pn-detail-grid"
+            hidden>
+
+            <!-- RESUMEN -->
+
+            <section class="pn-detail-card">
+
+              <div class="pn-detail-card-header">
+
+                <i data-feather="clipboard"
+                  aria-hidden="true"></i>
+
+                <h3>Resumen de operación</h3>
+
+              </div>
+
+              <div class="pn-detail-card-body">
+
+                <!-- Estatus -->
+
+                <div class="pn-detail-status">
+
+                  <span>Estatus actual</span>
+
+                  <span id="mar_estatus"
+                    class="badge text-bg-secondary">
+                    —
+                  </span>
+
+                </div>
+
+                <!-- Cliente -->
+
+                <div class="pn-detail-row">
+
+                  <span>Cliente</span>
+
+                  <strong id="mar_cliente">
+                    —
+                  </strong>
+
+                </div>
+
+                <!-- Tipo -->
+
+                <div class="pn-detail-row">
+
+                  <span>Tipo de operación</span>
+
+                  <strong id="mar_tipo">
+                    —
+                  </strong>
+
+                </div>
+
+                <!-- Fechas -->
+
+                <div class="pn-detail-dates">
+
+                  <div class="pn-detail-date">
+
+                    <div class="pn-detail-date-label">
+
+                      <i data-feather="calendar"></i>
+
+                      ETD
+
+                    </div>
+
+                    <strong id="mar_etd">
+                      —
+                    </strong>
+
+                    <small>Salida estimada</small>
+
+                  </div>
+
+                  <div class="pn-detail-date is-eta">
+
+                    <div class="pn-detail-date-label">
+
+                      <i data-feather="calendar"></i>
+
+                      ETA
+
+                    </div>
+
+                    <strong id="mar_eta">
+                      —
+                    </strong>
+
+                    <small>Llegada estimada</small>
+
+                  </div>
+
+                </div>
+
+                <!-- BL -->
+
+                <div class="pn-detail-bl">
+
+                  <span>Bill of Lading (BL)</span>
+
+                  <strong id="mar_bl">
+                    —
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            <!-- INFORMACIÓN LOGÍSTICA -->
+
+            <section class="pn-detail-card">
+
+              <div class="pn-detail-card-header">
+
+                <i data-feather="anchor"
+                  aria-hidden="true"></i>
+
+                <h3>Información logística</h3>
+
+              </div>
+
+              <div class="pn-detail-card-body">
+
+                <div class="pn-detail-fields">
+
+                  <!-- Número de operación -->
+
+                  <div class="pn-detail-field">
+
+                    <label for="mar_numero_input">
+                      Número de operación
+                    </label>
+
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="mar_numero_input"
+                      readonly>
+
+                  </div>
+
+                  <!-- Puerto -->
+
+                  <div class="pn-detail-field">
+
+                    <label for="mar_puerto">
+                      Puerto / Origen
+                    </label>
+
+                    <textarea
+                      class="form-control"
+                      id="mar_puerto"
+                      rows="2"
+                      readonly></textarea>
+
+                  </div>
+
+                  <!-- Naviera -->
+
+                  <div class="pn-detail-field">
+
+                    <label for="mar_naviera">
+                      Naviera
+                    </label>
+
+                    <textarea
+                      class="form-control"
+                      id="mar_naviera"
+                      rows="2"
+                      readonly></textarea>
+
+                  </div>
+
+                  <!-- Contenedores -->
+
+                  <div class="pn-detail-field">
+
+                    <label for="mar_contenedor">
+                      Contenedor(es)
+                    </label>
+
+                    <textarea
+                      class="form-control"
+                      id="mar_contenedor"
+                      rows="2"
+                      readonly></textarea>
+
+                  </div>
+
+                  <!-- Comentarios -->
+
+                  <div class="pn-detail-field pn-detail-field-full">
+
+                    <label for="mar_comentario">
+
+                      <i data-feather="message-square"
+                        aria-hidden="true"></i>
+
+                      Comentario
+
+                    </label>
+
+                    <textarea
+                      class="form-control pn-detail-comment"
+                      id="mar_comentario"
+                      rows="4"
+                      readonly></textarea>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            <!--
+                        EVENTOS LOGÍSTICOS
+
+                        Se conserva el tbody original
+                        para mantener compatibilidad.
+
+                        Su visualización permanece deshabilitada.
+                    -->
+
+            <div class="d-none">
+
+              <table class="table table-sm">
+
+                <thead>
+
+                  <tr>
+
+                    <th>Fecha</th>
+                    <th>Evento</th>
+                    <th>Comentario</th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody id="mar_eventos"></tbody>
+
+              </table>
+
+            </div>
+
+          </div>
+
         </div>
+
+        <!-- PIE DEL MODAL -->
+
+        <div class="modal-footer pn-detail-footer">
+
+          <div class="pn-detail-readonly">
+
+            <i data-feather="lock"
+              aria-hidden="true"></i>
+
+            Información de solo lectura
+
+          </div>
+
+          <button
+            type="button"
+            class="pn-detail-close"
+            data-bs-dismiss="modal">
+
+            Cerrar detalle
+
+          </button>
+
+        </div>
+
       </div>
+
     </div>
+
   </div>
+
 
   <!-- MODAL: Detalle Operación FO (Solo lectura) -->
   <div class="modal fade" id="modalDetalleFO" tabindex="-1" aria-hidden="true">

@@ -1,0 +1,570 @@
+
+/* ==========================================
+   PACIFICNORT SUITE
+   OPERACIONES POR PARTIDA - FASE 7.5
+   ========================================== */
+
+/* INDICADORES */
+
+#pnContent #kpiRow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#pnContent #kpiRow .pn-kpi-pro {
+    min-height: 100px;
+}
+
+/* ==========================================
+   FILTROS
+   ========================================== */
+
+#cardFiltrosPartida {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .04) !important;
+}
+
+#cardFiltrosPartida [hidden] {
+    display: none !important;
+}
+
+#cardFiltrosPartida .card-body {
+    padding: 18px;
+}
+
+#pnPartidaFiltros {
+    display: grid;
+    grid-template-columns:
+        minmax(180px, 1.4fr)
+        repeat(5, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+}
+
+#pnPartidaFiltrosAvanzados {
+    display: contents;
+}
+
+#pnPartidaFiltros > div,
+#pnPartidaFiltrosAvanzados > div {
+    min-width: 0;
+}
+
+#pnPartidaFiltros .form-label {
+    color: #475569;
+    font-size: .78rem;
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+
+#pnPartidaFiltros .form-control,
+#pnPartidaFiltros .form-select,
+#pnPartidaFiltros .input-group-text {
+    min-height: 44px;
+    min-width: 0;
+    border-color: #dce3ea;
+    font-size: .83rem;
+}
+
+#pnPartidaFiltros .form-control:focus,
+#pnPartidaFiltros .form-select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, .12);
+}
+
+#pnPartidaFiltros .input-group {
+    flex-wrap: nowrap;
+}
+
+#pnPartidaFiltros button {
+    min-height: 44px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+#pnPartidaFiltros svg {
+    width: 16px;
+    height: 16px;
+}
+
+#pnBtnFiltrosPartida {
+    display: none;
+}
+
+#pnBtnFiltrosPartida[aria-expanded="true"] {
+    color: #ffffff;
+    background: #0f172a;
+    border-color: #0f172a;
+}
+
+.pn-partida-filter-actions {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+#partidaFiltrosActivosBar {
+    margin-top: 12px;
+}
+
+#partidaFiltrosActivosBar .badge {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
+/* ==========================================
+   TABLA DE PARTIDAS
+   ========================================== */
+
+#cardTablaPartida #tblOpsPartida {
+    width: max-content;
+    min-width: 100%;
+}
+
+#cardTablaPartida #tblOpsPartida th,
+#cardTablaPartida #tblOpsPartida td {
+    font-size: .78rem;
+}
+
+#cardTablaPartida #tblOpsPartida
+tbody td:nth-child(3):not([colspan]) {
+    min-width: 140px;
+    max-width: 260px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Estatus extensos */
+
+#cardTablaPartida #tblOpsPartida .badge {
+    max-width: 180px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+
+/* Notas y acciones */
+
+#cardTablaPartida #tblOpsPartida
+th:last-child,
+#cardTablaPartida #tblOpsPartida
+td:last-child:not([colspan]) {
+    min-width: 180px;
+    max-width: 250px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/*
+   La última columna contiene notas extensas.
+
+   No se fija horizontalmente porque ocuparía
+   demasiado espacio disponible en móviles.
+*/
+
+#cardTablaPartida #tblOpsPartida
+tbody td:last-child:not([colspan]) {
+    position: static;
+    box-shadow: none;
+}
+
+#cardTablaPartida #tblOpsPartida
+thead th:last-child {
+    right: auto;
+    box-shadow: 0 1px 0 #dce3ea;
+}
+
+/* Botones de productos y envíos */
+
+#cardTablaPartida #tblOpsPartida
+.js-ver-factura,
+#cardTablaPartida #tblOpsPartida
+.js-ver-envio {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    min-height: 34px;
+
+    border-radius: 7px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+#cardTablaPartida #tblOpsPartida button svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Paginación dentro del card-body */
+
+#cardTablaPartida #partidaPagingWrap {
+    flex-shrink: 0;
+    padding: 8px 0;
+}
+
+/* ==========================================
+   MODALES DE FACTURA Y ENVÍO
+   ========================================== */
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-content {
+    border: none;
+    overflow: hidden;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-header {
+    padding: 20px 24px;
+    gap: 12px;
+
+    color: #ffffff;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+
+    border-bottom: none;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-header .text-muted {
+    color: #b8c6d8 !important;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    flex-shrink: 0;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-body {
+    background: #f4f7fa;
+    padding: 20px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.modal-body .card {
+    min-width: 0;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .04) !important;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-meta-label {
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-meta-value {
+    color: #0f172a;
+    font-size: .9rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+#me_notas {
+    white-space: pre-wrap;
+}
+
+/* Facturas incluidas en envíos */
+
+#me_facturasWrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#me_facturasWrap .factura-chip {
+    margin: 0;
+    padding: 10px 12px !important;
+    font-size: .78rem !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   TABLAS INTERNAS DE LOS MODALES
+   ========================================== */
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.table-responsive {
+    max-height: 50vh;
+    overflow: auto;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+#tblModalFacturaProductos {
+    min-width: 1100px;
+}
+
+#tblModalEnvioDetalle {
+    min-width: 650px;
+}
+
+:is(#tblModalFacturaProductos, #tblModalEnvioDetalle)
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+
+    background: #eef2f7;
+    color: #475569;
+
+    font-size: .73rem;
+    white-space: nowrap;
+}
+
+:is(#tblModalFacturaProductos, #tblModalEnvioDetalle)
+td {
+    padding: 10px;
+    font-size: .8rem;
+}
+
+:is(#tblModalFacturaProductos, #tblModalEnvioDetalle)
+td:first-child:not([colspan]) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #ffffff;
+    box-shadow: 4px 0 7px -6px #64748b;
+}
+
+:is(#tblModalFacturaProductos, #tblModalEnvioDetalle)
+thead th:first-child {
+    left: 0;
+    z-index: 3;
+}
+
+/* ==========================================
+   GALERÍA DE IMÁGENES
+   ========================================== */
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-thumb-grid {
+    grid-template-columns:
+        repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+    gap: 12px;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-thumb-grid > .pn-empty {
+    grid-column: 1 / -1;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-thumb {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-thumb img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+:is(#modalPartidaFactura, #modalPartidaEnvio)
+.pn-thumb-caption {
+    overflow-wrap: anywhere;
+}
+
+/* Visor de imagen */
+
+#modalVisorImagen .modal-body {
+    background: #0f172a !important;
+}
+
+#visorImagenFull {
+    display: block;
+    margin: auto;
+
+    max-width: 100%;
+    max-height: 75vh;
+
+    object-fit: contain;
+}
+
+/* ==========================================
+   TABLETS
+   ========================================== */
+
+@media (max-width: 1199.98px) {
+
+    #pnPartidaFiltros {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    #cardFiltrosPartida.pn-filters-ready
+    #pnBtnFiltrosPartida:not([hidden]) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    #pnPartidaFiltrosAvanzados {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+
+        border-top: 1px solid #e2e8f0;
+        padding-top: 14px;
+    }
+
+    #cardFiltrosPartida.pn-filters-ready:not(.is-expanded)
+    #pnPartidaFiltrosAvanzados {
+        display: none;
+    }
+
+    .pn-partida-filter-actions button {
+        flex: 1;
+    }
+
+}
+
+/* ==========================================
+   MODALES EN PANTALLA COMPLETA
+   ========================================== */
+
+@media (max-width: 991.98px) {
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .modal-dialog {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .modal-content {
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0 !important;
+    }
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .modal-header {
+        padding: 14px;
+    }
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .modal-body {
+        padding: 12px;
+    }
+
+}
+
+/* ==========================================
+   TELÉFONOS
+   ========================================== */
+
+@media (max-width: 767.98px) {
+
+    #pnContent #kpiRow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #pnContent #kpiRow .pn-kpi-pro {
+        min-height: 85px;
+    }
+
+    #kpiRow .min-w-0 > .small:last-child {
+        display: none;
+    }
+
+    #cardFiltrosPartida .card-body {
+        padding: 12px;
+    }
+
+    #pnPartidaFiltros .form-control,
+    #pnPartidaFiltros .form-select {
+        font-size: 16px;
+    }
+
+    #partidaSearch::placeholder {
+        font-size: .75rem;
+    }
+
+    #cardTablaPartida .pn-table-tools {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #cardTablaPartida #partidaPageSize {
+        grid-column: 1 / -1;
+    }
+
+    #cardTablaPartida #tblOpsPartida td,
+    #cardTablaPartida #tblOpsPartida th {
+        font-size: .72rem;
+    }
+
+    #cardTablaPartida #tblOpsPartida button {
+        min-height: 38px;
+    }
+
+    #btnRefrescarPartida {
+        min-height: 40px;
+        font-size: .78rem;
+    }
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .modal-footer button {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .pn-thumb-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    :is(#modalPartidaFactura, #modalPartidaEnvio)
+    .modal-body .card-body > .row > div:not(.col-md-12) {
+        flex: 0 0 auto;
+        width: 50%;
+    }
+
+    #modalPartidaEnvio
+    .modal-body .card-body > .row > .col-12:not([class*="col-md-"]) {
+        width: 100%;
+    }
+
+}
+
+/* ACCESIBILIDAD */
+
+.pn-thumb:focus-visible,
+#pnBtnFiltrosPartida:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .pn-thumb,
+    .pn-table-button {
+        transition: none !important;
+    }
+
+}

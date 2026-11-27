@@ -1,0 +1,100 @@
+/* PacificNort Suite | Fase 7.7 | estilos aislados de la landing */
+#tecnologia{--suite-navy:#0c1c2c;--suite-blue:#38bdf8;--suite-orange:#ff9c2a;--suite-muted:#b6c7d7;position:relative;padding:96px 0;background:radial-gradient(ellipse at 85% 25%,#143e58 0%,transparent 58%),#0c1c2c;color:#fff;scroll-margin-top:120px;overflow:hidden}
+#tecnologia *,#tecnologia *::before,#tecnologia *::after{box-sizing:border-box;transition:none}
+#tecnologia [hidden]{display:none!important}
+#tecnologia .pn-suite-container{max-width:1320px;margin:auto;padding-inline:24px}
+#tecnologia .pn-suite-intro{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.5fr);align-items:center;gap:42px}
+#tecnologia .pn-suite-copy,#tecnologia .pn-suite-showcase{min-width:0}
+#tecnologia .pn-suite-eyebrow{display:flex;align-items:center;gap:9px;color:#7dd3fc;letter-spacing:2px;font-size:.72rem;font-weight:700;margin-bottom:20px}
+#tecnologia .pn-suite-eyebrow>span{width:27px;height:2px;background:var(--suite-orange)}
+#tecnologia .pn-suite-brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:1.15rem;line-height:1.2;margin-bottom:24px;color:#fff}
+#tecnologia .pn-suite-anchor{display:grid;place-items:center;width:44px;height:44px;border-radius:11px;background:#0284c7;color:#fff;font-size:1.35rem;flex:none}
+#tecnologia .pn-suite-brand strong{color:#7dd3fc}
+#tecnologia .pn-suite-brand small{display:block;color:var(--suite-muted);font-size:.7rem;font-weight:400;margin-top:4px}
+#tecnologia h2{font-size:clamp(2rem,3.6vw,3.3rem);line-height:1.15;font-weight:750;letter-spacing:-.045em;color:#fff;margin:0 0 20px;text-transform:none}
+#tecnologia h2 span{color:#7dd3fc}
+#tecnologia .pn-suite-copy>p{font-size:1rem;color:var(--suite-muted);line-height:1.75;margin:0 0 27px}
+#tecnologia .pn-suite-actions{display:flex;flex-wrap:wrap;gap:10px}
+#tecnologia .pn-suite-actions a{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;min-height:45px;padding:11px 15px;border-radius:8px;font-size:.83rem;font-weight:650;transition:background .2s,color .2s}
+#tecnologia .pn-suite-primary{background:var(--suite-orange);color:#0c1c2c;border:1px solid var(--suite-orange)}
+#tecnologia .pn-suite-primary:hover{background:#ffbb6b;color:#0c1c2c}
+#tecnologia .pn-suite-secondary{border:1px solid #557188;color:#fff;background:transparent}
+#tecnologia .pn-suite-secondary:hover{background:#233f55;color:#fff}
+#tecnologia .pn-suite-showcase{border:1px solid #385269;border-radius:17px;background:#14283b;padding:16px;box-shadow:0 22px 55px #050e1870}
+#tecnologia .pn-suite-showcase-label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;color:#e4edf6;font-size:.8rem;font-weight:600}
+#tecnologia .pn-suite-showcase-label i{color:#7dd3fc;margin-right:5px}
+#tecnologia .pn-suite-demo-label{color:#c5d7e7;border:1px solid #53738e;border-radius:5px;padding:4px 7px;font-size:.65rem;letter-spacing:1px}
+#tecnologia .pn-suite-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px}
+#tecnologia .pn-suite-tabs button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1 1 auto;min-height:40px;border:1px solid #365168;border-radius:7px;background:#1b3449;color:#d7e4ef;font-size:.73rem;font-weight:600;padding:8px 9px;cursor:pointer;transition:background .2s}
+#tecnologia .pn-suite-tabs button:hover{background:#24485f}
+#tecnologia .pn-suite-tabs button[aria-selected=true]{background:#0c5c8a;color:#fff;border-color:#7dd3fc}
+#tecnologia .pn-suite-window{overflow:hidden;background:#f4f7fa;border:1px solid #3b566d;border-radius:10px}
+#tecnologia .pn-suite-windowbar{display:flex;justify-content:space-between;align-items:center;background:#263c51;color:#d3e2f0;padding:8px 10px;font-size:.64rem;gap:8px}
+#tecnologia .pn-suite-dots{display:flex;gap:4px;flex:none}
+#tecnologia .pn-suite-dots i{width:6px;height:6px;border-radius:50%;background:#7a96ac}
+#tecnologia .pn-suite-dots i:first-child{background:#f3a3a3}#tecnologia .pn-suite-dots i:nth-child(2){background:#e7bf77}#tecnologia .pn-suite-dots i:last-child{background:#7acba0}
+#tecnologia .pn-suite-window img{display:block;width:100%;height:auto;aspect-ratio:1440/850;object-fit:contain}
+#tecnologia .pn-suite-devices{display:flex;justify-content:center;align-items:flex-end;gap:18px;min-height:0;background:radial-gradient(ellipse at center,#31536a,#13283a);border-radius:10px;padding:18px 18px 0;overflow:hidden;aspect-ratio:1440/900}
+#tecnologia .pn-suite-devices figure{margin:0;min-width:0;background:#111827;border:6px solid #111827;border-radius:14px 14px 0 0;overflow:hidden;box-shadow:0 8px 20px #0006}
+#tecnologia .pn-suite-tablet{width:55%;max-width:350px}#tecnologia .pn-suite-phone{width:25%;max-width:157px;border-radius:17px 17px 0 0!important}
+#tecnologia .pn-suite-devices img{width:100%;height:auto;display:block}
+#tecnologia .pn-suite-panel-caption{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:13px}
+#tecnologia .pn-suite-panel-caption p{color:#d1deea;font-size:.8rem;line-height:1.6;margin:0}
+#tecnologia .pn-suite-zoom{display:inline-flex;align-items:center;gap:6px;min-height:38px;color:#eaf5ff;background:#233e54;border:1px solid #557188;border-radius:7px;padding:8px 10px;font-size:.72rem;white-space:nowrap;cursor:pointer}
+#tecnologia .pn-suite-zoom:hover{background:#315a76}
+#tecnologia .pn-suite-disclaimer{color:#aebfd0;font-size:.69rem;line-height:1.5;margin:12px 0 0}
+#tecnologia .pn-suite-features{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:42px}
+#tecnologia .pn-suite-features article{border:1px solid #31495d;background:#14283b;border-radius:12px;padding:19px;min-width:0}
+#tecnologia .pn-suite-feature-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:9px;background:#1b405a;color:#7dd3fc;font-size:1.2rem;margin-bottom:13px}
+#tecnologia .pn-suite-features h3{font-size:.92rem;line-height:1.4;color:#fff;margin:0 0 6px;font-weight:650}
+#tecnologia .pn-suite-features p{font-size:.8rem;color:var(--suite-muted);line-height:1.65;margin:0}
+#tecnologia :is(a,button,[tabindex]):focus-visible{outline:3px solid #7dd3fc;outline-offset:3px}
+/* Visor nativo: no depende de Bootstrap ni afecta los modales del portal. */
+#tecnologia .pn-suite-dialog{position:fixed;inset:0;margin:auto;max-width:min(1280px,96vw);width:96vw;max-height:94dvh;padding:0;border:1px solid #385269;border-radius:12px;background:#13283a;color:#fff;overflow:auto}
+#tecnologia .pn-suite-dialog:not([open]){display:none}
+#tecnologia .pn-suite-dialog::backdrop{background:rgba(3,12,23,.84)}
+#tecnologia .pn-suite-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;background:#13283a;padding:12px 16px;z-index:1}
+#tecnologia .pn-suite-dialog-header h3{font-size:1rem;color:#fff;margin:0}
+#tecnologia .pn-suite-dialog-close{display:grid;place-items:center;background:#28445b;color:#fff;border:1px solid #567188;border-radius:7px;width:44px;height:44px;cursor:pointer}
+#tecnologia .pn-suite-dialog-body{padding:0 12px;overflow:auto;max-height:calc(94dvh - 126px)}
+#tecnologia .pn-suite-dialog-body>.pn-suite-window{min-width:840px}
+#tecnologia .pn-suite-dialog-body .pn-suite-devices{aspect-ratio:auto;align-items:center;padding:15px;min-width:0}
+#tecnologia .pn-suite-dialog-body .pn-suite-devices figure{border-radius:14px!important;align-self:center}
+#tecnologia .pn-suite-dialog-note{margin:0;padding:12px 16px;font-size:.75rem;color:#b6c7d7}
+@media(max-width:1199.98px){#tecnologia .pn-suite-intro{gap:26px;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}#tecnologia .pn-suite-tabs button{font-size:.7rem}}
+@media(max-width:991.98px){#tecnologia{padding:72px 0;scroll-margin-top:85px}#tecnologia .pn-suite-intro{grid-template-columns:minmax(0,1fr)}#tecnologia .pn-suite-copy{max-width:720px}#tecnologia h2 br{display:none}#tecnologia .pn-suite-features{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:25px}}
+@media(max-width:575.98px){#tecnologia{padding:52px 0}#tecnologia .pn-suite-container{padding-inline:15px}#tecnologia .pn-suite-intro{gap:24px}#tecnologia .pn-suite-actions a{flex:1 1 100%}#tecnologia .pn-suite-showcase{padding:10px;border-radius:12px}#tecnologia .pn-suite-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#tecnologia .pn-suite-tabs button:last-child{grid-column:1/-1}#tecnologia .pn-suite-panel-caption{align-items:flex-start;flex-direction:column}#tecnologia .pn-suite-zoom{width:100%;justify-content:center;min-height:44px}#tecnologia .pn-suite-features{gap:9px}#tecnologia .pn-suite-features article{padding:13px}#tecnologia .pn-suite-features h3{font-size:.82rem}#tecnologia .pn-suite-features p{font-size:.73rem}#tecnologia .pn-suite-devices{gap:10px;padding:10px 10px 0}#tecnologia .pn-suite-dialog-body .pn-suite-devices{flex-wrap:wrap}#tecnologia .pn-suite-dialog-body .pn-suite-devices figure{width:100%;max-width:360px}#tecnologia .pn-suite-dialog-body .pn-suite-devices .pn-suite-phone{max-width:250px}}
+@media(prefers-reduced-motion:reduce){#tecnologia *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Fase 7.7.1 — laptop y teléfono sincronizados por pestaña. */
+#tecnologia .pn-suite-intro{grid-template-columns:minmax(0,.72fr) minmax(0,1.65fr);gap:32px}
+#tecnologia .pn-suite-showcase{background:linear-gradient(145deg,#193348,#102234);padding:16px}
+#tecnologia .pn-suite-device-stage{position:relative;display:flex;align-items:flex-end;justify-content:flex-start;isolation:isolate;aspect-ratio:1.72;padding:2.8% 4% 4.2%;background:radial-gradient(ellipse at 49% 48%,#36617b 0%,#1d3a50 44%,#12273a 75%);border-radius:10px;overflow:hidden}
+#tecnologia .pn-suite-device-stage::after{content:"";position:absolute;z-index:-1;bottom:2%;left:3%;width:93%;height:9%;background:#050e19;filter:blur(13px);border-radius:50%;opacity:.65}
+#tecnologia .pn-suite-laptop{position:relative;width:85%;margin:0;filter:drop-shadow(0 10px 9px #0007)}
+#tecnologia .pn-suite-laptop-lid{position:relative;background:#0a1019;border:1px solid #8794a4;border-radius:clamp(5px,1vw,13px) clamp(5px,1vw,13px) 3px 3px;padding:3.2% 1.7% 2%;box-shadow:inset 0 0 0 2px #252e3a}
+#tecnologia .pn-suite-camera{position:absolute;top:2%;left:50%;transform:translateX(-50%);width:1.1%;aspect-ratio:1;border-radius:50%;background:#35475c}
+#tecnologia .pn-suite-laptop-screen{aspect-ratio:2160/1275;background:#f4f7fa;overflow:hidden;border-radius:2px}
+#tecnologia .pn-suite-laptop-screen img,#tecnologia .pn-suite-handset-screen img{display:block;width:100%;height:100%;object-fit:contain}
+#tecnologia .pn-suite-laptop-base{position:relative;margin-left:-4%;width:108%;height:clamp(5px,1.5vw,15px);background:linear-gradient(#d5dce4,#9ca9b7 40%,#637384 85%,#3b4754);border-radius:0 0 48% 48% / 0 0 70% 70%;box-shadow:0 3px 4px #0005}
+#tecnologia .pn-suite-laptop-base::before{content:"";position:absolute;top:0;left:44%;width:12%;height:40%;background:#536272;border-radius:0 0 4px 4px}
+#tecnologia .pn-suite-handset{position:absolute;right:1.4%;bottom:3%;width:24%;margin:0;background:linear-gradient(145deg,#8291a0,#2f3d4b 28%,#111822 70%,#8291a0);padding:.55%;border-radius:13% / 6.5%;box-shadow:-8px 8px 20px #0008;z-index:2}
+#tecnologia .pn-suite-handset-screen{border:clamp(2px,.48vw,6px) solid #080c13;aspect-ratio:1/2;border-radius:11% / 5.5%;overflow:hidden;background:#f4f7fa}
+#tecnologia .pn-suite-handset-camera{position:absolute;top:1.7%;left:40%;width:20%;height:1.3%;border-radius:30px;background:#090d15;pointer-events:none}
+#tecnologia .pn-suite-zoom-gallery{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,260px);gap:14px;align-items:start}
+#tecnologia .pn-suite-zoom-gallery figure{margin:0;min-width:0}
+#tecnologia .pn-suite-zoom-gallery figcaption{font-size:.78rem;margin:0 0 8px;color:#d1deea}
+#tecnologia .pn-suite-zoom-scroll{overflow:auto;border:1px solid #385269;border-radius:8px;background:#f4f7fa}
+#tecnologia .pn-suite-zoom-scroll img{width:100%;height:auto;display:block}
+#tecnologia .pn-suite-zoom-desktop img{min-width:780px}
+@media(max-width:991.98px){#tecnologia .pn-suite-intro{grid-template-columns:minmax(0,1fr);gap:26px}}
+@media(max-width:575.98px){#tecnologia .pn-suite-showcase{padding:10px}#tecnologia .pn-suite-device-stage{aspect-ratio:1.65}#tecnologia .pn-suite-zoom-gallery{grid-template-columns:minmax(0,1fr)}#tecnologia .pn-suite-zoom-mobile{order:-1;width:min(100%,300px);justify-self:center}#tecnologia .pn-suite-zoom-desktop img{min-width:720px}}
+
+/* Fase 7.7.2 — reproducción automática y transición de pantallas. */
+#tecnologia .pn-suite-playback-controls{display:inline-flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+#tecnologia .pn-suite-playback{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:5px 9px;border:1px solid #53738e;border-radius:6px;background:#233e54;color:#eaf5ff;font:inherit;font-size:.7rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background-color .2s ease}
+#tecnologia .pn-suite-playback:hover{background:#315a76}
+#tecnologia .pn-suite-screen-enter :is(.pn-suite-laptop-screen,.pn-suite-handset-screen) img{animation:pnSuiteScreenIn .6s ease-out both}
+@keyframes pnSuiteScreenIn{from{opacity:.12}to{opacity:1}}
+@media(max-width:575.98px){#tecnologia .pn-suite-playback{min-height:44px}#tecnologia .pn-suite-showcase-label{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){#tecnologia .pn-suite-screen-enter :is(.pn-suite-laptop-screen,.pn-suite-handset-screen) img{animation:none!important}#tecnologia .pn-suite-playback{transition:none!important}}

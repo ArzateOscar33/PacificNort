@@ -1,0 +1,336 @@
+
+/* ==========================================
+   PACIFICNORT - NAVEGACIÓN CORPORATIVA
+   ========================================== */
+
+body {
+    font-family: "Poppins", sans-serif;
+}
+
+/* Encabezado principal */
+
+#pn-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030;
+    box-shadow: 0 4px 20px rgba(12, 28, 44, 0.08);
+}
+
+/* ==========================================
+   BARRA SUPERIOR
+   ========================================== */
+
+.pn-topbar {
+    background: var(--dark-color);
+    color: #ffffff;
+    font-size: 0.75rem;
+}
+
+.pn-topbar-content {
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.pn-topbar-contact {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.pn-topbar a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #e2e8f0;
+    text-decoration: none;
+}
+
+.pn-topbar a:hover {
+    color: var(--accent-color);
+}
+
+.pn-topbar i {
+    color: var(--accent-color);
+    font-size: 0.85rem;
+}
+
+.pn-topbar-location {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e2e8f0;
+}
+
+/* ==========================================
+   NAVEGACIÓN PRINCIPAL
+   ========================================== */
+
+.pn-nav {
+    background: #ffffff;
+}
+
+.pn-nav-container {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* Logotipo */
+
+.pn-brand {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.pn-brand img {
+    height: 64px;
+    width: auto;
+    max-width: 190px;
+    object-fit: contain;
+}
+
+/* Enlaces */
+
+#pn-header .pn-nav-links {
+    margin-left: auto;
+    margin-right: auto;
+    align-items: center;
+    gap: 2px;
+}
+
+#pn-header .pn-nav-links .nav-link {
+    position: relative;
+    color: var(--dark-color) !important;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    padding: 14px 10px !important;
+    margin: 0;
+}
+
+#pn-header .pn-nav-links .nav-link:hover,
+#pn-header .pn-nav-links .nav-link.active {
+    color: var(--primary-color) !important;
+}
+
+#pn-header .pn-nav-links .nav-link::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 4px;
+    background: var(--accent-color);
+    transition: width 0.25s ease;
+}
+
+#pn-header .pn-nav-links .nav-link:hover::after,
+#pn-header .pn-nav-links .nav-link.active::after {
+    width: 65%;
+}
+
+/* ==========================================
+   BOTONES PRINCIPALES
+   ========================================== */
+
+.pn-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pn-nav-tracking,
+.pn-nav-login {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 15px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.25s ease,
+                color 0.25s ease;
+}
+
+/* Botón rastreo */
+
+.pn-nav-tracking {
+    color: var(--primary-color);
+    background: #ffffff;
+    border: 1px solid var(--primary-color);
+}
+
+.pn-nav-tracking:hover {
+    background: #edf4f8;
+    color: var(--primary-color);
+}
+
+/* Botón iniciar sesión */
+
+.pn-nav-login {
+    background: var(--primary-color);
+    color: #ffffff;
+    border: 1px solid var(--primary-color);
+}
+
+.pn-nav-login:hover {
+    background: var(--dark-color);
+    border-color: var(--dark-color);
+    color: #ffffff;
+}
+
+.pn-nav-login i,
+.pn-nav-tracking i {
+    font-size: 1rem;
+}
+
+/* Accesibilidad */
+
+#pn-header a:focus-visible,
+#pn-header button:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+}
+
+/* Evitar que el menú cubra las secciones */
+
+#hero,
+#nosotros,
+#servicios,
+#galeria,
+#contacto,
+#ubicacion,
+#rastreo {
+    scroll-margin-top: 120px;
+}
+
+/* ==========================================
+   MENÚ MÓVIL
+   ========================================== */
+
+.pn-menu-toggle {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: #f1f5f9;
+    color: var(--dark-color);
+    border: 0;
+    border-radius: 8px;
+    font-size: 1.8rem;
+}
+
+.pn-menu-toggle:focus {
+    box-shadow: none;
+}
+
+@media (min-width: 1200px) {
+
+    #pnNavbar {
+        flex: 1;
+    }
+
+}
+
+@media (max-width: 1199.98px) {
+
+    .pn-topbar {
+        display: none;
+    }
+
+    .pn-nav-container {
+        min-height: 76px;
+    }
+
+    .pn-brand img {
+        height: 60px;
+    }
+
+    #pn-header #pnNavbar {
+        flex-basis: 100%;
+        width: 100%;
+        background: #ffffff;
+        margin: 0;
+        padding: 0 0 20px;
+        border-radius: 0;
+        max-height: calc(100vh - 76px);
+        max-height: calc(100dvh - 76px);
+        overflow-y: auto;
+    }
+
+    #pn-header .pn-nav-links {
+        align-items: stretch;
+        margin: 0;
+        gap: 3px;
+    }
+
+    #pn-header .pn-nav-links .nav-link {
+        text-align: left;
+        padding: 13px 15px !important;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+
+    #pn-header .pn-nav-links .nav-link:hover,
+    #pn-header .pn-nav-links .nav-link.active {
+        background: #eef4f8;
+    }
+
+    #pn-header .pn-nav-links .nav-link::after {
+        display: none;
+    }
+
+    .pn-nav-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding-top: 20px;
+        margin-top: 15px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    #hero,
+    #nosotros,
+    #servicios,
+    #galeria,
+    #contacto,
+    #ubicacion,
+    #rastreo {
+        scroll-margin-top: 85px;
+    }
+
+}
+
+@media (max-width: 375px) {
+
+    .pn-nav-actions {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    #pn-header *,
+    #pn-header *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+
+}

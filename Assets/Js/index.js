@@ -63,3 +63,29 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
+// ==========================================
+// PACIFICNORT - MENÚ MÓVIL
+// ==========================================
+
+document.addEventListener("DOMContentLoaded", function () {
+  const menu = document.getElementById("pnNavbar");
+
+  if (!menu || typeof bootstrap === "undefined") {
+    return;
+  }
+
+  const enlaces = menu.querySelectorAll('a[href^="#"]');
+
+  enlaces.forEach(function (enlace) {
+    enlace.addEventListener("click", function () {
+      if (menu.classList.contains("show")) {
+        const collapse = bootstrap.Collapse.getOrCreateInstance(menu, {
+          toggle: false,
+        });
+
+        collapse.hide();
+      }
+    });
+  });
+});

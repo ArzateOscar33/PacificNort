@@ -1,264 +1,343 @@
 <?php
-$current = $_SERVER['REQUEST_URI'] ?? '';
-$isOperaciones = (strpos($current, 'PortalClientes/index') !== false);
-$isPartidas    = (strpos($current, 'PortalClientesPartidas/index') !== false);
+
+// ==========================================
+// PACIFICNORT SUITE - HEADER RESPONSIVE
+// FASE 7.1
+// ==========================================
+
+// Detectar la ruta actual
+$ruta = $_GET['url'] ?? '';
+
+if (!is_string($ruta) || $ruta === '') {
+    $ruta = parse_url(
+        $_SERVER['REQUEST_URI'] ?? '',
+        PHP_URL_PATH
+    ) ?: '';
+}
+
+$ruta = trim($ruta, '/');
+
+// Detectar módulo activo
+$isOperaciones = preg_match(
+    '~(?:^|/)PortalClientes(?:/index)?$~i',
+    $ruta
+) === 1;
+
+$isPartidas = preg_match(
+    '~(?:^|/)(?:PortalClientesPartidas(?:/index)?|PortalClientes/op_partidas)$~i',
+    $ruta
+) === 1;
+
+// Datos del usuario
+$nombreCliente = htmlspecialchars(
+    $data['nombre_cliente'] ?? 'Cliente',
+    ENT_QUOTES,
+    'UTF-8'
+);
+
+$nombreUsuario = htmlspecialchars(
+    $data['nombre_usuario'] ?? 'Usuario',
+    ENT_QUOTES,
+    'UTF-8'
+);
+
 ?>
-<!-- BOOTSTRAP / FEATHER -->
+
+<!-- Dependencias existentes -->
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="https://unpkg.com/feather-icons"></script>
 
-<style>
-    .pn-topnav {
-        background: linear-gradient(135deg, #0f172a 0%, #162033 100%);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        position: sticky;
-        top: 0;
-        z-index: 1030;
-    }
+<!-- Estilos del nuevo encabezado -->
 
-    .pn-topnav-inner {
-        min-height: 82px;
-        padding-top: 12px;
-        padding-bottom: 12px;
-    }
+<link
+    rel="stylesheet"
+    href="<?= BASE_URL ?>Assets/Css/PortalClientes/header.css">
 
-    /* =========================
-   BRAND
-========================= */
-    .pn-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #fff;
-    }
+<!-- ======================================
+     HEADER PRINCIPAL
+     ====================================== -->
 
-    .pn-brand:hover {
-        color: #fff;
-        opacity: 0.96;
-    }
+<header id="pnClientHeader"
+    class="pn-client-header">
 
-    .pn-brand-badge {
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
-        flex-shrink: 0;
-    }
+    <div class="pn-client-header-inner">
 
-    .pn-brand-badge i {
-        width: 22px;
-        height: 22px;
-        color: #fff;
-    }
+        <!-- IDENTIDAD DEL SISTEMA -->
 
-    .pn-brand-text {
-        display: flex;
-        flex-direction: column;
-        line-height: 1.1;
-    }
+        <a href="<?= BASE_URL ?>PortalClientes/index"
+            class="pn-client-brand">
 
-    .pn-brand-title {
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-    }
-
-    .pn-brand-subtitle {
-        font-size: 0.78rem;
-        color: rgba(255, 255, 255, 0.72);
-        margin-top: 2px;
-    }
-
-    /* =========================
-   NAV
-========================= */
-    .pn-nav {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 16px;
-        padding: 6px;
-    }
-
-    .pn-nav-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 44px;
-        padding: 0 16px;
-        border-radius: 12px;
-        color: rgba(255, 255, 255, 0.82);
-        text-decoration: none;
-        font-size: 0.94rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-    }
-
-    .pn-nav-link i {
-        width: 17px;
-        height: 17px;
-    }
-
-    .pn-nav-link:hover {
-        background: rgba(255, 255, 255, 0.07);
-        color: #fff;
-        transform: translateY(-1px);
-    }
-
-    .pn-nav-link.active {
-        background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-        color: #fff;
-        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.22);
-    }
-
-    /* =========================
-   USER CARD
-========================= */
-    .pn-user-card {
-        min-width: 230px;
-        padding: 10px 14px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #fff;
-        line-height: 1.15;
-    }
-
-    .pn-user-card-label {
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: rgba(255, 255, 255, 0.58);
-        margin-bottom: 3px;
-    }
-
-    .pn-user-card-value {
-        font-size: 0.96rem;
-        font-weight: 700;
-        margin-bottom: 2px;
-    }
-
-    .pn-user-card-sub {
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.74);
-    }
-
-    /* =========================
-   LOGOUT BUTTON
-========================= */
-    .pn-btn-logout {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 44px;
-        padding: 0 18px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: rgba(220, 38, 38, 0.14);
-        color: #fff;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-    }
-
-    .pn-btn-logout:hover {
-        background: rgba(220, 38, 38, 0.22);
-        border-color: rgba(255, 255, 255, 0.22);
-        color: #fff;
-        transform: translateY(-1px);
-    }
-
-    .pn-btn-logout i {
-        width: 17px;
-        height: 17px;
-    }
-
-    /* =========================
-   RESPONSIVE
-========================= */
-    @media (max-width: 991.98px) {
-        .pn-topnav-inner {
-            min-height: auto;
-        }
-
-        .pn-user-card {
-            min-width: 100%;
-        }
-    }
-
-    @media (max-width: 767.98px) {
-        .pn-brand-title {
-            font-size: 0.95rem;
-        }
-
-        .pn-nav {
-            width: 100%;
-        }
-
-        .pn-nav-link {
-            justify-content: center;
-            flex: 1 1 auto;
-        }
-    }
-</style>
-<header class="pn-topnav shadow-sm">
-    <div class="container-fluid px-4 px-lg-5">
-        <div class="pn-topnav-inner d-flex align-items-center justify-content-between flex-wrap gap-3">
-
-            <!-- IZQUIERDA -->
-            <div class="d-flex align-items-center gap-4 flex-wrap">
-
-                <!-- Brand -->
-                <a href="<?php echo BASE_URL; ?>PortalClientes/index" class="pn-brand text-decoration-none">
-                    <div class="pn-brand-badge">
-                        <i data-feather="anchor"></i>
-                    </div>
-                    <div class="pn-brand-text">
-                        <span class="pn-brand-title">PacificNort Suite</span>
-                        <span class="pn-brand-subtitle">Portal Cliente</span>
-                    </div>
-                </a>
-
-                <!-- Navegación -->
-                <nav class="pn-nav d-flex align-items-center gap-2 flex-wrap">
-                    <a class="pn-nav-link <?php echo $isOperaciones ? 'active' : ''; ?>"
-                        href="<?php echo BASE_URL; ?>PortalClientes/index">
-                        <i data-feather="package"></i>
-                        <span>Operaciones</span>
-                    </a>
-
-                    <a class="pn-nav-link <?php echo $isPartidas ? 'active' : ''; ?>"
-                        href="<?php echo BASE_URL; ?>PortalClientesPartidas/index">
-                        <i data-feather="navigation"></i>
-                        <span>Operaciones por Partida</span>
-                    </a>
-                </nav>
+            <div class="pn-client-brand-icon">
+                <i data-feather="anchor"></i>
             </div>
 
-            <!-- DERECHA -->
-            <div class="d-flex align-items-center gap-3 flex-wrap ms-auto">
+            <div class="pn-client-brand-text">
 
-                <div class="pn-user-card">
-                    <div class="pn-user-card-label">Cliente</div>
-                    <div class="pn-user-card-value">
-                        <?php echo htmlspecialchars($data['nombre_cliente'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                <span class="pn-client-brand-title">
+                    PacificNort Suite
+                </span>
+
+                <span class="pn-client-brand-subtitle">
+                    Portal Cliente
+                </span>
+
+            </div>
+
+        </a>
+
+        <!-- NAVEGACIÓN PRINCIPAL -->
+
+        <nav
+            id="pnClientNavigation"
+            class="pn-client-nav collapse"
+            aria-label="Navegación del portal">
+
+            <div class="pn-client-nav-inner">
+
+                <!-- Operaciones -->
+
+                <a
+                    href="<?= BASE_URL ?>PortalClientes/index"
+                    class="pn-client-nav-link <?= $isOperaciones ? 'active' : '' ?>"
+                    <?= $isOperaciones ? 'aria-current="page"' : '' ?>>
+
+                    <i data-feather="package"></i>
+
+                    <span>Operaciones</span>
+
+                </a>
+
+                <!-- Operaciones por partida -->
+
+                <a
+                    href="<?= BASE_URL ?>PortalClientesPartidas/index"
+                    class="pn-client-nav-link <?= $isPartidas ? 'active' : '' ?>"
+                    <?= $isPartidas ? 'aria-current="page"' : '' ?>>
+
+                    <i data-feather="navigation"></i>
+
+                    <span>Operaciones por Partida</span>
+
+                </a>
+
+            </div>
+
+        </nav>
+
+
+        <!-- PERFIL DEL CLIENTE -->
+
+        <details class="pn-client-account" id="pnClientAccount">
+
+            <summary
+                id="pnClientAccountButton"
+                class="pn-client-account-button"
+                aria-label="Mi cuenta">
+
+                <span class="pn-client-avatar">
+                    <i data-feather="user"></i>
+                </span>
+
+                <span class="pn-client-account-text">
+
+                    <span class="pn-client-account-name">
+                        <?= $nombreCliente ?>
+                    </span>
+
+                    <span class="pn-client-account-caption">
+                        Mi cuenta
+                    </span>
+
+                </span>
+
+                <i data-feather="chevron-down"
+                    class="pn-client-account-chevron">
+                </i>
+
+            </summary>
+
+            <!-- Contenido del perfil -->
+
+            <div class="pn-client-account-menu">
+
+                <div class="pn-client-profile-info">
+
+                    <div class="pn-client-profile-avatar">
+                        <i data-feather="user"></i>
                     </div>
-                    <div class="pn-user-card-sub">
-                        Usuario: <?php echo htmlspecialchars($data['nombre_usuario'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+
+                    <span class="pn-client-profile-label">
+                        Cliente
+                    </span>
+
+                    <strong>
+                        <?= $nombreCliente ?>
+                    </strong>
+
+                    <div class="pn-client-profile-user">
+
+                        <i data-feather="user-check"></i>
+
+                        <span>
+                            <?= $nombreUsuario ?>
+                        </span>
+
                     </div>
+
                 </div>
 
-                <a class="btn pn-btn-logout"
-                    href="<?php echo BASE_URL; ?>admin/salir">
-                    <i data-feather="log-out" class="me-2"></i>
+                <hr class="dropdown-divider">
+
+                <!-- Cerrar sesión -->
+
+                <a
+                    href="<?= BASE_URL ?>admin/salir"
+                    class="pn-client-logout">
+
+                    <i data-feather="log-out"></i>
+
                     <span>Cerrar sesión</span>
+
                 </a>
+
             </div>
 
-        </div>
+        </details>
+
+
+        <!-- BOTÓN DEL MENÚ MÓVIL -->
+
+        <button
+            type="button"
+            id="pnClientMenuButton"
+            class="pn-client-menu-button"
+            data-bs-toggle="collapse"
+            data-bs-target="#pnClientNavigation"
+            aria-controls="pnClientNavigation"
+            aria-expanded="false"
+            aria-label="Mostrar u ocultar navegación">
+
+            <span class="pn-client-menu-open">
+                <i data-feather="menu"></i>
+            </span>
+
+            <span class="pn-client-menu-close">
+                <i data-feather="x"></i>
+            </span>
+
+        </button>
+
     </div>
+
 </header>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const header = document.getElementById("pnClientHeader");
+
+        if (!header) return;
+
+        const navigation = document.getElementById("pnClientNavigation");
+        const account = document.getElementById("pnClientAccount");
+        const accountButton = document.getElementById("pnClientAccountButton");
+        const menuButton = document.getElementById("pnClientMenuButton");
+
+        if (!navigation || !account || !accountButton || !menuButton) {
+            return;
+        }
+
+        const mobileQuery = window.matchMedia(
+            "(max-width: 991.98px)"
+        );
+
+        // Menú de navegación Bootstrap
+
+        const navigationCollapse =
+            typeof bootstrap !== "undefined" ?
+            bootstrap.Collapse.getOrCreateInstance(
+                navigation, {
+                    toggle: false
+                }
+            ) :
+            null;
+
+        // Cerrar perfil al abrir navegación
+
+        navigation.addEventListener(
+            "show.bs.collapse",
+            function() {
+                account.open = false;
+            }
+        );
+
+        // Cerrar navegación al abrir perfil
+
+        account.addEventListener("toggle", function() {
+
+            if (account.open && mobileQuery.matches) {
+
+                navigationCollapse?.hide();
+
+            }
+
+        });
+
+        // Cerrar perfil al pulsar fuera
+
+        document.addEventListener("click", function(event) {
+
+            if (account.open && !account.contains(event.target)) {
+
+                account.open = false;
+
+            }
+
+        });
+
+        // Cerrar menús con Escape
+
+        header.addEventListener("keydown", function(event) {
+
+            if (event.key !== "Escape") return;
+
+            if (account.open) {
+
+                account.open = false;
+                accountButton.focus();
+
+            } else if (
+                mobileQuery.matches &&
+                navigation.classList.contains("show")
+            ) {
+
+                navigationCollapse?.hide();
+                menuButton.focus();
+
+            }
+
+        });
+
+        // Restablecer menús al cambiar de resolución
+
+        mobileQuery.addEventListener("change", function() {
+
+            account.open = false;
+
+            navigationCollapse?.hide();
+
+        });
+
+        // Inicializar iconos
+
+        if (typeof feather !== "undefined") {
+
+            feather.replace();
+
+        }
+
+    });
+</script>

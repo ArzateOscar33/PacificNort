@@ -1,0 +1,680 @@
+/* ==========================================
+   PACIFICNORT SUITE
+   TABLA RESPONSIVE COMPARTIDA - FASE 7.5
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) {
+    min-width: 0;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) [hidden] {
+    display: none !important;
+}
+
+/* ==========================================
+   BARRA DE HERRAMIENTAS
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-heading h5 {
+    margin: 0 0 4px;
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-heading small {
+    color: #64748b;
+    font-size: .78rem;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    min-height: 38px;
+    padding: 8px 12px;
+
+    color: #334155;
+    background: #ffffff;
+
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition: background-color .18s ease;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-button:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-button svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-button[aria-expanded="true"],
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-button[aria-pressed="true"] {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
+/* Exportación Excel */
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-excel {
+    color: #15803d;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-excel:hover {
+    background: #dcfce7;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#marPageSize, #partidaPageSize) {
+    width: auto;
+    min-height: 38px;
+
+    border-radius: 8px;
+    border-color: #dce3ea;
+
+    font-size: .78rem;
+}
+
+/* ==========================================
+   PANEL DE COLUMNAS
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-panel {
+    margin-top: 15px;
+    padding: 18px;
+
+    border: 1px solid #dce3ea;
+    border-radius: 12px;
+
+    background: #f8fafc;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-header strong {
+    color: #0f172a;
+    font-size: .9rem;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-header p {
+    color: #64748b;
+    font-size: .78rem;
+    margin: 5px 0 12px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin-bottom: 15px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-column-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    min-width: 0;
+    min-height: 42px;
+
+    padding: 10px;
+
+    color: #334155;
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+
+    font-size: .78rem;
+
+    cursor: pointer;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-column-option input {
+    width: 16px;
+    height: 16px;
+
+    margin: 0;
+    flex-shrink: 0;
+
+    accent-color: #0284c7;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-column-option span {
+    overflow-wrap: anywhere;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-column-option.is-required {
+    background: #edf2f7;
+    cursor: default;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 15px;
+
+    color: #64748b;
+    font-size: .74rem;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-columns-footer svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* ==========================================
+   CONTENEDOR DE LA TABLA
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) .portal-table-responsive {
+    position: relative;
+
+    width: 100%;
+    max-width: 100%;
+    max-height: 68vh;
+
+    overflow: auto;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+
+    isolation: isolate;
+
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    margin-top: 15px;
+
+    color: #64748b;
+    font-size: .75rem;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) .pn-table-scroll-hint svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* ==========================================
+   TABLA COMPACTA
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) {
+    width: max-content;
+    min-width: 100%;
+
+    margin: 0;
+
+    border-collapse: separate;
+    border-spacing: 0;
+
+    table-layout: auto;
+}
+
+/* Celdas */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) th,
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td {
+    padding: 11px 13px;
+
+    font-size: .78rem;
+    vertical-align: middle;
+
+    border-bottom: 1px solid #e8edf2;
+}
+
+/* Encabezado fijo */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) thead th {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+
+    color: #475569;
+    background: #eef2f7;
+
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .3px;
+
+    white-space: nowrap;
+
+    box-shadow: 0 1px 0 #dce3ea;
+}
+
+/* Filas alternadas */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody tr:nth-child(odd) {
+    --pn-row-bg: #ffffff;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody tr:nth-child(even) {
+    --pn-row-bg: #f8fafc;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody tr:hover {
+    --pn-row-bg: #edf6ff;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody td {
+    background-color: var(--pn-row-bg, #ffffff);
+}
+
+/* Columnas con textos extensos */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody td:nth-child(2),
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody td:nth-child(3),
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody td:nth-child(9) {
+    max-width: 230px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Estatus */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) .badge {
+    font-size: .7rem;
+    font-weight: 600;
+}
+
+/* ==========================================
+   PRIMERA COLUMNA FIJA
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) th:first-child,
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td:first-child:not([colspan]) {
+    position: sticky;
+
+    left: 0;
+
+    min-width: 110px;
+    max-width: 160px;
+
+    box-shadow: 5px 0 8px -6px rgba(15, 23, 42, .35);
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody td:first-child:not([colspan]) {
+    z-index: 2;
+
+    color: #0f172a;
+
+    font-weight: 700;
+
+    background-color: var(--pn-row-bg, #ffffff);
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   ÚLTIMA COLUMNA FIJA: ACCIONES
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) th:last-child,
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td:last-child:not([colspan]) {
+    position: sticky;
+    right: 0;
+
+    min-width: 76px;
+
+    box-shadow: -5px 0 8px -6px rgba(15, 23, 42, .35);
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) tbody td:last-child:not([colspan]) {
+    z-index: 2;
+    background-color: var(--pn-row-bg, #ffffff);
+}
+
+/* Intersección encabezados y columnas fijas */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) thead th:first-child,
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) thead th:last-child {
+    z-index: 5;
+    background: #e8edf4;
+}
+
+/* Botón de detalle */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) button[data-action="detalle-mar"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    min-height: 32px;
+
+    padding: 5px 9px;
+
+    border-color: #cbd5e1;
+    border-radius: 6px;
+
+    color: #0369a1;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) button[data-action="detalle-mar"]:hover {
+    background: #0369a1;
+    border-color: #0369a1;
+    color: #ffffff;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) button[data-action="detalle-mar"] svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Estados de carga, error y tabla vacía */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td[colspan] {
+    position: static !important;
+
+    min-width: 0;
+    max-width: none;
+
+    box-shadow: none !important;
+
+    white-space: normal;
+}
+
+/* ==========================================
+   VISIBILIDAD DE COLUMNAS
+   ========================================== */
+
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="2"] tr > :nth-child(2):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="3"] tr > :nth-child(3):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="4"] tr > :nth-child(4):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="5"] tr > :nth-child(5):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="6"] tr > :nth-child(6):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="7"] tr > :nth-child(7):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="8"] tr > :nth-child(8):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="9"] tr > :nth-child(9):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="10"] tr > :nth-child(10):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="11"] tr > :nth-child(11):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="12"] tr > :nth-child(12):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="13"] tr > :nth-child(13):not([colspan]),
+:is(#tblOpsMar, #tblOpsPartida)[data-pn-hidden~="14"] tr > :nth-child(14):not([colspan]) {
+    display: none !important;
+}
+
+/* ==========================================
+   PAGINACIÓN
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#marPagingWrap, #partidaPagingWrap) {
+    padding: 12px 20px 18px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#marPaging, #partidaPaging) {
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+:is(#cardTablaMar, #cardTablaPartida) :is(#marPaging, #partidaPaging) .page-link {
+    min-width: 34px;
+    min-height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 6px;
+}
+
+/* ==========================================
+   VISTA AMPLIADA
+   ========================================== */
+
+body.pn-table-expanded {
+    overflow: hidden;
+}
+
+:is(#cardTablaMar, #cardTablaPartida).pn-expanded {
+    position: fixed !important;
+
+    inset: 10px;
+    z-index: 1040;
+
+    display: flex;
+    flex-direction: column;
+
+    margin: 0 !important;
+
+    background: #ffffff;
+
+    box-shadow: 0 0 0 20px rgba(15, 23, 42, .65) !important;
+}
+
+:is(#cardTablaMar, #cardTablaPartida).pn-expanded > .card-header {
+    flex-shrink: 0;
+}
+
+:is(#cardTablaMar, #cardTablaPartida).pn-expanded > .card-body {
+    display: flex;
+    flex-direction: column;
+
+    flex: 1;
+    min-height: 0;
+
+    overflow: hidden;
+}
+
+:is(#cardTablaMar, #cardTablaPartida).pn-expanded .portal-table-responsive {
+    flex: 1;
+
+    min-height: 0;
+    max-height: none;
+}
+
+:is(#cardTablaMar, #cardTablaPartida).pn-expanded :is(#marPagingWrap, #partidaPagingWrap) {
+    flex-shrink: 0;
+}
+
+:is(#cardTablaMar, #cardTablaPartida).pn-expanded .pn-columns-panel {
+    max-height: 35vh;
+    overflow-y: auto;
+}
+
+/* ==========================================
+   TABLETS
+   ========================================== */
+
+@media (max-width: 1199.98px) {
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-columns-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+/* ==========================================
+   MÓVILES
+   ========================================== */
+
+@media (max-width: 767.98px) {
+
+    :is(#cardTablaMar, #cardTablaPartida) > .card-header {
+        padding: 14px 12px !important;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) > .card-body {
+        padding: 0 10px 12px !important;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-table-tools {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-table-button,
+    :is(#cardTablaMar, #cardTablaPartida) :is(#marPageSize, #partidaPageSize) {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) #pnCerrarColumnas {
+        width: 40px;
+        flex-shrink: 0;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-columns-panel {
+        padding: 12px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-columns-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-column-option {
+        padding: 8px;
+        font-size: .72rem;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-columns-presets {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Mayor densidad de información */
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) th,
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td {
+        padding: 8px 10px;
+        font-size: .72rem;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) thead th {
+        font-size: .67rem;
+    }
+
+    /* Reducir espacio de las columnas fijas */
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) th:first-child,
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td:first-child:not([colspan]) {
+        min-width: 90px;
+        max-width: 115px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) th:last-child,
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) td:last-child:not([colspan]) {
+        min-width: 58px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) button[data-action="detalle-mar"] {
+        min-height: 38px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#tblOpsMar, #tblOpsPartida) button[data-action="detalle-mar"] svg {
+        display: none;
+    }
+
+    /* Paginación centrada */
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#marPagingWrap, #partidaPagingWrap) {
+        justify-content: center !important;
+
+        gap: 10px !important;
+
+        padding: 12px 8px;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#marPagingLbl, #partidaPagingLbl) {
+        width: 100%;
+        text-align: center;
+    }
+
+    :is(#cardTablaMar, #cardTablaPartida) :is(#marPaging, #partidaPaging) {
+        justify-content: center;
+    }
+
+    /* Aprovechar toda la pantalla */
+
+    :is(#cardTablaMar, #cardTablaPartida).pn-expanded {
+        inset: 0;
+        border-radius: 0 !important;
+    }
+
+}
+
+/* ==========================================
+   ACCESIBILIDAD
+   ========================================== */
+
+:is(#cardTablaMar, #cardTablaPartida) button:focus-visible,
+:is(#cardTablaMar, #cardTablaPartida) input:focus-visible,
+:is(#cardTablaMar, #cardTablaPartida) select:focus-visible {
+    outline: 2px solid #0284c7;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    :is(#cardTablaMar, #cardTablaPartida) .pn-table-button {
+        transition: none !important;
+    }
+
+}

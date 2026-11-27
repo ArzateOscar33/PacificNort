@@ -1,0 +1,500 @@
+
+/* ==========================================
+   PACIFICNORT SUITE
+   DASHBOARD RESPONSIVE - FASE 7.2
+   ========================================== */
+
+/* ==========================================
+   DISTRIBUCIÓN DE INDICADORES
+   ========================================== */
+
+#pnContent #kpiRow {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 16px;
+
+    margin: 0 0 20px !important;
+
+    --bs-gutter-x: 0;
+    --bs-gutter-y: 0;
+}
+
+/* Sobrescribir las columnas originales de Bootstrap */
+
+#pnContent #kpiRow > div {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+}
+
+/* Indicadores */
+
+#pnContent #kpiRow .pn-kpi-pro {
+    height: 100%;
+    min-height: 108px;
+    padding: 18px !important;
+
+    border-radius: 14px;
+
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .06);
+}
+
+#pnContent #kpiRow .pn-kpi-pro::after {
+    width: 4px;
+}
+
+/* Contenido interno */
+
+#pnContent #kpiRow .pn-kpi-pro > .d-flex {
+    height: 100%;
+    gap: 10px;
+}
+
+#pnContent #kpiRow .min-w-0 {
+    min-width: 0;
+    flex: 1;
+}
+
+/* Títulos */
+
+#pnContent #kpiRow .pn-muted.small {
+    font-size: .78rem;
+    line-height: 1.4;
+}
+
+#pnContent #kpiRow .text-truncate {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Valores numéricos */
+
+#pnContent #kpiRow .h4 {
+    margin: 5px 0 !important;
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+
+    color: #0f172a;
+}
+
+/* Iconos */
+
+#pnContent #kpiRow .pn-kpi-ic {
+    width: 40px;
+    height: 40px;
+
+    flex-shrink: 0;
+
+    border-radius: 11px;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .08);
+}
+
+#pnContent #kpiRow .pn-kpi-ic svg {
+    width: 19px;
+    height: 19px;
+}
+
+/* ==========================================
+   PANEL DE FILTROS
+   ========================================== */
+
+#cardFiltros {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .04) !important;
+}
+
+#cardFiltros .card-body {
+    padding: 20px;
+}
+
+#rowFiltros {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.6fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        auto
+        auto;
+
+    align-items: end;
+    gap: 12px;
+}
+
+#rowFiltros .pn-filter-field {
+    min-width: 0;
+}
+
+#rowFiltros .form-label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #475569;
+
+    font-weight: 600;
+    font-size: .78rem;
+}
+
+/* Controles */
+
+#rowFiltros .form-control,
+#rowFiltros .form-select,
+#rowFiltros .input-group-text {
+    min-height: 44px;
+
+    background: #ffffff;
+
+    border-color: #dce3ea;
+
+    font-size: .85rem;
+}
+
+#rowFiltros .form-control,
+#rowFiltros .form-select {
+    min-width: 0;
+}
+
+#rowFiltros .form-control:focus,
+#rowFiltros .form-select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, .12);
+}
+
+/* Buscador */
+
+#rowFiltros .input-group {
+    flex-wrap: nowrap;
+}
+
+#rowFiltros .input-group-text {
+    color: #64748b;
+    background: #f8fafc;
+}
+
+#rowFiltros .input-group-text svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* Los filtros forman una sola fila en escritorio */
+
+#pnFiltrosAvanzados {
+    display: contents;
+}
+
+/* ==========================================
+   BOTONES
+   ========================================== */
+
+#rowFiltros #btnMarFiltrar,
+#rowFiltros #btnMarLimpiar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding: 10px 15px;
+    border-radius: 8px;
+
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#rowFiltros #btnMarFiltrar {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+}
+
+#rowFiltros #btnMarFiltrar:hover {
+    background: #334155;
+    border-color: #334155;
+}
+
+#rowFiltros #btnMarLimpiar {
+    color: #64748b;
+    border-color: #dce3ea;
+}
+
+#rowFiltros #btnMarLimpiar:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+#rowFiltros button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Botón para desplegar filtros en móviles */
+
+#rowFiltros #pnBtnFiltros {
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+    min-height: 44px;
+
+    padding: 10px 13px;
+
+    background: #f1f5f9;
+    color: #0f172a;
+
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#rowFiltros #pnBtnFiltros[aria-expanded="true"] {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
+/* ==========================================
+   FILTROS ACTIVOS
+   ========================================== */
+
+#filtrosActivosBar {
+    min-width: 0;
+    margin-top: 14px;
+    padding-top: 14px;
+
+    border-top: 1px solid #e2e8f0;
+}
+
+#filtrosActivosBar:empty {
+    display: none !important;
+}
+
+#filtrosActivosBar > * {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   TABLETS
+   ========================================== */
+
+@media (max-width: 1399.98px) {
+
+    #pnContent #kpiRow {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 1199.98px) {
+
+    /* Buscador + botón de filtros */
+
+    #rowFiltros {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+    }
+
+    #cardFiltros.pn-filters-ready #pnBtnFiltros {
+        display: inline-flex;
+    }
+
+    /* Panel desplegable */
+
+    #pnFiltrosAvanzados {
+        display: grid;
+
+        grid-column: 1 / -1;
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        gap: 12px;
+
+        padding-top: 15px;
+        margin-top: 5px;
+
+        border-top: 1px solid #e2e8f0;
+    }
+
+    #cardFiltros.pn-filters-ready:not(.is-expanded)
+    #pnFiltrosAvanzados {
+        display: none;
+    }
+
+    /* Estatus ocupa todo el ancho */
+
+    #pnFiltrosAvanzados .pn-filter-status {
+        grid-column: 1 / -1;
+    }
+
+    #pnFiltrosAvanzados .form-control,
+    #pnFiltrosAvanzados .form-select,
+    #pnFiltrosAvanzados button {
+        width: 100%;
+    }
+
+}
+
+/* ==========================================
+   TELÉFONOS
+   ========================================== */
+
+@media (max-width: 767.98px) {
+
+    #pnContent #pnContainer {
+        padding: 14px 12px !important;
+    }
+
+    /* Dos indicadores por fila */
+
+    #pnContent #kpiRow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    #pnContent #kpiRow .pn-kpi-pro {
+        min-height: 90px;
+        padding: 12px !important;
+        border-radius: 11px;
+    }
+
+    #pnContent #kpiRow .pn-kpi-pro > .d-flex {
+        align-items: flex-start !important;
+        gap: 6px;
+    }
+
+    #pnContent #kpiRow .pn-muted.small {
+        font-size: .72rem;
+    }
+
+    #pnContent #kpiRow .h4 {
+        font-size: 1.6rem;
+        margin-top: 8px !important;
+    }
+
+    #pnContent #kpiRow .pn-kpi-ic {
+        width: 30px;
+        height: 30px;
+
+        border-radius: 8px;
+        box-shadow: none;
+    }
+
+    #pnContent #kpiRow .pn-kpi-ic svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    /* Ocultar textos secundarios repetitivos */
+
+    #kpiMarEnAguaSub,
+    #kpiTerEnCaminoSub,
+    #kpiMarEnPuertoSub,
+    #kpiEntregadasSub {
+        display: none;
+    }
+
+    /* Conservar información de bodegas y yardas */
+
+    #kpiBodegasSub,
+    #kpiYardasSub {
+        font-size: .65rem !important;
+    }
+
+    /* Panel de filtros */
+
+    #cardFiltros .card-body {
+        padding: 14px;
+    }
+
+    #rowFiltros .form-control,
+    #rowFiltros .form-select {
+        font-size: 16px;
+    }
+
+    #rowFiltros #marSearch::placeholder {
+        font-size: .78rem;
+    }
+
+    #rowFiltros #pnBtnFiltros {
+        padding: 10px;
+    }
+
+    #rowFiltros .form-label {
+        font-size: .75rem;
+    }
+
+    /* Encabezado de página */
+
+    #pnTopbar h4 {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    #pnTopbar .search-hint {
+        font-size: .75rem;
+    }
+
+    #pnTopbar #btnRefrescarTodo {
+        min-height: 40px;
+        font-size: .78rem;
+    }
+
+}
+
+/* Pantallas muy pequeñas */
+
+@media (max-width: 359.98px) {
+
+    #pnContent #kpiRow .pn-kpi-pro {
+        padding: 10px !important;
+    }
+
+    #pnContent #kpiRow .pn-kpi-ic {
+        width: 25px;
+        height: 25px;
+    }
+
+    #pnContent #kpiRow .pn-muted.small {
+        font-size: .68rem;
+    }
+
+    #pnFiltrosAvanzados {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+/* ==========================================
+   ACCESIBILIDAD
+   ========================================== */
+
+#cardFiltros button:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    #kpiRow .pn-kpi-pro,
+    #kpiRow .pn-kpi-pro::before,
+    #kpiRow .pn-kpi-ic {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
+
+}

@@ -604,60 +604,172 @@
     if (txtMarComentario) txtMarComentario.value = det.comentario || "";
   }
 
+  // ==========================================
+  // CARGA DEL DETALLE MARÍTIMO - FASE 7.4
+  // ==========================================
+
+  let versionDetalleMar = 0;
+
+  // Mostrar estados del modal
+
+  function setEstadoDetalleMar(estado, mensaje = "") {
+    const estadoWrap = document.getElementById("pnMarDetalleEstado");
+
+    const estadoTexto = document.getElementById("pnMarDetalleMensaje");
+
+    const spinner = document.getElementById("pnMarDetalleSpinner");
+
+    const contenido = document.getElementById("pnMarDetalleContenido");
+
+    if (!estadoWrap || !estadoTexto || !spinner || !contenido) {
+      return;
+    }
+
+    const cargando = estado === "loading";
+    const error = estado === "error";
+    const listo = estado === "ready";
+
+    estadoWrap.hidden = listo;
+
+    contenido.hidden = !listo;
+
+    spinner.hidden = !cargando;
+
+    estadoWrap.classList.toggle("is-error", error);
+
+    estadoTexto.textContent = mensaje;
+
+    if (modalMar) {
+      const body = modalMar.querySelector(".modal-body");
+
+      if (body) {
+        body.scrollTop = 0;
+
+        body.setAttribute("aria-busy", String(cargando));
+      }
+    }
+  }
+
+  // ==========================================
+  // CARGAR OPERACIÓN
+  // ==========================================
+
   function cargarDetalleMaritima(opId) {
-    if (!opId || opId <= 0) return;
+    // Identificador de la consulta actual.
+    // Impide que una respuesta anterior
+    // sobrescriba otra operación.
+
+    const versionActual = ++versionDetalleMar;
 
     limpiarModalMar();
 
-    xhrPost(ENDPOINT_DETALLE_MAR, { id_operacion: opId }, function (err, json) {
-      if (err) {
-        // deja el modal con mensaje
-        if (tbMarEventos) {
-          tbMarEventos.innerHTML = `
-            <tr>
-              <td colspan="3" class="text-center text-danger py-3">
-                No se pudo cargar el detalle.
-              </td>
-            </tr>
-          `;
+    if (!opId || opId <= 0) {
+      setEstadoDetalleMar(
+        "error",
+        "El identificador de la operación no es válido.",
+      );
+
+      return;
+    }
+
+    setEstadoDetalleMar(
+      "loading",
+      "Consultando información de la operación...",
+    );
+
+    xhrPost(
+      ENDPOINT_DETALLE_MAR,
+
+      {
+        id_operacion: opId,
+      },
+
+      function (err, json) {
+        // Ignorar respuestas de consultas anteriores.
+
+        if (versionActual !== versionDetalleMar) {
+          return;
         }
-        return;
-      }
 
-      if (!json || json.ok !== true) {
-        const msg =
-          json && json.msg ? json.msg : "No se pudo obtener el detalle.";
-        if (tbMarEventos) {
-          tbMarEventos.innerHTML = `
-            <tr>
-              <td colspan="3" class="text-center text-danger py-3">
-                ${esc(msg)}
-              </td>
-            </tr>
-          `;
+        // Error HTTP o respuesta no válida.
+
+        if (err) {
+          console.error("Error al cargar detalle:", err);
+
+          setEstadoDetalleMar(
+            "error",
+            "No fue posible cargar el detalle de la operación. Intenta nuevamente.",
+          );
+
+          return;
         }
-        return;
-      }
 
-      const det = json.detalle || null;
-      if (!det) {
-        if (tbMarEventos) {
-          tbMarEventos.innerHTML = `
-            <tr>
-              <td colspan="3" class="text-center text-danger py-3">
-                Detalle vacío.
-              </td>
-            </tr>
-          `;
+        // Validar respuesta del backend.
+
+        if (!json || json.ok !== true) {
+          setEstadoDetalleMar(
+            "error",
+            json?.msg || "No se pudo obtener la información.",
+          );
+
+          return;
         }
-        return;
-      }
 
-      fillModalMar(det);
-      renderEventosMar(Array.isArray(json.eventos) ? json.eventos : []);
+        const detalle = json.detalle;
 
-      if (window.feather) window.feather.replace();
-    });
+        if (!detalle) {
+          setEstadoDetalleMar(
+            "error",
+            "La operación no contiene información disponible.",
+          );
+
+          return;
+        }
+
+        // Utilizar las funciones originales.
+
+        fillModalMar(detalle);
+
+        renderEventosMar(Array.isArray(json.eventos) ? json.eventos : []);
+
+        // Mostrar valores vacíos de forma clara.
+
+        const campos = [
+          inpMarNumero,
+          inpMarPuerto,
+          inpMarNaviera,
+          inpMarContenedor,
+        ];
+
+        campos.forEach(function (campo) {
+          if (campo && !String(campo.value || "").trim()) {
+            campo.value = "Sin información";
+          }
+        });
+
+        if (txtMarComentario && !String(txtMarComentario.value || "").trim()) {
+          txtMarComentario.value = "Sin comentarios disponibles.";
+        }
+
+        // Mostrar información.
+
+        setEstadoDetalleMar("ready");
+
+        // Renderizar iconos.
+
+        if (window.feather) {
+          window.feather.replace();
+        }
+
+        // Recalcular dimensiones del modal.
+
+        if (modalMar && window.bootstrap && window.bootstrap.Modal) {
+          const instancia = window.bootstrap.Modal.getInstance(modalMar);
+
+          instancia?.handleUpdate();
+        }
+      },
+    );
   }
 
   // ===== Cargar datos =====

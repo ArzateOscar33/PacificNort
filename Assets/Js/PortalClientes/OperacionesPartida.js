@@ -326,7 +326,7 @@
 
     return (
       '<span class="badge bg-light text-dark border">' +
-      (estatus || "—") +
+      escapeHtml(estatus || "—") +
       "</span>"
     );
   }

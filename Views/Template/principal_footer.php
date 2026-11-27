@@ -1,61 +1,54 @@
- <!-- Footer -->
- <footer>
-   <div class="container">
-     <div class="row">
-       <div class="col-lg-4 col-md-6 mb-5">
-         <a href="#" class="footer-logo">Pacific<span>nort</span></a>
-         <p class="footer-text">Somos especialistas en logística internacional, ofreciendo soluciones integrales para
-           optimizar la cadena de suministro de nuestros clientes.</p>
+<!-- PacificNort - Fase 9: Footer -->
+<footer id="pnFooter" class="pn-site-footer" aria-label="Información de PacificNort">
+  <div class="container">
+    <div class="pn-footer-main">
+      <div class="pn-footer-brand">
+        <a class="pn-footer-wordmark" href="#hero" aria-label="PacificNort, inicio">Pacific<span>nort</span></a>
+        <p>Soluciones integrales para el comercio internacional. Coordinación logística y tecnología propia al servicio de nuestros clientes.</p>
+        <a class="pn-footer-whatsapp" id="social-link-whatsapp" href="https://wa.me/526644913156?text=Hola%20PacificNort%2C%20me%20gustar%C3%ADa%20obtener%20informaci%C3%B3n%20sobre%20sus%20servicios%20log%C3%ADsticos." target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+      </div>
+      <div class="pn-footer-group">
+        <h2>Explora</h2>
+        <ul>
+          <li><a href="#hero">Inicio</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#como-trabajamos">Cómo trabajamos</a></li>
+          <li><a href="#galeria">Galería</a></li>
+        </ul>
+      </div>
+      <div class="pn-footer-group">
+        <h2>Tecnología</h2>
+        <ul>
+          <li><a href="#tecnologia">PacificNort Suite</a></li>
+          <li><a href="#rastreo">Rastreo de carga</a></li>
+          <li><a href="<?= htmlspecialchars(BASE_URL . 'admin', ENT_QUOTES, 'UTF-8') ?>">Portal de clientes <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a></li>
+          <li><a href="#contacto">Solicitar información</a></li>
+        </ul>
+      </div>
+      <div class="pn-footer-group pn-footer-contact">
+        <h2>Contacto</h2>
+        <ul>
+          <li><a href="tel:+16197512720"><i class="bi bi-telephone" aria-hidden="true"></i><span>+1 (619) 751-2720</span></a></li>
+          <li><a href="mailto:operaciones@pacificnort.com"><i class="bi bi-envelope" aria-hidden="true"></i><span>operaciones@pacificnort.com</span></a></li>
+          <li><a href="#ubicacion"><i class="bi bi-geo-alt" aria-hidden="true"></i><span>Blvd. Agua Caliente 10535, Tijuana, B.C.</span></a></li>
+          <li><span class="pn-footer-hours"><i class="bi bi-clock" aria-hidden="true"></i><span>Lunes a viernes<br>9:00 AM – 5:00 PM</span></span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pn-footer-bottom">
+      <p>&copy; <?= date('Y') ?> Asesoría y Logística Internacional Pacificnort S.A. de C.V. Todos los derechos reservados.</p>
+      <a href="#hero" class="pn-footer-top">Volver al inicio <i class="bi bi-arrow-up" aria-hidden="true"></i></a>
+    </div>
+  </div>
+</footer>
 
-       </div>
-       <div class="col-lg-2 col-md-6 mb-5">
-         <h4 class="footer-title">Enlaces</h4>
-         <ul class="footer-links">
-           <li><a href="#hero"><i class="bi bi-chevron-right"></i> Inicio</a></li>
-           <li><a href="#nosotros"><i class="bi bi-chevron-right"></i> Nosotros</a></li>
-           <li><a href="#servicios"><i class="bi bi-chevron-right"></i> Servicios</a></li>
-           <li><a href="#galeria"><i class="bi bi-chevron-right"></i> Galería</a></li>
-           <li><a href="#contacto"><i class="bi bi-chevron-right"></i> Contacto</a></li>
-           <li><a href="#rastreo"><i class="bi bi-chevron-right"></i> Rastreo</a></li>
-         </ul>
-       </div>
-       <div class="col-lg-3 col-md-6 mb-5">
-         <h4 class="footer-title">Servicios</h4>
-         <ul class="footer-links">
-           <li><a href="#"><i class="bi bi-chevron-right"></i> Transporte Internacional</a></li>
-           <li><a href="#"><i class="bi bi-chevron-right"></i> Gestiones Aduanales</a></li>
-           <li><a href="#"><i class="bi bi-chevron-right"></i> Consultoría Empresarial</a></li>
-           <li><a href="#"><i class="bi bi-chevron-right"></i> Almacenaje y Distribución</a></li>
-           <li><a href="#"><i class="bi bi-chevron-right"></i> Rastreo</a></li>
-         </ul>
-       </div>
-       <div class="col-lg-3 col-md-6 mb-5">
-         <h4 class="footer-title">Envianos un WhatsApp</h4>
-         <p class="footer-text">Comunicate con nosotros por Whatsapp para recibir un presupuesto personalizado.</p>
-         <div>
-           <a href="https://api.whatsapp.com/send?phone=+526644913156&text=Hola%20Pacific%20nort%20estoy%20interesado%20en%20tu%20servicio%20de%20log%C3%ADstica%20internacional%20y%20necesito%20un%20presupuesto%20personalizado."
-             class="social-link" id="social-link-whatsapp"><i class="bi bi-whatsapp" style="font-size: 2rem;"></i>
-
-           </a>
-         </div>
-       </div>
-     </div>
-     <div class="footer-bottom">
-       <p>&copy; 2025 Asesoría y Logística Internacional Pacificnort S.A. de C.V. Todos los derechos reservados.</p>
-       <div class="footer-menu">
-         <a href="#">Términos y Condiciones</a>
-         <a href="#">Política de Privacidad</a>
-         <a href="#">Mapa del Sitio</a>
-       </div>
-     </div>
-   </div>
- </footer>
-
- <script>
-  const base_url = "<?php echo BASE_URL; ?>";
+<!-- Conservar dependencias del footer original -->
+<script>
+  const base_url = <?= json_encode(BASE_URL, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/bootstrap.bundle.min.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/aos.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/servicios.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/sweetalert2.all.min.js"></script>
-<script src="<?php echo BASE_URL; ?>Assets/Js/contactos.js"></script>
+<script src="<?= BASE_URL ?>Assets/Js/bootstrap.bundle.min.js" defer></script>
+<script src="<?= BASE_URL ?>Assets/Js/aos.js" defer></script>
+<script src="<?= BASE_URL ?>Assets/Js/servicios.js" defer></script>
+<script src="<?= BASE_URL ?>Assets/Js/sweetalert2.all.min.js" defer></script>
+<script src="<?= BASE_URL ?>Assets/Js/contactos.js" defer></script>

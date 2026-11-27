@@ -1,195 +1,39 @@
-// assets/js/rastreo.js
+// ==========================================
+// PACIFICNORT - RASTREO DE CARGA
+// FASE 5
+// ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
-  const inputNumeroGuia = document.getElementById("inputNumeroGuia");
-  const btnRastrearEnvio = document.getElementById("btnRastrearEnvio");
+  const form = document.getElementById("pnTrackingForm");
 
-  // ====== BLOQUE FO ======
-  const lblOperacionSeleccion = document.getElementById(
-    "lblOperacionSeleccionada",
-  );
-  const tbodyRutasOperacion = document.getElementById("tbodyRutasOperacion");
-  const tablaRutas = document.getElementById("tablaRutasOperacion");
+  if (!form) return;
 
-  // Contenedor de la tabla FO (el div.table-responsive)
-  const contenedorTablaFO = tablaRutas
-    ? tablaRutas.closest(".table-responsive")
-    : null;
-  // Contenedor del encabezado FO: el <div class="d-flex ...">
-  const headerRutasFO = lblOperacionSeleccion
-    ? lblOperacionSeleccion.closest(".d-flex")
-    : null;
+  const input = document.getElementById("inputNumeroGuia");
+  const btnBuscar = document.getElementById("btnRastrearEnvio");
+  const btnLimpiar = document.getElementById("btnLimpiarRastreo");
 
-  // Contenedor general del bloque FO (si existe en tu vista nueva)
-  const bloqueResultadoFO = document.getElementById("bloqueResultadoFO");
+  const buttonText = document.getElementById("pnTrackingButtonText");
+  const spinner = document.getElementById("pnTrackingSpinner");
 
-  // ====== BLOQUE MARÍTIMO ======
-  const bloqueResultadoMaritimo = document.getElementById(
-    "bloqueResultadoMaritimo",
-  );
-  const lblOperacionMaritima = document.getElementById("lblOperacionMaritima");
-  const tbodyOperacionMaritima = document.getElementById(
-    "tbodyOperacionMaritima",
-  );
-  const tablaOperacionMaritima = document.getElementById(
-    "tablaOperacionMaritima",
-  );
-  const contenedorTablaMar = tablaOperacionMaritima
-    ? tablaOperacionMaritima.closest(".table-responsive")
-    : null;
+  const resultados = document.getElementById("bloqueResultadoMaritimo");
+  const cards = document.getElementById("pnTrackingCards");
+  const lblOperacion = document.getElementById("lblOperacionMaritima");
+  const lblCantidad = document.getElementById("pnTrackingCount");
 
-  // Crear botón "Limpiar" dinámicamente y agregarlo al input-group
-  let btnLimpiar = document.getElementById("btnLimpiarRastreo");
-  if (!btnLimpiar) {
-    btnLimpiar = document.createElement("button");
-    btnLimpiar.type = "button";
-    btnLimpiar.id = "btnLimpiarRastreo";
-    btnLimpiar.className = "btn btn-outline-secondary d-none ms-2";
-    btnLimpiar.textContent = "Limpiar";
+  const mensaje = document.getElementById("pnTrackingMessage");
+  const mensajeIcono = document.getElementById("pnTrackingMessageIcon");
+  const mensajeTitulo = document.getElementById("pnTrackingMessageTitle");
+  const mensajeTexto = document.getElementById("pnTrackingMessageText");
+  const mensajeLogin = document.getElementById("pnTrackingLogin");
 
-    const inputGroup = btnRastrearEnvio.closest(".input-group");
-    if (inputGroup) {
-      inputGroup.appendChild(btnLimpiar);
-    }
-  }
+  let consultando = false;
 
-  // =========================
-  // Estado inicial
-  // =========================
-  inicializarVista();
-
-  function inicializarVista() {
-    // Reset FO
-    if (lblOperacionSeleccion) {
-      lblOperacionSeleccion.innerHTML =
-        'Operación: <span class="fw-semibold">—</span> • Contenedor/Caja: ' +
-        '<span class="fw-semibold">—</span>';
-    }
-    renderTablaSinDatosFO();
-
-    // Reset Marítimo
-    if (lblOperacionMaritima) {
-      lblOperacionMaritima.innerHTML =
-        'Operación: <span class="fw-semibold">—</span>';
-    }
-    renderTablaSinDatosMaritimo();
-
-    // Ocultar ambos bloques hasta búsqueda
-    ocultarBloqueFO();
-    ocultarBloqueMaritimo();
-
-    // Ocultar botón limpiar
-    btnLimpiar.classList.add("d-none");
-  }
-
-  // =========================
-  // FO helpers
-  // =========================
-  function renderTablaSinDatosFO() {
-    if (!tbodyRutasOperacion) return;
-    tbodyRutasOperacion.innerHTML = `
-      <tr>
-        <td colspan="6" class="text-center text-muted">
-          Sin datos para mostrar.
-        </td>
-      </tr>
-    `;
-  }
-
-  function renderTablaTramos(tramos) {
-    if (!tbodyRutasOperacion) return;
-
-    if (!Array.isArray(tramos) || tramos.length === 0) {
-      renderTablaSinDatosFO();
-      return;
-    }
-
-    let html = "";
-    tramos.forEach(function (row, idx) {
-      const num = idx + 1;
-      const origen = row.origen_nombre || "";
-      const destino = row.destino_nombre || "";
-      const transportista = row.transportista_nombre || "";
-      const fechaHora = row.fecha_hora || "";
-      const comentario = row.comentario || "";
-
-      html += `
-        <tr>
-          <td>${num}</td>
-          <td>${origen}</td>
-          <td>${destino}</td>
-          <td>${transportista}</td>
-          <td>${fechaHora}</td>
-          <td>${comentario}</td>
-        </tr>
-      `;
-    });
-
-    tbodyRutasOperacion.innerHTML = html;
-  }
-
-  function actualizarEncabezadoFO(encabezado) {
-    if (!lblOperacionSeleccion) return;
-
-    const numeroOperacion =
-      encabezado && encabezado.numero_operacion
-        ? encabezado.numero_operacion
-        : "—";
-    const contenedor =
-      encabezado && encabezado.contenedor ? encabezado.contenedor : "—";
-
-    lblOperacionSeleccion.innerHTML =
-      'Operación: <span class="fw-semibold">' +
-      numeroOperacion +
-      '</span> • Contenedor/Caja: <span class="fw-semibold">' +
-      contenedor +
-      "</span>";
-  }
-
-  function mostrarBloqueFO() {
-    // Si tienes bloque contenedor, úsalo
-    if (bloqueResultadoFO) bloqueResultadoFO.classList.remove("d-none");
-
-    // Compatibilidad con tu lógica anterior (encabezado + table-responsive)
-    if (contenedorTablaFO) contenedorTablaFO.classList.remove("d-none");
-    if (headerRutasFO) headerRutasFO.classList.remove("d-none");
-  }
-
-  function ocultarBloqueFO() {
-    if (bloqueResultadoFO) bloqueResultadoFO.classList.add("d-none");
-
-    if (contenedorTablaFO) contenedorTablaFO.classList.add("d-none");
-    if (headerRutasFO) headerRutasFO.classList.add("d-none");
-  }
-
-  // =========================
-  // Marítimo helpers
-  // =========================
-  function renderTablaSinDatosMaritimo() {
-    if (!tbodyOperacionMaritima) return;
-    tbodyOperacionMaritima.innerHTML = `
-      <tr>
-        <td colspan="5" class="text-center text-muted">
-          Sin datos para mostrar.
-        </td>
-      </tr>
-    `;
-  }
-
-  function actualizarEncabezadoMaritimo(encabezado) {
-    if (!lblOperacionMaritima) return;
-    const numeroOperacion =
-      encabezado && encabezado.numero_operacion
-        ? encabezado.numero_operacion
-        : "—";
-
-    lblOperacionMaritima.innerHTML =
-      'Operación: <span class="fw-semibold">' + numeroOperacion + "</span>";
-  }
+  // ======================================
+  // SEGURIDAD
+  // ======================================
 
   function escapeHtml(value) {
-    const s = value === null || value === undefined ? "" : String(value);
-    return s
+    return String(value ?? "")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
@@ -197,188 +41,406 @@ document.addEventListener("DOMContentLoaded", function () {
       .replaceAll("'", "&#039;");
   }
 
-  function renderTablaMaritimo(rows) {
-    if (!tbodyOperacionMaritima) return;
+  // ======================================
+  // ESTADO DE CARGA
+  // ======================================
 
+  function setCargando(activo) {
+    consultando = activo;
+
+    btnBuscar.disabled = activo;
+    btnLimpiar.disabled = activo;
+    input.disabled = activo;
+
+    spinner.classList.toggle("d-none", !activo);
+
+    buttonText.textContent = activo ? "Consultando..." : "Rastrear";
+
+    form.setAttribute("aria-busy", String(activo));
+  }
+
+  // ======================================
+  // MENSAJES
+  // ======================================
+
+  function ocultarMensaje() {
+    mensaje.classList.add("d-none");
+    mensajeLogin.classList.add("d-none");
+  }
+
+  function mostrarMensaje(titulo, texto, tipo = "info", mostrarLogin = false) {
+    mensaje.classList.remove("d-none", "is-error");
+
+    mensajeTitulo.textContent = titulo;
+    mensajeTexto.textContent = texto;
+
+    mensajeLogin.classList.toggle("d-none", !mostrarLogin);
+
+    if (tipo === "error") {
+      mensaje.classList.add("is-error");
+
+      mensajeIcono.className = "bi bi-exclamation-triangle";
+    } else {
+      mensajeIcono.className = "bi bi-info-circle";
+    }
+  }
+
+  // ======================================
+  // RESULTADOS
+  // ======================================
+
+  function ocultarResultados() {
+    resultados.classList.add("d-none");
+
+    cards.innerHTML = "";
+
+    lblOperacion.textContent = "";
+    lblCantidad.textContent = "";
+  }
+
+  // ======================================
+  // COLORES DE ESTATUS
+  // ======================================
+
+  function obtenerClaseEstatus(estatus) {
+    const valor = String(estatus ?? "")
+      .trim()
+      .toLowerCase();
+
+    const finalizados = [
+      "finalizada",
+      "finalizado",
+      "entregada",
+      "entregado",
+      "completada",
+      "completado",
+    ];
+
+    const cancelados = ["cancelada", "cancelado"];
+
+    const pendientes = ["pendiente", "en espera", "detenida", "detenido"];
+
+    if (finalizados.includes(valor)) {
+      return "is-success";
+    }
+
+    if (cancelados.includes(valor)) {
+      return "is-danger";
+    }
+
+    if (pendientes.includes(valor)) {
+      return "is-warning";
+    }
+
+    return "";
+  }
+
+  // ======================================
+  // FORMATO DE FECHAS
+  // ======================================
+
+  function formatearFecha(valor) {
+    if (!valor) {
+      return "Sin fecha registrada";
+    }
+
+    // Conservamos la fecha y hora devueltas
+    // por MySQL, sin modificar su zona horaria.
+
+    const fecha = String(valor).match(
+      /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/,
+    );
+
+    if (!fecha) {
+      return String(valor);
+    }
+
+    const dia = fecha[3];
+    const mes = fecha[2];
+    const anio = fecha[1];
+
+    const hora = fecha[4] && fecha[5] ? ` · ${fecha[4]}:${fecha[5]}` : "";
+
+    return `${dia}/${mes}/${anio}${hora}`;
+  }
+
+  // ======================================
+  // GENERAR TARJETAS
+  // ======================================
+
+  function renderizarResultados(rows, termino) {
     if (!Array.isArray(rows) || rows.length === 0) {
-      renderTablaSinDatosMaritimo();
+      mostrarMensaje(
+        "Sin resultados",
+        "No encontramos información para la operación indicada.",
+      );
+
       return;
     }
 
-    let html = "";
-    rows.forEach(function (r) {
-      const op = escapeHtml(r.numero_operacion || "");
-      const cont = escapeHtml(r.contenedor || "—");
-      const est = escapeHtml(r.estatus_nombre || "");
-      const comen = escapeHtml(r.comentario || "");
+    lblOperacion.textContent = termino;
 
-      html += `
-        <tr>
-          <td>${op}</td>
-          <td>${cont}</td>
-          <td>${est}</td>
-          <td>${comen}</td>
-        </tr>
-      `;
-    });
+    lblCantidad.textContent =
+      rows.length === 1
+        ? "1 registro encontrado"
+        : `${rows.length} registros encontrados`;
 
-    tbodyOperacionMaritima.innerHTML = html;
+    cards.innerHTML = rows
+      .map(function (row) {
+        const operacion = escapeHtml(
+          row.numero_operacion || "Sin número registrado",
+        );
+
+        const contenedor = escapeHtml(
+          row.contenedor || "Sin contenedor registrado",
+        );
+
+        const estatus = escapeHtml(
+          row.estatus_nombre || "Sin estatus registrado",
+        );
+
+        const claseEstatus = obtenerClaseEstatus(row.estatus_nombre);
+
+        const comentario = escapeHtml(
+          row.comentario || "Sin comentarios disponibles.",
+        );
+
+        const actualizacion = escapeHtml(formatearFecha(row.actualizacion));
+
+        return `
+
+                <div class="col-12 col-lg-6">
+
+                    <article class="pn-tracking-card">
+
+                        <div class="pn-tracking-card-header">
+
+                            <div class="pn-tracking-container-icon">
+
+                                <i class="bi bi-box-seam"
+                                   aria-hidden="true"></i>
+
+                            </div>
+
+                            <div class="pn-tracking-container-name">
+
+                                <small>Contenedor</small>
+
+                                <h4>${contenedor}</h4>
+
+                            </div>
+
+                            <span class="pn-tracking-status ${claseEstatus}">
+
+                                <i class="bi bi-circle-fill"
+                                   aria-hidden="true"></i>
+
+                                ${estatus}
+
+                            </span>
+
+                        </div>
+
+                        <div class="pn-tracking-card-details">
+
+                            <span class="pn-tracking-detail-label">
+                                Número de operación
+                            </span>
+
+                            <strong class="pn-tracking-operation">
+
+                                ${operacion}
+
+                            </strong>
+
+                            <span class="pn-tracking-detail-label">
+                                Último comentario disponible
+                            </span>
+
+                            <p class="pn-tracking-comment">
+
+                                ${comentario}
+
+                            </p>
+
+                        </div>
+
+                        <div class="pn-tracking-card-footer">
+
+                            <i class="bi bi-clock-history"
+                               aria-hidden="true"></i>
+
+                            Último evento: ${actualizacion}
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+            `;
+      })
+      .join("");
+
+    resultados.classList.remove("d-none");
   }
 
-  function mostrarBloqueMaritimo() {
-    if (bloqueResultadoMaritimo)
-      bloqueResultadoMaritimo.classList.remove("d-none");
-    if (contenedorTablaMar) contenedorTablaMar.classList.remove("d-none");
-  }
+  // ======================================
+  // CONSULTA AL SERVIDOR
+  // ======================================
 
-  function ocultarBloqueMaritimo() {
-    if (bloqueResultadoMaritimo)
-      bloqueResultadoMaritimo.classList.add("d-none");
-    if (contenedorTablaMar) contenedorTablaMar.classList.add("d-none");
-  }
+  async function buscarOperacion() {
+    if (consultando) return;
 
-  // =========================
-  // Buscar
-  // =========================
-  function buscarOperacion() {
-    const numeroOperacion = inputNumeroGuia.value.trim();
+    const termino = input.value.trim().toUpperCase().replace(/\s+/g, "");
 
-    if (numeroOperacion === "") {
-      Swal.fire("Aviso", "Debes ingresar un número de operación.", "warning");
-      inputNumeroGuia.disabled = false;
+    ocultarMensaje();
+    ocultarResultados();
+
+    if (!termino) {
+      mostrarMensaje(
+        "Ingresa una operación",
+        "Escribe un número de operación o BL para continuar.",
+      );
+
+      input.focus();
+
       return;
     }
 
-    const url = base_url + "Rastreo/buscarOperacion";
+    input.value = termino;
+
+    btnLimpiar.classList.remove("d-none");
+
+    setCargando(true);
+
     const data = new FormData();
-    data.append("numero_operacion", numeroOperacion);
 
-    const http = new XMLHttpRequest();
-    http.open("POST", url, true);
-    http.send(data);
+    data.append("numero_operacion", termino);
 
-    http.onreadystatechange = function () {
-      if (this.readyState === 4) {
-        if (this.status === 200) {
-          let res;
-          try {
-            res = JSON.parse(this.responseText);
-          } catch (e) {
-            console.error("Error al parsear JSON:", e, this.responseText);
-            Swal.fire("Error", "Respuesta inválida del servidor.", "error");
+    const abortController = new AbortController();
 
-            // Reset visual
-            ocultarBloqueFO();
-            ocultarBloqueMaritimo();
-            //actualizarEncabezadoFO(null);
-            //renderTablaSinDatosFO();
-            actualizarEncabezadoMaritimo(null);
-            renderTablaSinDatosMaritimo();
-            return;
-          }
+    const timeout = setTimeout(function () {
+      abortController.abort();
+    }, 20000);
 
-          // Antes de pintar, ocultamos ambos bloques y luego mostramos el correcto
-          ocultarBloqueFO();
-          ocultarBloqueMaritimo();
+    try {
+      const response = await fetch(form.dataset.url, {
+        method: "POST",
 
-          if (!res.ok) {
-            Swal.fire(
-              "Sin resultados",
-              (res.msg || "No se encontraron resultados.").toUpperCase(),
-              "info",
-            );
+        body: data,
 
-            // Según el tipo, dejamos visible el bloque correspondiente con "sin datos"
-            const tipo = (res.tipo || "").toLowerCase();
+        credentials: "same-origin",
 
-            if (tipo === "maritimo") {
-              mostrarBloqueMaritimo();
-              actualizarEncabezadoMaritimo({
-                numero_operacion: res.numero_operacion || numeroOperacion,
-              });
-              renderTablaSinDatosMaritimo();
-            } else {
-              // default FO
-              //mostrarBloqueFO();
-              //actualizarEncabezadoFO({
-              //  numero_operacion: res.numero_operacion || numeroOperacion,
-              // contenedor: "—",
-              // });
-              //renderTablaSinDatosFO();
-            }
-          } else {
-            const tipo = (res.tipo || "").toLowerCase();
+        headers: {
+          Accept: "application/json",
+        },
 
-            if (tipo === "maritimo") {
-              // Éxito Marítimo
-              mostrarBloqueMaritimo();
-              actualizarEncabezadoMaritimo(
-                res.encabezado || { numero_operacion: numeroOperacion },
-              );
-              renderTablaMaritimo(res.data || []);
-            } else {
-              // Éxito FO
-              //mostrarBloqueFO();
-              //actualizarEncabezadoFO(res.encabezado || null);
-              //renderTablaTramos(res.tramos || []);
-            }
+        signal: abortController.signal,
+      });
 
-            // Bloquear inputs tras éxito
-            inputNumeroGuia.disabled = true;
-            btnRastrearEnvio.classList.add("disabled");
+      // Detectar restricciones de acceso.
 
-            Swal.fire(
-              "Listo",
-              (res.msg || "Consulta realizada correctamente.").toUpperCase(),
-              "success",
-            );
-          }
+      if (
+        response.redirected ||
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        mostrarMensaje(
+          "Acceso restringido",
+          "Debes iniciar sesión con una cuenta autorizada para realizar esta consulta.",
+          "info",
+          true,
+        );
 
-          // Mostrar botón limpiar después de una búsqueda
-          btnLimpiar.classList.remove("d-none");
-        } else {
-          console.error("Error HTTP:", this.status, this.responseText);
-          Swal.fire(
-            "Error",
-            "Ocurrió un error al consultar la operación.",
-            "error",
-          );
-
-          // Reset visual
-          // ocultarBloqueFO();
-          ocultarBloqueMaritimo();
-          //actualizarEncabezadoFO(null);
-          //renderTablaSinDatosFO();
-          actualizarEncabezadoMaritimo(null);
-          renderTablaSinDatosMaritimo();
-        }
+        return;
       }
-    };
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("Respuesta no válida del servidor");
+      }
+
+      const res = await response.json();
+
+      if (!res.ok) {
+        mostrarMensaje(
+          "No encontramos tu operación",
+          res.msg || "Verifica el número ingresado e inténtalo nuevamente.",
+        );
+
+        return;
+      }
+
+      const tipo = String(res.tipo || "").toLowerCase();
+
+      if (tipo !== "maritimo") {
+        mostrarMensaje(
+          "Consulta no disponible",
+          "Esta modalidad de rastreo todavía no está habilitada.",
+        );
+
+        return;
+      }
+
+      renderizarResultados(
+        res.data,
+        res.encabezado?.numero_operacion || termino,
+      );
+    } catch (error) {
+      console.error("Error de rastreo:", error);
+
+      mostrarMensaje(
+        "No fue posible realizar la consulta",
+        error.name === "AbortError"
+          ? "El servidor tardó demasiado en responder. Intenta nuevamente."
+          : "Ocurrió un problema de comunicación. Intenta nuevamente.",
+        "error",
+      );
+    } finally {
+      clearTimeout(timeout);
+
+      setCargando(false);
+    }
   }
 
-  // =========================
-  // Eventos
-  // =========================
-  btnRastrearEnvio.addEventListener("click", function () {
+  // ======================================
+  // EVENTOS
+  // ======================================
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+
     buscarOperacion();
   });
 
-  inputNumeroGuia.addEventListener("keyup", function (e) {
-    if (e.key === "Enter" || e.keyCode === 13) {
-      buscarOperacion();
-    }
-  });
-
-  inputNumeroGuia.addEventListener("input", function () {
-    btnLimpiar.classList.add("d-none");
-    // No ocultamos resultados automáticamente; solo cuando el usuario limpie.
-  });
-
   btnLimpiar.addEventListener("click", function () {
-    inputNumeroGuia.value = "";
-    inicializarVista();
-    inputNumeroGuia.focus();
-    btnRastrearEnvio.classList.remove("disabled");
-    inputNumeroGuia.disabled = false;
+    if (consultando) return;
+
+    input.value = "";
+
+    ocultarMensaje();
+    ocultarResultados();
+
+    btnLimpiar.classList.add("d-none");
+
+    input.focus();
   });
+
+  input.addEventListener("input", function () {
+    ocultarMensaje();
+    ocultarResultados();
+
+    btnLimpiar.classList.toggle("d-none", !input.value.trim());
+  });
+
+  // Estado inicial
+
+  ocultarMensaje();
+  ocultarResultados();
 });
